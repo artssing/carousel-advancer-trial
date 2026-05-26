@@ -3,6 +3,22 @@
 > Last updated: 2026-05-27
 > 給未來嘅 Claude Code session 快速接手用。
 
+## 👋 新 session 接手指引（讀呢段 + business plan 就可以繼續）
+
+如果你係 Claude Code 嘅新 session（例如 founder 喺另一部機 clone 完 repo 開你），請：
+
+1. **讀完整本 `CLAUDE.md`**（呢個檔）— 知道 project 狀態 + founder rulings
+2. **讀 `docs/business-plan.md`** — 完整商業 + 法律 + 技術 plan（396 行，由 plan mode 產出）
+3. **讀 `HANDOFF.md`** — 新機 setup 指南（Docker、Postgres、seed、dev servers）
+4. **掃 `.claude/agents/`** — 已有兩個 subagent（code-reviewer / qa-tester），含 founder rulings
+5. 同 founder 講「**我已 onboard，準備好繼續**」+ summarize 你睇到嘅 project 狀態
+
+**不要**：
+- 重新問 founder 已經決定咗嘅嘢（platform-neutrality 立場、Tier thresholds、3008 port、admin dark theme 等 — 全部喺 agents + business plan）
+- 重新跑 plan mode（plan 已完成、approved、persist 喺 `docs/business-plan.md`）
+
+**Founder 寫嘢嘅語言**：繁體中文（香港）。你回應都用繁中。
+
 ## Project 一句話
 
 香港 C2C 二手交易平台，按品類強制/可選第三方鑑定（>HKD 10k 強制），平台**中立做撮合 + escrow**，鑑定錯誤由具名星級鑑定師按合約 + 自購 E&O 保險承擔。Founder 想做香港試點，web + iOS native (Swift) + Android native (Kotlin)。
@@ -115,7 +131,8 @@ npm run lint
 
 | 用途 | 路徑 |
 |------|------|
-| 商業 plan 全文 | `~/.claude/plans/project-founder-carousell-https-www-car-idempotent-gizmo.md` |
+| 商業 plan 全文 | `docs/business-plan.md`（已複製入 repo） |
+| 新機 setup | `HANDOFF.md` |
 | Tier business logic | `packages/utils/src/tier.ts` |
 | Fee 計算 | `packages/utils/src/categories.ts`（`calculateFees`） |
 | Money format | `packages/utils/src/money.ts`（`formatHKD`） |
