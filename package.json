@@ -1,0 +1,36 @@
+{
+  "name": "authentik-hk",
+  "private": true,
+  "version": "0.0.1",
+  "description": "HK C2C authenticated marketplace - monorepo",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "type-check": "turbo run type-check",
+    "test": "turbo run test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "dev:consumer": "turbo run dev --filter=consumer",
+    "dev:authenticator": "turbo run dev --filter=authenticator",
+    "dev:admin": "turbo run dev --filter=admin",
+    "dev:api": "turbo run dev --filter=api",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:setup": "npm run db:setup --workspace=api"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0",
+    "prettier": "^3.2.5",
+    "eslint": "^8.57.0",
+    "@types/node": "^20.11.0"
+  },
+  "packageManager": "npm@11.12.1",
+  "engines": {
+    "node": ">=20"
+  }
+}

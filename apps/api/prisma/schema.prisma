@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  BUYER
+  SELLER
+  AUTHENTICATOR
+  OPS_AGENT
+  OPS_ADMIN
+  SUPER_ADMIN
+}
+
+enum KycStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum Category {
+  HANDBAG
+  IPHONE
+  POKEMON_CARD
+  WATCH
+  SNEAKER
+  DESIGNER_TOY
+  OTHER
+}
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  RESERVED
+  SOLD
+  REMOVED
+}
+
+enum OrderStatus {
+  AWAITING_PAYMENT
+  PAID
+  SHIPPED_TO_AUTHENTICATOR
+  AUTHENTICATING
+  AUTH_PASSED
+  AUTH_FAILED
+  SHIPPED_TO_BUYER
+  DELIVERED
+  COMPLETED
+  DISPUTED
+  REFUNDED
+}
+
+enum AuthenticatorStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  passwordHash String
+  displayName  String
+  roles        UserRole[] @default([BUYER, SELLER])
+  kycStatus    KycStatus  @default(VERIFIED) // dev: auto-verified
+  createdAt    DateTime   @default(now())
+
+  listings      Listing[]
+  buyerOrders   Order[]   @relation("buyerOrders")
+  sellerOrders  Order[]   @relation("sellerOrders")
+  authenticator Authenticator?
+}
+
+model Listing {
+  id          String        @id @default(cuid())
+  sellerId    String
+  seller      User          @relation(fields: [sellerId], references: [id])
+  category    Category
+  title       String
+  description String
+  priceHKD    Int
+  tier        Int
+  images      String[]      @default([])
+  status      ListingStatus @default(ACTIVE)
+  createdAt   DateTime      @default(now())
+
+  orders Order[]
+
+  @@index([status, category])
+  @@index([sellerId])
+}
+
+model Authenticator {
+  id                       String              @id @default(cuid())
+  userId                   String              @unique
+  user                     User                @relation(fields: [userId], references: [id])
+  displayName              String
+  storeName                String?
+  categories               Category[]
+  starRating               Int                 @default(1)
+  completedCount           Int                 @default(0)
+  disputeRate              Float               @default(0)
+  eAndOInsuranceExpiresAt  DateTime?
+  status                   AuthenticatorStatus @default(ACTIVE)
+  publicProfileUrl         String?
+  createdAt                DateTime            @default(now())
+
+  orders Order[]
+}
+
+model Order {
+  id              String         @id @default(cuid())
+  listingId       String
+  listing         Listing        @relation(fields: [listingId], references: [id])
+  buyerId         String
+  buyer           User           @relation("buyerOrders", fields: [buyerId], references: [id])
+  sellerId        String
+  seller          User           @relation("sellerOrders", fields: [sellerId], references: [id])
+  authenticatorId String?
+  authenticator   Authenticator? @relation(fields: [authenticatorId], references: [id])
+  status          OrderStatus    @default(AWAITING_PAYMENT)
+  salePriceHKD   Int
+  authFeeHKD     Int
+  platformFeeHKD Int
+  sellerNetHKD   Int
+  createdAt       DateTime       @default(now())
+  paidAt          DateTime?
+}

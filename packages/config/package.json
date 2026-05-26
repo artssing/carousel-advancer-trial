@@ -1,0 +1,16 @@
+{
+  "name": "@authentik/config",
+  "version": "0.0.1",
+  "private": true,
+  "main": "./index.js",
+  "files": [
+    "tsconfig.base.json",
+    "tsconfig.next.json",
+    "tailwind-preset.ts",
+    "eslint-preset.js"
+  ],
+  "exports": {
+    "./tailwind-preset": "./tailwind-preset.ts",
+    "./eslint-preset": "./eslint-preset.js"
+  }
+}

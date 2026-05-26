@@ -1,0 +1,16 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: authentik-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: authentik
+      POSTGRES_PASSWORD: authentik_dev
+      POSTGRES_DB: authentik
+    ports:
+      - '5432:5432'
+    volumes:
+      - authentik_pg_data:/var/lib/postgresql/data
+
+volumes:
+  authentik_pg_data:
