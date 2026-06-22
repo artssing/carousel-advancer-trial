@@ -15,3 +15,6 @@ coverage
 .vscode
 *.tsbuildinfo
 .claude/settings.local.json
+# Public test stack runtime state
+.public-state/
+.dev-logs/

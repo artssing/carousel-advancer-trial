@@ -1,3 +1,8 @@
+// Cross-app link to authenticator portal — env-driven so production / public-test
+// deployment can override (Lesson #4: never hardcode cross-app URLs).
+const AUTHENTICATOR_URL =
+  process.env.NEXT_PUBLIC_AUTHENTICATOR_URL ?? 'http://localhost:3001';
+
 export function Footer() {
   return (
     <footer className="border-t border-slate-200 bg-white py-6 text-xs text-slate-500">
@@ -7,7 +12,7 @@ export function Footer() {
           <a href="/about">關於我們</a>
           <a href="/terms">服務條款</a>
           <a href="/privacy">私隱政策</a>
-          <a href="http://auth.localhost:3001">鑑定家入口</a>
+          <a href={AUTHENTICATOR_URL} target="_blank" rel="noopener noreferrer">鑑定家入口</a>
         </div>
       </div>
     </footer>

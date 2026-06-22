@@ -44,7 +44,7 @@ export default function OnboardingPage() {
             <li>過往鑑定 / 寄賣紀錄（3 個月）</li>
             <li>業界推薦信 / KOL 背書</li>
             <li>實體店外觀照片 + 商業登記</li>
-            <li>YouTube / IG 粉絲頁連結（>5,000 followers）</li>
+            <li>YouTube / IG 粉絲頁連結（&gt;5,000 followers）</li>
           </ul>
           <Button variant="outline" size="sm" className="mt-3">上載檔案</Button>
         </CardContent>

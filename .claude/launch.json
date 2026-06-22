@@ -1,0 +1,26 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "consumer",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:consumer"],
+      "port": 3008,
+      "autoPort": false
+    },
+    {
+      "name": "authenticator",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:authenticator"],
+      "port": 3001,
+      "autoPort": false
+    },
+    {
+      "name": "admin",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev:admin"],
+      "port": 3003,
+      "autoPort": false
+    }
+  ]
+}

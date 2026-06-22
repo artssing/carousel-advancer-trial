@@ -23,14 +23,21 @@
     "db:setup": "npm run db:setup --workspace=api"
   },
   "devDependencies": {
-    "turbo": "^2.0.0",
-    "typescript": "^5.4.0",
-    "prettier": "^3.2.5",
+    "@types/node": "^20.11.0",
     "eslint": "^8.57.0",
-    "@types/node": "^20.11.0"
+    "prettier": "^3.2.5",
+    "tailwind-scrollbar-hide": "^4.0.0",
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
   },
   "packageManager": "npm@11.12.1",
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@nestjs/platform-socket.io": "^11.1.24",
+    "@nestjs/websockets": "^11.1.24",
+    "socket.io": "^4.8.3",
+    "socket.io-client": "^4.8.3"
   }
 }

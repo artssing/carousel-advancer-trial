@@ -1,53 +1,63 @@
-import { formatHKD } from '@authentik/utils';
+'use client';
 
-const kpis = [
-  { label: 'Active listings', value: '1,283', delta: '+12%' },
-  { label: 'GMV (MTD)', value: formatHKD(2_350_000), delta: '+18%' },
-  { label: 'Auth SLA met', value: '92.4%', delta: '+1.2pp' },
-  { label: 'Open disputes', value: '4', delta: '-2' },
-];
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { api } from '@/lib/api';
+
+interface Overview {
+  users: number; listings: number; orders: number;
+  disputes: number; kycPending: number; sellerReviews: number;
+}
 
 export default function AdminHome() {
+  const [data, setData] = useState<Overview | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.admin.overview().then(setData).catch((e) => setError(e?.message ?? '無法載入'));
+  }, []);
+
+  const kpis = [
+    { label: 'Total users', value: data?.users ?? '—', link: '/users' },
+    { label: 'Total listings', value: data?.listings ?? '—', link: null },
+    { label: 'Total orders', value: data?.orders ?? '—', link: null },
+    { label: 'Open disputes', value: data?.disputes ?? '—', link: '/disputes' },
+    { label: 'KYC pending', value: data?.kycPending ?? '—', link: '/users/kyc' },
+    { label: 'Seller reviews', value: data?.sellerReviews ?? '—', link: null },
+  ];
+
   return (
-    <div className="px-8 py-8">
+    <div className="px-8 py-8 text-slate-100">
       <h1 className="text-2xl font-bold">Operations Overview</h1>
       <p className="mt-1 text-sm text-slate-400">Real-time KPIs · 5-min refresh</p>
-
-      <div className="mt-6 grid gap-4 md:grid-cols-4">
-        {kpis.map((k) => (
-          <div key={k.label} className="rounded-xl border border-slate-800 bg-slate-900 p-5">
-            <p className="text-xs uppercase tracking-wide text-slate-400">{k.label}</p>
-            <p className="mt-1 text-2xl font-bold">{k.value}</p>
-            <p className="mt-1 text-xs text-emerald-400">{k.delta}</p>
-          </div>
-        ))}
+      {error && <p className="mt-3 rounded bg-red-950 px-3 py-2 text-sm text-red-300">{error}</p>}
+      <div className="mt-6 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
+        {kpis.map((k) => {
+          const Inner = (
+            <div className="rounded-xl border border-slate-800 bg-slate-900 p-5 transition hover:border-slate-700">
+              <p className="text-xs uppercase tracking-wide text-slate-400">{k.label}</p>
+              <p className="mt-1 text-2xl font-bold">{k.value}</p>
+            </div>
+          );
+          return k.link ? (
+            <Link key={k.label} href={k.link as any}>{Inner}</Link>
+          ) : <div key={k.label}>{Inner}</div>;
+        })}
       </div>
-
       <div className="mt-8 grid gap-4 md:grid-cols-2">
-        <Block title="Auth SLA Watch" rows={[
-          'ord_009 · Milan Station 旺角 · 19h left',
-          'ord_017 · Sole Classics · 4h left ⚠',
-          'ord_022 · 信和 CardLab · 31h left',
-        ]} />
-        <Block title="New Authenticator Applications" rows={[
-          'Pawnex Central · 手袋 · 等待背景審查',
-          'Kick Lounge · 球鞋 · 合約已寄出',
-          'CardKing 信和 · TCG · E&O 保險未上載',
-        ]} />
+        <QuickLink href="/disputes" title="處理爭議" desc="進入 dispute queue，逐張 review" />
+        <QuickLink href="/users/kyc" title="KYC 審批" desc="審批 / 拒絕 pending KYC" />
+        <QuickLink href="/users" title="用戶列表" desc="查所有 user、角色、KYC 狀態" />
       </div>
     </div>
   );
 }
 
-function Block({ title, rows }: { title: string; rows: string[] }) {
+function QuickLink({ href, title, desc }: { href: string; title: string; desc: string }) {
   return (
-    <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
-      <h2 className="font-semibold">{title}</h2>
-      <ul className="mt-3 space-y-1.5 text-sm text-slate-300">
-        {rows.map((r) => (
-          <li key={r} className="rounded-md bg-slate-950/50 px-3 py-2">{r}</li>
-        ))}
-      </ul>
-    </div>
+    <Link href={href as any} className="rounded-xl border border-slate-800 bg-slate-900 p-5 transition hover:border-brand-600">
+      <p className="font-semibold">{title}</p>
+      <p className="mt-0.5 text-xs text-slate-400">{desc}</p>
+    </Link>
   );
 }

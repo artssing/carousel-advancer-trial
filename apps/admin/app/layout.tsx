@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
-import { AdminSidebar } from '@/components/admin-sidebar';
+import { AdminAuthGuard } from '@/components/auth-guard';
+import { LayoutShell } from '@/components/layout-shell';
 
 export const metadata: Metadata = {
   title: 'Authentik HK · Admin Console',
@@ -11,10 +12,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <div className="flex min-h-screen">
-          <AdminSidebar />
-          <main className="flex-1 overflow-x-hidden">{children}</main>
-        </div>
+        <AdminAuthGuard>
+          <LayoutShell>{children}</LayoutShell>
+        </AdminAuthGuard>
       </body>
     </html>
   );

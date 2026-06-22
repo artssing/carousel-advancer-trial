@@ -32,7 +32,7 @@ const preset: Partial<Config> = {
       },
     },
   },
-  plugins: [],
+  plugins: [require('tailwind-scrollbar-hide')],
 };
 
 export default preset;

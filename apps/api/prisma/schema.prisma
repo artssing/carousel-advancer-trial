@@ -43,12 +43,23 @@ enum ListingStatus {
 enum OrderStatus {
   AWAITING_PAYMENT
   PAID
+  // ── MEETUP_AUTH dual-ack flow ────────────────────────────────────
+  HANDOVER_TO_AUTH                  // 鑑定師收到通知賣家準備到店
+  SELLER_ACK_PENDING                // 鑑定師已影 ≥3 張相 + ack，等賣家確認
+  CUSTODY                           // 雙方 ack 齊，鑑定師正式 take custody
+  // ── SHIP photo-evidence flow ─────────────────────────────────────
   SHIPPED_TO_AUTHENTICATOR
+  AUTH_RECEIVED_PENDING_SELLER_ACK  // SHIP: 鑑定師收件 + 影 ≥3 相，等賣家 ack
+  // ── Common ──
   AUTHENTICATING
   AUTH_PASSED
   AUTH_FAILED
+  // ── MEETUP_AUTH after PASSED ─────────────────────────────────────
+  AWAITING_BUYER_PICKUP             // 鑑定師持貨等買家來取（indefinite，無 timeout）
+  // ── SHIP after PASSED ────────────────────────────────────────────
   SHIPPED_TO_BUYER
-  DELIVERED
+  DELIVERED_PENDING_AUTH_ACK        // SHIP: 買家收件 + 影 ≥3 相，等鑑定師 ack
+  DELIVERED                         // (kept for SHIP no-auth Tier 1 path: buyer received, awaiting seller-ack)
   COMPLETED
   DISPUTED
   REFUNDED
@@ -61,19 +72,116 @@ enum AuthenticatorStatus {
   REMOVED
 }
 
+enum DeliveryMethod {
+  SHIP          // 物流寄送（有鑑定：賣家→鑑定師→買家；無鑑定：賣家→買家）
+  MEETUP_AUTH   // 鑑定師在場面交（買家到鑑定師地點，當場驗+交收）
+  MEETUP_3WAY   // 三方面交（買賣+鑑定師同場，當場鑑定+交收）
+  MEETUP_DIRECT // 買賣雙方面交（純撮合，無鑑定）
+}
+
+enum PaymentMethod {
+  ONLINE_ESCROW // 平台代 hold，完成後派錢畀賣家+鑑定師（Stage 1 mock）
+  OFFLINE_CASH  // 面交現金，平台唔 hold（只限 meetup 類交收）
+}
+
 model User {
   id           String     @id @default(cuid())
   email        String     @unique
-  passwordHash String
+  /// Nullable for SSO-only users (Google login first, never set password).
+  passwordHash String?
   displayName  String
+  /// Avatar — base64 data URL (Founder ruling Q3 2026-06-11: A = base64 in DB).
+  /// Recommended client-side compress to ≤ 200×200 / ≤ 50KB. Server caps at 256KB.
+  avatarUrl    String?
+  /// True when email is attested by SSO provider (Google `email_verified`).
+  /// Existing email/password users: false (UI doesn't surface yet — Founder OQ-5 A).
+  emailVerified Boolean   @default(false)
+  /// Mobile phone in E.164 format (e.g. "+85291234567"). HK-only (MVP).
+  /// Founder ruling 2026-06-19: Q2=A optional MVP, eventually mandatory.
+  /// Once verified, phone CANNOT be removed (Q5=C); user can only change it.
+  phone            String?   @unique
+  phoneVerified    Boolean   @default(false)
+  phoneVerifiedAt  DateTime?
+  /// Last change timestamp — 24h cooldown enforced server-side to prevent
+  /// social-engineering account takeover.
+  phoneChangedAt   DateTime?
+  /// Suspended account (admin action). Login refuses if non-null.
+  /// Founder ruling 2026-06-11 Q1=B: in-flight PAID orders' escrow naturally
+  /// freezes because suspended user can't ack / release.
+  suspendedAt      DateTime?
+  suspendedReason  String?
+  suspendedById    String?   // operator userId (OPS_ADMIN+) who did it
   roles        UserRole[] @default([BUYER, SELLER])
   kycStatus    KycStatus  @default(VERIFIED) // dev: auto-verified
   createdAt    DateTime   @default(now())
 
-  listings      Listing[]
-  buyerOrders   Order[]   @relation("buyerOrders")
-  sellerOrders  Order[]   @relation("sellerOrders")
-  authenticator Authenticator?
+  listings            Listing[]
+  buyerOrders         Order[]        @relation("buyerOrders")
+  sellerOrders        Order[]        @relation("sellerOrders")
+  authenticator       Authenticator?
+  messages            Message[]
+  buyerConversations  Conversation[] @relation("buyerConversations")
+  sellerConversations Conversation[] @relation("sellerConversations")
+  proposedOffers      Offer[]        @relation("proposedOffers")
+  sellerReviewsReceived SellerReview[] @relation("sellerReviewsReceived")
+  sellerReviewsGiven    SellerReview[] @relation("sellerReviewsGiven")
+  payoutMethods       PayoutMethod[]
+  payoutRequests      PayoutRequest[]
+  oauthAccounts       OAuthAccount[]
+  adminNotes          AdminNote[]
+}
+
+/// Admin internal notes on a user — version history (Q4=A append-only, never
+/// overwrite). Drawer's Notes section reads ordered by createdAt desc.
+model AdminNote {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+/// 第三方 SSO 連接 (Google / Apple / Facebook future).
+/// Founder ruling 2026-06-11: P0 Google only; Apple + Facebook = backlog.
+model OAuthAccount {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider       String   // "google" | (future) "apple" | "facebook"
+  providerUserId String   // Google's "sub" claim
+  createdAt      DateTime @default(now())
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+}
+
+/// Phone OTP request — bcrypt-hashed 6-digit code, 5-min TTL, 5 attempts max.
+/// Founder ruling 2026-06-19 Q6=A: mock SMS provider uses fixed code 888888 in
+/// dev. Real SMS provider (Twilio / HK local) is backlog.
+/// Phone not enumerated: send-otp always returns 200 regardless of existing user.
+model OtpRequest {
+  id           String     @id @default(cuid())
+  phone        String     // E.164, NOT a FK — anonymous request before user exists
+  codeHash     String     // bcrypt(code, rounds=8)
+  purpose      OtpPurpose
+  userId       String?    // set for CHANGE_PHONE (authenticated)
+  expiresAt    DateTime
+  attemptsLeft Int        @default(5)
+  consumedAt   DateTime?  // null = unused; non-null = single-use replay protection
+  ipAddress    String?
+  createdAt    DateTime   @default(now())
+
+  @@index([phone, purpose, createdAt])
+  @@index([ipAddress, createdAt])
+}
+
+enum OtpPurpose {
+  REGISTER_PHONE   // new account or existing user adding phone first time
+  CHANGE_PHONE     // existing user replacing verified phone (requires 24h cooldown)
+  LOGIN_PHONE      // passwordless OTP login (iteration 1; defined now for completeness)
 }
 
 model Listing {
@@ -81,18 +189,79 @@ model Listing {
   sellerId    String
   seller      User          @relation(fields: [sellerId], references: [id])
   category    Category
+  /// Optional brand / sub-category. Stores canonical enum key (e.g. "LV",
+  /// "ROLEX", "IPHONE_16_PRO") OR free-text fallback for long-tail brands.
+  /// Resolve display label via brandLabel(category, brand) helper.
+  brand       String?
   title       String
   description String
   priceHKD    Int
+  /// Anchor price for strikethrough display. Frozen at the first price drop
+  /// (Founder ruling 2026-06-19 Q1=A): captures priceHKD value at the moment
+  /// of the first PRICE_DROP. Null = no drop ever happened, no strikethrough UI.
+  originalPriceHKD          Int?
+  /// Scheduled price drop awaiting 48h delay. Promoted lazily on read.
+  pendingPriceHKD           Int?
+  pendingPriceEffectiveAt   DateTime?
   tier        Int
   images      String[]      @default([])
+  /// Optional video (base64 data URL, ≤ 15s / ≤ 15MB).
+  /// Founder ruling 2026-06-11: featured behind PlatformConfig `videoUploadEnabled`.
+  videoUrl       String?
+  /// Frame extract from videoUrl (client-side, t=1s) — used as poster + cover thumbnail.
+  videoPosterUrl String?
+  /// OQ-1=B: seller can make video the cover. When true, browse card cover =
+  /// videoPosterUrl and carousel renders video FIRST.
+  videoIsCover   Boolean       @default(false)
+  /// Derived at write time — speeds up browse query (avoids reading images[0] base64).
+  /// = videoPosterUrl if videoIsCover, else images[0], else null.
+  coverUrl       String?
   status      ListingStatus @default(ACTIVE)
   createdAt   DateTime      @default(now())
 
-  orders Order[]
+  // 賣家接受嘅交收方式（買家落單時揀其中一種）
+  allowedDeliveryMethods DeliveryMethod[] @default([SHIP])
+  sellerDistrict         String?          // 賣家所在區（面交配對用）
+
+  orders        Order[]
+  conversations Conversation[]
+  offers        Offer[]
 
   @@index([status, category])
   @@index([sellerId])
+  @@index([status, pendingPriceEffectiveAt])
+  priceChanges PriceChange[]
+}
+
+/// Audit log of every price modification — feeds anti-gaming review + future
+/// ops dashboard. Founder ruling 2026-06-19 Q2: single edit entry; system
+/// classifies as DIRECT_EDIT (instant) or PRICE_DROP (48h delay) based on
+/// whether new price < old price.
+model PriceChange {
+  id            String             @id @default(cuid())
+  listingId     String
+  listing       Listing            @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  sellerId      String             // denormalised — quick ops query
+  oldPriceHKD   Int
+  newPriceHKD   Int
+  status        PriceChangeStatus  @default(PENDING)
+  requestedAt   DateTime           @default(now())
+  effectiveAt   DateTime?          // null for DIRECT_EDIT
+  appliedAt     DateTime?
+  cancelledAt   DateTime?
+  /// Why cancelled: 'SELLER' / 'LISTING_SOLD' / 'SUPERSEDED' (new drop replaces).
+  cancelReason  String?
+
+  @@index([listingId, status])
+  @@index([status, effectiveAt])
+  @@index([sellerId, requestedAt])
+}
+
+enum PriceChangeStatus {
+  PENDING      // scheduled drop, awaiting effectiveAt
+  APPLIED      // priceHKD updated; originalPriceHKD frozen (if first)
+  CANCELLED    // not applied — see cancelReason
+  DIRECT_EDIT  // instant edit (same or higher price), no delay
 }
 
 model Authenticator {
@@ -102,16 +271,192 @@ model Authenticator {
   displayName              String
   storeName                String?
   categories               Category[]
+  // 演算法生成、不可手改（維持平台中立）
   starRating               Int                 @default(1)
   completedCount           Int                 @default(0)
   disputeRate              Float               @default(0)
+  // 自訂收費（鑑定師自己定；AI 監控/調節 = backlog）
+  feeRatePct               Float               @default(0.05) // 例 0.06 = 收貨價 6%
+  feeMinHKD                Int                 @default(100)
+  // 公開檔案
+  bio                      String?
+  yearsExperience          Int?
+  locationAddress          String?             // 實體店地址（線下交收點）
+  district                 String?             // 區域（旺角 / 觀塘…）
+  businessHours            String?
+  acceptsMeetup            Boolean             @default(false)
   eAndOInsuranceExpiresAt  DateTime?
   status                   AuthenticatorStatus @default(ACTIVE)
   publicProfileUrl         String?
   createdAt                DateTime            @default(now())
 
-  orders Order[]
+  orders   Order[]
+  reviews  AuthenticatorReview[]
+  branches Branch[]
 }
+
+/// Authenticator physical location. Authenticator can have multiple branches;
+/// buyer picks one at checkout for MEETUP_AUTH / MEETUP_3WAY. Order snapshots
+/// the branch data at create-time (see Order.meetupBranchSnapshot) so later
+/// branch edits don't mutate past orders.
+model Branch {
+  id              String        @id @default(cuid())
+  authenticatorId String
+  authenticator   Authenticator @relation(fields: [authenticatorId], references: [id])
+  name            String        // e.g. 「旺角總店」
+  fullAddress     String        // 街道 + 樓宇 + 室號
+  districtKey     String        // SSOT — packages/utils districts.ts
+  businessHours   String?       // per-branch hours; null = inherit auth-level
+  notes           String?       // e.g. 「樓上舖，請按門鈴」
+  // ── 公開聯絡（買家 checkout 揀分店時可以見到）──
+  contactPhone    String?       // 電話 (e.g. "+852 9123 4567")
+  contactWhatsapp String?       // WhatsApp number (digits only, e.g. "85291234567")
+  isActive        Boolean       @default(true)
+  isPrimary       Boolean       @default(false)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  orders          Order[]
+
+  @@index([authenticatorId, isActive])
+}
+
+model AuthenticatorReview {
+  id              String        @id @default(cuid())
+  authenticatorId String
+  authenticator   Authenticator @relation(fields: [authenticatorId], references: [id])
+  orderId         String        @unique // 一張完成單一個評價
+  buyerId         String
+  buyerName       String
+  rating          Int           // 1–5（餵入星級演算法 + 公開顯示）
+  comment         String?
+  createdAt       DateTime      @default(now())
+
+  @@index([authenticatorId])
+}
+
+/// Buyer review of seller — Phase C-1 (separate from AuthenticatorReview)
+model SellerReview {
+  id        String   @id @default(cuid())
+  orderId   String   @unique
+  sellerId  String
+  seller    User     @relation("sellerReviewsReceived", fields: [sellerId], references: [id])
+  buyerId   String
+  buyer     User     @relation("sellerReviewsGiven", fields: [buyerId], references: [id])
+  rating    Int      // 1–5
+  comment   String?
+  /// Default匿名 (founder ruling 2026-06-11). 即使 true，buyer/seller/auth/admin
+  /// 仍可見真名；其他 viewer 見「認證買家」mask。
+  isAnonymous Boolean @default(true)
+  createdAt DateTime @default(now())
+
+  @@index([sellerId])
+}
+
+// ─── Messaging ─────────────────────────────────────────────────────────────
+
+enum MessageRole {
+  BUYER
+  SELLER
+  AUTHENTICATOR
+  SYSTEM
+}
+
+/// Conversation type — supports both the transparent 3-way default and lazy
+/// per-pair private channels (so users don't go off-platform to WhatsApp).
+enum ConversationKind {
+  THREE_WAY       // default: buyer + seller + auth (all SYSTEM messages here)
+  BUYER_SELLER    // private buyer ↔ seller
+  BUYER_AUTH      // private buyer ↔ authenticator
+  SELLER_AUTH     // private seller ↔ authenticator
+}
+
+model Conversation {
+  id        String    @id @default(cuid())
+  // Order-based conversation (after purchase). NO LONGER unique alone — one
+  // order can have multiple Conversation rows distinguished by kind.
+  orderId   String?
+  order     Order?    @relation(fields: [orderId], references: [id])
+  // Listing-based conversation (pre-order inquiry; always BUYER_SELLER)
+  listingId String?
+  listing   Listing?  @relation(fields: [listingId], references: [id])
+  buyerId   String?
+  buyer     User?     @relation("buyerConversations", fields: [buyerId], references: [id])
+  sellerId  String?
+  seller    User?     @relation("sellerConversations", fields: [sellerId], references: [id])
+  // Channel type — controls who can see and what messages go here
+  kind      ConversationKind @default(THREE_WAY)
+  // Denormalized list of participating user IDs (drives WHERE clauses + auth).
+  // Set once at create; never mutates (auth on order is fixed at order create).
+  // Lesson #6: single source-of-truth for membership → no per-role branch drift.
+  participantUserIds String[] @default([])
+  messages  Message[]
+  offers    Offer[]
+  createdAt DateTime  @default(now())
+
+  @@unique([orderId, kind])         // one channel-of-each-kind per order
+  @@unique([listingId, buyerId])    // pre-order inquiry uniqueness preserved
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderId       String?      // null for SYSTEM messages
+  sender         User?        @relation(fields: [senderId], references: [id])
+  senderRole     MessageRole
+  body           String
+  isFiltered     Boolean      @default(false) // blocked by off-platform filter
+  readByBuyer    Boolean      @default(false)
+  readBySeller  Boolean      @default(false)
+  readByAuth    Boolean      @default(false)
+  deletedAt      DateTime?    // soft delete
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// ─── Price Negotiation ─────────────────────────────────────────────────────
+
+enum OfferStatus {
+  PENDING      // active, awaiting response
+  ACCEPTED     // counterparty accepted; listing reserved + payment deadline set
+  REJECTED     // counterparty declined
+  COUNTERED    // counterparty made a counter-offer (child row exists)
+  EXPIRED      // expiresAt passed without response
+  WITHDRAWN    // proposer pulled back / cleared by concurrent acceptance
+}
+
+model Offer {
+  id                  String      @id @default(cuid())
+  conversationId      String
+  conversation        Conversation @relation(fields: [conversationId], references: [id])
+  listingId           String
+  listing             Listing     @relation(fields: [listingId], references: [id])
+  proposedByUserId    String
+  proposedBy          User        @relation("proposedOffers", fields: [proposedByUserId], references: [id])
+  proposedByRole      MessageRole // BUYER or SELLER (use existing role enum)
+  priceHKD            Int
+  status              OfferStatus @default(PENDING)
+  // Counter chain — each round is a new row; parent points to previous
+  parentOfferId       String?     @unique
+  parent              Offer?      @relation("OfferChain", fields: [parentOfferId], references: [id])
+  child               Offer?      @relation("OfferChain")
+  roundNumber         Int         @default(1)
+  // Timestamps
+  createdAt           DateTime    @default(now())
+  expiresAt           DateTime
+  respondedAt         DateTime?
+  acceptedByUserId    String?
+  // After ACCEPTED, buyer must place an order before this deadline
+  paymentDeadlineAt   DateTime?
+
+  @@index([conversationId, createdAt])
+  @@index([status, expiresAt])
+  @@index([status, paymentDeadlineAt])
+}
+
+// ─── Orders ────────────────────────────────────────────────────────────────
 
 model Order {
   id              String         @id @default(cuid())
@@ -124,10 +469,200 @@ model Order {
   authenticatorId String?
   authenticator   Authenticator? @relation(fields: [authenticatorId], references: [id])
   status          OrderStatus    @default(AWAITING_PAYMENT)
-  salePriceHKD   Int
-  authFeeHKD     Int
-  platformFeeHKD Int
-  sellerNetHKD   Int
-  createdAt       DateTime       @default(now())
-  paidAt          DateTime?
+  salePriceHKD    Int
+  authFeeHKD      Int
+  platformFeeHKD  Int
+  sellerNetHKD    Int
+  authVerdict     String?        // PASSED | FAILED | INCONCLUSIVE
+  authNotes       String?
+  // 買家揀嘅交收 / 付款方式
+  deliveryMethod  DeliveryMethod @default(SHIP)
+  paymentMethod   PaymentMethod  @default(ONLINE_ESCROW)
+  meetupLocation  String?        // DEPRECATED — kept for back-compat. Use meetupBranchSnapshot / meetupFreeText.
+  /// MEETUP_AUTH / MEETUP_3WAY only — Branch chosen by buyer (FK)
+  meetupBranchId      String?
+  meetupBranch        Branch?  @relation(fields: [meetupBranchId], references: [id])
+  /// Frozen Branch info snapshot at order create — auth editing branch later
+  /// must NOT mutate completed orders. JSON shape: { name, fullAddress, districtKey, businessHours?, notes? }
+  meetupBranchSnapshot Json?
+  /// MEETUP_DIRECT (no auth) — buyer free-text location
+  meetupFreeText      String?
+  escrowHeld      Boolean        @default(false) // 線上 escrow 是否仍 hold（synced from Payment webhook）
+  // Active payment row for quick lookup. Order can have multiple Payment rows
+  // (retry case) — activePaymentId always points to the latest valid one.
+  activePaymentId String?
+  payments        Payment[]
+  // ── Photo-evidence + dual-ack columns（Phase 4）──────────────────
+  // Receiver-side photos at handover moments. min 3 each, base64 data URLs MVP
+  handoverPhotos       String[]  @default([])  // MEETUP_AUTH Phase A：鑑定師接收影
+  authReceiptPhotos    String[]  @default([])  // SHIP Leg 1：鑑定師收件 unboxing 影
+  deliveryReceiptPhotos String[] @default([])  // SHIP Leg 3：買家收件 unboxing 影；SHIP Tier 1：買家收件影
+  returnPhotos         String[]  @default([])  // FAILED 退貨：鑑定師退回前影
+  // Ack timestamps (counterparty viewing + acknowledging receiver photos)
+  authReceiveAckAt     DateTime?  // MEETUP_AUTH Phase A：鑑定師 ack「我已接收 + 影完相」
+  sellerHandoverAckAt  DateTime?  // 賣家 ack 鑑定師嘅 receipt photos（MEETUP_AUTH + SHIP Leg 1 共用）
+  buyerReceiveAckAt    DateTime?  // 買家 ack 收到（MEETUP_AUTH Phase C 現場 / SHIP Leg 3 unboxing）
+  authDeliveryAckAt    DateTime?  // SHIP Leg 3：鑑定師 ack 買家嘅 unboxing photos
+  sellerDeliveryAckAt  DateTime?  // SHIP Tier 1 (no-auth)：賣家 ack 買家收件
+  returnPhotosUploadedAt DateTime?  // FAILED 退貨：鑑定師上載退貨相時間
+  returnSellerAckAt    DateTime?  // FAILED 退貨：賣家 ack 取回（不阻塞買家退款）
+  // Auto-cancel marker
+  autoCanceledAt       DateTime?  // 7-day timeout 自動取消時間
+  // Custody flag — true 期間鑑定師物理持貨，DISPUTED 時必 true
+  custodyHeld          Boolean   @default(false)
+  // Re-photo loop audit trail (MEETUP_AUTH Phase A)
+  // handoverHistory shape: Array<{ round, photos[], uploadedAt, ackedAt?, rejectedAt?, rejectionPresets?, rejectionComment? }>
+  handoverHistory      Json      @default("[]")
+  rePhotoCount         Int       @default(0)        // = handoverHistory 中已 rejected 嘅 round 數
+  rePhotoRequestedAt   DateTime?                     // 最近一次 reject 時間（SLA 用）
+  // ──────────────────────────────────────────────────────────────────
+  createdAt            DateTime  @default(now())
+  paidAt               DateTime?
+  shippedToAuthAt      DateTime?
+  receivedByAuthAt     DateTime?
+  authCompletedAt      DateTime?
+  shippedToBuyerAt     DateTime?
+  deliveredAt          DateTime?
+  completedAt          DateTime?
+  /// Q2 — 72hr buyer-revoke protection period after completedAt; seller's
+  /// sellerNetHKD only becomes "available" (cashout-eligible) past this moment.
+  /// Set in same tx as completedAt by orders.service when entering COMPLETED.
+  cashoutEligibleAt    DateTime?
+  conversations        Conversation[]   // one per kind (THREE_WAY default + optional pair channels)
+}
+
+/// Stripe-backed payment intent / escrow state. One Order may have multiple
+/// rows over time (retry after decline). Order.activePaymentId points to
+/// the currently-relevant one. webhook handler is authoritative — never let
+/// the client mutate this directly.
+enum PaymentStatus {
+  PENDING_AUTH     // PI created, awaiting buyer card auth (incl. 3DS)
+  AUTHORIZED       // hold confirmed (manual capture) — escrow active
+  CAPTURED         // funds captured (instant charge OR manual capture done)
+  CANCELLED        // hold released, no capture (buyer/admin cancel)
+  REFUNDED         // funds returned after capture
+  FAILED           // PI rejected (card declined / insufficient funds / etc.)
+  EXPIRED          // hold expired (7-day Stripe limit, never captured)
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  orderId       String
+  order         Order         @relation(fields: [orderId], references: [id])
+  amountHKD     Int                            // total buyer pays (sale + auth fee + platform fee)
+  currency      String        @default("HKD")
+  status        PaymentStatus @default(PENDING_AUTH)
+  /// MANUAL = pre-auth + later capture (Tier 2/3); AUTOMATIC = instant charge (Tier 1)
+  captureMode   String        @default("MANUAL")
+  /// User-chosen payment method (CARD / ALIPAY_HK / WECHAT_HK / FPS / APPLE_PAY)
+  method        String?
+  /// Stripe PaymentIntent id (or mock_xxx in dev). Unique per gateway.
+  gatewayRef    String?       @unique
+  /// Stripe hold expiry (typically 7 days). Cron sweeps EXPIRED at this time.
+  holdExpiresAt DateTime?
+  authorizedAt  DateTime?
+  capturedAt    DateTime?
+  cancelledAt   DateTime?
+  refundedAt    DateTime?
+  refundReason  String?
+  /// Stripe failure_code (e.g. "card_declined"); null on success
+  failureCode   String?
+  /// Stripe failure_message; user-facing copy derived in service layer
+  failureMessage String?
+  createdAt     DateTime      @default(now())
+
+  @@index([orderId])
+  @@index([status])
+}
+
+// ── Cashout / Payout (CO Phase) ─────────────────────────────────────
+// 賣家 + 鑑定師 共用同一 PayoutMethod (Q4 shared)。所有 payout mock，
+// 真 FPS / 銀行 / Stripe Connect 整合留 backlog。
+
+enum PayoutMethodType {
+  FPS_PHONE   // 轉數快（手機號碼）
+  FPS_EMAIL   // 轉數快（電郵）
+  FPS_ID      // 轉數快（FPS Identifier 7-digit）
+  BANK_LOCAL  // 本地銀行戶口
+}
+
+enum PayoutStatus {
+  PENDING      // 已提交，等平台處理
+  PROCESSING   // 已發出指令，等銀行 settle
+  SUCCEEDED    // 已到達
+  FAILED       // 銀行拒收 / 帳戶錯誤
+  REVERSED     // 平台主動撤回（爭議 / 合規）
+}
+
+model PayoutMethod {
+  id                String           @id @default(cuid())
+  userId            String
+  user              User             @relation(fields: [userId], references: [id])
+  type              PayoutMethodType
+  /// FPS phone / email / id / bank account number — raw, format helpers in @authentik/utils
+  accountIdentifier String
+  /// Only set when type=BANK_LOCAL (HK clearing code, e.g. "004" for HSBC)
+  bankCode          String?
+  /// Beneficiary name as supplied by user
+  accountName       String
+  /// Soft flag — false → UI shows amber name-mismatch warning (vs User.displayName)
+  nameMatchesKyc    Boolean          @default(true)
+  isDefault         Boolean          @default(false)
+  /// Mock always true; real micro-deposit verify is P1
+  isVerified        Boolean          @default(true)
+  /// Soft delete — keep history intact when user removes a method that has past requests
+  deletedAt         DateTime?
+  createdAt         DateTime         @default(now())
+
+  payoutRequests    PayoutRequest[]
+
+  @@index([userId])
+}
+
+model PayoutRequest {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  payoutMethodId  String
+  payoutMethod    PayoutMethod  @relation(fields: [payoutMethodId], references: [id])
+  /// Frozen Method copy at request time — survives PayoutMethod delete / edit.
+  /// Shape: { type, accountIdentifier, bankCode?, accountName, displayLabel }
+  methodSnapshot  Json
+  amountHKD       Int           // gross requested
+  feeHKD          Int           // platform fee (Q1: admin-configurable via PlatformConfig)
+  netHKD          Int           // amountHKD - feeHKD
+  status          PayoutStatus  @default(PENDING)
+  /// Human-readable, unique. Format: "PO-YYYYMMDD-XXXX"
+  reference       String        @unique
+  failureReason   String?       // BANK_REJECTED / INVALID_ACCOUNT / KYC_REQUIRED / etc.
+  processedAt     DateTime?     // SUCCEEDED / FAILED / REVERSED timestamp
+  createdAt       DateTime      @default(now())
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+/// Generic key-value config (Q1 — admin-tunable platform fees, etc.)
+/// Seed: { key: "payoutFeeHKD", value: { amount: 0 } }
+model PlatformConfig {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+/// Admin action audit log — every destructive admin action recorded here.
+/// Retention: 7 years (Founder ruling 2026-06-11 Q2=A, 金融記錄標準).
+/// PDPO compliance: contains userId references but no PII; safe to keep.
+model AdminAction {
+  id            String   @id @default(cuid())
+  actorId       String   // admin user who did the action
+  targetUserId  String?  // affected user (if user-scoped)
+  targetOrderId String?  // affected order (if order-scoped)
+  action        String   // "user.suspend" | "user.unsuspend" | "user.roleChange" | "order.forceRefund" | ...
+  payload       Json?    // before/after snapshot or reason
+  createdAt     DateTime @default(now())
+
+  @@index([targetUserId, createdAt])
+  @@index([actorId, createdAt])
+  @@index([action, createdAt])
 }

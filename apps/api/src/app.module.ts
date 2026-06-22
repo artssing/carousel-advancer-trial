@@ -7,6 +7,10 @@ import { ListingsModule } from './listings/listings.module';
 import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
 import { AuthenticatorsModule } from './authenticators/authenticators.module';
+import { MessagesModule } from './messages/messages.module';
+import { OffersModule } from './offers/offers.module';
+import { AdminModule } from './admin/admin.module';
+import { WalletModule } from './wallet/wallet.module';
 
 @Module({
   imports: [
@@ -18,6 +22,10 @@ import { AuthenticatorsModule } from './authenticators/authenticators.module';
     OrdersModule,
     PaymentsModule,
     AuthenticatorsModule,
+    MessagesModule,
+    OffersModule,
+    AdminModule,
+    WalletModule,
   ],
 })
 export class AppModule {}

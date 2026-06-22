@@ -16,6 +16,15 @@ const sizeMap = {
   lg: 'h-5 w-5',
 };
 
+/**
+ * Founder ruling 2026-06-21: partial-fill嘅 star — e.g. 4.8 顯示頭 4 顆 100% 填滿
+ * + 第 5 顆由左至右填 80%、右邊 20% 留白。
+ *
+ * Renders two overlapping Star icons per slot:
+ *   - base layer: outline (slate-300)
+ *   - overlay layer: filled (yellow-400), wrapped in a div with width = fill%
+ *     and overflow-hidden — so the partial chunk is precisely cropped.
+ */
 export function StarRating({
   value,
   max = 5,
@@ -23,18 +32,26 @@ export function StarRating({
   className,
   showValue = false,
 }: StarRatingProps) {
-  const stars = Array.from({ length: max }, (_, i) => i < Math.round(value));
+  const sizeClass = sizeMap[size];
   return (
     <span className={cn('inline-flex items-center gap-0.5', className)}>
-      {stars.map((filled, i) => (
-        <Star
-          key={i}
-          className={cn(
-            sizeMap[size],
-            filled ? 'fill-yellow-400 text-yellow-400' : 'fill-none text-slate-300',
-          )}
-        />
-      ))}
+      {Array.from({ length: max }, (_, i) => {
+        const fillPct = Math.max(0, Math.min(1, value - i)) * 100;
+        return (
+          <span key={i} className={cn('relative inline-block', sizeClass)}>
+            <Star className={cn(sizeClass, 'fill-none text-slate-300')} />
+            {fillPct > 0 && (
+              <span
+                className="absolute inset-y-0 left-0 overflow-hidden"
+                style={{ width: `${fillPct}%` }}
+                aria-hidden="true"
+              >
+                <Star className={cn(sizeClass, 'fill-yellow-400 text-yellow-400')} />
+              </span>
+            )}
+          </span>
+        );
+      })}
       {showValue && <span className="ml-1 text-xs text-slate-600">{value.toFixed(1)}</span>}
     </span>
   );

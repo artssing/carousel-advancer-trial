@@ -1,38 +1,112 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle, Badge, StarRating } from '@authentik/ui';
 import { formatHKD } from '@authentik/utils';
 import { TrendingUp, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { api, type InboxOrder, type Me } from '@/lib/api';
 
 export default function DashboardPage() {
+  const [me, setMe] = useState<Me | null>(null);
+  const [orders, setOrders] = useState<InboxOrder[]>([]);
+
+  useEffect(() => {
+    Promise.all([api.me(), api.orders.inbox()])
+      .then(([meData, inbox]) => {
+        setMe(meData);
+        setOrders(inbox);
+      })
+      .catch(() => {});
+  }, []);
+
+  const auth = me?.authenticator;
+  const DONE_STATUSES = ['AUTH_PASSED', 'AUTH_FAILED', 'SHIPPED_TO_BUYER', 'DELIVERED', 'COMPLETED'];
+  const pending = orders.filter((o) => !DONE_STATUSES.includes(o.status));
+  const completed = orders.filter((o) => DONE_STATUSES.includes(o.status));
+  // 面交 PAID 嘅單都算 urgent（鑑定師需要行動）
+  const MEETUP_METHODS = ['MEETUP_AUTH', 'MEETUP_3WAY'];
+  const actionNeeded = pending.filter((o) =>
+    o.status === 'AUTHENTICATING' ||
+    o.status === 'SHIPPED_TO_AUTHENTICATOR' ||
+    (o.status === 'PAID' && MEETUP_METHODS.includes((o as any).deliveryMethod ?? ''))
+  );
+  const nextUrgent = actionNeeded[0];
+  // 本月收入
+  const currentMonth = new Date().toISOString().slice(0, 7);
+  const thisMonthCompleted = completed.filter((o) => (o.createdAt ?? '').startsWith(currentMonth));
+  const monthlyIncome = thisMonthCompleted.reduce((sum, o) => sum + o.authFeeHKD, 0);
+  // 爭議率
+  const disputeRateStr = auth?.disputeRate != null
+    ? `${(auth.disputeRate * 100).toFixed(1)}%`
+    : '0%';
+
   return (
     <div className="mx-auto max-w-5xl px-6 py-8">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="font-display text-2xl font-bold">Milan Station 旺角</h1>
-          <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
-            <StarRating value={5} size="sm" showValue /> · 已鑑定 1,247 件 · 入網 8 個月
-          </div>
+          <h1 className="font-display text-2xl font-bold">
+            {auth?.storeName ?? auth?.displayName ?? '鑑定師 Portal'}
+          </h1>
+          {auth && (
+            <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
+              <StarRating value={auth.starRating} size="sm" showValue />
+              · 已鑑定 {auth.completedCount} 件
+            </div>
+          )}
         </div>
-        <Badge variant="success">Active · E&O 保險有效至 2027-01-31</Badge>
+        {auth && (
+          <Badge variant={auth.status === 'ACTIVE' ? 'success' : 'warning'}>
+            {auth.status === 'ACTIVE' ? 'Active' : auth.status}
+          </Badge>
+        )}
       </div>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <Stat icon={Clock} label="待處理" value="7" hint="2 件 SLA 24h" tint="amber" />
-        <Stat icon={CheckCircle2} label="本月完成" value="89" hint="+12% MoM" tint="emerald" />
-        <Stat icon={TrendingUp} label="本月收入" value={formatHKD(67400)} tint="brand" />
-        <Stat icon={AlertTriangle} label="爭議率" value="0.8%" hint="低於平均" tint="slate" />
+        <Stat icon={Clock} label="需要處理" value={String(actionNeeded.length)} hint={`共 ${pending.length} 件進行中`} tint="amber" />
+        <Stat icon={CheckCircle2} label="本月完成" value={String(thisMonthCompleted.length)} hint={`累計 ${completed.length} 件`} tint="emerald" />
+        <Stat
+          icon={TrendingUp}
+          label="本月收入"
+          value={monthlyIncome > 0 ? formatHKD(monthlyIncome) : 'HK$0'}
+          hint={currentMonth}
+          tint="brand"
+        />
+        <Stat icon={AlertTriangle} label="爭議率" value={disputeRateStr} tint="slate" />
       </div>
 
-      <Card className="mt-6">
-        <CardHeader>
-          <CardTitle>下一單 SLA 倒數</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="rounded-lg bg-amber-50 p-4 text-amber-900">
-            <p className="font-medium">Order #ord_009 · Chanel 19 Bag · HKD 36,500</p>
-            <p className="mt-1 text-sm">收貨於 5 小時前 · 剩 19h 完成鑑定</p>
-          </div>
-        </CardContent>
-      </Card>
+      {actionNeeded.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>需要處理（{actionNeeded.length}）</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {actionNeeded.slice(0, 3).map((o) => (
+              <Link key={o.id} href={`/authenticate/${o.id}`}>
+                <div className="rounded-lg bg-amber-50 p-4 text-amber-900 transition hover:bg-amber-100">
+                  <p className="font-medium">
+                    {o.listing.title} · {formatHKD(o.salePriceHKD)}
+                  </p>
+                  <p className="mt-1 text-sm">#{o.id.slice(0, 8)} · 點擊進入鑑定工作台</p>
+                </div>
+              </Link>
+            ))}
+            {actionNeeded.length > 3 && (
+              <Link href="/inbox" className="block text-center text-sm text-brand-600 hover:underline">
+                查看全部 {actionNeeded.length} 件 →
+              </Link>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {actionNeeded.length === 0 && (
+        <Card className="mt-6">
+          <CardContent className="p-6 text-center text-sm text-slate-400">
+            目前無需要你立即處理嘅訂單。
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
