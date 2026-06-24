@@ -35,8 +35,8 @@ export class ListingsController {
     const skip = Math.max(parseInt(offset ?? '0', 10) || 0, 0);
     const min = minPrice ? parseInt(minPrice, 10) : undefined;
     const max = maxPrice ? parseInt(maxPrice, 10) : undefined;
-    const sortVal: 'newest' | 'priceAsc' | 'priceDesc' =
-      sort === 'priceAsc' || sort === 'priceDesc' ? sort : 'newest';
+    const sortVal: 'newest' | 'priceAsc' | 'priceDesc' | 'relevance' =
+      sort === 'priceAsc' || sort === 'priceDesc' || sort === 'relevance' ? sort : 'newest';
     return this.listings.list(category, take, skip, q, {
       minPrice: Number.isFinite(min!) ? min : undefined,
       maxPrice: Number.isFinite(max!) ? max : undefined,

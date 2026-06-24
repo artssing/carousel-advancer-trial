@@ -18,7 +18,7 @@ import {
 } from '@authentik/ui';
 import {
   sellCategories, categoryById, categoryByApiEnum, tierForPrice,
-  brandsForCategory, hasBrandPicker, brandFieldLabel,
+  brandsForCategory, hasBrandPicker, brandFieldLabel, matchBrandFromTitle,
 } from '@authentik/utils';
 import { api, hasToken, ApiError } from '@/lib/api';
 import { ImagePlus, X } from 'lucide-react';
@@ -147,6 +147,29 @@ export default function SellPage() {
   /** True when user picked 「其他」 and is filling in custom brand name */
   const [brandCustomMode, setBrandCustomMode] = useState(false);
   const brandDropdownRef = useRef<HTMLDivElement>(null);
+  /** Task #47 — smart brand-from-title matching. Tracks whether the current
+   *  `brand` value came from auto-detection (so we can show a dismissible
+   *  hint) vs a manual pick (so we never overwrite a deliberate user choice). */
+  const [brandAutoDetected, setBrandAutoDetected] = useState(false);
+  const [brandTouchedManually, setBrandTouchedManually] = useState(false);
+
+  // Auto-detect brand from title as the seller types — only while they
+  // haven't manually picked/typed a brand themselves (don't fight the user).
+  useEffect(() => {
+    if (isEditMode) return; // never auto-override a prefilled edit
+    if (brandTouchedManually) return;
+    if (!hasBrandPicker(categoryId as any)) return;
+    const hit = matchBrandFromTitle(categoryId as any, title);
+    if (hit) {
+      setBrand(hit.id);
+      setBrandAutoDetected(true);
+    } else if (brandAutoDetected) {
+      // title changed enough that the previous auto-match no longer applies
+      setBrand('');
+      setBrandAutoDetected(false);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, categoryId]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -201,7 +224,8 @@ export default function SellPage() {
   const [pendingOffersDialog, setPendingOffersDialog] = useState<{ count: number } | null>(null);
   const [dropToast, setDropToast] = useState<string | null>(null);
 
-  // Clear brand when category changes — brand list is category-specific
+  // Clear brand when category changes — brand list is category-specific.
+  // Also reset the manual-touch flag so auto-detect can run fresh for the new category.
   function changeCategory(next: string) {
     if (next !== categoryId) {
       setCategoryId(next);
@@ -209,6 +233,8 @@ export default function SellPage() {
       setBrandSearch('');
       setBrandOpen(false);
       setBrandCustomMode(false);
+      setBrandTouchedManually(false);
+      setBrandAutoDetected(false);
     }
   }
 
@@ -741,13 +767,13 @@ export default function SellPage() {
                       <Input
                         autoFocus
                         value={brand}
-                        onChange={(e) => setBrand(e.target.value.slice(0, 40))}
+                        onChange={(e) => { setBrand(e.target.value.slice(0, 40)); setBrandTouchedManually(true); setBrandAutoDetected(false); }}
                         placeholder={`輸入${fieldLabel}名稱（最多 40 字）`}
                         className="flex-1"
                       />
                       <button
                         type="button"
-                        onClick={() => { setBrandCustomMode(false); setBrand(''); }}
+                        onClick={() => { setBrandCustomMode(false); setBrand(''); setBrandTouchedManually(true); setBrandAutoDetected(false); }}
                         className="text-xs text-slate-500 hover:underline"
                       >
                         返回揀預設
@@ -768,6 +794,11 @@ export default function SellPage() {
                               自訂
                             </span>
                           )}
+                          {brandAutoDetected && !isFreeText && selectedLabel && (
+                            <span className="ml-1 rounded bg-emerald-100 px-1 py-0.5 text-[9px] text-emerald-700">
+                              自動偵測
+                            </span>
+                          )}
                         </span>
                         <span className="ml-2 flex items-center gap-2">
                           {selectedLabel && (
@@ -776,6 +807,8 @@ export default function SellPage() {
                                 e.stopPropagation();
                                 setBrand('');
                                 setBrandOpen(false);
+                                setBrandTouchedManually(true);
+                                setBrandAutoDetected(false);
                               }}
                               className="text-xs text-rose-500 hover:underline"
                               title="清除"
@@ -815,6 +848,8 @@ export default function SellPage() {
                                     setBrand(b.id);
                                     setBrandOpen(false);
                                     setBrandSearch('');
+                                    setBrandTouchedManually(true);
+                                    setBrandAutoDetected(false);
                                   }}
                                   className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-brand-50 ${
                                     brand === b.id ? 'bg-brand-50 text-brand-700' : 'text-slate-700'
@@ -834,6 +869,8 @@ export default function SellPage() {
                               setBrandSearch('');
                               setBrand('');
                               setBrandCustomMode(true);
+                              setBrandTouchedManually(true);
+                              setBrandAutoDetected(false);
                             }}
                             className="flex w-full items-center justify-between border-t border-amber-200 bg-amber-50 px-3 py-2 text-left text-sm text-amber-800 transition hover:bg-amber-100"
                           >

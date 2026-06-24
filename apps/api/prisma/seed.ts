@@ -10,8 +10,16 @@ import { tierForPrice } from '@authentik/utils';
 
 const prisma = new PrismaClient();
 
-function pics(_baseIndex: number, _count = 3): string[] {
-  return [];
+// Deterministic placeholder photos so a fresh seed (UAT, or a reset PROD) shows
+// real-looking images instead of the grey placeholder. picsum.photos returns a
+// stable photo per seed string; ListingThumb falls back to its branded gradient
+// onError, so this degrades gracefully offline. Browse cards read
+// `coverUrl ?? images[0]`, so populating images[0] is enough.
+function pics(baseIndex: number, count = 3): string[] {
+  return Array.from(
+    { length: count },
+    (_, i) => `https://picsum.photos/seed/authentik-${baseIndex}-${i}/600/600`,
+  );
 }
 
 // ─── Listing data ─────────────────────────────────────────────────────────────

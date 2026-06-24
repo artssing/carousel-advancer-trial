@@ -46,6 +46,32 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+// Multipart upload — must NOT set Content-Type (browser sets boundary automatically).
+export interface UploadedFile {
+  url: string;
+  mimeType: string;
+  sizeBytes: number;
+}
+async function uploadFile(file: File): Promise<UploadedFile> {
+  const token = getToken();
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(`${API_URL}/uploads`, {
+    method: 'POST',
+    body: form,
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+  if (!res.ok) {
+    let msg = res.statusText;
+    try {
+      const body = await res.json();
+      msg = body.message ?? msg;
+    } catch {}
+    throw new ApiError(res.status, Array.isArray(msg) ? msg.join(', ') : msg);
+  }
+  return res.json() as Promise<UploadedFile>;
+}
+
 export interface AuthenticatorProfile {
   id: string;
   displayName: string;
@@ -246,6 +272,20 @@ export const api = {
         method: 'PATCH',
         body: JSON.stringify({ verdict, notes }),
       }),
+    // Verdict-time evidence — uploads file to storage then commits the metadata row.
+    uploadEvidence: async (orderId: string, file: File): Promise<any> => {
+      const uploaded = await uploadFile(file);
+      return req<any>(`/orders/${orderId}/evidence`, {
+        method: 'POST',
+        body: JSON.stringify({
+          mediaUrl: uploaded.url,
+          mimeType: uploaded.mimeType,
+          sizeBytes: uploaded.sizeBytes,
+          kind: file.type.startsWith('video/') ? 'VIDEO' : 'IMAGE',
+        }),
+      });
+    },
+    listEvidence: (orderId: string) => req<any[]>(`/orders/${orderId}/evidence`),
     startMeetupAuth: (orderId: string) =>
       req<any>(`/orders/${orderId}/start-meetup-auth`, { method: 'PATCH' }),
     // ── Dual-ack flow ──

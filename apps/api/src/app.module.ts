@@ -11,6 +11,7 @@ import { MessagesModule } from './messages/messages.module';
 import { OffersModule } from './offers/offers.module';
 import { AdminModule } from './admin/admin.module';
 import { WalletModule } from './wallet/wallet.module';
+import { StorageModule } from './storage/storage.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { WalletModule } from './wallet/wallet.module';
     OffersModule,
     AdminModule,
     WalletModule,
+    StorageModule,
   ],
 })
 export class AppModule {}

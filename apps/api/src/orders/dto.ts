@@ -44,6 +44,20 @@ export class VerdictDto {
   notes?: string;
 }
 
+export class AddEvidenceDto {
+  @IsString()
+  mediaUrl!: string;
+
+  @IsString()
+  mimeType!: string;
+
+  @IsInt()
+  sizeBytes!: number;
+
+  @IsEnum(['VIDEO', 'IMAGE'])
+  kind!: 'VIDEO' | 'IMAGE';
+}
+
 export class PhotosDto {
   @IsArray()
   @IsString({ each: true })

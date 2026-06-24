@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Category, ListingStatus, PriceChangeStatus } from '@prisma/client';
-import { tierForPrice } from '@authentik/utils';
+import { tierForPrice, normalizeForMatch } from '@authentik/utils';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateListingDto, UpdateListingDto } from './dto';
 
@@ -56,9 +56,19 @@ export class ListingsService {
     limit = 24,
     offset = 0,
     q?: string,
-    opts?: { minPrice?: number; maxPrice?: number; sort?: 'newest' | 'priceAsc' | 'priceDesc'; excludeId?: string; brand?: string },
+    opts?: { minPrice?: number; maxPrice?: number; sort?: 'newest' | 'priceAsc' | 'priceDesc' | 'relevance'; excludeId?: string; brand?: string },
   ) {
     await this.promoteExpiredDrops();
+
+    // Smart search: split the query into terms and require EACH term to appear
+    // in title OR description OR brand (case/diacritic-insensitive). This lets a
+    // buyer type everything at once — "Chanel 全新 黑色" — instead of the old
+    // single-substring match against `title` only (which returned nothing the
+    // moment a buyer combined brand + condition + colour). Parsing of the raw
+    // query into category + residual terms happens client-side via
+    // parseSearchQuery() (SSOT in @authentik/utils); the server just matches.
+    const terms = (q ?? '').split(/\s+/).map((t) => t.trim()).filter(Boolean);
+
     // Founder ruling 2026-06-11: RESERVED listings should still appear in
     // browse/search (Q1). SOLD remains hidden — buyer can still reach via
     // direct URL. DRAFT/REMOVED never appear here.
@@ -66,7 +76,17 @@ export class ListingsService {
       status: { in: [ListingStatus.ACTIVE, ListingStatus.RESERVED] },
       ...(category ? { category } : {}),
       ...(opts?.brand ? { brand: opts.brand } : {}),
-      ...(q ? { title: { contains: q, mode: 'insensitive' as const } } : {}),
+      ...(terms.length
+        ? {
+            AND: terms.map((t) => ({
+              OR: [
+                { title: { contains: t, mode: 'insensitive' as const } },
+                { description: { contains: t, mode: 'insensitive' as const } },
+                { brand: { contains: t, mode: 'insensitive' as const } },
+              ],
+            })),
+          }
+        : {}),
       ...(opts?.excludeId ? { id: { not: opts.excludeId } } : {}),
     };
     if (opts?.minPrice != null || opts?.maxPrice != null) {
@@ -74,38 +94,75 @@ export class ListingsService {
       if (opts.minPrice != null) where.priceHKD.gte = opts.minPrice;
       if (opts.maxPrice != null) where.priceHKD.lte = opts.maxPrice;
     }
+
+    // Browse cards only need coverUrl + meta — exclude heavy fields
+    // (images[] base64 array, videoUrl base64) for query speed.
+    const select = {
+      id: true, sellerId: true, category: true, brand: true, title: true,
+      priceHKD: true, originalPriceHKD: true, tier: true, status: true, createdAt: true,
+      coverUrl: true,           // derived thumbnail (image or video frame)
+      videoUrl: false as const, // huge base64, exclude
+      videoPosterUrl: true,     // small (thumbnail), include for badge fallback
+      videoIsCover: true,
+      images: true,             // keep for backward-compat (older clients)
+      allowedDeliveryMethods: true,
+      sellerDistrict: true,
+      seller: { select: { id: true, displayName: true } },
+    };
+    const decorate = <T extends { videoPosterUrl: string | null }>(it: T) => ({
+      ...it,
+      hasVideo: !!it.videoPosterUrl,
+    });
+
+    // ── Relevance ranking ───────────────────────────────────────────────────
+    // Prisma/Postgres can't ORDER BY a computed text-match score without raw
+    // SQL / full-text indexes, so for the relevance sort we fetch the matching
+    // candidate set, score + sort in memory, then page. Fine at current catalog
+    // scale (hundreds of listings); revisit with Postgres FTS / pg_trgm if the
+    // catalog grows into the tens of thousands. Only runs when explicitly asked
+    // (sort=relevance) AND there are terms to rank by.
+    if (opts?.sort === 'relevance' && terms.length) {
+      const candidates = await this.prisma.listing.findMany({
+        where,
+        // need description for scoring; capped so an unfiltered query can't OOM
+        select: { ...select, description: true },
+        orderBy: { createdAt: 'desc' as const },
+        take: 1000,
+      });
+      const normTerms = terms.map((t) => normalizeForMatch(t));
+      const scored = candidates
+        .map((it) => {
+          const nTitle = normalizeForMatch(it.title);
+          const nBrand = normalizeForMatch(it.brand ?? '');
+          const nDesc = normalizeForMatch(it.description ?? '');
+          let score = 0;
+          for (const t of normTerms) {
+            if (nTitle.includes(t)) score += 3;
+            if (nBrand.includes(t)) score += 2;
+            if (nDesc.includes(t)) score += 1;
+          }
+          // Bonus: title contains the whole query phrase contiguously.
+          if (normTerms.length > 1 && nTitle.includes(normTerms.join(' '))) score += 3;
+          return { it, score };
+        })
+        .sort((a, b) => b.score - a.score || b.it.createdAt.getTime() - a.it.createdAt.getTime());
+      const total = scored.length;
+      const items = scored.slice(offset, offset + limit).map(({ it }) => {
+        const { description, ...rest } = it; // drop description from browse payload
+        return decorate(rest);
+      });
+      return { items, total, hasMore: offset + limit < total };
+    }
+
     const orderBy =
       opts?.sort === 'priceAsc'  ? { priceHKD: 'asc' as const }
       : opts?.sort === 'priceDesc' ? { priceHKD: 'desc' as const }
       : { createdAt: 'desc' as const };
     const [items, total] = await Promise.all([
-      this.prisma.listing.findMany({
-        where, orderBy,
-        // Browse cards only need coverUrl + meta — exclude heavy fields
-        // (images[] base64 array, videoUrl base64) for query speed.
-        select: {
-          id: true, sellerId: true, category: true, brand: true, title: true,
-          priceHKD: true, originalPriceHKD: true, tier: true, status: true, createdAt: true,
-          coverUrl: true,           // derived thumbnail (image or video frame)
-          // hasVideo flag — derive via include below
-          videoUrl: false,          // huge base64, exclude
-          videoPosterUrl: true,     // small (thumbnail), include for badge fallback
-          videoIsCover: true,
-          images: true,             // keep for backward-compat (older clients)
-          allowedDeliveryMethods: true,
-          sellerDistrict: true,
-          seller: { select: { id: true, displayName: true } },
-        },
-        take: limit, skip: offset,
-      }),
+      this.prisma.listing.findMany({ where, orderBy, select, take: limit, skip: offset }),
       this.prisma.listing.count({ where }),
     ]);
-    // Surface hasVideo without sending the base64 body
-    const decorated = items.map((it) => ({
-      ...it,
-      hasVideo: !!it.videoPosterUrl,
-    }));
-    return { items: decorated, total, hasMore: offset + limit < total };
+    return { items: items.map(decorate), total, hasMore: offset + limit < total };
   }
 
   async listForSeller(sellerId: string) {

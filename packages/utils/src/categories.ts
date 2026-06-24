@@ -40,6 +40,11 @@ export interface CategoryConfig {
   /** Onboarding default / AI monitoring baseline — NOT used at checkout */
   authFeeRate: number;
   authFeeMin: number;
+  /** Free-text keywords that map a buyer search query to this category.
+   *  Used by parseSearchQuery() (browse smart search) — match is
+   *  case/diacritic-insensitive substring. Include zh-HK + en + common
+   *  colloquial terms. NOT shown in UI. */
+  searchKeywords?: string[];
 }
 
 export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
@@ -54,6 +59,7 @@ export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
     enabledInSell: true,
     authFeeRate: 0.07,
     authFeeMin: 200,
+    searchKeywords: ['手袋', '袋', '手提包', '銀包', '銀夾', '錢包', 'bag', 'handbag', 'wallet', 'clutch', 'tote', 'purse'],
   },
   iphone: {
     id: 'iphone',
@@ -66,6 +72,7 @@ export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
     enabledInSell: true,
     authFeeRate: 0.035,
     authFeeMin: 80,
+    searchKeywords: ['iphone', 'ipad', 'macbook', 'apple', '蘋果', '手機', '電話', '平板', '筆電', 'mac'],
   },
   pokemon_card: {
     id: 'pokemon_card',
@@ -78,6 +85,7 @@ export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
     enabledInSell: true,
     authFeeRate: 0.06,
     authFeeMin: 100,
+    searchKeywords: ['pokemon', 'pokémon', '寶可夢', '寵物小精靈', '比卡超', '卡', '咭', 'card', 'tcg', 'ptcg', '閃卡', '卡牌'],
   },
   watch: {
     id: 'watch',
@@ -90,6 +98,7 @@ export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
     enabledInSell: false, // 「即將推出」—— Browse 顯示但 sell 暫未開放
     authFeeRate: 0.08,
     authFeeMin: 500,
+    searchKeywords: ['手錶', '錶', '腕錶', '機械錶', 'watch', 'chronograph'],
   },
   sneaker: {
     id: 'sneaker',
@@ -102,6 +111,7 @@ export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
     enabledInSell: false,
     authFeeRate: 0.05,
     authFeeMin: 80,
+    searchKeywords: ['波鞋', '球鞋', '波', '鞋', 'sneaker', 'sneakers', 'shoes', 'kicks'],
   },
   designer_toy: {
     id: 'designer_toy',
@@ -114,6 +124,7 @@ export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
     enabledInSell: false,
     authFeeRate: 0.04,
     authFeeMin: 50,
+    searchKeywords: ['潮玩', '公仔', '盲盒', '盲盒公仔', 'figure', 'toy', 'toys', 'blind box', 'blindbox', 'art toy'],
   },
   other: {
     id: 'other',

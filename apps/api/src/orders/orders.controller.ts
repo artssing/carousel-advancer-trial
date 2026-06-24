@@ -2,7 +2,7 @@ import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@ne
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
 import { OrdersService } from './orders.service';
-import { CreateOrderDto, DisputeDto, PhotosDto, RePhotoRequestDto, ReviewDto, SoftReasonDto, VerdictDto } from './dto';
+import { AddEvidenceDto, CreateOrderDto, DisputeDto, PhotosDto, RePhotoRequestDto, ReviewDto, SoftReasonDto, VerdictDto } from './dto';
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
@@ -76,6 +76,21 @@ export class OrdersController {
     @Body() dto: VerdictDto,
   ) {
     return this.orders.submitVerdict(id, user.userId, dto);
+  }
+
+  /** Commit metadata for a file already uploaded via POST /api/uploads. */
+  @Post(':id/evidence')
+  addEvidence(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+    @Body() dto: AddEvidenceDto,
+  ) {
+    return this.orders.addEvidence(id, user.userId, dto);
+  }
+
+  @Get(':id/evidence')
+  listEvidence(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
+    return this.orders.getEvidence(id, user.userId);
   }
 
   @Patch(':id/ship-to-buyer')

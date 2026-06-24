@@ -17,7 +17,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MessagesService } from '../messages/messages.service';
 import { MessagesGateway } from '../messages/messages.gateway';
 import { PaymentsService } from '../payments/payments.service';
-import type { CreateOrderDto, ReviewDto, VerdictDto } from './dto';
+import type { AddEvidenceDto, CreateOrderDto, ReviewDto, VerdictDto } from './dto';
 
 // 面交類交收（鑑定師面交 / 三方 / 買賣雙方）。SHIP 唔屬於呢類。
 const MEETUP_METHODS: DeliveryMethod[] = [
@@ -690,6 +690,7 @@ export class OrdersService {
     if (order.status !== OrderStatus.CUSTODY) {
       throw new BadRequestException(`Expected CUSTODY, got ${order.status}`);
     }
+    await this.requireEvidence(orderId);
     if (dto.verdict === 'PASSED') {
       const updated = await this.prisma.order.update({
         where: { id: orderId },
@@ -980,6 +981,48 @@ export class OrdersService {
     return { swept: stale.length };
   }
 
+// Authenticator-uploaded verdict-time evidence (video/photo) — separate from the
+  // buyer/seller handover photo columns. Stored via StorageService; this just
+  // commits the metadata row once the client has already uploaded the file.
+  async addEvidence(orderId: string, userId: string, dto: AddEvidenceDto) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { authenticator: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.authenticator?.userId !== userId) throw new ForbiddenException('Not your order');
+    return this.prisma.orderEvidence.create({
+      data: {
+        orderId,
+        uploaderUserId: userId,
+        mediaUrl: dto.mediaUrl,
+        mimeType: dto.mimeType,
+        sizeBytes: dto.sizeBytes,
+        kind: dto.kind,
+      },
+    });
+  }
+
+  // Visible to buyer/seller/authenticator of the order — not a public endpoint.
+  async getEvidence(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { authenticator: true },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    const isParty =
+      order.buyerId === userId || order.sellerId === userId || order.authenticator?.userId === userId;
+    if (!isParty) throw new ForbiddenException('Not your order');
+    return this.prisma.orderEvidence.findMany({ where: { orderId }, orderBy: { createdAt: 'asc' } });
+  }
+
+  private async requireEvidence(orderId: string) {
+    const count = await this.prisma.orderEvidence.count({ where: { orderId } });
+    if (count === 0) {
+      throw new BadRequestException('請至少上載一個鑑定影片 / 圖片證據先可以提交鑑定結果');
+    }
+  }
+
   // Authenticator submits verdict (PASSED / FAILED / INCONCLUSIVE)
   async submitVerdict(orderId: string, userId: string, dto: VerdictDto) {
     const order = await this.prisma.order.findUnique({
@@ -991,6 +1034,7 @@ export class OrdersService {
     if (order.status !== OrderStatus.AUTHENTICATING) {
       throw new BadRequestException(`Expected AUTHENTICATING, got ${order.status}`);
     }
+    await this.requireEvidence(orderId);
     const newStatus =
       dto.verdict === 'PASSED' ? OrderStatus.AUTH_PASSED : OrderStatus.AUTH_FAILED;
     const updated = await this.prisma.order.update({

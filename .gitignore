@@ -9,7 +9,12 @@ coverage
 .env
 .env.local
 .env.*.local
+# Per-environment local config (UAT / PROD) — committed as *.example templates
+.env.prod
+.env.uat
 !.env.example
+!.env.prod.example
+!.env.uat.example
 .vercel
 .idea
 .vscode
@@ -18,3 +23,7 @@ coverage
 # Public test stack runtime state
 .public-state/
 .dev-logs/
+# DB snapshots taken before copy/wipe (scripts/db-copy.sh, db-wipe.sh)
+.backups/
+# Local-disk storage driver output (apps/api/src/storage) — dev only, swap to S3/R2 in prod
+apps/api/uploads/

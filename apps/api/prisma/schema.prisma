@@ -118,6 +118,7 @@ model User {
   listings            Listing[]
   buyerOrders         Order[]        @relation("buyerOrders")
   sellerOrders        Order[]        @relation("sellerOrders")
+  uploadedEvidence    OrderEvidence[]
   authenticator       Authenticator?
   messages            Message[]
   buyerConversations  Conversation[] @relation("buyerConversations")
@@ -529,6 +530,33 @@ model Order {
   /// Set in same tx as completedAt by orders.service when entering COMPLETED.
   cashoutEligibleAt    DateTime?
   conversations        Conversation[]   // one per kind (THREE_WAY default + optional pair channels)
+  evidenceFiles        OrderEvidence[]  // authenticator verdict-time evidence (video/photo) — see EvidenceKind
+}
+
+enum EvidenceKind {
+  VIDEO
+  IMAGE
+}
+
+/// Authenticator verdict-time evidence media (separate from the existing
+/// handover/receipt photo String[] columns above — those cover buyer/seller
+/// handover proof; this covers the authenticator's own examination record
+/// backing PASSED/FAILED/INCONCLUSIVE). Stored via StorageService (local disk
+/// MVP, swappable to S3/R2 — see apps/api/src/storage/). Immutable once
+/// created — dispute/E&O retention requires no post-hoc edit or delete.
+model OrderEvidence {
+  id             String       @id @default(cuid())
+  orderId        String
+  order          Order        @relation(fields: [orderId], references: [id])
+  uploaderUserId String
+  uploader       User         @relation(fields: [uploaderUserId], references: [id])
+  mediaUrl       String
+  mimeType       String
+  sizeBytes      Int
+  kind           EvidenceKind
+  createdAt      DateTime     @default(now())
+
+  @@index([orderId])
 }
 
 /// Stripe-backed payment intent / escrow state. One Order may have multiple

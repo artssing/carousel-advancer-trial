@@ -104,7 +104,7 @@ export const api = {
   listings: {
     list: (
       category?: string, limit = 24, offset = 0, q?: string,
-      opts?: { minPrice?: number; maxPrice?: number; sort?: 'newest' | 'priceAsc' | 'priceDesc'; excludeId?: string; brand?: string },
+      opts?: { minPrice?: number; maxPrice?: number; sort?: 'newest' | 'priceAsc' | 'priceDesc' | 'relevance'; excludeId?: string; brand?: string },
     ) => {
       const params = new URLSearchParams();
       if (category) params.set('category', category);

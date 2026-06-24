@@ -95,17 +95,28 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
   } | null>(null);
 
   // ── Evidence media upload state ────────────────────────────────────────
-  // Stored locally only for now — upload-to-storage API is backlog.
-  // The list is shown to authenticator + their verdict 流程 requires at least 1 file.
+  // Files upload + commit to the server immediately on selection (not held
+  // back until verdict submit) — so a crashed tab / browser refresh doesn't
+  // lose evidence already selected. Server is the source of truth: verdict
+  // submission re-checks committed-evidence count (race-safe), this client
+  // list is just for display + the "uploading in progress" guard.
   interface EvidenceFile {
     id: string;
     file: File;
     previewUrl: string; // object URL (image) or empty (video, we just show name)
     isVideo: boolean;
+    status: 'uploading' | 'done' | 'error';
+    error?: string;
   }
   const [evidence, setEvidence] = useState<EvidenceFile[]>([]);
+  // Server-committed evidence, fetched on load so a re-opened tab shows prior uploads.
+  const [committedEvidence, setCommittedEvidence] = useState<any[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const MAX_EVIDENCE_BYTES = 50 * 1024 * 1024; // 50 MB per file (video can be large)
+  const MAX_EVIDENCE_BYTES = 500 * 1024 * 1024; // 500MB ceiling — matches server ParseFilePipeBuilder cap
+
+  useEffect(() => {
+    api.orders.listEvidence(orderId).then(setCommittedEvidence).catch(() => {});
+  }, [orderId]);
 
   function onEvidenceSelected(e: React.ChangeEvent<HTMLInputElement>) {
     setSubmitError(null);
@@ -113,32 +124,42 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
     const tooBig = files.filter((f) => f.size > MAX_EVIDENCE_BYTES);
     const valid = files.filter((f) => f.size <= MAX_EVIDENCE_BYTES);
     if (tooBig.length > 0) {
-      setSubmitError(`部分檔案大過 50MB，已略過 ${tooBig.length} 個檔案。`);
+      setSubmitError(`部分檔案大過 500MB，已略過 ${tooBig.length} 個檔案。`);
     }
-    if (valid.length === 0) {
-      e.target.value = '';
-      return;
-    }
-    const additions: EvidenceFile[] = valid.map((f) => {
-      const isVideo = f.type.startsWith('video/');
-      return {
-        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        file: f,
-        previewUrl: isVideo ? '' : URL.createObjectURL(f),
-        isVideo,
-      };
-    });
-    setEvidence((prev) => [...prev, ...additions]);
     e.target.value = '';
+    valid.forEach((f) => {
+      const isVideo = f.type.startsWith('video/');
+      const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      setEvidence((prev) => [
+        ...prev,
+        { id, file: f, previewUrl: isVideo ? '' : URL.createObjectURL(f), isVideo, status: 'uploading' },
+      ]);
+      api.orders
+        .uploadEvidence(orderId, f)
+        .then((committed) => {
+          setEvidence((prev) => prev.map((x) => (x.id === id ? { ...x, status: 'done' } : x)));
+          setCommittedEvidence((prev) => [...prev, committed]);
+        })
+        .catch((err) => {
+          setEvidence((prev) =>
+            prev.map((x) => (x.id === id ? { ...x, status: 'error', error: err?.message ?? '上傳失敗' } : x)),
+          );
+        });
+    });
   }
 
+  // Only errored (never-committed) entries can be cleared from the list —
+  // successfully uploaded evidence is immutable once committed server-side.
   function removeEvidence(id: string) {
     setEvidence((prev) => {
       const found = prev.find((x) => x.id === id);
-      if (found?.previewUrl) URL.revokeObjectURL(found.previewUrl);
+      if (found && found.status !== 'done' && found.previewUrl) URL.revokeObjectURL(found.previewUrl);
       return prev.filter((x) => x.id !== id);
     });
   }
+
+  const evidenceUploading = evidence.some((e) => e.status === 'uploading');
+  const evidenceCommittedCount = committedEvidence.length;
 
   // Cleanup object URLs on unmount
   useEffect(() => {
@@ -322,7 +343,11 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
 
   async function onSubmitVerdict() {
     if (!verdict) { setSubmitError('請揀鑑定結果'); return; }
-    if (evidence.length === 0) {
+    if (evidenceUploading) {
+      setSubmitError('證據檔案仲在上載中，請等候完成');
+      return;
+    }
+    if (evidenceCommittedCount === 0) {
       setSubmitError('請至少上載一個鑑定影片 / 圖片證據');
       return;
     }
@@ -868,7 +893,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
               {evidence.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
-                    已揀檔案（{evidence.length}）
+                    已揀檔案（{evidence.length}）· 已上載 {evidenceCommittedCount} 個
                   </p>
                   <div className="space-y-1.5">
                     {evidence.map((ev) => (
@@ -897,15 +922,29 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
                           <p className="text-[10px] text-slate-400">
                             {ev.isVideo ? '影片' : '圖片'} · {(ev.file.size / (1024 * 1024)).toFixed(1)} MB
                           </p>
+                          {ev.status === 'uploading' && (
+                            <p className="text-[10px] text-brand-600">上載中…</p>
+                          )}
+                          {ev.status === 'done' && (
+                            <p className="flex items-center gap-1 text-[10px] text-emerald-600">
+                              <CheckCircle2 className="h-3 w-3" /> 已上載
+                            </p>
+                          )}
+                          {ev.status === 'error' && (
+                            <p className="text-[10px] text-red-600">{ev.error ?? '上載失敗'}</p>
+                          )}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => removeEvidence(ev.id)}
-                          className="shrink-0 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600"
-                          aria-label="移除"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
+                        {ev.status !== 'done' && (
+                          <button
+                            type="button"
+                            onClick={() => removeEvidence(ev.id)}
+                            disabled={ev.status === 'uploading'}
+                            className="shrink-0 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                            aria-label="移除"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>

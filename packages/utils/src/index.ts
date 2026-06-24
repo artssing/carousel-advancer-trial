@@ -2,6 +2,7 @@ export * from './money';
 export * from './tier';
 export * from './categories';
 export * from './brands';
+export * from './search';
 export * from './order-status';
 export * from './districts';
 export * from './payout-methods';

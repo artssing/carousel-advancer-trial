@@ -82,6 +82,70 @@ cd apps/api && npx tsx prisma/seed.ts
 npm run type-check
 ```
 
+## UAT / PROD 環境（2026-06-24 founder 拍板，已完成）
+
+兩套本地環境可**同時並存**，唔同 port + 唔同 database（同一 Postgres container）。Topology SSOT 喺 `scripts/env-config.sh`（start.sh / stop.sh 共用，唔好喺 script 內重複寫 port）。
+
+| | API | Consumer | Authenticator | Admin | Postgres DB (:5432) | env file |
+|---|---|---|---|---|---|---|
+| **prod**（default） | 4000 | 3008 | 3001 | 3003 | `authentik` | `apps/api/.env.prod` |
+| **uat** | 4010 | 3018 | 3011 | 3013 | `authentik_uat` | `apps/api/.env.uat` |
+
+```bash
+./start.sh            # = ./start.sh prod
+./start.sh uat        # 開 UAT（首次自動建 authentik_uat db + seed）
+./start.sh prod && ./start.sh uat   # 兩套一齊行
+./stop.sh uat         # 只停 UAT（Postgres + PROD 不受影響）
+./stop.sh prod        # 只停 PROD
+./stop.sh             # = ./stop.sh all（停兩套 + Postgres）
+```
+
+- 前端用 `next dev -p <port>` 直接起（唔經 package.json hardcode 嘅 -p），並由 start.sh 注入 `NEXT_PUBLIC_API_URL` 等指向該環境 API。
+- `.env.prod` / `.env.uat` 係 gitignored，committed 版本係 `*.example`。新機 copy example 即用。
+- Schema 同步用 `prisma db push --accept-data-loss`（呢個 project schema SSOT 係 schema.prisma 經 db push，唔係 migration；fresh db 用 migrate deploy 會缺 column 如 emailVerified）。
+- ⚠️ **stop 必須殺 `nest --watch` supervisor**：`nest start --watch` 嘅 app 係 child（bind port），supervisor 唔 bind port。淨係 port-kill 會令 supervisor respawn child → 環境「自己番生」。`./stop.sh <env>` 經 port listener 嘅 parent（nest/npx）殺埋 supervisor；前端用 `next dev -p <port>` argv pkill。Lesson：任何用 watcher/supervisor 嘅 dev process，stop 要殺成棵 tree 唔淨係 port listener。
+- Fresh seed 有圖：`seed.ts` `pics()` 返 deterministic `picsum.photos/seed/...`（ListingThumb onError fallback gradient，offline 都唔爆）。browse card 用 `coverUrl ?? images[0]`。
+
+### 環境角色 + Release workflow（2026-06-24 founder 拍板 — 必須遵守）
+
+> **「所有嘢喺 UAT 測試完，先 deploy 去 PROD。」** PROD 唔係玩具場，係交付目標。
+
+| 環境 | 角色 | 資料 | Auto-seed |
+|------|------|------|-----------|
+| **UAT** | 測試 / 驗收場 | demo / 測試 data（可隨時 reset、reseed、亂玩）| ✅ 空就 auto-seed |
+| **PROD** | Deploy 目標 | **保持 clean**；只經真實使用或 explicit promote 入 data | ❌ **永不 auto-seed**（`start.sh` 已 gate） |
+
+**Workflow**：開發 → `./start.sh uat` 測試/驗收 → 通過 → 至 deploy 去 PROD。
+
+**DB 管理 script**（都會先寫備份去 `.backups/`，可還原）：
+```bash
+scripts/db-copy.sh prod uat     # 將 PROD 資料 migrate 落 UAT（攞真實資料測試）
+scripts/db-copy.sh uat  prod    # promote：UAT 驗收完嘅資料 deploy 上 PROD
+scripts/db-wipe.sh prod         # 清空 PROD data（保留 schema）
+# 還原：drop+create 該 db 後 `psql -d <db> < .backups/<file>.sql`
+```
+
+⚠️ **重要 caveat（唔好被誤導）**：呢個 UAT/PROD split 只隔離 **data + schema + port**，**唔隔離 code** —— 兩套行緊**同一個 working tree**（同一份 `next dev` / `nest` source）。所以改 code 會即時喺兩個環境生效；「UAT 先測」保護嘅係**資料**同**可重複驗收流程**，唔係 code-level staging。
+
+### Backlog — 完整 release pipeline（仍未做）
+
+要達到「真正 UAT 測完先上 PROD」嘅 code-level isolation，仲缺：
+
+1. **Version control 釘版本**
+   - PROD branch（e.g. `release/prod`）只接收已通過 UAT 嘅 commit；`main` = UAT 流動 HEAD
+   - Tag 每個 PROD release（`v0.x.y`）+ 自動 changelog
+   - PR template 強制：UAT 驗收 checklist、screenshot、reviewer sign-off
+2. **Per-env build artifact**
+   - UAT 行 `next dev` / `nest start --watch`（即改即見，hot reload）
+   - PROD 行 **build artifact**：`next build && next start` + `nest build && node dist/main.js`（鎖定版本，code change 唔會即時 leak）
+   - `start.sh prod` 改用 artifact mode；artifact 由 CI 產生 + 簽 hash
+3. **CI/CD automation**（GitHub Actions / 同等）
+   - Push `main` → run `npm run type-check` + lint + 任何 unit/integration test → 自動 deploy 去 UAT
+   - Merge `main → release/prod` 觸發 PROD deploy（行 `db push` schema sync、唔 seed、reload artifact）
+   - 失敗自動 rollback（保留前一個 artifact + 自動 restore `.backups/` 嘅 DB snapshot）
+4. **真雲端 PROD**（最終態）：managed Postgres（Neon / Supabase）+ R2 object storage + 真 Stripe / Sumsub，唔再 mock；UAT 用 staging-tier 同類 service。
+5. **DB migration discipline**：而家用 `prisma db push`，去 PROD 之前要切換去 `prisma migrate` workflow（write migration files、reviewable、reversible），先唔會「fresh DB 缺欄」呢類 bug 上雲端重演。
+
 ## Demo accounts
 
 詳細列表喺 **`docs/demo-accounts.md`**。Quick seed：
@@ -109,6 +173,16 @@ Pre-seeded listings (DEMO-A 到 DEMO-E) + Carol PENDING offer scenario，詳見 
 | Prisma schema | `apps/api/prisma/schema.prisma` |
 | Order state machine | `apps/api/src/orders/orders.service.ts` |
 | Consumer API client | `apps/consumer/lib/api.ts` |
+| Brand title-matching (sell auto-detect) | `packages/utils/src/brands.ts` (`matchBrandFromTitle` / `matchBrandAcrossCategories`) |
+| Buyer search query parsing (browse smart search) | `packages/utils/src/search.ts` (`parseSearchQuery`) |
+
+## Browse smart search（2026-06-24 founder 拍板，已完成）
+
+客人可以**一次過打曬**品牌+品類+物料+condition（例：「Chanel 手袋 Caviar 金扣」）：
+- `parseSearchQuery()`（SSOT，`packages/utils/src/search.ts`）由 query 抽出 **category**（category keyword，或由品牌反推，例 Birkin→handbag），**自動套做 filter + 可移除 chip**（透明可逆，唔 silent override）；其餘字（品牌/型號/顏色/condition）留做 ranked search terms。
+- API `listings.list()` 改為 **tokenized 多 term match**（每個 term 喺 title|description|brand 任一中 = AND），取代舊「整句單一 substring match title」（舊行為一打多個字就 0 result）。
+- `sort=relevance`：有 query 時 default 排序，in-memory 評分（title +3 / brand +2 / desc +1 / 整句 bonus），catalog 規模細用 JS ranking，大個再上 Postgres FTS。
+- Condition（全新/9成新/二手…）冇結構化欄位 → 純文字 token 搜 title+description（founder 揀 MVP，無 migration）。
 
 ## Founder rulings
 

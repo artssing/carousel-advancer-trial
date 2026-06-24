@@ -11,7 +11,7 @@ import { Search } from 'lucide-react';
 import { Card, CardContent, TierPill, Button, ListingThumb } from '@authentik/ui';
 import {
   formatHKD, tierForPrice, browseCategories, categoryById, categoryByApiEnum, formatSavings,
-  brandsForCategory, hasBrandPicker, brandFieldLabel, brandLabel,
+  brandsForCategory, hasBrandPicker, brandFieldLabel, brandLabel, parseSearchQuery,
 } from '@authentik/utils';
 import { api } from '@/lib/api';
 
@@ -63,7 +63,11 @@ export default function BrowsePage() {
   const searchParams = useSearchParams();
   const category = searchParams?.get('cat') ?? null;
   const searchQuery = searchParams?.get('q') ?? '';
-  const sort = (searchParams?.get('sort') as 'newest' | 'priceAsc' | 'priceDesc' | null) ?? 'newest';
+  // Default to relevance ranking whenever there's a search query (so the best
+  // match floats to the top); otherwise newest. Explicit sort param always wins.
+  const sort =
+    (searchParams?.get('sort') as 'newest' | 'priceAsc' | 'priceDesc' | 'relevance' | null) ??
+    (searchQuery ? 'relevance' : 'newest');
   const minPriceStr = searchParams?.get('min') ?? '';
   const maxPriceStr = searchParams?.get('max') ?? '';
   const minPrice = minPriceStr ? Number(minPriceStr) : undefined;
@@ -140,7 +144,24 @@ export default function BrowsePage() {
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = inputValue.trim();
-    navigate(buildUrl(category, trimmed));
+    if (!trimmed) {
+      navigate(buildUrl(category, ''));
+      return;
+    }
+    // Smart parse: pull a category out of the query (auto-applied as a filter,
+    // shown as a removable chip). Keep the FULL query text in `q` so the search
+    // box + 搜尋 chip still show exactly what the customer typed — the category
+    // keyword is only stripped internally when building the API call (see
+    // `apiSearch` below), not from what the user sees.
+    // A fresh search expresses fresh intent: if it detects a category, switch to
+    // it (so "iphone 17 pro" → then "Chanel 手袋…" correctly re-targets handbag,
+    // not stuck on the previous iphone filter). Only fall back to the current
+    // category when the new query detects none (e.g. just "256gb").
+    const parsed = parseSearchQuery(trimmed);
+    const nextCat = parsed.categoryId ?? category;
+    // Category changed → clear stale brand sub-filter (brand list is per-category).
+    const brandOpt = nextCat !== category ? { brand: null as string | null } : {};
+    navigate(buildUrl(nextCat, trimmed, { sort: 'relevance', ...brandOpt }));
   }
   function applyPriceFilter(e: React.FormEvent) {
     e.preventDefault();
@@ -149,13 +170,27 @@ export default function BrowsePage() {
     const cleanMax = maxInput && Number(maxInput) > 0 ? maxInput : '';
     navigate(buildUrl(category, searchQuery, { min: cleanMin, max: cleanMax }));
   }
-  function setSort(s: 'newest' | 'priceAsc' | 'priceDesc') {
+  function setSort(s: 'newest' | 'priceAsc' | 'priceDesc' | 'relevance') {
     navigate(buildUrl(category, searchQuery, { sort: s }));
   }
   function clearAllFilters() {
     setMinInput(''); setMaxInput('');
     navigate(buildUrl(category, '', { sort: 'newest', min: '', max: '' }));
   }
+
+  // The query text actually sent to the API for matching/ranking. We show the
+  // FULL query in the search box + chip, but when the auto-detected category is
+  // applied as a filter we strip its keyword from the API terms — otherwise the
+  // word (e.g. 「手袋」) would be required in title/desc/brand text too and
+  // over-filter. If the user removed/changed the category, the full text is used.
+  const apiSearch = (() => {
+    if (!searchQuery) return undefined;
+    const parsed = parseSearchQuery(searchQuery);
+    if (category && category === parsed.categoryId) {
+      return parsed.terms.join(' ') || undefined;
+    }
+    return searchQuery;
+  })();
 
   // ── Load first page when filters change ─────────
   useEffect(() => {
@@ -167,7 +202,7 @@ export default function BrowsePage() {
 
     const enumVal = categoryById(category)?.apiEnum;
     api.listings
-      .list(enumVal, pageSize, 0, searchQuery || undefined, {
+      .list(enumVal, pageSize, 0, apiSearch, {
         minPrice, maxPrice, sort, brand: brand ?? undefined,
       })
       .then(({ items, total: t, hasMore: more }) => {
@@ -179,7 +214,7 @@ export default function BrowsePage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [category, brand, searchQuery, pageSize, sort, minPrice, maxPrice]);
+  }, [category, brand, apiSearch, pageSize, sort, minPrice, maxPrice]);
 
   // ── loadMore ──────────────────────────────────────────────────────────────
   const loadMore = useCallback(() => {
@@ -191,7 +226,7 @@ export default function BrowsePage() {
     const currentOffset = offsetRef.current;
 
     api.listings
-      .list(enumVal, pageSize, currentOffset, searchQuery || undefined, {
+      .list(enumVal, pageSize, currentOffset, apiSearch, {
         minPrice, maxPrice, sort, brand: brand ?? undefined,
       })
       .then(({ items, hasMore: more }) => {
@@ -205,7 +240,7 @@ export default function BrowsePage() {
         loadingMoreRef.current = false;
         setLoadingMore(false);
       });
-  }, [category, searchQuery, pageSize, sort, minPrice, maxPrice]);
+  }, [category, brand, apiSearch, pageSize, sort, minPrice, maxPrice]);
 
   const loadMoreRef = useRef(loadMore);
   useEffect(() => { loadMoreRef.current = loadMore; });
@@ -323,6 +358,8 @@ export default function BrowsePage() {
         <div className="flex items-center gap-1">
           <span className="text-slate-500">排序：</span>
           {([
+            // 相關度 only makes sense (and is the default) when searching.
+            ...(searchQuery ? [['relevance', '相關度'] as const] : []),
             ['newest',    '最新'],
             ['priceAsc',  '價低 ↑'],
             ['priceDesc', '價高 ↓'],
@@ -377,7 +414,9 @@ export default function BrowsePage() {
       </div>
 
       {/* ── Active filters indicator ───────────────────────────────────────── */}
-      {(sort !== 'newest' || minPrice || maxPrice || searchQuery || category) && (
+      {/* relevance is the implicit default while searching — not advertised as a
+          removable filter chip (only the explicit price sorts are). */}
+      {(sort === 'priceAsc' || sort === 'priceDesc' || minPrice || maxPrice || searchQuery || category) && (
         <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px]">
           <span className="text-slate-400">篩選中：</span>
           {category && (
@@ -392,10 +431,10 @@ export default function BrowsePage() {
               <button onClick={() => navigate(buildUrl(category, ''))} aria-label="移除搜尋">×</button>
             </span>
           )}
-          {sort !== 'newest' && (
+          {(sort === 'priceAsc' || sort === 'priceDesc') && (
             <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">
               排序：{sort === 'priceAsc' ? '價低→高' : '價高→低'}
-              <button onClick={() => setSort('newest')} aria-label="重設排序">×</button>
+              <button onClick={() => setSort(searchQuery ? 'relevance' : 'newest')} aria-label="重設排序">×</button>
             </span>
           )}
           {(minPrice || maxPrice) && (
