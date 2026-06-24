@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { ConfirmDialog } from '@authentik/ui';
 import { api } from '@/lib/api';
 
 type Row = {
@@ -173,6 +174,9 @@ function UserDrawer({ userId, onClose, onChanged }: { userId: string; onClose: (
   const [suspendOpen, setSuspendOpen] = useState(false);
   const [suspendReason, setSuspendReason] = useState('');
   const [busy, setBusy] = useState(false);
+  // Unsuspend confirm dialog — retires window.confirm so the UX is consistent
+  // with the styled suspend panel sitting next to it (founder ruling 2026-06-24).
+  const [unsuspendConfirmOpen, setUnsuspendConfirmOpen] = useState(false);
 
   function load() {
     setLoading(true); setErr(null);
@@ -198,8 +202,11 @@ function UserDrawer({ userId, onClose, onChanged }: { userId: string; onClose: (
     }
   }
 
-  async function doUnsuspend() {
-    if (!confirm('確定恢復此帳戶？')) return;
+  function doUnsuspend() {
+    setUnsuspendConfirmOpen(true);
+  }
+  async function doUnsuspendConfirmed() {
+    setUnsuspendConfirmOpen(false);
     setBusy(true); setErr(null);
     try {
       await api.admin.unsuspendUser(userId);
@@ -651,6 +658,25 @@ function UserDrawer({ userId, onClose, onChanged }: { userId: string; onClose: (
           </div>
         )}
       </div>
+
+      {/* Unsuspend confirm — reversible but consequential, so we use warning
+          severity. Replaces window.confirm('確定恢復此帳戶？') for consistency
+          with the styled suspend panel above. */}
+      <ConfirmDialog
+        open={unsuspendConfirmOpen}
+        onCancel={() => setUnsuspendConfirmOpen(false)}
+        onConfirm={() => doUnsuspendConfirmed()}
+        title="恢復此帳戶？"
+        description={
+          <p>
+            用戶將立刻可以登入並使用平台。如稍後需要再停用，可以再撳「暫停帳戶」。
+          </p>
+        }
+        confirmLabel="確認恢復"
+        cancelLabel="取消"
+        severity="warning"
+        busy={busy}
+      />
     </div>
   );
 }

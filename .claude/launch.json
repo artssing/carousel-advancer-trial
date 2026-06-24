@@ -21,6 +21,13 @@
       "runtimeArgs": ["run", "dev:admin"],
       "port": 3003,
       "autoPort": false
+    },
+    {
+      "name": "authenticator-uat",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["/Users/admin/Desktop/claude/carousel-advancer-trial/scripts/dev-authenticator-uat.sh"],
+      "port": 3011,
+      "autoPort": false
     }
   ]
 }

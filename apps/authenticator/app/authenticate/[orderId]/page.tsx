@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Button, Card, CardContent, CardHeader, CardTitle, Label, Input, Badge,
-  HandoverHistoryTimeline, type HandoverRound,
+  HandoverHistoryTimeline, type HandoverRound, ConfirmDialog,
 } from '@authentik/ui';
 
 const MAX_REPHOTO = 2;
@@ -80,6 +80,14 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
   const [signature, setSignature] = useState('');
   const [busy, setBusy] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  /** Verdict confirm dialog — gates the irreversible verdict submit so a stray
+   *  click can't release escrow / refund. Opens after preflight validation
+   *  (verdict + evidence + signature checks) so the dialog only appears when
+   *  the submit would otherwise be valid. */
+  const [verdictConfirmOpen, setVerdictConfirmOpen] = useState(false);
+  /** Dispute confirm dialog — replaces window.prompt with a styled UI that
+   *  also captures the reason in the dialog itself (requireReason). */
+  const [disputeConfirmOpen, setDisputeConfirmOpen] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
   const [me, setMe] = useState<{ id: string } | null>(null);
@@ -319,12 +327,16 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
     } finally { setBusy(false); }
   }
 
-  async function onDispute() {
-    const reason = window.prompt('請輸入爭議原因：');
-    if (!reason?.trim()) return;
+  function onDispute() {
+    setDisputeConfirmOpen(true);
+  }
+  async function doDispute(reason?: string) {
+    setDisputeConfirmOpen(false);
+    const r = (reason ?? '').trim();
+    if (!r) return; // dialog already gates this, belt-and-braces
     setBusy(true); setSubmitError(null);
     try {
-      const updated = await api.orders.dispute(orderId, reason);
+      const updated = await api.orders.dispute(orderId, r);
       setOrder(updated);
     } catch (e: any) {
       setSubmitError(e instanceof ApiError ? e.message : '操作失敗');
@@ -341,7 +353,10 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
     } finally { setBusy(false); }
   }
 
-  async function onSubmitVerdict() {
+  // Button click → preflight validation → open ConfirmDialog. The dialog's
+  // onConfirm calls doSubmitVerdict(). Splitting it this way keeps validation
+  // errors inline (above the button) instead of buried inside the dialog.
+  function onSubmitVerdict() {
     if (!verdict) { setSubmitError('請揀鑑定結果'); return; }
     if (evidenceUploading) {
       setSubmitError('證據檔案仲在上載中，請等候完成');
@@ -352,6 +367,16 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
       return;
     }
     if (!signature.trim()) { setSubmitError('請輸入電子簽名（你的全名）'); return; }
+    setSubmitError(null);
+    setVerdictConfirmOpen(true);
+  }
+
+  async function doSubmitVerdict() {
+    // Re-assert the preflight invariant: dialog only opens after onSubmitVerdict
+    // validates verdict !== null. The guard satisfies TS narrowing across the
+    // function boundary + is a belt-and-braces safety against any future caller.
+    if (!verdict) return;
+    setVerdictConfirmOpen(false);
     setBusy(true); setSubmitError(null);
     try {
       // MEETUP_AUTH dual-ack flow uses separate verdict endpoint;
@@ -1107,8 +1132,69 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
                 <FileSignature className="mr-2 h-4 w-4" />
                 {busy ? '提交中…' : '簽名並提交鑑定結果'}
               </Button>
+
+              {/* Irreversible verdict — confirm dialog gates the submit so a
+                  stray click can't release escrow / refund. Founder ruling
+                  2026-06-24: critical actions need a styled confirm step. */}
+              <ConfirmDialog
+                open={verdictConfirmOpen}
+                onCancel={() => setVerdictConfirmOpen(false)}
+                onConfirm={() => { doSubmitVerdict(); }}
+                title={
+                  verdict === 'PASSED' ? '確認提交：真品（PASSED）'
+                  : verdict === 'FAILED' ? '確認提交：假貨（FAILED）'
+                  : '確認提交：無法判定（INCONCLUSIVE）'
+                }
+                description={
+                  <div className="space-y-2">
+                    <p>
+                      {verdict === 'PASSED'
+                        ? <>提交後將通知買家到場取貨，escrow 將於買家確認收貨後釋放畀賣家。</>
+                        : verdict === 'FAILED'
+                        ? <>提交後買家將獲<strong className="text-red-700">全額退款</strong>，貨品退回賣家。</>
+                        : <>提交後訂單轉入爭議流程，平台會介入處理。</>}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      訂單貨價：<span className="font-medium text-slate-700">{formatHKD(order.salePriceHKD ?? 0)}</span>
+                      ｜ 鑑定費：<span className="font-medium text-slate-700">{formatHKD(order.authFeeHKD)}</span>
+                    </p>
+                    <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
+                      ⚠️ 鑑定結果提交後<strong>不可撤回</strong>。鑑定錯誤將按合約 + E&O 保險條款追償。
+                    </p>
+                  </div>
+                }
+                confirmLabel={
+                  verdict === 'PASSED' ? '我確認，提交真品結果'
+                  : verdict === 'FAILED' ? '我確認，提交假貨結果'
+                  : '我確認，提交無法判定'
+                }
+                cancelLabel="再睇下"
+                severity={verdict === 'FAILED' ? 'danger' : 'warning'}
+                busy={busy}
+              />
             </CardContent>
           </Card>
+
+          {/* Dispute confirm — replaces window.prompt. Requires reason so the
+              dispute log always carries a justification from the authenticator. */}
+          <ConfirmDialog
+            open={disputeConfirmOpen}
+            onCancel={() => setDisputeConfirmOpen(false)}
+            onConfirm={(reason) => doDispute(reason)}
+            title="提出爭議"
+            description={
+              <p>
+                提出後訂單會凍結，平台會介入處理。請清楚簡述原因（將寫入 audit log，買賣雙方可見）。
+              </p>
+            }
+            confirmLabel="提交爭議"
+            cancelLabel="取消"
+            severity="warning"
+            busy={busy}
+            requireReason
+            reasonLabel="爭議原因"
+            reasonPlaceholder="例：商品同 listing 描述不符；證據相發現偽造痕跡…"
+          />
         </>
       )}
     </div>

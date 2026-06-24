@@ -13,7 +13,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Badge, Button, Card, CardContent, CardHeader, CardTitle, ListingThumb,
-  HandoverHistoryTimeline, RE_PHOTO_PRESETS, type HandoverRound,
+  HandoverHistoryTimeline, RE_PHOTO_PRESETS, type HandoverRound, ConfirmDialog,
 } from '@authentik/ui';
 import { formatHKD, getStatusLabel, districtLabel, categoryByApiEnum } from '@authentik/utils';
 
@@ -68,11 +68,19 @@ export default function OrderDetailPage() {
   // Cancel confirm (inline 2-step, lesson #16)
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  /** Dispute confirm dialog — retires window.prompt for styled UI + clear
+   *  warning that escalation cannot be silently undone. Reason captured by
+   *  the dialog's built-in textarea (requireReason). */
+  const [disputeConfirmOpen, setDisputeConfirmOpen] = useState(false);
 
-  async function onDispute() {
-    const reason = window.prompt('請輸入爭議原因（簡述）：');
-    if (!reason?.trim()) return;
-    await doAction('提出爭議', () => api.orders.dispute(order.id, reason.trim()));
+  function onDispute() {
+    setDisputeConfirmOpen(true);
+  }
+  async function doDispute(reason?: string) {
+    setDisputeConfirmOpen(false);
+    const r = (reason ?? '').trim();
+    if (!r) return; // dialog already gates this, belt-and-braces
+    await doAction('提出爭議', () => api.orders.dispute(order.id, r));
   }
 
   function toggleRePhotoPreset(p: string) {
@@ -755,6 +763,28 @@ export default function OrderDetailPage() {
           }
         />
       )}
+
+      {/* Dispute confirm — escalates a PAID order into the dispute pipeline.
+          requireReason forces the buyer/seller to state the issue before
+          submit. Replaces the old window.prompt() flow. */}
+      <ConfirmDialog
+        open={disputeConfirmOpen}
+        onCancel={() => setDisputeConfirmOpen(false)}
+        onConfirm={(reason) => doDispute(reason)}
+        title="提出爭議"
+        description={
+          <p>
+            提出爭議後，訂單會凍結，平台同鑑定師會介入處理。請清楚簡述問題（例如商品狀況不符 / 收唔到貨 / 收款異常）。
+          </p>
+        }
+        confirmLabel="提交爭議"
+        cancelLabel="取消"
+        severity="warning"
+        busy={busy}
+        requireReason
+        reasonLabel="爭議原因"
+        reasonPlaceholder="例：貨品同 listing 描述不符；外觀有刮花…"
+      />
     </div>
   );
 }

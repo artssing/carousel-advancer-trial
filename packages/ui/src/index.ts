@@ -17,3 +17,5 @@ export type {
 export { PayoutDisclaimer } from './components/payout-disclaimer';
 export { ListingThumb } from './components/listing-thumb';
 export type { ListingThumbProps } from './components/listing-thumb';
+export { ConfirmDialog } from './components/confirm-dialog';
+export type { ConfirmDialogProps } from './components/confirm-dialog';
