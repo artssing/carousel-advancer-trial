@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  Users, ShieldCheck, ShoppingBag, AlertOctagon, Wallet, FileSearch, BarChart3, LayoutDashboard, FileCheck, LogOut, Settings, TrendingDown,
+  Users, ShieldCheck, ShoppingBag, AlertOctagon, Wallet, FileSearch, BarChart3, LayoutDashboard, FileCheck, LogOut, Settings, TrendingDown, Megaphone,
 } from 'lucide-react';
 import { clearToken } from '@/lib/api';
 
@@ -11,6 +11,7 @@ const nav = [
   { href: '/', label: 'Overview', icon: LayoutDashboard },
   { href: '/users', label: 'Users', icon: Users },
   { href: '/users/kyc', label: 'KYC Queue', icon: FileCheck },
+  { href: '/banners', label: 'Emergency Banners', icon: Megaphone },
   { href: '/disputes', label: 'Disputes', icon: AlertOctagon },
   { href: '/authenticators', label: 'Authenticators', icon: ShieldCheck },
   { href: '/orders', label: 'Orders', icon: ShoppingBag },

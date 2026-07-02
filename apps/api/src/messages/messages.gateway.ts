@@ -41,19 +41,46 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
       const userId = payload.sub;
       (client as any).userId = userId;
       this.socketUserMap.set(client.id, userId);
-      // Auto-join personal room so seller/buyer/auth can receive real-time
-      // messages for any of their conversations without explicit joins.
       client.join(`user:${userId}`);
+
+      // Update lastSeenAt + broadcast online presence to conv rooms + peer user rooms
+      await this.messages.updateLastSeen(userId);
+      const rooms = await this.messages.getUserConversationRooms(userId);
+      for (const room of rooms) {
+        client.to(room).emit('presence', { userId, online: true });
+      }
+      const peerIds = await this.messages.getConversationPeerIds(userId);
+      for (const peerId of peerIds) {
+        client.to(`user:${peerId}`).emit('presence', { userId, online: true });
+      }
     } catch {
       client.disconnect();
     }
   }
 
-  handleDisconnect(client: Socket) {
+  async handleDisconnect(client: Socket) {
+    const userId = this.socketUserMap.get(client.id);
     this.socketUserMap.delete(client.id);
+    if (!userId) return;
+
+    // Update lastSeenAt + broadcast offline presence to conv rooms + peer user rooms
+    const lastSeenAt = new Date().toISOString();
+    try {
+      await this.messages.updateLastSeen(userId);
+      const rooms = await this.messages.getUserConversationRooms(userId);
+      for (const room of rooms) {
+        this.server.to(room).emit('presence', { userId, online: false, lastSeenAt });
+      }
+      const peerIds = await this.messages.getConversationPeerIds(userId);
+      for (const peerId of peerIds) {
+        this.server.to(`user:${peerId}`).emit('presence', { userId, online: false, lastSeenAt });
+      }
+    } catch {
+      // Swallow: user may have been deleted
+    }
   }
 
-  /** Client joins a conversation room (order-based, listing-based, or by conversationId) */
+  /** Client joins a conversation room */
   @SubscribeMessage('join')
   async handleJoin(
     @ConnectedSocket() client: Socket,
@@ -64,7 +91,6 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
 
     try {
       if (data?.conversationId) {
-        // Generic path: verify access by loading messages, then join conv room
         await this.messages.getMessagesByConversationId(data.conversationId, userId);
         client.join(`conv:${data.conversationId}`);
         client.emit('joined', { conversationId: data.conversationId });
@@ -87,8 +113,9 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   @SubscribeMessage('leave')
   handleLeave(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { orderId?: string; listingId?: string },
+    @MessageBody() data: { orderId?: string; listingId?: string; conversationId?: string },
   ) {
+    if (data?.conversationId) client.leave(`conv:${data.conversationId}`);
     if (data?.orderId) client.leave(`order:${data.orderId}`);
     if (data?.listingId) {
       const userId = (client as any).userId;
@@ -96,64 +123,107 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
   }
 
-  /** Client sends a message */
+  /** Client sends a message. Returns ack { ok, tempId } to sender. */
   @SubscribeMessage('send')
   async handleSend(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { orderId?: string; listingId?: string; conversationId?: string; body: string },
+    @MessageBody() data: {
+      orderId?: string;
+      listingId?: string;
+      conversationId?: string;
+      body: string;
+      tempId?: string; // client-generated optimistic ID
+    },
   ) {
     const userId = (client as any).userId;
-    if (!userId || !data?.body) return;
+    if (!userId || !data?.body) return { ok: false, error: 'Missing body' };
 
     try {
       if (data.conversationId) {
         const { message, conversationId } = await this.messages.sendMessageByConversationId(data.conversationId, userId, data.body);
-        const payload = { ...message, conversationId };
+        const payload = { ...message, conversationId, tempId: data.tempId };
         this.server.to(`conv:${conversationId}`).emit('message', payload);
         const parties = await this.messages.getConversationParties(conversationId);
         for (const uid of parties) {
-          this.server.to(`user:${uid}`).emit('message', payload);
+          // client.to() excludes the sender's pane socket (which already got it from conv room).
+          // Other sockets of the same user (e.g. /messages sidebar) still receive via user room.
+          client.to(`user:${uid}`).emit('message', payload);
         }
-        return;
+        return { ok: true, tempId: data.tempId };
       }
       if (data.orderId) {
         const { message, conversationId } = await this.messages.sendMessage(data.orderId, userId, data.body);
-        const payload = { ...message, conversationId };
+        const payload = { ...message, conversationId, tempId: data.tempId };
         this.server.to(`order:${data.orderId}`).emit('message', payload);
-        // Also broadcast to involved users' personal rooms (covers offline-room cases)
         const parties = await this.messages.getOrderParties(data.orderId);
         for (const uid of parties) {
-          this.server.to(`user:${uid}`).emit('message', payload);
+          client.to(`user:${uid}`).emit('message', payload);
         }
-      } else if (data.listingId) {
+        return { ok: true, tempId: data.tempId };
+      }
+      if (data.listingId) {
         const { message, conversationId } = await this.messages.sendListingMessage(data.listingId, userId, data.body);
-        const payload = { ...message, conversationId };
+        const payload = { ...message, conversationId, tempId: data.tempId };
         this.server.to(`conv:${conversationId}`).emit('message', payload);
-        // Broadcast to both buyer + seller personal rooms so seller receives
-        // even though they didn't explicitly join the listing room.
         const parties = await this.messages.getListingConversationParties(conversationId);
         for (const uid of parties) {
-          this.server.to(`user:${uid}`).emit('message', payload);
+          client.to(`user:${uid}`).emit('message', payload);
         }
+        return { ok: true, tempId: data.tempId };
       }
+      return { ok: false, error: 'No conversation context' };
     } catch (e: any) {
       client.emit('error', { message: e.message ?? 'Failed to send message' });
+      return { ok: false, error: e.message, tempId: data.tempId };
     }
   }
 
-  /** Client is typing */
+  /** Client is typing — now includes conversationId + role for all conv kinds */
   @SubscribeMessage('typing')
   handleTyping(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { orderId?: string; listingId?: string },
+    @MessageBody() data: {
+      orderId?: string;
+      listingId?: string;
+      conversationId?: string;
+      role?: string;
+    },
   ) {
     const userId = (client as any).userId;
     if (!userId) return;
+    const payload = { userId, role: data?.role };
 
-    if (data?.orderId) {
-      client.to(`order:${data.orderId}`).emit('typing', { userId });
+    if (data?.conversationId) {
+      client.to(`conv:${data.conversationId}`).emit('typing', payload);
+    } else if (data?.orderId) {
+      client.to(`order:${data.orderId}`).emit('typing', payload);
     }
-    // For listing conversations, broadcast via conv room
+    // listingId: listing conv always uses conversationId path after join
+  }
+
+  /** Client marks a conversation as read — updates DB + broadcasts read_update */
+  @SubscribeMessage('read')
+  async handleRead(
+    @ConnectedSocket() client: Socket,
+    @MessageBody() data: { conversationId: string },
+  ) {
+    const userId = (client as any).userId;
+    if (!userId || !data?.conversationId) return;
+
+    try {
+      await this.messages.markConversationRead(data.conversationId, userId);
+      const role = await this.messages.getUserRoleInConversation(data.conversationId, userId);
+      if (!role) return;
+      const payload = { conversationId: data.conversationId, role, userId };
+      // Broadcast to all parties in the conv room (so they see double-tick update)
+      this.server.to(`conv:${data.conversationId}`).emit('read_update', payload);
+      const parties = await this.messages.getConversationParties(data.conversationId);
+      for (const uid of parties) {
+        this.server.to(`user:${uid}`).emit('read_update', payload);
+      }
+    } catch {
+      // Swallow: conv may not exist
+    }
   }
 
   /** Utility: broadcast a system message to a room (called from service) */
@@ -162,13 +232,8 @@ export class MessagesGateway implements OnGatewayConnection, OnGatewayDisconnect
   }
 
   /**
-   * Generic: broadcast any message to a conversation (covers both order-based
-   * and listing-based). Emits to the conv room + each party's personal room
-   * so receivers get it even if they joined via a different alias.
-   *
-   * Called when a server-side insert (e.g. Offer sentinel message,
-   * insertSystemMessage) needs to reach connected clients without going
-   * through the client `send` event.
+   * Generic: broadcast any message to a conversation.
+   * Called when a server-side insert needs to reach connected clients.
    */
   async broadcastToConversation(conversationId: string, message: any) {
     const payload = { ...message, conversationId };

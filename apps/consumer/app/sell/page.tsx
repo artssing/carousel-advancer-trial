@@ -19,6 +19,7 @@ import {
 import {
   sellCategories, categoryById, categoryByApiEnum, tierForPrice,
   brandsForCategory, hasBrandPicker, brandFieldLabel, matchBrandFromTitle,
+  CONDITION_GRADES,
 } from '@authentik/utils';
 import { api, hasToken, ApiError } from '@/lib/api';
 import { ImagePlus, X } from 'lucide-react';
@@ -185,6 +186,8 @@ export default function SellPage() {
   }, [brandOpen]);
   const [price, setPrice] = useState<number | ''>('');
   const [description, setDescription] = useState('');
+  // 2026-06-30: seller-declared condition. Required for new listings.
+  const [condition, setCondition] = useState<string>('');
   /**
    * Unified media items — preserves user-chosen order. Each item is either
    * an existing image (base64 from edit-mode prefill) or a newly-picked image
@@ -207,6 +210,12 @@ export default function SellPage() {
   }
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>(['SHIP']);
   const [sellerDistrict, setSellerDistrict] = useState('');
+  const [sellerMeetupLocations, setSellerMeetupLocations] = useState<string[]>(['']);
+  const addMeetupLocation = () => setSellerMeetupLocations(prev => [...prev, '']);
+  const updateMeetupLocation = (i: number, val: string) =>
+    setSellerMeetupLocations(prev => prev.map((v, idx) => idx === i ? val : v));
+  const removeMeetupLocation = (i: number) =>
+    setSellerMeetupLocations(prev => prev.filter((_, idx) => idx !== i));
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   /** Edit-mode prefill loading */
@@ -284,9 +293,11 @@ export default function SellPage() {
         }
         setDeliveryMethods(listing.allowedDeliveryMethods ?? ['SHIP']);
         setSellerDistrict(listing.sellerDistrict ?? '');
+        setSellerMeetupLocations(listing.sellerMeetupLocations?.length ? listing.sellerMeetupLocations : ['']);
         const catCfg = categoryByApiEnum(listing.category);
         if (catCfg) setCategoryId(catCfg.id);
         setBrand(listing.brand ?? '');
+        setCondition(listing.condition ?? '');
         // Detect free-text brand (not in preset list) so dropdown opens in custom mode
         if (catCfg && listing.brand) {
           const preset = brandsForCategory(catCfg.id as any).some((b) => b.id === listing.brand);
@@ -403,6 +414,7 @@ export default function SellPage() {
     // Founder ruling 2026-06-21: 強制至少一張圖片或一段影片先可以上架
     if (totalImages === 0 && !video) { setError('請至少上載一張商品圖片或一段影片'); return; }
     if (deliveryMethods.length === 0) { setError('請至少揀一種接受嘅交收方式'); return; }
+    if (!condition) { setError('請揀商品狀況'); return; }
 
     setBusy(true);
     try {
@@ -433,10 +445,14 @@ export default function SellPage() {
         description,
         priceHKD: price,
         category: categoryById(categoryId)?.apiEnum ?? 'OTHER',
+        condition,
         brand: brand.trim() || undefined,
         images: finalImages,
         allowedDeliveryMethods: deliveryMethods,
         sellerDistrict: sellerDistrict.trim() || undefined,
+        sellerMeetupLocations: deliveryMethods.includes('MEETUP_DIRECT')
+          ? sellerMeetupLocations.map(l => l.trim()).filter(Boolean)
+          : [],
       };
       if (videoUrl !== undefined) payload.videoUrl = videoUrl;
       if (videoPosterUrl !== undefined) payload.videoPosterUrl = videoPosterUrl;
@@ -889,6 +905,39 @@ export default function SellPage() {
               );
             })()}
 
+            {/* 商品狀況 — 2026-06-30 founder ruling: 新 listing 必填 */}
+            <div>
+              <Label htmlFor="condition">商品狀況 <span className="text-red-500">*</span></Label>
+              <div className="mt-1 space-y-1.5">
+                {CONDITION_GRADES.map((g) => (
+                  <label
+                    key={g.id}
+                    className={`flex cursor-pointer items-start gap-2 rounded-lg border p-2.5 transition ${
+                      condition === g.id
+                        ? 'border-brand-500 bg-brand-50'
+                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="condition"
+                      value={g.id}
+                      checked={condition === g.id}
+                      onChange={() => setCondition(g.id)}
+                      className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-slate-900">{g.label}</p>
+                      <p className="text-xs text-slate-500">{g.description}</p>
+                    </div>
+                  </label>
+                ))}
+              </div>
+              <p className="mt-1 text-[10px] text-slate-400">
+                成色由你申報，Authentik 不驗證。Tier 2/3 商品鑑定時以鑑定師意見為準。
+              </p>
+            </div>
+
             <div>
               <Label htmlFor="desc">商品描述</Label>
               <textarea
@@ -953,6 +1002,40 @@ export default function SellPage() {
                 className="mt-1"
               />
             </div>
+            {deliveryMethods.includes('MEETUP_DIRECT') && (
+              <div className="mt-4">
+                <Label>面交地點（買家落單時揀選）</Label>
+                <p className="mb-2 text-xs text-slate-500">請提供至少一個建議面交地點，買家可揀選或填寫其他地點。</p>
+                <div className="space-y-2">
+                  {sellerMeetupLocations.map((loc, i) => (
+                    <div key={i} className="flex gap-2">
+                      <Input
+                        value={loc}
+                        onChange={(e) => updateMeetupLocation(i, e.target.value)}
+                        placeholder="例：旺角港鐵站 E 出口"
+                        className="flex-1"
+                      />
+                      {sellerMeetupLocations.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => removeMeetupLocation(i)}
+                          className="rounded-md px-2 text-slate-400 hover:text-red-500"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={addMeetupLocation}
+                  className="mt-2 text-xs text-brand-600 hover:underline"
+                >
+                  + 加多一個地點
+                </button>
+              </div>
+            )}
           </CardContent>
         </Card>
 

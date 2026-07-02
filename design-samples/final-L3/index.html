@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Authentik · L3 定稿版面目錄</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .wrap{padding:52px 0 60px}
+  .group{margin-top:40px}
+  .group h2{font-size:20px;margin-bottom:16px}
+  .cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+  .pg{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;box-shadow:var(--sh-1);transition:.16s;display:flex;flex-direction:column}
+  .pg:hover{transform:translateY(-2px);box-shadow:var(--sh-3)}
+  .pg .prev{aspect-ratio:16/10;background:linear-gradient(135deg,#eef1f5,#e0e6ee);position:relative;border-bottom:1px solid var(--line)}
+  .pg .prev .n{position:absolute;top:12px;left:14px;font-weight:800;color:var(--primary)}
+  .pg .prev .bar{position:absolute;left:14px;right:14px;bottom:14px;height:8px;border-radius:2px;background:var(--action);opacity:.5}
+  .pg .b{padding:14px 16px}
+  .pg .b .t{font-weight:600;font-size:14px}
+  .pg .b .d{font-size:12px;color:var(--text-3);margin-top:3px}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container">
+  <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+  <nav class="nav"><a class="on">版面目錄</a></nav>
+  <div class="nav-right">L3 定稿 · 白底 + 陰影</div>
+</div></header>
+
+<div class="container wrap">
+  <div class="eyebrow">Final Pages · L3 White</div>
+  <h1 class="display" style="font-size:36px;margin:12px 0 8px">版面目錄</h1>
+  <p style="color:var(--text-2);max-width:640px">全套用 L3 白底 + 陰影定稿風格，nav 互相連結，可直接撳嚟撳去 review。Review OK 後我會 apply 落 <code>apps/consumer</code> codebase。</p>
+
+  <div class="group">
+    <h2 class="display">買家核心流程</h2>
+    <div class="cards">
+      <a class="pg" href="home.html"><div class="prev"><span class="n">首頁</span><span class="bar"></span></div><div class="b"><div class="t">首頁 Home</div><div class="d">搜尋主導 + 實時鑑定 + 熱門</div></div></a>
+      <a class="pg" href="browse.html"><div class="prev"><span class="n">瀏覽</span><span class="bar"></span></div><div class="b"><div class="t">瀏覽 / 搜尋結果</div><div class="d">篩選側欄 + 可移除 chip</div></div></a>
+      <a class="pg" href="listing.html"><div class="prev"><span class="n">詳情</span><span class="bar"></span></div><div class="b"><div class="t">商品詳情</div><div class="d">圖庫 + 指定鑑定師 + 出價</div></div></a>
+      <a class="pg" href="checkout.html"><div class="prev"><span class="n">結帳</span><span class="bar"></span></div><div class="b"><div class="t">結帳</div><div class="d">交收 / 付款 + 費用明細</div></div></a>
+      <a class="pg" href="orders.html"><div class="prev"><span class="n">訂單</span><span class="bar"></span></div><div class="b"><div class="t">訂單列表</div><div class="d">買入/賣出/鑑定 + 進度</div></div></a>
+    </div>
+  </div>
+
+  <div class="group">
+    <h2 class="display">賣家流程</h2>
+    <div class="cards">
+      <a class="pg" href="sell.html"><div class="prev"><span class="n">刊登</span><span class="bar"></span></div><div class="b"><div class="t">刊登出售</div><div class="d">品牌辨識 + Tier + 交收 + 鑑定師</div></div></a>
+      <a class="pg" href="my-listings.html"><div class="prev"><span class="n">上架</span><span class="bar"></span></div><div class="b"><div class="t">我的上架</div><div class="d">在售/進行/已售 tab</div></div></a>
+      <a class="pg" href="seller.html"><div class="prev"><span class="n">賣家</span><span class="bar"></span></div><div class="b"><div class="t">賣家公開檔案</div><div class="d">評分 + 在售 + 評價</div></div></a>
+    </div>
+  </div>
+
+  <div class="group">
+    <h2 class="display">帳戶 / 錢包</h2>
+    <div class="cards">
+      <a class="pg" href="account.html"><div class="prev"><span class="n">檔案</span><span class="bar"></span></div><div class="b"><div class="t">個人檔案</div><div class="d">KYC + 資料編輯</div></div></a>
+      <a class="pg" href="wallet.html"><div class="prev"><span class="n">錢包</span><span class="bar"></span></div><div class="b"><div class="t">錢包</div><div class="d">餘額 + 託管 + 交易紀錄</div></div></a>
+      <a class="pg" href="payouts.html"><div class="prev"><span class="n">提現</span><span class="bar"></span></div><div class="b"><div class="t">提現方式</div><div class="d">FPS / 銀行 + 提現</div></div></a>
+      <a class="pg" href="login.html"><div class="prev"><span class="n">登入</span><span class="bar"></span></div><div class="b"><div class="t">登入 / 註冊</div><div class="d">分段切換 + OAuth</div></div></a>
+    </div>
+  </div>
+</div>
+
+<footer class="footer"><div class="container">
+  <div class="col"><div class="brand" style="font-size:18px">AUTHEN<span class="dot">·</span>TIK</div>
+    <p class="disclaimer" style="max-width:280px;margin-top:12px">資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。</p></div>
+  <div class="col"><h4>買賣</h4><a href="browse.html">瀏覽商品</a><a href="sell.html">刊登出售</a></div>
+  <div class="col"><h4>信任</h4><a href="#">鑑定機制</a><a href="#">款項託管</a></div>
+  <div class="col"><h4>關於</h4><a href="#">條款</a><a href="#">私隱</a></div>
+</div></footer>
+</body>
+</html>

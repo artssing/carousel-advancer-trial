@@ -15,7 +15,8 @@ import { X, Send, MessageCircle, ExternalLink, Store, ShieldCheck, ChevronLeft, 
 import { api, getToken } from '@/lib/api';
 import { OfferCard } from './offer-card';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+// Strip trailing /api so socket.io connects to namespace root (mirror consumer pane).
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/api\/?$/, '');
 const CONSUMER_URL = process.env.NEXT_PUBLIC_CONSUMER_URL ?? 'http://localhost:3008';
 
 function Link({ href, onClick, className, children, title }: {
@@ -28,6 +29,8 @@ function Link({ href, onClick, className, children, title }: {
   );
 }
 
+type SendStatus = 'sending' | 'sent' | 'failed';
+
 interface Message {
   id: string;
   senderRole: 'BUYER' | 'SELLER' | 'AUTHENTICATOR' | 'SYSTEM';
@@ -35,6 +38,56 @@ interface Message {
   body: string;
   createdAt: string;
   sender?: { id: string; displayName: string } | null;
+  readByBuyer?: boolean;
+  readBySeller?: boolean;
+  readByAuth?: boolean;
+  // Optimistic-only fields (never on server messages)
+  tempId?: string;
+  sendStatus?: SendStatus;
+}
+
+/** Determine tick status for a message the current user sent. Mirrors consumer pane. */
+function getTickStatus(
+  msg: Message,
+  parties: Array<{ id: string; role: string }>,
+  currentUserId: string,
+): 'sending' | 'sent' | 'read' | 'failed' {
+  if (msg.sendStatus === 'sending') return 'sending';
+  if (msg.sendStatus === 'failed') return 'failed';
+  const otherRoles = parties.filter((p) => p.id !== currentUserId).map((p) => p.role);
+  if (otherRoles.length === 0) return 'sent';
+  const allRead = otherRoles.every((role) => {
+    if (role === 'BUYER') return msg.readByBuyer;
+    if (role === 'SELLER') return msg.readBySeller;
+    if (role === 'AUTHENTICATOR') return msg.readByAuth;
+    return false;
+  });
+  return allRead ? 'read' : 'sent';
+}
+
+function MessageTick({ status, tooltip }: { status: 'sending' | 'sent' | 'read' | 'failed'; tooltip?: string }) {
+  if (status === 'sending') {
+    return (
+      <span
+        title="傳送中"
+        style={{
+          display: 'inline-block',
+          fontSize: '9px',
+          fontWeight: 'bold',
+          backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0.2) 100%)',
+          backgroundSize: '200% 100%',
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          color: 'transparent',
+          animation: 'msgTickSweep 1.4s linear infinite',
+        }}
+      >✓</span>
+    );
+  }
+  if (status === 'failed') return <span className="text-[9px] text-red-300" title="傳送失敗">!</span>;
+  if (status === 'read') return <span className="text-[9px] font-bold text-white" title={tooltip ?? '已讀'} style={{ letterSpacing: '-0.35em' }}>✓✓</span>;
+  return <span className="text-[9px] font-bold text-white" title="已送達">✓</span>;
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -61,6 +114,24 @@ function formatTime(d: Date): string {
 
 function sameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
+}
+
+interface PresenceInfo { online: boolean; lastSeenAt?: string | null; }
+function formatLastSeen(info: PresenceInfo): string | null {
+  if (info.online) return '上線中';
+  if (!info.lastSeenAt) return null;
+  const d = new Date(info.lastSeenAt);
+  const now = new Date();
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+  const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const daysDiff = Math.round((startOfToday - dDay) / 86400000);
+  const hh = d.getHours().toString().padStart(2, '0');
+  const mm = d.getMinutes().toString().padStart(2, '0');
+  if (daysDiff === 0) return `今日 ${hh}:${mm}`;
+  if (daysDiff === 1) return `昨日 ${hh}:${mm}`;
+  if (daysDiff > 1 && daysDiff < 7) return `${WEEKDAY_ZH[d.getDay()]} ${hh}:${mm}`;
+  if (d.getFullYear() === now.getFullYear()) return `${d.getMonth() + 1}月${d.getDate()}日`;
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
 }
 
 function DateDivider({ date }: { date: Date }) {
@@ -146,6 +217,12 @@ export function ConversationPane({
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [typing, setTyping] = useState(false);
+  const [presenceMap, setPresenceMap] = useState<Record<string, PresenceInfo>>({});
+  const [convParties, setConvParties] = useState<Array<{ id: string; displayName: string; role: string; lastSeenAt?: string | null }>>([]);
+  // Dedup safety net: if server broadcasts the same message twice (e.g. via two rooms), skip.
+  const seenMessageIds = useRef(new Set<string>());
+  // Track when each optimistic message was created so we can enforce a 400ms shimmer floor.
+  const optimisticSentAt = useRef(new Map<string, number>());
   const socketRef = useRef<Socket | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -242,6 +319,8 @@ export function ConversationPane({
     setActiveConvId(convIdProp ?? null);
     setInput('');
     setError(null);
+    seenMessageIds.current.clear();
+    optimisticSentAt.current.clear();
   }, [contextId, convIdProp]);
 
   useEffect(() => {
@@ -256,15 +335,20 @@ export function ConversationPane({
 
     socket.on('connect', () => {
       setConnected(true);
-      if (convIdProp) socket.emit('join', { conversationId: convIdProp });
-      else if (orderId) socket.emit('join', { orderId });
+      if (convIdProp) {
+        socket.emit('join', { conversationId: convIdProp });
+        socket.emit('read', { conversationId: convIdProp });
+      } else if (orderId) socket.emit('join', { orderId });
       else if (listingId) socket.emit('join', { listingId });
     });
 
     socket.on('disconnect', () => setConnected(false));
 
     socket.on('joined', (data: { conversationId?: string; orderId?: string; listingId?: string }) => {
-      if (data?.conversationId) setActiveConvId(data.conversationId);
+      if (data?.conversationId) {
+        setActiveConvId(data.conversationId);
+        socket.emit('read', { conversationId: data.conversationId });
+      }
       const url = convIdProp
         ? `${API_URL}/api/conversations/by-id/${convIdProp}`
         : orderId
@@ -275,18 +359,79 @@ export function ConversationPane({
         .then((d) => {
           if (d.conversationId) setActiveConvId(d.conversationId);
           if (d.messages) setMessages(d.messages);
+          // Seed presenceMap with each party's lastSeenAt (DB value, fallback createdAt)
+          if (Array.isArray(d.parties)) {
+            setConvParties(d.parties);
+            setPresenceMap((prev) => {
+              const next = { ...prev };
+              for (const p of d.parties) {
+                if (p.id !== currentUserId && p.lastSeenAt && !next[p.id]) {
+                  next[p.id] = { online: false, lastSeenAt: p.lastSeenAt };
+                }
+              }
+              return next;
+            });
+          }
         })
         .catch(() => {});
     });
 
-    socket.on('message', (msg: Message & { conversationId?: string }) => {
-      setMessages((prev) => {
-        const myConv = activeConvIdRef.current;
-        if (msg.conversationId && myConv && msg.conversationId !== myConv) return prev;
-        if (prev.some((m) => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
+    socket.on('presence', (data: { userId: string; online: boolean; lastSeenAt?: string }) => {
+      setPresenceMap((prev) => ({ ...prev, [data.userId]: { online: data.online, lastSeenAt: data.lastSeenAt } }));
+    });
+
+    socket.on('message', (msg: Message & { conversationId?: string; tempId?: string }) => {
+      const myConv = activeConvIdRef.current;
+      if (msg.conversationId && myConv && msg.conversationId !== myConv) return;
+      // Dedup safety net (server may broadcast via conv room + user room)
+      if (msg.id && seenMessageIds.current.has(msg.id)) return;
+      if (msg.id) seenMessageIds.current.add(msg.id);
+
+      const applyMessage = () => {
+        setMessages((prev) => {
+          if (msg.tempId) {
+            const hasOptimistic = prev.some((m) => m.tempId === msg.tempId);
+            if (hasOptimistic) {
+              optimisticSentAt.current.delete(msg.tempId);
+              return prev.map((m) => m.tempId === msg.tempId ? { ...msg, sendStatus: 'sent' as const } : m);
+            }
+          }
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          const isOwn = msg.senderId === currentUserId;
+          return [...prev, { ...msg, sendStatus: isOwn ? ('sent' as const) : undefined }];
+        });
+        // Mark incoming counterparty messages as read when active
+        if (msg.senderId !== currentUserId && msg.conversationId && msg.conversationId === activeConvIdRef.current) {
+          socket.emit('read', { conversationId: msg.conversationId });
+        }
+      };
+
+      // Enforce 400ms minimum visible shimmer for optimistic sends
+      const isOwnOptimistic = msg.senderId === currentUserId && !!msg.tempId;
+      if (isOwnOptimistic) {
+        const sentAt = optimisticSentAt.current.get(msg.tempId!) ?? Date.now();
+        const elapsed = Date.now() - sentAt;
+        const MIN_ANIM_MS = 400;
+        if (elapsed < MIN_ANIM_MS) setTimeout(applyMessage, MIN_ANIM_MS - elapsed);
+        else applyMessage();
+      } else {
+        applyMessage();
+      }
       setTyping(false);
+    });
+
+    // Read receipt: counterparty marked the conv as read → flip readBy* on own messages
+    socket.on('read_update', (data: { conversationId: string; role: string }) => {
+      if (data.conversationId !== activeConvIdRef.current) return;
+      setMessages((prev) => prev.map((m) => {
+        if (m.senderId !== currentUserId) return m;
+        return {
+          ...m,
+          readByBuyer: data.role === 'BUYER' ? true : m.readByBuyer,
+          readBySeller: data.role === 'SELLER' ? true : m.readBySeller,
+          readByAuth: data.role === 'AUTHENTICATOR' ? true : m.readByAuth,
+        };
+      }));
     });
 
     socket.on('typing', () => {
@@ -313,8 +458,27 @@ export function ConversationPane({
     if (!input.trim() || !socketRef.current || sending) return;
     setSending(true);
     setError(null);
+    const body = input.trim();
+    const tempId = `tmp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    optimisticSentAt.current.set(tempId, Date.now());
+    // Optimistic insert — shows shimmer ✓ immediately, replaced by server message on ack
+    setMessages((prev) => [...prev, {
+      id: tempId,
+      senderRole: 'AUTHENTICATOR',
+      senderId: currentUserId,
+      body,
+      createdAt: new Date().toISOString(),
+      tempId,
+      sendStatus: 'sending',
+    }]);
     const ctx = convIdProp ? { conversationId: convIdProp } : orderId ? { orderId } : { listingId };
-    socketRef.current.emit('send', { ...ctx, body: input.trim() });
+    socketRef.current.emit('send', { ...ctx, body, tempId }, (ack: { ok: boolean; error?: string }) => {
+      if (ack && !ack.ok) {
+        setMessages((prev) => prev.map((m) => m.tempId === tempId ? { ...m, sendStatus: 'failed' as const } : m));
+        setError(ack.error ?? '傳送失敗');
+        setTimeout(() => setError(null), 4000);
+      }
+    });
     setInput('');
     setSending(false);
   }
@@ -367,7 +531,31 @@ export function ConversationPane({
                 ) : (
                   <h3 className="truncate font-semibold text-slate-900">{counterpartyName}</h3>
                 )}
-                {connected && <span className="h-2 w-2 rounded-full bg-emerald-500" title="已連線" />}
+                {(() => {
+                  // Counterparty IDs = props if present, else derive from convParties (THREE_WAY case).
+                  const counterIds = [counterpartyAuthenticatorId, counterpartySellerId, counterpartyBuyerId]
+                    .filter((x): x is string => !!x);
+                  const ids = counterIds.length > 0
+                    ? counterIds
+                    : convParties.filter((p) => p.id !== currentUserId).map((p) => p.id);
+                  // Online wins. Else pick the most-recent lastSeenAt.
+                  const onlineId = ids.find((id) => presenceMap[id]?.online);
+                  if (onlineId) {
+                    return <span className="text-[10px] font-medium text-emerald-600">上線中</span>;
+                  }
+                  const seenInfos = ids
+                    .map((id) => presenceMap[id])
+                    .filter((p): p is PresenceInfo => !!p?.lastSeenAt);
+                  if (seenInfos.length === 0) return null;
+                  seenInfos.sort((a, b) => new Date(b.lastSeenAt!).getTime() - new Date(a.lastSeenAt!).getTime());
+                  const label = formatLastSeen(seenInfos[0]!);
+                  if (!label) return null;
+                  return (
+                    <span className="text-[10px] font-medium text-slate-400">
+                      最後上線：{label}
+                    </span>
+                  );
+                })()}
               </div>
               <div className="mt-1.5 flex flex-wrap items-center gap-1">
                 {orderStatus ? (
@@ -556,6 +744,9 @@ export function ConversationPane({
             );
           }
 
+          const tickStatus = isMe
+            ? getTickStatus(msg, convParties.map((p) => ({ id: p.id, role: p.role })), currentUserId)
+            : null;
           return (
             <div key={msg.id}>
               {showDateDivider && <DateDivider date={msgDate} />}
@@ -569,8 +760,9 @@ export function ConversationPane({
                     </p>
                   )}
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.body}</p>
-                  <p className={`mt-0.5 text-right text-[9px] ${isMe ? 'text-brand-200' : 'text-slate-400'}`}>
-                    {formatTime(msgDate)}
+                  <p className={`mt-0.5 flex items-center justify-end gap-1 text-[9px] ${isMe ? 'text-brand-200' : 'text-slate-400'}`}>
+                    <span>{formatTime(msgDate)}</span>
+                    {tickStatus && <MessageTick status={tickStatus} />}
                   </p>
                 </div>
               </div>

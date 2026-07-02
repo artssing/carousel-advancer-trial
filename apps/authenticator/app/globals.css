@@ -6,3 +6,9 @@ body {
   @apply bg-slate-100 text-slate-900 antialiased;
   font-family: 'Inter', system-ui, sans-serif;
 }
+
+/* IM: sending tick sweep animation (left→right shimmer) — mirrors consumer */
+@keyframes msgTickSweep {
+  0%   { background-position: 100% 50%; }
+  100% { background-position:   0% 50%; }
+}

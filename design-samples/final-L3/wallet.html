@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>錢包 · Authentik</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .acc{display:grid;grid-template-columns:220px 1fr;gap:32px;align-items:start;padding:32px 0 72px}
+  .side{position:sticky;top:90px}
+  .side a{display:block;padding:11px 14px;border-radius:8px;font-size:14px;color:var(--text-2);font-weight:500;margin-bottom:2px}
+  .side a:hover{background:var(--surface-2);color:var(--text)}
+  .side a.on{background:var(--verify-soft);color:var(--action);font-weight:600}
+  .balcard{background:linear-gradient(135deg,#0A2540,#123f5f);color:#fff;border-radius:14px;padding:28px;box-shadow:var(--sh-3);position:relative;overflow:hidden}
+  .balcard .l{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#9db4cc}
+  .balcard .amt{font-size:38px;font-weight:800;margin:8px 0 4px}
+  .balcard .held{font-size:13px;color:#9db4cc}
+  .balcard .acts{display:flex;gap:10px;margin-top:20px}
+  .balcard .wm{position:absolute;right:20px;bottom:14px;font-family:var(--display);font-weight:800;letter-spacing:.16em;opacity:.35;font-size:14px}
+  .subcards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:16px 0 8px}
+  .txn{display:flex;align-items:center;gap:14px;padding:14px 0;border-bottom:1px solid var(--line)}
+  .txn .ic{width:38px;height:38px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0}
+  .txn .ic.in{color:var(--action)} .txn .ic.out{color:var(--text-2)}
+  .txn .d{flex:1}.txn .t{font-weight:600;font-size:14px}.txn .s{font-size:12px;color:var(--text-3);margin-top:2px}
+  .txn .amt{font-weight:700}.txn .amt.in{color:var(--action)}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container">
+  <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+  <nav class="nav"><a href="browse.html">瀏覽</a><a href="#">鑑定師</a><a href="sell.html">出售</a><a href="#">信任機制</a></nav>
+  <div class="nav-right"><a href="orders.html">訂單</a><a href="account.html" style="color:var(--primary);font-weight:600">帳戶</a><button class="btn btn-primary btn-sm">刊登出售</button></div>
+</div></header>
+
+<div class="container">
+  <div class="acc">
+    <aside class="side">
+      <a href="account.html">個人檔案</a>
+      <a class="on" href="wallet.html">錢包</a>
+      <a href="payouts.html">提現方式</a>
+      <a href="orders.html">我的訂單</a>
+      <a href="my-listings.html">我的上架</a>
+      <a href="#">通知設定</a>
+      <a href="#" style="color:var(--danger)">登出</a>
+    </aside>
+
+    <section>
+      <h1 class="display" style="font-size:26px;margin-bottom:20px">錢包</h1>
+
+      <div class="balcard">
+        <div class="l">可提現餘額</div>
+        <div class="amt">HK$66,980</div>
+        <div class="held">另有 HK$120,790 託管中（待鑑定 / 交收完成後入賬）</div>
+        <div class="acts"><a class="btn btn-primary" href="payouts.html">提現</a><button class="btn btn-ghost" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:#fff;box-shadow:none">交易紀錄</button></div>
+        <span class="wm">SECURE ESCROW</span>
+      </div>
+
+      <div class="subcards">
+        <div class="card card-pad stat"><div class="n">HK$120,790</div><div class="l">託管中</div></div>
+        <div class="card card-pad stat"><div class="n">HK$1.82M</div><div class="l">累計收入</div></div>
+      </div>
+
+      <div class="card card-pad" style="margin-top:16px">
+        <div class="section-label">最近交易</div>
+        <div class="txn"><div class="ic in">＋</div><div class="d"><div class="t">售出 Air Jordan 1 Chicago</div><div class="s">訂單 #AZ-10455 · 已放款 · 2026-06-26</div></div><div class="amt in">+HK$3,152</div></div>
+        <div class="txn"><div class="ic out">↑</div><div class="d"><div class="t">提現至 FPS 轉數快</div><div class="s">尾號 4567 · 已完成 · 2026-06-20</div></div><div class="amt">−HK$50,000</div></div>
+        <div class="txn"><div class="ic in">＋</div><div class="d"><div class="t">售出 Chanel Boy Bag</div><div class="s">訂單 #AZ-10390 · 已放款 · 2026-06-12</div></div><div class="amt in">+HK$44,280</div></div>
+        <div class="txn" style="border-bottom:0"><div class="ic out">◷</div><div class="d"><div class="t">託管：Rolex Submariner</div><div class="s">訂單 #AZ-10490 · 待鑑定通過 · 2026-07-01</div></div><div class="amt" style="color:var(--text-3)">HK$120,790</div></div>
+      </div>
+      <p class="disclaimer" style="margin-top:14px">款項於鑑定通過並完成交收後方由託管轉入可提現餘額。金額以 server 記錄為準。</p>
+    </section>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的訂單 · Authentik</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .wrap{padding:32px 0 72px;max-width:820px}
+  .order{display:flex;gap:16px;align-items:center;padding:18px;margin-bottom:14px}
+  .thumb{width:72px;height:72px;border-radius:10px;flex-shrink:0;position:relative;background:linear-gradient(135deg,#eef1f5,#dfe4ee)}
+  .thumb .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:10px;letter-spacing:.14em;color:#9aa3b5}
+  .order .mid{flex:1;min-width:0}
+  .order .title{font-weight:600;font-size:15px}
+  .order .sub{font-size:12px;color:var(--text-3);margin-top:3px}
+  .order .price{font-weight:800;color:var(--primary);white-space:nowrap;margin-left:8px}
+  .progress{display:flex;gap:6px;margin-top:12px}
+  .progress .s{flex:1;height:4px;border-radius:2px;background:var(--line)}
+  .progress .s.done{background:var(--action)}
+  .order-foot{display:flex;align-items:center;justify-content:space-between;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+  .steplabel{font-size:12px;color:var(--text-2)}
+  .steplabel b{color:var(--action)}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container">
+  <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+  <nav class="nav"><a href="browse.html">瀏覽</a><a href="#">鑑定師</a><a href="sell.html">出售</a><a href="#">信任機制</a></nav>
+  <div class="nav-right"><a href="orders.html" style="color:var(--primary);font-weight:600">訂單</a><a href="account.html">帳戶</a><a href="login.html">登入</a><button class="btn btn-primary btn-sm">刊登出售</button></div>
+</div></header>
+
+<div class="container">
+  <div class="wrap">
+    <h1 class="display" style="font-size:28px;margin-bottom:6px">我的訂單</h1>
+    <p style="color:var(--text-3);font-size:13px;margin-bottom:22px">追蹤買入、賣出及鑑定進度</p>
+
+    <div class="tabs">
+      <a class="on">買入 (3)</a><a>賣出 (2)</a><a>鑑定 (0)</a>
+    </div>
+
+    <div class="card order">
+      <div class="thumb"><div class="wm">CHANEL</div></div>
+      <div class="mid">
+        <div style="display:flex;align-items:center"><span class="title" style="flex:1">Chanel Classic Flap Medium · Caviar 金扣</span><span class="price">HK$70,380</span></div>
+        <div class="sub">訂單 #AZ-10482 · 賣家 Jenny K. · 2026-06-30</div>
+        <div class="progress"><span class="s done"></span><span class="s done"></span><span class="s done"></span><span class="s"></span></div>
+        <div class="order-foot">
+          <span class="steplabel">狀態：<b>鑑定中</b> · Milan Leung 處理中</span>
+          <div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm">聯絡</button><a class="btn btn-navy btn-sm" href="#">查看詳情</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card order">
+      <div class="thumb"><div class="wm">NIKE</div></div>
+      <div class="mid">
+        <div style="display:flex;align-items:center"><span class="title" style="flex:1">Air Jordan 1 Retro High OG Chicago</span><span class="price">HK$3,280</span></div>
+        <div class="sub">訂單 #AZ-10455 · 賣家 Tom W. · 2026-06-24</div>
+        <div class="progress"><span class="s done"></span><span class="s done"></span><span class="s done"></span><span class="s done"></span></div>
+        <div class="order-foot">
+          <span class="steplabel">狀態：<b style="color:var(--text-2)">已完成</b> · 已收貨</span>
+          <div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm">評價賣家</button><a class="btn btn-navy btn-sm" href="#">查看詳情</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card order">
+      <div class="thumb"><div class="wm">ROLEX</div></div>
+      <div class="mid">
+        <div style="display:flex;align-items:center"><span class="title" style="flex:1">Rolex Submariner Date 126610LN</span><span class="price">HK$120,790</span></div>
+        <div class="sub">訂單 #AZ-10490 · 賣家 Tom W. · 2026-07-01</div>
+        <div class="progress"><span class="s done"></span><span class="s"></span><span class="s"></span><span class="s"></span></div>
+        <div class="order-foot">
+          <span class="steplabel">狀態：<b>待付款</b> · 款項未託管</span>
+          <div style="display:flex;gap:8px"><button class="btn btn-ghost btn-sm">取消</button><a class="btn btn-primary btn-sm" href="checkout.html">前往付款</a></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer"><div class="container">
+  <div class="col"><div class="brand" style="font-size:18px">AUTHEN<span class="dot">·</span>TIK</div>
+    <p class="disclaimer" style="max-width:280px;margin-top:12px">資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。</p></div>
+  <div class="col"><h4>買賣</h4><a href="browse.html">瀏覽商品</a><a href="sell.html">刊登出售</a><a href="#">鑑定師名冊</a></div>
+  <div class="col"><h4>信任</h4><a href="#">鑑定機制</a><a href="#">款項託管</a><a href="#">爭議處理</a></div>
+  <div class="col"><h4>關於</h4><a href="#">條款</a><a href="#">私隱</a><a href="#">聯絡</a></div>
+</div></footer>
+</body>
+</html>

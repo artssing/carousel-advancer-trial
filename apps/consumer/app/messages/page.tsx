@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useMemo, useRef, useState, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
 import { Button } from '@authentik/ui';
 import { formatChatTime } from '@authentik/utils';
-import { MessageCircle, ChevronLeft } from 'lucide-react';
+import { ChevronDown, ChevronRight, MessageCircle } from 'lucide-react';
 import { api, hasToken, clearToken, getToken } from '@/lib/api';
 import { ConversationPane } from '@/components/conversation-pane';
 
@@ -31,14 +31,20 @@ const ROLE_LABEL: Record<string, string> = {
 
 // timeAgo deprecated — use formatChatTime SSOT from @authentik/utils (WhatsApp-style)
 
-export default function MessagesPage() {
+function MessagesPageInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [conversations, setConversations] = useState<ConvSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<{ id: string } | null>(null);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
+  // presenceMap: userId → online status (fed by page-level socket)
+  const [presenceMap, setPresenceMap] = useState<Record<string, { online: boolean }>>({});
   // Fast search — client-side filter on already-loaded conversations.
   const [query, setQuery] = useState('');
+  // Phase 1 sidebar grouping: collapse state per counterparty group.
+  // Defaults to expanded (entry not present); user clicks chevron to collapse.
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const activeConvIdRef = useRef<string | null>(null);
   const conversationsRef = useRef<ConvSummary[]>([]);
   conversationsRef.current = conversations;
@@ -50,11 +56,17 @@ export default function MessagesPage() {
       .then(([meData, convList]) => {
         setMe({ id: meData.id });
         setConversations(convList);
+        // Deep link: ?conv=<id> auto-opens a conversation (Lesson #9: useSearchParams)
+        const deepConvId = searchParams.get('conv');
+        if (deepConvId && convList.some((c: ConvSummary) => c.id === deepConvId)) {
+          setActiveConvId(deepConvId);
+        }
       })
       .catch((e: any) => {
         if (e?.status === 401) { clearToken(); router.replace('/login'); }
       })
       .finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   // Refresh list whenever a conversation is opened/closed (unread counts may change)
@@ -83,6 +95,10 @@ export default function MessagesPage() {
     // list so anything we missed while offline is reconciled.
     socket.on('connect', () => {
       refreshList();
+    });
+
+    socket.on('presence', (data: { userId: string; online: boolean }) => {
+      setPresenceMap((prev) => ({ ...prev, [data.userId]: { online: data.online } }));
     });
 
     socket.on('message', (msg: { conversationId: string; body: string; senderRole: string; createdAt: string; senderId?: string }) => {
@@ -145,6 +161,26 @@ export default function MessagesPage() {
       })
     : conversations;
   const noResults = !!qLower && visibleConvs.length === 0;
+
+  // ── Phase 1: Group sidebar by counterparty ─────────────────────────────
+  // Multiple threads with the same counterparty collapse into one expandable
+  // group row. Singletons render inline (no group header). Counterparty key
+  // = id when present, else displayName (some flows lack id, e.g. THREE_WAY
+  // composite "Alice / Jenny" labels).
+  const groups = useMemo(() => {
+    const map = new Map<string, { key: string; counterparty: ConvSummary['counterparty']; convs: ConvSummary[] }>();
+    for (const c of visibleConvs) {
+      const key = c.counterparty.id ?? `name:${c.counterparty.displayName}`;
+      let g = map.get(key);
+      if (!g) {
+        g = { key, counterparty: c.counterparty, convs: [] };
+        map.set(key, g);
+      }
+      g.convs.push(c);
+    }
+    // visibleConvs is already sorted by recency (API), so iteration preserves it.
+    return Array.from(map.values());
+  }, [visibleConvs]);
 
   // ── Sidebar (conversation list) ─────────────────────────────────────────
   const sidebar = (
@@ -216,58 +252,121 @@ export default function MessagesPage() {
           </div>
         )}
 
-        {!loading && visibleConvs.map((conv) => {
-          const img = conv.listing?.images?.[0];
-          const preview = conv.lastMessage
-            ? `${conv.lastMessage.senderRole === 'BUYER' ? '你' : ROLE_LABEL[conv.lastMessage.senderRole] ?? ''}：${conv.lastMessage.body}`
-            : '新對話';
-          const isActive = conv.id === activeConvId;
+        {!loading && groups.map((g) => {
+          const isGrouped = g.convs.length > 1;
+          const collapsed = isGrouped && collapsedGroups[g.key];
+          const totalUnread = g.convs.reduce((sum, c) => sum + c.unread, 0);
+          const isOnline = g.counterparty.id ? presenceMap[g.counterparty.id]?.online : false;
+          const latest = g.convs[0]!;
 
-          return (
-            <button
-              key={conv.id}
-              onClick={() => openConv(conv.id)}
-              className={`flex w-full items-start gap-2.5 border-l-2 px-3 py-2.5 text-left transition ${
-                isActive
-                  ? 'border-brand-600 bg-brand-50'
-                  : conv.unread > 0
-                    ? 'border-transparent bg-brand-50/30 hover:bg-slate-50'
-                    : 'border-transparent hover:bg-slate-50'
-              }`}
-            >
-              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                {img
-                  ? <img src={img} alt="" className="h-full w-full object-cover" />
-                  : <div className="flex h-full w-full items-center justify-center text-base">
-                      {conv.type === 'order' ? '📦' : '🛍️'}
+          const renderThread = (conv: ConvSummary, indent: boolean) => {
+            const img = conv.listing?.images?.[0];
+            const preview = conv.lastMessage
+              ? `${conv.lastMessage.senderRole === 'BUYER' ? '你' : ROLE_LABEL[conv.lastMessage.senderRole] ?? ''}：${conv.lastMessage.body}`
+              : '新對話';
+            const isActive = conv.id === activeConvId;
+            return (
+              <button
+                key={conv.id}
+                onClick={() => openConv(conv.id)}
+                className={`flex w-full items-start gap-2.5 border-l-2 ${indent ? 'pl-7 pr-3 py-2' : 'px-3 py-2.5'} text-left transition ${
+                  isActive
+                    ? 'border-brand-600 bg-brand-50'
+                    : conv.unread > 0
+                      ? 'border-transparent bg-brand-50/30 hover:bg-slate-50'
+                      : 'border-transparent hover:bg-slate-50'
+                }`}
+              >
+                <div className="relative h-9 w-9 shrink-0">
+                  <div className="h-full w-full overflow-hidden rounded-lg bg-slate-100">
+                    {img
+                      ? <img src={img} alt="" className="h-full w-full object-cover" />
+                      : <div className="flex h-full w-full items-center justify-center text-base">
+                          {conv.type === 'order' ? '📦' : '🛍️'}
+                        </div>
+                    }
+                  </div>
+                  {!indent && conv.counterparty.id && presenceMap[conv.counterparty.id]?.online && (
+                    <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" title="在線" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  {!indent && (
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="truncate text-xs font-semibold text-slate-900">{conv.counterparty.displayName}</p>
+                      <span className="shrink-0 text-[9px] text-slate-400">
+                        {conv.lastMessage ? formatChatTime(conv.lastMessage.createdAt) : ''}
+                      </span>
                     </div>
-                }
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1">
-                  <p className="truncate text-xs font-semibold text-slate-900">
-                    {conv.counterparty.displayName}
+                  )}
+                  <p className={`truncate ${indent ? 'text-[11px] font-medium text-slate-700' : 'text-[11px] text-slate-500'}`}>
+                    {conv.listing?.title ?? (indent ? '對話' : '')}
                   </p>
-                  <span className="shrink-0 text-[9px] text-slate-400">
-                    {conv.lastMessage ? formatChatTime(conv.lastMessage.createdAt) : ''}
+                  <p className="mt-0.5 truncate text-[10px] text-slate-400">{preview.slice(0, 50)}</p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-0.5">
+                  {indent && conv.lastMessage && (
+                    <span className="text-[9px] text-slate-400">{formatChatTime(conv.lastMessage.createdAt)}</span>
+                  )}
+                  {conv.unread > 0 && !isActive && (
+                    <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                      {conv.unread}
+                    </span>
+                  )}
+                  <span className={`rounded-full px-1.5 py-0 text-[8px] font-medium ${
+                    conv.type === 'order' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    {conv.type === 'order' ? '訂單' : '查詢'}
                   </span>
                 </div>
-                <p className="truncate text-[11px] text-slate-500">{conv.listing?.title ?? ''}</p>
-                <p className="mt-0.5 truncate text-[10px] text-slate-400">{preview.slice(0, 50)}</p>
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-0.5">
-                {conv.unread > 0 && !isActive && (
+              </button>
+            );
+          };
+
+          if (!isGrouped) return renderThread(latest, false);
+
+          // Multi-thread group: header row + (optionally) per-thread sub-rows
+          return (
+            <div key={g.key} className="border-b border-slate-50 last:border-b-0">
+              <button
+                type="button"
+                onClick={() => setCollapsedGroups((prev) => ({ ...prev, [g.key]: !prev[g.key] }))}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-slate-50"
+                aria-expanded={!collapsed}
+                aria-label={`${g.counterparty.displayName} · ${g.convs.length} 個對話`}
+              >
+                {collapsed
+                  ? <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                  : <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" />}
+                <div className="relative h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-200">
+                  <div className="flex h-full w-full items-center justify-center text-[11px] font-bold text-slate-600">
+                    {g.counterparty.displayName.slice(0, 1).toUpperCase()}
+                  </div>
+                  {isOnline && (
+                    <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white" title="在線" />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold text-slate-900">
+                    {g.counterparty.displayName}
+                    <span className="ml-1 text-[10px] font-medium text-slate-400">· {g.convs.length}</span>
+                  </p>
+                  <p className="truncate text-[10px] text-slate-400">
+                    {latest.lastMessage ? formatChatTime(latest.lastMessage.createdAt) : ''}
+                  </p>
+                </div>
+                {totalUnread > 0 && (
                   <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                    {conv.unread}
+                    {totalUnread}
                   </span>
                 )}
-                <span className={`rounded-full px-1.5 py-0 text-[8px] font-medium ${
-                  conv.type === 'order' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
-                }`}>
-                  {conv.type === 'order' ? '訂單' : '查詢'}
-                </span>
-              </div>
-            </button>
+              </button>
+              {!collapsed && (
+                <div>
+                  {g.convs.map((c) => renderThread(c, true))}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>
@@ -312,7 +411,7 @@ export default function MessagesPage() {
     />
   ) : emptyState;
 
-  // ── Layout: two-pane on desktop, single-pane toggle on mobile ─────────
+  // ── Layout: two-pane on desktop, single-pane toggle on mobile ──────────
   // overflow-hidden + min-h-0 on flex children so inner overflow-y-auto
   // scrolls within its pane (not the whole page). Without these, flex
   // children's default `min-height: auto` lets list grow → page scrolls.
@@ -331,5 +430,13 @@ export default function MessagesPage() {
         {rightPane}
       </div>
     </div>
+  );
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense>
+      <MessagesPageInner />
+    </Suspense>
   );
 }

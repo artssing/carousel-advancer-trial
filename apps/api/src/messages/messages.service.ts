@@ -27,6 +27,7 @@ type PartyDto = {
   id: string;
   displayName: string;
   role: 'BUYER' | 'SELLER' | 'AUTHENTICATOR';
+  lastSeenAt?: string | null;
 };
 
 /** Pair conversation kinds — for ConversationKind enum (string-typed because
@@ -67,17 +68,29 @@ export class MessagesService {
     if (userIds.length === 0) return [];
     const users = await this.prisma.user.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, displayName: true },
+      select: { id: true, displayName: true, lastSeenAt: true, createdAt: true },
     });
-    const byId = new Map(users.map((u) => [u.id, u.displayName]));
+    const byId = new Map(users.map((u) => [u.id, u]));
+    // Fallback: if user never recorded lastSeenAt (legacy / seed accounts),
+    // use createdAt — they must have been online at least once at creation.
+    const seenOf = (u?: { lastSeenAt: Date | null; createdAt: Date }) =>
+      (u?.lastSeenAt ?? u?.createdAt)?.toISOString() ?? null;
     const out: PartyDto[] = [];
-    if (buyerId) out.push({ id: buyerId, displayName: byId.get(buyerId) ?? '買家', role: 'BUYER' });
-    if (sellerId) out.push({ id: sellerId, displayName: byId.get(sellerId) ?? '賣家', role: 'SELLER' });
+    if (buyerId) {
+      const u = byId.get(buyerId);
+      out.push({ id: buyerId, displayName: u?.displayName ?? '買家', role: 'BUYER', lastSeenAt: seenOf(u) });
+    }
+    if (sellerId) {
+      const u = byId.get(sellerId);
+      out.push({ id: sellerId, displayName: u?.displayName ?? '賣家', role: 'SELLER', lastSeenAt: seenOf(u) });
+    }
     if (authUserId) {
+      const u = byId.get(authUserId);
       out.push({
         id: authUserId,
-        displayName: auth?.displayName ?? byId.get(authUserId) ?? '鑑定師',
+        displayName: auth?.displayName ?? u?.displayName ?? '鑑定師',
         role: 'AUTHENTICATOR',
+        lastSeenAt: seenOf(u),
       });
     }
     return out;
@@ -91,18 +104,20 @@ export class MessagesService {
     if (!participantIds || participantIds.length === 0) return [];
     const users = await this.prisma.user.findMany({
       where: { id: { in: participantIds } },
-      select: { id: true, displayName: true },
+      select: { id: true, displayName: true, lastSeenAt: true, createdAt: true },
     });
-    const byId = new Map(users.map((u) => [u.id, u.displayName]));
+    const byId = new Map(users.map((u) => [u.id, u]));
     const out: PartyDto[] = [];
     for (const uid of participantIds) {
-      const name = byId.get(uid) ?? '使用者';
+      const u = byId.get(uid);
+      const name = u?.displayName ?? '使用者';
       let role: PartyDto['role'] = 'BUYER';
       if (uid === context.sellerId) role = 'SELLER';
       else if (uid === context.authUserId) role = 'AUTHENTICATOR';
       else if (uid === context.buyerId) role = 'BUYER';
       const displayName = role === 'AUTHENTICATOR' && context.authDisplayName ? context.authDisplayName : name;
-      out.push({ id: uid, displayName, role });
+      const seen = (u?.lastSeenAt ?? u?.createdAt)?.toISOString() ?? null;
+      out.push({ id: uid, displayName, role, lastSeenAt: seen });
     }
     return out;
   }
@@ -460,6 +475,9 @@ export class MessagesService {
         body: true,
         isFiltered: true,
         createdAt: true,
+        readByBuyer: true,
+        readBySeller: true,
+        readByAuth: true,
         sender: { select: { id: true, displayName: true } },
       },
     });
@@ -556,6 +574,9 @@ export class MessagesService {
         body: true,
         isFiltered: true,
         createdAt: true,
+        readByBuyer: true,
+        readBySeller: true,
+        readByAuth: true,
         sender: { select: { id: true, displayName: true } },
       },
     });
@@ -912,5 +933,95 @@ export class MessagesService {
     if (order.sellerId === userId) return MessageRole.SELLER;
     if (authUserId === userId) return MessageRole.AUTHENTICATOR;
     throw new ForbiddenException('Not a party to this order');
+  }
+
+  /** Mark all unread messages in a conversation as read for the given user.
+   *  Determines the user's role automatically from conversation membership. */
+  async markConversationRead(conversationId: string, userId: string): Promise<void> {
+    const conv = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: {
+        buyerId: true, sellerId: true,
+        order: { select: { buyerId: true, sellerId: true, authenticator: { select: { userId: true } } } },
+      },
+    });
+    if (!conv) return;
+
+    const isBuyer = conv.buyerId === userId || conv.order?.buyerId === userId;
+    const isSeller = conv.sellerId === userId || conv.order?.sellerId === userId;
+    const isAuth = conv.order?.authenticator?.userId === userId;
+    const field = isBuyer ? 'readByBuyer' : isSeller ? 'readBySeller' : isAuth ? 'readByAuth' : null;
+    if (!field) return;
+
+    await this.prisma.message.updateMany({
+      where: { conversationId, [field]: false },
+      data: { [field]: true },
+    });
+  }
+
+  /** Update User.lastSeenAt to now (called on socket connect/disconnect). */
+  async updateLastSeen(userId: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastSeenAt: new Date() },
+    });
+  }
+
+  /** Return all conv: room names for conversations this user is a participant in.
+   *  Used by presence broadcast to notify all relevant parties. */
+  async getUserConversationRooms(userId: string): Promise<string[]> {
+    const convs = await this.prisma.conversation.findMany({
+      where: {
+        OR: [
+          { buyerId: userId },
+          { sellerId: userId },
+          { participantUserIds: { has: userId } },
+        ],
+      },
+      select: { id: true },
+      take: 200,
+    });
+    return convs.map((c) => `conv:${c.id}`);
+  }
+
+  /** Get all unique user IDs that share a conversation with the given user.
+   *  Used by gateway to broadcast presence events to peers' user rooms. */
+  async getConversationPeerIds(userId: string): Promise<string[]> {
+    const convs = await this.prisma.conversation.findMany({
+      where: {
+        OR: [
+          { buyerId: userId },
+          { sellerId: userId },
+          { participantUserIds: { has: userId } },
+        ],
+      },
+      select: { buyerId: true, sellerId: true, participantUserIds: true },
+      take: 200,
+    });
+    const peerSet = new Set<string>();
+    for (const c of convs) {
+      if (c.buyerId && c.buyerId !== userId) peerSet.add(c.buyerId);
+      if (c.sellerId && c.sellerId !== userId) peerSet.add(c.sellerId);
+      for (const uid of c.participantUserIds) {
+        if (uid !== userId) peerSet.add(uid);
+      }
+    }
+    return Array.from(peerSet);
+  }
+
+  /** Determine a user's MessageRole in a conversation (returns null if not a party). */
+  async getUserRoleInConversation(conversationId: string, userId: string): Promise<MessageRole | null> {
+    const conv = await this.prisma.conversation.findUnique({
+      where: { id: conversationId },
+      select: {
+        buyerId: true, sellerId: true,
+        order: { select: { buyerId: true, sellerId: true, authenticator: { select: { userId: true } } } },
+      },
+    });
+    if (!conv) return null;
+    if (conv.buyerId === userId || conv.order?.buyerId === userId) return MessageRole.BUYER;
+    if (conv.sellerId === userId || conv.order?.sellerId === userId) return MessageRole.SELLER;
+    if (conv.order?.authenticator?.userId === userId) return MessageRole.AUTHENTICATOR;
+    return null;
   }
 }

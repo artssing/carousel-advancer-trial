@@ -106,4 +106,36 @@ export const api = {
       }>(`/admin/price-changes${q ? `?${q}` : ''}`);
     },
   },
+  banners: {
+    listAll: () => req<Array<{
+      id: string; message: string;
+      severity: 'INFO' | 'WARNING' | 'CRITICAL';
+      audience: 'ALL' | 'BUYERS' | 'SELLERS' | 'AUTHENTICATORS';
+      isActive: boolean; startsAt: string | null; endsAt: string | null;
+      dismissible: boolean; priority: number;
+      createdBy: string; createdAt: string; updatedAt: string;
+    }>>('/admin/banners'),
+    create: (data: {
+      message: string;
+      severity: 'INFO' | 'WARNING' | 'CRITICAL';
+      audience?: 'ALL' | 'BUYERS' | 'SELLERS' | 'AUTHENTICATORS';
+      isActive?: boolean;
+      startsAt?: string | null;
+      endsAt?: string | null;
+      dismissible?: boolean;
+      priority?: number;
+    }) => req<any>('/admin/banners', { method: 'POST', body: JSON.stringify(data) }),
+    update: (id: string, data: Partial<{
+      message: string;
+      severity: 'INFO' | 'WARNING' | 'CRITICAL';
+      audience: 'ALL' | 'BUYERS' | 'SELLERS' | 'AUTHENTICATORS';
+      isActive: boolean;
+      startsAt: string | null;
+      endsAt: string | null;
+      dismissible: boolean;
+      priority: number;
+    }>) => req<any>(`/admin/banners/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    remove: (id: string) =>
+      req<{ ok: boolean }>(`/admin/banners/${id}`, { method: 'DELETE' }),
+  },
 };

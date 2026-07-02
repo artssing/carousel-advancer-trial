@@ -12,6 +12,7 @@ import { Card, CardContent, TierPill, Button, ListingThumb } from '@authentik/ui
 import {
   formatHKD, tierForPrice, browseCategories, categoryById, categoryByApiEnum, formatSavings,
   brandsForCategory, hasBrandPicker, brandFieldLabel, brandLabel, parseSearchQuery,
+  CONDITION_GRADES, conditionLabel,
 } from '@authentik/utils';
 import { api } from '@/lib/api';
 
@@ -73,6 +74,7 @@ export default function BrowsePage() {
   const minPrice = minPriceStr ? Number(minPriceStr) : undefined;
   const maxPrice = maxPriceStr ? Number(maxPriceStr) : undefined;
   const brand = searchParams?.get('brand') ?? null;
+  const conditionMin = searchParams?.get('cond') ?? null;
 
   const [inputValue, setInputValue] = useState<string>(searchQuery);
   const [minInput, setMinInput] = useState(minPriceStr);
@@ -111,7 +113,7 @@ export default function BrowsePage() {
   const pageSize = isMobile ? MOBILE_PAGE_SIZE : DESKTOP_PAGE_SIZE;
 
   // ── URL sync helpers ───────────────────────────────────────────────────────
-  function buildUrl(cat: string | null, q: string, opts?: { sort?: string; min?: string; max?: string; brand?: string | null }) {
+  function buildUrl(cat: string | null, q: string, opts?: { sort?: string; min?: string; max?: string; brand?: string | null; cond?: string | null }) {
     const params = new URLSearchParams();
     if (cat) params.set('cat', cat);
     if (q)   params.set('q', q);
@@ -124,6 +126,8 @@ export default function BrowsePage() {
     // brand: explicit null clears; undefined inherits current
     const br = opts?.brand === null ? null : (opts?.brand ?? brand);
     if (br) params.set('brand', br);
+    const cd = opts?.cond === null ? null : (opts?.cond ?? conditionMin);
+    if (cd) params.set('cond', cd);
     const qs = params.toString();
     return qs ? `/browse?${qs}` : '/browse';
   }
@@ -140,6 +144,9 @@ export default function BrowsePage() {
   }
   function handleBrandChange(newBrand: string | null) {
     navigate(buildUrl(category, searchQuery, { brand: newBrand }));
+  }
+  function handleConditionChange(newCond: string | null) {
+    navigate(buildUrl(category, searchQuery, { cond: newCond }));
   }
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -203,7 +210,7 @@ export default function BrowsePage() {
     const enumVal = categoryById(category)?.apiEnum;
     api.listings
       .list(enumVal, pageSize, 0, apiSearch, {
-        minPrice, maxPrice, sort, brand: brand ?? undefined,
+        minPrice, maxPrice, sort, brand: brand ?? undefined, conditionMin: conditionMin ?? undefined,
       })
       .then(({ items, total: t, hasMore: more }) => {
         setListings(items);
@@ -214,7 +221,7 @@ export default function BrowsePage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [category, brand, apiSearch, pageSize, sort, minPrice, maxPrice]);
+  }, [category, brand, conditionMin, apiSearch, pageSize, sort, minPrice, maxPrice]);
 
   // ── loadMore ──────────────────────────────────────────────────────────────
   const loadMore = useCallback(() => {
@@ -227,7 +234,7 @@ export default function BrowsePage() {
 
     api.listings
       .list(enumVal, pageSize, currentOffset, apiSearch, {
-        minPrice, maxPrice, sort, brand: brand ?? undefined,
+        minPrice, maxPrice, sort, brand: brand ?? undefined, conditionMin: conditionMin ?? undefined,
       })
       .then(({ items, hasMore: more }) => {
         offsetRef.current = currentOffset + items.length;
@@ -240,7 +247,7 @@ export default function BrowsePage() {
         loadingMoreRef.current = false;
         setLoadingMore(false);
       });
-  }, [category, brand, apiSearch, pageSize, sort, minPrice, maxPrice]);
+  }, [category, brand, conditionMin, apiSearch, pageSize, sort, minPrice, maxPrice]);
 
   const loadMoreRef = useRef(loadMore);
   useEffect(() => { loadMoreRef.current = loadMore; });
@@ -352,6 +359,46 @@ export default function BrowsePage() {
         );
       })()}
 
+      {/* ── Condition "at-least" filter (Carousell-style pill row) ─────────── */}
+      {(() => {
+        const activeSpec = conditionMin
+          ? CONDITION_GRADES.find((g) => g.id === conditionMin)
+          : undefined;
+        return (
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+            <span className="font-medium text-slate-500">狀況以上：</span>
+            <button
+              onClick={() => handleConditionChange(null)}
+              className={`rounded-full border px-2.5 py-0.5 transition ${
+                !conditionMin ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white'
+              }`}
+            >
+              不限
+            </button>
+            {CONDITION_GRADES.map((g) => {
+              const isActiveOrBetter = activeSpec ? g.ordinal <= activeSpec.ordinal : false;
+              const isThreshold = conditionMin === g.id;
+              return (
+                <button
+                  key={g.id}
+                  onClick={() => handleConditionChange(isThreshold ? null : g.id)}
+                  className={`rounded-full border px-2.5 py-0.5 transition ${
+                    isThreshold
+                      ? 'border-brand-500 bg-brand-500 text-white'
+                      : isActiveOrBetter
+                        ? 'border-brand-300 bg-brand-50 text-brand-700'
+                        : 'border-slate-200 bg-white text-slate-600'
+                  }`}
+                  title={`${g.label} 或以上 — ${g.description}`}
+                >
+                  {g.label}
+                </button>
+              );
+            })}
+          </div>
+        );
+      })()}
+
       {/* ── Sort + price filter bar ────────────────────────────────────────── */}
       <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-slate-100 bg-white p-2 text-xs">
         {/* Sort */}
@@ -416,7 +463,7 @@ export default function BrowsePage() {
       {/* ── Active filters indicator ───────────────────────────────────────── */}
       {/* relevance is the implicit default while searching — not advertised as a
           removable filter chip (only the explicit price sorts are). */}
-      {(sort === 'priceAsc' || sort === 'priceDesc' || minPrice || maxPrice || searchQuery || category) && (
+      {(sort === 'priceAsc' || sort === 'priceDesc' || minPrice || maxPrice || searchQuery || category || conditionMin) && (
         <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px]">
           <span className="text-slate-400">篩選中：</span>
           {category && (
@@ -441,6 +488,12 @@ export default function BrowsePage() {
             <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">
               價錢：HK${minPrice ?? '0'}–{maxPrice ? `HK$${maxPrice}` : '不限'}
               <button onClick={() => navigate(buildUrl(category, searchQuery, { min: '', max: '' }))} aria-label="移除價錢">×</button>
+            </span>
+          )}
+          {conditionMin && (
+            <span className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-2 py-0.5 text-brand-700">
+              狀況：{conditionLabel(conditionMin as any)} 或以上
+              <button onClick={() => handleConditionChange(null)} aria-label="移除狀況">×</button>
             </span>
           )}
           <button
@@ -506,6 +559,14 @@ export default function BrowsePage() {
                           </span>
                         ) : null;
                       })()}
+                      {l.condition && (
+                        <span
+                          className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-100"
+                          title="賣方申報成色（未經 Authentik 驗證）"
+                        >
+                          {conditionLabel(l.condition)}
+                        </span>
+                      )}
                     </div>
                     <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-tight">
                       {l.title}

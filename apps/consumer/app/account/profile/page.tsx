@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button, Card, CardContent } from '@authentik/ui';
-import { api, hasToken, clearToken, ApiError } from '@/lib/api';
+import { api, hasToken, clearToken, ApiError, AUTH_CHANGE_EVENT } from '@/lib/api';
 import {
   User as UserIcon, Lock, Store, ShieldCheck, ExternalLink, Camera,
   Check, AlertTriangle, Loader2, Mail, Eye, EyeOff, Phone,
@@ -98,12 +98,31 @@ export default function ProfilePage() {
 function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }) {
   const [displayName, setDisplayName] = useState(me.displayName);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(me.avatarUrl);
+  // Persisted uncompressed source — kept so the customer can re-crop without re-uploading.
+  const [avatarOriginalUrl, setAvatarOriginalUrl] = useState<string | null>(me.avatarOriginalUrl);
+  const [avatarCropZoom, setAvatarCropZoom] = useState<number | null>(me.avatarCropZoom);
+  const [avatarCropX, setAvatarCropX] = useState<number | null>(me.avatarCropX);
+  const [avatarCropY, setAvatarCropY] = useState<number | null>(me.avatarCropY);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
 
-  const dirty = displayName.trim() !== me.displayName || avatarUrl !== me.avatarUrl;
+  // Cropper state: opens after file pick OR after clicking "再次調整".
+  const [cropSrc, setCropSrc] = useState<string | null>(null);
+  const [cropImg, setCropImg] = useState<HTMLImageElement | null>(null);
+  const [zoom, setZoom] = useState(1);
+  // Translation in viewport pixels (offset from center)
+  const [tx, setTx] = useState(0);
+  const [ty, setTy] = useState(0);
+  const dragRef = useRef<{ startX: number; startY: number; startTx: number; startTy: number } | null>(null);
+
+  const dirty = displayName.trim() !== me.displayName
+    || avatarUrl !== me.avatarUrl
+    || avatarOriginalUrl !== me.avatarOriginalUrl
+    || avatarCropZoom !== me.avatarCropZoom
+    || avatarCropX !== me.avatarCropX
+    || avatarCropY !== me.avatarCropY;
 
   function onFile(e: React.ChangeEvent<HTMLInputElement>) {
     setErr(null);
@@ -112,29 +131,101 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
     if (!f.type.startsWith('image/')) {
       setErr('只接受圖片檔案'); return;
     }
-    // Client compress: resize to 200x200, JPEG quality 0.85
-    const img = new Image();
     const reader = new FileReader();
     reader.onload = () => {
+      const data = reader.result as string;
+      const img = new Image();
       img.onload = () => {
-        const c = document.createElement('canvas');
-        const size = 200;
-        c.width = size; c.height = size;
-        const ctx = c.getContext('2d')!;
-        // Cover-fit crop
-        const ratio = Math.max(size / img.width, size / img.height);
-        const w = img.width * ratio, h = img.height * ratio;
-        ctx.drawImage(img, (size - w) / 2, (size - h) / 2, w, h);
-        const data = c.toDataURL('image/jpeg', 0.85);
-        if (data.length > 256 * 1024) {
-          setErr('Avatar 仍然太大，請揀細啲嘅圖');
-          return;
-        }
-        setAvatarUrl(data);
+        // Downscale the original to ≤ 800×800 JPEG q0.85 so we stay under the
+        // 512KB server cap while still keeping enough resolution to re-crop.
+        const MAX = 800;
+        const sourceRatio = Math.min(1, MAX / Math.max(img.width, img.height));
+        const ow = Math.round(img.width * sourceRatio);
+        const oh = Math.round(img.height * sourceRatio);
+        const oc = document.createElement('canvas');
+        oc.width = ow; oc.height = oh;
+        oc.getContext('2d')!.drawImage(img, 0, 0, ow, oh);
+        const compressed = oc.toDataURL('image/jpeg', 0.85);
+        const compressedImg = new Image();
+        compressedImg.onload = () => {
+          setCropSrc(compressed);
+          setCropImg(compressedImg);
+          // Fresh upload → reset crop transform
+          setZoom(1);
+          setTx(0);
+          setTy(0);
+        };
+        compressedImg.src = compressed;
       };
-      img.src = reader.result as string;
+      img.src = data;
     };
     reader.readAsDataURL(f);
+    // Allow re-picking the same file later
+    if (fileRef.current) fileRef.current.value = '';
+  }
+
+  /** Re-open the cropper using the saved original — no re-upload needed. */
+  function recropExisting() {
+    if (!avatarOriginalUrl) return;
+    const img = new Image();
+    img.onload = () => {
+      setCropSrc(avatarOriginalUrl);
+      setCropImg(img);
+      setZoom(avatarCropZoom ?? 1);
+      setTx(avatarCropX ?? 0);
+      setTy(avatarCropY ?? 0);
+    };
+    img.src = avatarOriginalUrl;
+  }
+
+  function applyCrop() {
+    if (!cropImg) return;
+    const size = 200;
+    const c = document.createElement('canvas');
+    c.width = size; c.height = size;
+    const ctx = c.getContext('2d')!;
+    // Cover-fit base ratio so the smaller side fills the viewport (no letterbox).
+    const baseRatio = Math.max(size / cropImg.width, size / cropImg.height);
+    const ratio = baseRatio * zoom;
+    const w = cropImg.width * ratio;
+    const h = cropImg.height * ratio;
+    // tx/ty are in viewport pixels — translate the image by that amount.
+    ctx.drawImage(cropImg, (size - w) / 2 + tx, (size - h) / 2 + ty, w, h);
+    const data = c.toDataURL('image/jpeg', 0.85);
+    if (data.length > 256 * 1024) {
+      setErr('Avatar 仍然太大，請揀細啲嘅圖');
+      return;
+    }
+    setAvatarUrl(data);
+    // Persist the compressed source + crop params so the customer can
+    // re-open the cropper later without re-uploading.
+    setAvatarOriginalUrl(cropSrc);
+    setAvatarCropZoom(zoom);
+    setAvatarCropX(tx);
+    setAvatarCropY(ty);
+    setCropSrc(null);
+    setCropImg(null);
+  }
+
+  function cancelCrop() {
+    setCropSrc(null);
+    setCropImg(null);
+  }
+
+  function onCropPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    dragRef.current = { startX: e.clientX, startY: e.clientY, startTx: tx, startTy: ty };
+  }
+
+  function onCropPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!dragRef.current) return;
+    setTx(dragRef.current.startTx + (e.clientX - dragRef.current.startX));
+    setTy(dragRef.current.startTy + (e.clientY - dragRef.current.startY));
+  }
+
+  function onCropPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    dragRef.current = null;
   }
 
   async function save() {
@@ -143,8 +234,22 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
       const updated = await api.updateMe({
         displayName: displayName.trim() !== me.displayName ? displayName.trim() : undefined,
         avatarUrl: avatarUrl !== me.avatarUrl ? (avatarUrl ?? '') : undefined,
+        avatarOriginalUrl: avatarOriginalUrl !== me.avatarOriginalUrl ? (avatarOriginalUrl ?? '') : undefined,
+        avatarCropZoom: avatarCropZoom !== me.avatarCropZoom ? avatarCropZoom : undefined,
+        avatarCropX: avatarCropX !== me.avatarCropX ? avatarCropX : undefined,
+        avatarCropY: avatarCropY !== me.avatarCropY ? avatarCropY : undefined,
       });
-      onChange({ ...me, displayName: updated.displayName, avatarUrl: updated.avatarUrl });
+      onChange({
+        ...me,
+        displayName: updated.displayName,
+        avatarUrl: updated.avatarUrl,
+        avatarOriginalUrl: updated.avatarOriginalUrl,
+        avatarCropZoom: updated.avatarCropZoom,
+        avatarCropX: updated.avatarCropX,
+        avatarCropY: updated.avatarCropY,
+      });
+      // Notify top-nav (and any other observers) so the avatar updates without reload.
+      window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
@@ -182,13 +287,86 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
           </div>
           <div className="text-xs text-slate-500">
             <p>JPG / PNG · 自動壓縮成 200×200</p>
-            {avatarUrl && (
-              <button onClick={() => setAvatarUrl(null)} className="mt-1 text-red-600 hover:underline">
-                移除頭像
-              </button>
-            )}
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
+              {avatarOriginalUrl && !cropSrc && (
+                <button onClick={recropExisting} className="text-brand-600 hover:underline">
+                  再次調整位置
+                </button>
+              )}
+              {avatarUrl && (
+                <button
+                  onClick={() => {
+                    setAvatarUrl(null);
+                    setAvatarOriginalUrl(null);
+                    setAvatarCropZoom(null);
+                    setAvatarCropX(null);
+                    setAvatarCropY(null);
+                  }}
+                  className="text-red-600 hover:underline"
+                >
+                  移除頭像
+                </button>
+              )}
+            </div>
           </div>
         </div>
+
+        {/* Crop editor — opens after picking a file. Drag to reposition + zoom slider. */}
+        {cropSrc && cropImg && (
+          <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
+            <p className="mb-2 text-xs font-medium text-slate-700">調整頭像位置</p>
+            <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
+              <div
+                className="relative h-[200px] w-[200px] shrink-0 overflow-hidden rounded-full bg-white ring-2 ring-brand-200 touch-none select-none"
+                onPointerDown={onCropPointerDown}
+                onPointerMove={onCropPointerMove}
+                onPointerUp={onCropPointerUp}
+                onPointerCancel={onCropPointerUp}
+                style={{ cursor: dragRef.current ? 'grabbing' : 'grab' }}
+              >
+                {(() => {
+                  const size = 200;
+                  const baseRatio = Math.max(size / cropImg.width, size / cropImg.height);
+                  const ratio = baseRatio * zoom;
+                  const w = cropImg.width * ratio;
+                  const h = cropImg.height * ratio;
+                  const left = (size - w) / 2 + tx;
+                  const top = (size - h) / 2 + ty;
+                  return (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={cropSrc}
+                      alt=""
+                      draggable={false}
+                      className="absolute pointer-events-none max-w-none"
+                      style={{ width: w, height: h, left, top }}
+                    />
+                  );
+                })()}
+              </div>
+              <div className="flex w-full flex-1 flex-col gap-3">
+                <label className="block text-xs text-slate-700">
+                  <span className="block">縮放</span>
+                  <input
+                    type="range"
+                    min={1}
+                    max={3}
+                    step={0.01}
+                    value={zoom}
+                    onChange={(e) => setZoom(parseFloat(e.target.value))}
+                    className="mt-1 w-full"
+                  />
+                  <span className="mt-0.5 block text-[10px] text-slate-400">拖拉頭像可微調位置</span>
+                </label>
+                <div className="flex gap-2">
+                  <Button size="sm" onClick={applyCrop}>確認</Button>
+                  <Button size="sm" variant="outline" onClick={cancelCrop}>取消</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setZoom(1); setTx(0); setTy(0); }}>重設</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* DisplayName */}
         <label className="block text-sm">

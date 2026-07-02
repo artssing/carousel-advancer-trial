@@ -8,7 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { Category } from '@prisma/client';
+import { Category, ConditionGrade } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
@@ -30,6 +30,7 @@ export class ListingsController {
     @Query('sort') sort?: string,
     @Query('excludeId') excludeId?: string,
     @Query('brand') brand?: string,
+    @Query('conditionMin') conditionMin?: string,
   ) {
     const take = Math.min(Math.max(parseInt(limit ?? '24', 10) || 24, 1), 100);
     const skip = Math.max(parseInt(offset ?? '0', 10) || 0, 0);
@@ -37,12 +38,17 @@ export class ListingsController {
     const max = maxPrice ? parseInt(maxPrice, 10) : undefined;
     const sortVal: 'newest' | 'priceAsc' | 'priceDesc' | 'relevance' =
       sort === 'priceAsc' || sort === 'priceDesc' || sort === 'relevance' ? sort : 'newest';
+    const CONDS: readonly ConditionGrade[] = ['BRAND_NEW', 'NEARLY_NEW', 'GOOD', 'LIGHT_USE', 'FAIR'];
+    const condMin = conditionMin && CONDS.includes(conditionMin as ConditionGrade)
+      ? (conditionMin as ConditionGrade)
+      : undefined;
     return this.listings.list(category, take, skip, q, {
       minPrice: Number.isFinite(min!) ? min : undefined,
       maxPrice: Number.isFinite(max!) ? max : undefined,
       sort: sortVal,
       excludeId,
       brand: brand?.trim() || undefined,
+      conditionMin: condMin,
     });
   }
 

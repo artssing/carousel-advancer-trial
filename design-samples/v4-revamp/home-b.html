@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>主頁 B · 編輯精選 Drops</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* B — 編輯精選：單一 spotlight hero + 策展橫向 row + 鑑定師 spotlight */
+  .spotlight{display:grid;grid-template-columns:1.15fr .85fr;gap:0;border:1px solid var(--line);
+    border-radius:14px;overflow:hidden;margin:40px 0 8px;background:var(--surface)}
+  .spotlight .img{position:relative;background:linear-gradient(135deg,#e7ecf2,#d5dce8);min-height:440px}
+  .spotlight .img .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:var(--display);font-weight:800;letter-spacing:.22em;color:#9aa3b5;font-size:18px}
+  .spotlight .img .badge{position:absolute;top:20px;left:20px}
+  .spotlight .info{padding:44px 40px;display:flex;flex-direction:column;justify-content:center}
+  .spotlight .info .eyebrow{margin-bottom:14px}
+  .spotlight .info h1{font-size:34px;line-height:1.2}
+  .spotlight .info .sub{color:var(--text-2);margin:12px 0 20px}
+  .spotlight .price{font-size:30px;font-weight:800;color:var(--primary);margin-bottom:20px}
+  .spotlight .authline{display:flex;gap:10px;align-items:center;padding:14px 0;border-top:1px solid var(--line);margin-bottom:22px}
+  .avatar{width:40px;height:40px;border-radius:50%;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--primary);flex-shrink:0}
+  .spot-actions{display:flex;gap:12px}
+
+  .row-head{display:flex;align-items:baseline;justify-content:space-between;margin:56px 0 18px}
+  .row-head .t{display:flex;flex-direction:column;gap:4px}
+  .row-head .t .k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--action);font-weight:700}
+  .row-head a{font-size:13px;font-weight:600;color:var(--action)}
+  .hrow{display:flex;gap:16px;overflow-x:auto;scrollbar-width:none;touch-action:pan-x;overscroll-behavior-x:contain;padding-bottom:4px}
+  .hrow::-webkit-scrollbar{display:none}
+  .hrow .p-card{flex:0 0 246px}
+
+  .auth-feature{display:grid;grid-template-columns:.8fr 1.2fr;gap:0;border:1px solid var(--line);
+    border-radius:14px;overflow:hidden;margin-top:60px;background:var(--surface)}
+  .auth-feature .side{background:var(--primary);color:#fff;padding:40px}
+  .auth-feature .side .k{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);font-weight:700}
+  .auth-feature .side h3{font-size:26px;margin:12px 0 10px;color:#fff}
+  .auth-feature .side p{color:#b8c5d6;font-size:14px;line-height:1.7}
+  .auth-feature .body{padding:40px}
+  .qstat{display:flex;gap:36px;margin-bottom:24px}
+  .qstat .n{font-size:30px;font-weight:800;color:var(--primary)}
+  .qstat .l{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);font-weight:600;margin-top:4px}
+  .quote{font-size:18px;line-height:1.7;color:var(--text);border-left:3px solid var(--action);padding-left:18px}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+    <nav class="nav"><a>瀏覽</a><a>鑑定師</a><a>出售</a><a>信任機制</a></nav>
+    <div class="nav-right"><a>登入</a><button class="btn btn-primary" style="padding:9px 18px">刊登出售</button></div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- Spotlight -->
+  <section class="spotlight">
+    <div class="img"><div class="wm">HERMÈS · BIRKIN 25</div><span class="pill pill-verify badge">◆ 已驗證</span></div>
+    <div class="info">
+      <div class="eyebrow">本週精選 · Featured Drop</div>
+      <h1 class="display">Hermès Birkin 25 Togo Gold 金扣</h1>
+      <div class="sub">近全新 · 連原裝單據 · 香港現貨</div>
+      <div class="price">HK$168,000</div>
+      <div class="authline">
+        <div class="avatar">米</div>
+        <div style="flex:1"><div style="font-weight:600;font-size:14px">鑑定師 Milan Leung <span class="stars">★★★★★</span></div>
+          <div class="mono" style="margin-top:2px">名牌手袋專門 · 爭議率 0.3%</div></div>
+      </div>
+      <div class="spot-actions">
+        <button class="btn btn-primary btn-lg">立即購買</button>
+        <button class="btn btn-ghost btn-lg">加入追蹤</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="container">
+  <!-- 策展 row 1 -->
+  <div class="row-head"><div class="t"><span class="k">Editor's Pick</span><h2 class="display">編輯推介 · 靜奢手袋</h2></div><a>查看系列 →</a></div>
+  <div class="hrow">
+    <a class="p-card"><div class="ph"><div class="wm">CHANEL</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+      <div class="body"><div class="title">Chanel Classic Flap Medium · Caviar</div><div class="meta">九成新</div>
+        <div class="row"><span class="price">HK$68,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">LV</div></div>
+      <div class="body"><div class="title">Louis Vuitton Capucines BB</div><div class="meta">近全新</div>
+        <div class="row"><span class="price">HK$32,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">DIOR</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+      <div class="body"><div class="title">Dior Lady Dior Medium 藤格紋</div><div class="meta">連單</div>
+        <div class="row"><span class="price">HK$42,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">HERMÈS</div></div>
+      <div class="body"><div class="title">Hermès Kelly 28 Sellier</div><div class="meta">全新</div>
+        <div class="row"><span class="price">HK$215,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">CELINE</div></div>
+      <div class="body"><div class="title">Celine Triomphe Teen</div><div class="meta">九成新</div>
+        <div class="row"><span class="price">HK$21,000</span><span class="pill pill-tier">T3</span></div></div></a>
+  </div>
+
+  <!-- 策展 row 2 -->
+  <div class="row-head"><div class="t"><span class="k">This Week</span><h2 class="display">腕錶新上架</h2></div><a>查看系列 →</a></div>
+  <div class="hrow">
+    <a class="p-card"><div class="ph"><div class="wm">ROLEX</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+      <div class="body"><div class="title">Rolex Submariner Date 126610LN</div><div class="meta">全套 2023</div>
+        <div class="row"><span class="price">HK$118,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">AP</div></div>
+      <div class="body"><div class="title">Audemars Piguet Royal Oak 15500</div><div class="meta">連保卡</div>
+        <div class="row"><span class="price">HK$328,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">OMEGA</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+      <div class="body"><div class="title">Omega Speedmaster Moonwatch</div><div class="meta">全套</div>
+        <div class="row"><span class="price">HK$48,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">PATEK</div></div>
+      <div class="body"><div class="title">Patek Philippe Nautilus 5711</div><div class="meta">連保卡</div>
+        <div class="row"><span class="price">HK$880,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">CARTIER</div></div>
+      <div class="body"><div class="title">Cartier Santos Medium</div><div class="meta">九成新</div>
+        <div class="row"><span class="price">HK$54,000</span><span class="pill pill-tier">T3</span></div></div></a>
+  </div>
+
+  <!-- 鑑定師 spotlight -->
+  <section class="auth-feature">
+    <div class="side">
+      <div class="k">鑑定師專訪</div>
+      <h3 class="display">Milan Leung</h3>
+      <p>前拍賣行手袋部門鑑定師，八年經驗，專攻 Chanel 及 Hermès。每一宗判斷都以合約及 E&amp;O 保險承擔。</p>
+    </div>
+    <div class="body">
+      <div class="qstat">
+        <div><div class="n">1,240</div><div class="l">已完成鑑定</div></div>
+        <div><div class="n">0.3%</div><div class="l">爭議率</div></div>
+        <div><div class="n">4.9</div><div class="l">平均評分</div></div>
+      </div>
+      <p class="quote">「鑑定不是背書。我簽的每一份報告，都代表我用專業與保險，為那件貨品的真偽負責。」</p>
+      <button class="btn btn-navy" style="margin-top:22px">查看鑑定師檔案</button>
+    </div>
+  </section>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="col"><div class="brand" style="font-size:18px">AUTHEN<span class="dot">·</span>TIK</div>
+      <p class="disclaimer" style="max-width:280px;margin-top:12px">資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。</p></div>
+    <div class="col"><h4>買賣</h4><a>瀏覽商品</a><a>刊登出售</a><a>鑑定師名冊</a></div>
+    <div class="col"><h4>信任</h4><a>鑑定機制</a><a>款項託管</a><a>爭議處理</a></div>
+    <div class="col"><h4>關於</h4><a>條款</a><a>私隱</a><a>聯絡</a></div>
+  </div>
+</footer>
+
+</body>
+</html>

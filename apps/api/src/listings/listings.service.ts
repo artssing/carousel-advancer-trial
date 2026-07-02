@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { Category, ListingStatus, PriceChangeStatus } from '@prisma/client';
-import { tierForPrice, normalizeForMatch } from '@authentik/utils';
+import { Category, ConditionGrade, ListingStatus, PriceChangeStatus } from '@prisma/client';
+import { tierForPrice, normalizeForMatch, gradesAtLeast } from '@authentik/utils';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateListingDto, UpdateListingDto } from './dto';
 
@@ -56,7 +56,7 @@ export class ListingsService {
     limit = 24,
     offset = 0,
     q?: string,
-    opts?: { minPrice?: number; maxPrice?: number; sort?: 'newest' | 'priceAsc' | 'priceDesc' | 'relevance'; excludeId?: string; brand?: string },
+    opts?: { minPrice?: number; maxPrice?: number; sort?: 'newest' | 'priceAsc' | 'priceDesc' | 'relevance'; excludeId?: string; brand?: string; conditionMin?: ConditionGrade },
   ) {
     await this.promoteExpiredDrops();
 
@@ -88,6 +88,10 @@ export class ListingsService {
           }
         : {}),
       ...(opts?.excludeId ? { id: { not: opts.excludeId } } : {}),
+      // Condition filter: "at least X" — matches listings whose grade ordinal
+      // ≤ threshold. Legacy listings (condition=null) are excluded when a filter
+      // is active (they show up only when no filter is set).
+      ...(opts?.conditionMin ? { condition: { in: gradesAtLeast(opts.conditionMin) } } : {}),
     };
     if (opts?.minPrice != null || opts?.maxPrice != null) {
       where.priceHKD = {};
@@ -98,7 +102,7 @@ export class ListingsService {
     // Browse cards only need coverUrl + meta — exclude heavy fields
     // (images[] base64 array, videoUrl base64) for query speed.
     const select = {
-      id: true, sellerId: true, category: true, brand: true, title: true,
+      id: true, sellerId: true, category: true, brand: true, condition: true, title: true,
       priceHKD: true, originalPriceHKD: true, tier: true, status: true, createdAt: true,
       coverUrl: true,           // derived thumbnail (image or video frame)
       videoUrl: false as const, // huge base64, exclude
@@ -107,6 +111,7 @@ export class ListingsService {
       images: true,             // keep for backward-compat (older clients)
       allowedDeliveryMethods: true,
       sellerDistrict: true,
+      sellerMeetupLocations: true,
       seller: { select: { id: true, displayName: true } },
     };
     const decorate = <T extends { videoPosterUrl: string | null }>(it: T) => ({
@@ -317,6 +322,7 @@ export class ListingsService {
       data: {
         sellerId,
         category: dto.category,
+        condition: dto.condition,
         brand: dto.brand?.trim() || null,
         title: dto.title,
         description: dto.description,
@@ -331,6 +337,7 @@ export class ListingsService {
           ? { allowedDeliveryMethods: dto.allowedDeliveryMethods }
           : {}),
         sellerDistrict: dto.sellerDistrict ?? null,
+        sellerMeetupLocations: dto.sellerMeetupLocations ?? [],
       },
     });
   }
@@ -394,6 +401,7 @@ export class ListingsService {
       data.allowedDeliveryMethods = dto.allowedDeliveryMethods;
     }
     if (dto.sellerDistrict !== undefined) data.sellerDistrict = dto.sellerDistrict ?? null;
+    if (dto.sellerMeetupLocations !== undefined) data.sellerMeetupLocations = dto.sellerMeetupLocations;
 
     // Re-derive coverUrl whenever any media field changes (Lesson #8 SSOT).
     if (data.images !== undefined || data.videoIsCover !== undefined || data.videoPosterUrl !== undefined || data.videoUrl !== undefined) {

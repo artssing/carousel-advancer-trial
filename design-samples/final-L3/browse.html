@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>瀏覽 · Authentik</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .searchrow{display:flex;gap:12px;align-items:center;padding:24px 0 8px}
+  .searchbar{flex:1;display:flex;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--sh-2);overflow:hidden}
+  .searchbar input{flex:1;border:0;outline:0;font-family:inherit;font-size:15px;padding:13px 18px;color:var(--text)}
+  .searchbar button{border:0;cursor:pointer;font-family:inherit;font-weight:700;background:var(--action);color:#fff;padding:0 24px}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;padding:10px 0 4px}
+  .chip{font-size:12px;font-weight:600;color:var(--action);background:var(--verify-soft);border:1px solid var(--verify-border);border-radius:999px;padding:5px 12px;display:flex;align-items:center;gap:6px}
+  .chip .x{color:var(--text-3);cursor:pointer}
+  .layout{display:grid;grid-template-columns:230px 1fr;gap:28px;padding:16px 0 0;align-items:start}
+  .filters{position:sticky;top:82px}
+  .fgroup{border-bottom:1px solid var(--line);padding:16px 0}
+  .fgroup:first-child{padding-top:0}
+  .fgroup h4{font-size:13px;font-weight:700;margin-bottom:12px}
+  .fitem{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:13px;color:var(--text-2);cursor:pointer}
+  .fitem .box{width:16px;height:16px;border:1.5px solid var(--line-2);border-radius:4px;flex-shrink:0}
+  .fitem.on .box{background:var(--action);border-color:var(--action)}
+  .fitem.on{color:var(--text)}
+  .fitem .ct{margin-left:auto;color:var(--text-3);font-size:12px}
+  .results-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  .results-top .n{font-size:14px;color:var(--text-2)}
+  .results-top .n b{color:var(--text)}
+  .sort{font-size:13px;border:1px solid var(--line-2);border-radius:8px;padding:8px 12px;background:#fff;box-shadow:var(--sh-1)}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container">
+  <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+  <nav class="nav"><a href="browse.html" class="on">瀏覽</a><a href="#">鑑定師</a><a href="sell.html">出售</a><a href="#">信任機制</a></nav>
+  <div class="nav-right"><a href="orders.html">訂單</a><a href="account.html">帳戶</a><a href="login.html">登入</a><button class="btn btn-primary btn-sm">刊登出售</button></div>
+</div></header>
+
+<div class="container">
+  <div class="searchrow">
+    <div class="searchbar"><input value="Chanel 手袋 Caviar 金扣"><button>搜尋</button></div>
+  </div>
+  <div class="chips">
+    <span class="chip">品類：名牌手袋 <span class="x">✕</span></span>
+    <span class="chip">品牌：Chanel <span class="x">✕</span></span>
+    <span class="chip">物料：Caviar <span class="x">✕</span></span>
+  </div>
+
+  <div class="layout">
+    <aside class="filters">
+      <div class="fgroup"><h4>價格區間</h4>
+        <div class="fitem"><span class="box"></span>Tier 1 · &lt; $1,000 <span class="ct">120</span></div>
+        <div class="fitem"><span class="box"></span>Tier 2 · $1k–9,999 <span class="ct">640</span></div>
+        <div class="fitem on"><span class="box"></span>Tier 3 · ≥ $10,000 <span class="ct">380</span></div>
+      </div>
+      <div class="fgroup"><h4>狀況</h4>
+        <div class="fitem on"><span class="box"></span>全新 <span class="ct">210</span></div>
+        <div class="fitem"><span class="box"></span>九成新 <span class="ct">520</span></div>
+        <div class="fitem"><span class="box"></span>二手 <span class="ct">410</span></div>
+      </div>
+      <div class="fgroup"><h4>鑑定狀態</h4>
+        <div class="fitem on"><span class="box"></span>已通過鑑定 <span class="ct">890</span></div>
+        <div class="fitem"><span class="box"></span>待鑑定 <span class="ct">250</span></div>
+      </div>
+      <div class="fgroup"><h4>地區</h4>
+        <div class="fitem"><span class="box"></span>香港島 <span class="ct">430</span></div>
+        <div class="fitem"><span class="box"></span>九龍 <span class="ct">560</span></div>
+        <div class="fitem"><span class="box"></span>新界 <span class="ct">150</span></div>
+      </div>
+    </aside>
+
+    <div>
+      <div class="results-top">
+        <div class="n">找到 <b>384</b> 件符合結果</div>
+        <select class="sort"><option>相關度</option><option>價格：低至高</option><option>價格：高至低</option><option>最新上架</option></select>
+      </div>
+      <div class="grid3">
+        <a class="p-card" href="listing.html"><div class="ph"><div class="wm">CHANEL</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+          <div class="body"><div class="title">Chanel Classic Flap Medium · Caviar 金扣</div><div class="meta">九成新 · 尖沙咀</div>
+            <div class="row"><span class="price">HK$68,000</span><span class="pill pill-tier">T3</span></div></div></a>
+        <a class="p-card" href="listing.html"><div class="ph"><div class="wm">CHANEL</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+          <div class="body"><div class="title">Chanel Classic Flap Small · Caviar 銀扣</div><div class="meta">全新 · 中環</div>
+            <div class="row"><span class="price">HK$62,000</span><span class="pill pill-tier">T3</span></div></div></a>
+        <a class="p-card" href="listing.html"><div class="ph"><div class="wm">CHANEL</div></div>
+          <div class="body"><div class="title">Chanel 19 Large Caviar</div><div class="meta">九成新 · 銅鑼灣</div>
+            <div class="row"><span class="price">HK$54,000</span><span class="pill pill-tier">T3</span></div></div></a>
+        <a class="p-card" href="listing.html"><div class="ph"><div class="wm">CHANEL</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+          <div class="body"><div class="title">Chanel Coco Handle Medium Caviar</div><div class="meta">全新 · 旺角</div>
+            <div class="row"><span class="price">HK$78,000</span><span class="pill pill-tier">T3</span></div></div></a>
+        <a class="p-card" href="listing.html"><div class="ph"><div class="wm">CHANEL</div></div>
+          <div class="body"><div class="title">Chanel Classic Flap Jumbo Caviar</div><div class="meta">九成新 · 觀塘</div>
+            <div class="row"><span class="price">HK$82,000</span><span class="pill pill-tier">T3</span></div></div></a>
+        <a class="p-card" href="listing.html"><div class="ph"><div class="wm">CHANEL</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+          <div class="body"><div class="title">Chanel Wallet on Chain Caviar 金扣</div><div class="meta">全新 · 尖沙咀</div>
+            <div class="row"><span class="price">HK$28,000</span><span class="pill pill-tier">T3</span></div></div></a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer"><div class="container">
+  <div class="col"><div class="brand" style="font-size:18px">AUTHEN<span class="dot">·</span>TIK</div>
+    <p class="disclaimer" style="max-width:280px;margin-top:12px">資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。</p></div>
+  <div class="col"><h4>買賣</h4><a href="browse.html">瀏覽商品</a><a href="sell.html">刊登出售</a><a href="#">鑑定師名冊</a></div>
+  <div class="col"><h4>信任</h4><a href="#">鑑定機制</a><a href="#">款項託管</a><a href="#">爭議處理</a></div>
+  <div class="col"><h4>關於</h4><a href="#">條款</a><a href="#">私隱</a><a href="#">聯絡</a></div>
+</div></footer>
+</body>
+</html>

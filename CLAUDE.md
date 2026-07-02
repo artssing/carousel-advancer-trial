@@ -42,9 +42,9 @@
   - ✅ Bugfix：Earnings 收入 filter 修正（AUTH_PASSED 等狀態）、Dashboard disputeRate + 本月收入、Inbox 三層分組 + 面交入口、Sidebar active state + mobile bottom nav
   - 🔲 UX polish：鑑定工作台 INCONCLUSIVE 說明、Profile 分拆 + E&O 警示
 - **Backlog**：真 escrow、AI 收費監控、Stripe/FPS、SF Express。
+- **IM Backlog**（Low priority）：24 小時無回覆 idle 提示 / 鑑定師在職橙點 / 多裝置已讀同步 / Group 已讀詳情 long-press popover / Push notification（Backlog）
 
 > ⚠️ 已知未修 bug：
-> - **JWT_SECRET module-load ordering**：`auth.module.ts` 用 `JwtModule.register` 早過 ConfigModule load `.env`。Workaround：`cd apps/api && set -a; . ./.env; set +a && npx nest start`。建議改 `registerAsync`。
 > - **Repo-wide lint 壞咗**（pre-existing）：`npm run type-check` 先係權威 gate。
 
 ## Monorepo 結構
@@ -214,7 +214,7 @@ Pre-seeded listings (DEMO-A 到 DEMO-E) + Carol PENDING offer scenario，詳見 
 2. **Card height 不對齊**：listing grid 因為 title 長短不一令 price 高低唔同 → 觀感似 bug。Fix：上面 grid pattern。
 3. **重 seed**：start script 用錯誤 query 偵測 user count → 每次 restart 覆蓋資料。Fix：上面 seed detect pattern。
 4. **Cross-app links**：authenticator portal 用 `next/link` 去 consumer 路由 → 404。Fix：用 `<a target="_blank">` + `NEXT_PUBLIC_CONSUMER_URL`。
-5. **JWT_SECRET module-load 次序**：`JwtModule.register` 早過 ConfigModule load `.env` → undefined。Workaround：`set -a; . ./.env; set +a`。長遠：改用 `registerAsync`。
+5. **JWT_SECRET module-load 次序**：~~已修~~ — 改用 `registerAsync` + `ConfigService`，`.env` 由 ConfigModule 先 load，唔再需要 workaround。
 6. **Authorisation WHERE clause 漏 role**：`listConversations` / `getUnreadCount` 只 check buyer/seller，唔包 authenticator → 鑑定師永遠睇唔到自己 mediate 嘅對話。Fix：寫每個 multi-role query 都要 cover 晒 buyer/seller/authenticator 三方。Lesson：每加一個 user role 入 conversation/order，所有相關 query 都要 review WHERE clause。
 7. **Flex item 唔 horizontal stretch**：`flex-row` parent 入面個 flex child 默認只 cross-axis (vertical) stretch，唔會自動 horizontal fill。即使 child 內部 `items-center justify-center`，盒子本身唔夠闊就會貼住左邊望落只 vertical center。Fix：empty state / full-pane child 要加 `w-full` 或 `flex-1`。
 8. **Catalog 重複定義（SSOT 違反）**：category list 喺 5 個地方各自 hardcode（sell / browse / home / top-nav / utils package），label 同 enabled flag 唔同→ 上架揀唔到首頁見到嘅 category。Fix：`packages/utils/src/categories.ts` 加齊 `emoji`/`shortLabel`/`apiEnum`/`enabledInBrowse`/`enabledInSell` 各 field，每頁用 `browseCategories()` / `sellCategories()` derive。Lesson：任何「畀 user 揀」嘅 enum-like data（category / district / verdict / status），SSOT 必須在 `packages/utils`，加新 derived property 入 config，唔好 page 自己定義 parallel list。

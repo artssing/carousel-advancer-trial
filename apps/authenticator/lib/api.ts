@@ -310,4 +310,17 @@ export const api = {
         method: 'PATCH', body: JSON.stringify({ reason }),
       }),
   },
+
+  banners: {
+    list: (audience: 'AUTHENTICATORS' | 'ALL' = 'AUTHENTICATORS') =>
+      req<Array<{
+        id: string;
+        message: string;
+        severity: 'INFO' | 'WARNING' | 'CRITICAL';
+        audience: 'ALL' | 'BUYERS' | 'SELLERS' | 'AUTHENTICATORS';
+        dismissible: boolean;
+        priority: number;
+        createdAt: string;
+      }>>(`/banners?audience=${audience}`),
+  },
 };

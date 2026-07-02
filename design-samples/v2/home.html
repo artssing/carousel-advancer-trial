@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Authentik · 首頁 v2</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .hero{display:grid;grid-template-columns:1.1fr .9fr;gap:52px;align-items:center;padding:76px 0 60px}
+  .hero .lead{font-size:15px;color:var(--text-2);max-width:460px;margin:20px 0 30px}
+  .hero-actions{display:flex;gap:12px}
+  .hero-figure{aspect-ratio:4/3;border-radius:var(--radius);position:relative;overflow:hidden;
+    background:radial-gradient(120% 120% at 30% 20%,#2a3038,#0f1216);border:1px solid var(--line-2)}
+  .hero-figure .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:var(--serif);letter-spacing:.22em;color:#565e69;font-size:15px}
+  .hero-figure .card-float{position:absolute;left:18px;bottom:18px;right:18px;
+    background:rgba(20,23,28,.82);backdrop-filter:blur(10px);border:1px solid var(--line-2);
+    border-radius:var(--radius-sm);padding:14px 16px;display:flex;gap:12px;align-items:center}
+  .avatar{width:42px;height:42px;border-radius:50%;flex-shrink:0;
+    background:radial-gradient(circle at 30% 30%,#3a4048,#20252c);
+    display:flex;align-items:center;justify-content:center;font-family:var(--serif);color:var(--gold)}
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:0;
+    border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:70px}
+  .stat-row .stat{padding:28px 24px;border-right:1px solid var(--line)}
+  .stat-row .stat:last-child{border-right:0}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin:60px 0 22px}
+  .sec-head a{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--jade)}
+  .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .flow .step{border:1px solid var(--line);border-radius:var(--radius);padding:24px;background:var(--surface)}
+  .flow .step .k{font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--jade)}
+  .flow .step h3{margin:12px 0 8px}
+  .flow .step p{font-size:13px;color:var(--text-3);line-height:1.65}
+  .auth-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+    <nav class="nav"><a>瀏覽</a><a>鑑定師</a><a>出售</a><a>信任機制</a></nav>
+    <div class="nav-right"><a>登入</a><button class="btn btn-primary" style="padding:9px 18px">刊登出售</button></div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div>
+      <div class="eyebrow">Authenticated Resale · Hong Kong</div>
+      <h1 class="display" style="margin:16px 0 0;max-width:560px">
+        正品，可以<span class="accent-word">被驗證</span>。<br>由具名鑑定師把關的二手交易。
+      </h1>
+      <p class="lead">
+        逾一萬港元貨品強制第三方鑑定。平台中立撮合、款項託管；真偽由具名星級鑑定師按合約及
+        E&amp;O 保險承擔。每一次判斷可追溯、可問責。
+      </p>
+      <div class="hero-actions">
+        <button class="btn btn-primary btn-lg">開始瀏覽</button>
+        <button class="btn btn-ghost btn-lg">了解鑑定機制</button>
+      </div>
+    </div>
+    <div class="hero-figure">
+      <div class="wm">HERMÈS · BIRKIN 25</div>
+      <div class="card-float">
+        <div class="avatar">米</div>
+        <div style="flex:1">
+          <div style="font-weight:600;font-size:14px">Milan Leung <span class="stars">★★★★★</span></div>
+          <div class="mono" style="margin-top:3px">鑑定 1,240 單 · 爭議率 0.3%</div>
+        </div>
+        <span class="pill pill-verify">◆ 已驗證</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 數據條 -->
+  <section class="stat-row">
+    <div class="stat"><div class="n">1,240<span class="u">+</span></div><div class="l">已完成鑑定</div></div>
+    <div class="stat"><div class="n">0.4<span class="u">%</span></div><div class="l">平均爭議率</div></div>
+    <div class="stat"><div class="n">100<span class="u">%</span></div><div class="l">款項託管保障</div></div>
+    <div class="stat"><div class="n">48<span class="u">hr</span></div><div class="l">平均鑑定時效</div></div>
+  </section>
+
+  <!-- 運作流程 -->
+  <div class="section-label">運作機制</div>
+  <div class="flow">
+    <div class="step"><div class="k">01 / 撮合</div>
+      <h3 class="display">中立平台，不自我背書</h3>
+      <p>平台只做撮合與款項託管。任何真偽判斷都歸屬一位具名鑑定師，UI 絕不出現「平台保證」字眼。</p></div>
+    <div class="step"><div class="k">02 / 鑑定</div>
+      <h3 class="display">具名把關，星級演算派生</h3>
+      <p>星級純由完成單數與爭議率演算得出，平台不可手改。鑑定師以合約及 E&amp;O 保險承擔責任。</p></div>
+    <div class="step"><div class="k">03 / 放款</div>
+      <h3 class="display">通過才放款，否則全退</h3>
+      <p>款項先由平台託管，貨品鑑定通過並完成交收後方放款予賣家；不通過可全額退款。</p></div>
+  </div>
+
+  <!-- 最新上架 -->
+  <div class="sec-head"><h2 class="display">最新上架</h2><a>查看全部 →</a></div>
+  <div class="grid-cards">
+    <a class="p-card"><div class="ph"><div class="wm">CHANEL</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+      <div class="body"><div class="title">Chanel Classic Flap Medium · Caviar 金扣</div>
+        <div class="meta">Jenny K. · 九成新</div>
+        <div class="row"><span class="price">HK$68,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">ROLEX</div><span class="pill pill-tier top">TIER 3</span></div>
+      <div class="body"><div class="title">Rolex Submariner Date 126610LN 黑水鬼</div>
+        <div class="meta">Tom W. · 全套 2023</div>
+        <div class="row"><span class="price">HK$118,000</span><span class="pill pill-gold"><span class="stars">★</span></span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">NIKE</div></div>
+      <div class="body"><div class="title">Air Jordan 1 Retro High OG Chicago</div>
+        <div class="meta">US 9 · 全新未著</div>
+        <div class="row"><span class="price">HK$3,200</span><span class="pill pill-tier">T2</span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">HERMÈS</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+      <div class="body"><div class="title">Hermès Birkin 25 Togo Gold 金扣</div>
+        <div class="meta">Jenny K. · 連單據</div>
+        <div class="row"><span class="price">HK$168,000</span><span class="pill pill-tier">T3</span></div></div></a>
+  </div>
+
+  <!-- 鑑定師 -->
+  <div class="sec-head"><h2 class="display">認可鑑定師</h2><a>瀏覽名冊 →</a></div>
+  <div class="auth-strip">
+    <div class="card card-pad">
+      <div style="display:flex;gap:14px;align-items:center">
+        <div class="avatar" style="width:50px;height:50px;font-size:18px">米</div>
+        <div><div style="font-weight:600">Milan Leung <span class="stars">★★★★★</span></div>
+          <div class="mono" style="margin-top:4px">名牌手袋 · 1,240 單 · 爭議 0.3%</div></div>
+      </div>
+      <div class="disclaimer" style="margin-top:14px">收費 2.0%（最低 $600）· 尖沙咀門市</div>
+    </div>
+    <div class="card card-pad">
+      <div style="display:flex;gap:14px;align-items:center">
+        <div class="avatar" style="width:50px;height:50px;font-size:18px">錶</div>
+        <div><div style="font-weight:600">ProCheck 腕錶鑑定 <span class="stars">★★★★★</span></div>
+          <div class="mono" style="margin-top:4px">腕錶 · 860 單 · 爭議 0.5%</div></div>
+      </div>
+      <div class="disclaimer" style="margin-top:14px">收費 1.8%（最低 $800）· 中環門市</div>
+    </div>
+    <div class="card card-pad">
+      <div style="display:flex;gap:14px;align-items:center">
+        <div class="avatar" style="width:50px;height:50px;font-size:18px">卡</div>
+        <div><div style="font-weight:600">CardLab 卡牌鑑定 <span class="stars">★★★★☆</span></div>
+          <div class="mono" style="margin-top:4px">卡牌收藏 · 430 單 · 爭議 0.7%</div></div>
+      </div>
+      <div class="disclaimer" style="margin-top:14px">收費 3.0%（最低 $300）· 旺角門市</div>
+    </div>
+  </div>
+
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="col"><div class="brand" style="font-size:18px">AUTHEN<span class="dot">·</span>TIK</div>
+      <p class="disclaimer" style="max-width:280px;margin-top:12px">
+        資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。</p></div>
+    <div class="col"><h4>買賣</h4><a>瀏覽商品</a><a>刊登出售</a><a>鑑定師名冊</a></div>
+    <div class="col"><h4>信任</h4><a>鑑定機制</a><a>款項託管</a><a>爭議處理</a></div>
+    <div class="col"><h4>關於</h4><a>條款</a><a>私隱</a><a>聯絡</a></div>
+  </div>
+</footer>
+
+</body>
+</html>

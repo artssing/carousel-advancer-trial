@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>結帳 · Authentik v2</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .steps{display:flex;gap:26px;font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)}
+  .steps .on{color:var(--text)}
+  .steps .on::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--jade);margin-right:8px;vertical-align:middle}
+  .co{display:grid;grid-template-columns:1fr 380px;gap:32px;align-items:start;padding:36px 0 72px}
+  .sec{margin-bottom:20px}
+  .product{display:flex;gap:16px}
+  .thumb{width:96px;height:96px;border-radius:var(--radius-sm);flex-shrink:0;position:relative;
+    background:radial-gradient(120% 120% at 30% 20%,#2a3038,#12151a)}
+  .thumb .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+    font-family:var(--serif);font-size:11px;letter-spacing:.18em;color:#565e69}
+  .p-price{margin-left:auto;text-align:right;font-family:var(--serif);font-size:18px;font-weight:500;white-space:nowrap}
+  .auth{display:flex;gap:14px;align-items:center;padding:14px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--surface-2)}
+  .avatar{width:44px;height:44px;border-radius:50%;flex-shrink:0;
+    background:radial-gradient(circle at 30% 30%,#3a4048,#20252c);
+    display:flex;align-items:center;justify-content:center;font-family:var(--serif);color:var(--gold)}
+  .auth-fee{margin-left:auto;text-align:right}
+  .auth-fee b{display:block;font-size:14px;font-family:var(--serif)}
+  .opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .summary{position:sticky;top:90px}
+  .line{display:flex;justify-content:space-between;font-size:14px;padding:8px 0;color:var(--text-2)}
+  .line b{color:var(--text);font-weight:500}
+  .line .hint{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--text-3);display:block;text-transform:uppercase;margin-top:2px}
+  .total{display:flex;justify-content:space-between;align-items:baseline;font-weight:600;margin-top:4px}
+  .total .amt{font-family:var(--serif);font-size:26px;color:var(--jade)}
+  .esc{display:flex;gap:8px;align-items:flex-start;margin-top:14px}
+  .esc svg{flex-shrink:0;margin-top:1px}
+  @media(max-width:860px){.co{grid-template-columns:1fr}.summary{position:static}}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+    <div class="steps"><span>1 購物車</span><span class="on">2 確認 &amp; 付款</span><span>3 完成</span></div>
+    <div class="nav-right"><span class="mono">安全結帳</span></div>
+  </div>
+</header>
+
+<div class="container">
+  <div style="padding-top:34px">
+    <h1 class="display" style="font-size:28px">確認訂單</h1>
+    <p class="mono" style="margin-top:6px">Tier 3 高價貨品 · 需經第三方鑑定師鑑定後放款</p>
+  </div>
+
+  <div class="co">
+    <div>
+      <div class="card card-pad sec">
+        <div class="section-label">貨品</div>
+        <div class="product">
+          <div class="thumb"><div class="wm">CHANEL</div></div>
+          <div>
+            <div style="font-weight:600;margin-bottom:3px">Chanel Classic Flap Medium · Caviar 金扣</div>
+            <div class="mono" style="margin-bottom:10px">Jenny K. · 九成新 · 香港</div>
+            <span class="pill pill-tier">◆ Tier 3 · 需強制鑑定</span>
+          </div>
+          <div class="p-price">HK$68,000</div>
+        </div>
+      </div>
+
+      <div class="card card-pad sec">
+        <div class="section-label">指定鑑定師</div>
+        <div class="auth">
+          <div class="avatar">米</div>
+          <div>
+            <div style="font-weight:600;font-size:14px">Milan Leung <span class="stars">★★★★★</span></div>
+            <div class="mono" style="margin-top:3px">名牌手袋專門 · 1,240 單 · 爭議率 0.3%</div>
+          </div>
+          <div class="auth-fee"><span class="mono">鑑定費</span><b>2.0%（最低 $600）</b></div>
+        </div>
+        <p class="disclaimer" style="margin-top:12px">
+          鑑定結果由具名鑑定師 Milan Leung 按合約及 E&amp;O 保險承擔。平台僅提供撮合及款項託管，不對真偽作出保證。
+        </p>
+      </div>
+
+      <div class="card card-pad sec">
+        <div class="section-label">交收方式</div>
+        <div class="opts">
+          <div class="opt sel"><span class="dot"></span><div><div class="t">鑑定師處面交</div><div class="d">到鑑定師店舖即場驗貨交收</div></div></div>
+          <div class="opt"><span class="dot"></span><div><div class="t">三方面交</div><div class="d">鑑定師到場，三方同時完成</div></div></div>
+          <div class="opt"><span class="dot"></span><div><div class="t">順豐寄送</div><div class="d">先寄鑑定師，過檢後轉寄</div></div></div>
+          <div class="opt" style="opacity:.45"><span class="dot"></span><div><div class="t">直接面交</div><div class="d">Tier 3 不適用</div></div></div>
+        </div>
+      </div>
+
+      <div class="card card-pad sec">
+        <div class="section-label">付款方式</div>
+        <div class="opts">
+          <div class="opt sel"><span class="dot"></span><div><div class="t">線上託管</div><div class="d">款項先由平台託管，通過後放款</div></div></div>
+          <div class="opt"><span class="dot"></span><div><div class="t">面交現金</div><div class="d">僅限面交場景</div></div></div>
+        </div>
+        <div class="note-box note-warn" style="margin-top:12px">
+          款項會於鑑定通過並完成交收後方放款予賣家。鑑定不通過可全額退款。
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="card card-glow card-pad summary">
+        <div class="section-label">費用明細</div>
+        <div class="line"><span>貨品價格</span><b>HK$68,000</b></div>
+        <div class="line"><span>鑑定費<span class="hint">Milan Leung · 2.0%</span></span><b>HK$1,360</b></div>
+        <div class="line"><span>平台服務費<span class="hint">1.5%</span></span><b>HK$1,020</b></div>
+        <div class="line"><span>交收<span class="hint">鑑定師處面交</span></span><b>免費</b></div>
+        <hr class="divider" style="margin:12px 0">
+        <div class="total"><span>應付總額</span><span class="amt">HK$70,380</span></div>
+
+        <div class="note-box note-info esc">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d39a" stroke-width="2"><path d="M12 2l7 4v6c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6l7-4z"/></svg>
+          <span>款項受平台託管保障，鑑定通過前不會放款。</span>
+        </div>
+
+        <button class="btn btn-primary btn-block btn-lg" style="margin-top:18px">確認並付款</button>
+
+        <p class="disclaimer" style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line)">
+          按下「確認並付款」即表示你同意 Authentik 服務條款。本平台為資訊中介，撮合買賣雙方並託管款項；
+          貨品真偽由上述具名鑑定師負責，平台不作任何真偽保證。
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

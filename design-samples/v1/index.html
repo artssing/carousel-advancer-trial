@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Authentik · 設計主題指南</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .hero-guide{padding:56px 0 40px;border-bottom:1px solid var(--line)}
+  .swatch-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px;margin-top:8px}
+  .sw{border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+  .sw .chip{height:64px}
+  .sw .lab{padding:8px 10px;font-size:11px}
+  .sw .lab b{display:block;color:var(--ink)}
+  .sw .lab span{color:var(--ink-3);font-family:monospace;font-size:10px}
+  .block{padding:40px 0;border-bottom:1px solid var(--line)}
+  .type-row{display:flex;align-items:baseline;gap:16px;padding:8px 0;border-bottom:1px dashed var(--line)}
+  .type-row .k{font-size:11px;color:var(--ink-3);width:120px;flex-shrink:0}
+  .demo-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+  .avow{display:flex;gap:12px;padding:14px 0}
+  .avatar{width:40px;height:40px;border-radius:50%;background:#d8cfbb;flex-shrink:0;
+    display:flex;align-items:center;justify-content:center;font-family:var(--serif);color:#6b6047}
+  .principles{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:20px}
+  .principle{padding:18px;border:1px solid var(--line);border-radius:var(--radius);background:var(--card)}
+  .principle .no{font-family:var(--serif);font-size:14px;color:var(--danger);font-weight:600}
+  .principle .yes{font-family:var(--serif);font-size:14px;color:var(--accent);font-weight:600}
+  .navlinks{display:flex;gap:10px;flex-wrap:wrap;margin-top:8px}
+  .navlinks a{font-size:13px;padding:8px 14px;border:1px solid var(--line-strong);
+    border-radius:999px;color:var(--ink-2)}
+  .navlinks a:hover{border-color:var(--ink);color:var(--ink)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+    <nav class="nav"><a>設計主題</a><a>元件</a><a>版面</a></nav>
+    <div class="nav-right"><span class="eyebrow">Design Theme v1</span></div>
+  </div>
+</header>
+
+<div class="container">
+
+  <section class="hero-guide">
+    <div class="eyebrow">Design Language</div>
+    <h1 class="display" style="margin:10px 0 14px;max-width:640px">
+      收斂、實在、可信 —— 一套刻意去除「AI 生成味」的設計語言
+    </h1>
+    <p style="max-width:620px;color:var(--ink-2)">
+      為香港二手鑑定交易平台而設。以編輯／工坊（atelier）為骨幹：明體標題、紙感留白、
+      hairline 邊框、金色只保留給「鑑定」語意。避開紫色漸變、emoji 圖示、玻璃擬態與空泛 hero。
+    </p>
+    <div class="navlinks">
+      <a href="home.html">首頁 Home →</a>
+      <a href="listing.html">商品詳情 Listing →</a>
+      <a href="checkout-sample.html">結帳 Checkout →</a>
+      <a href="onboarding.html">鑑定師 Onboarding →</a>
+    </div>
+  </section>
+
+  <!-- 原則 -->
+  <section class="block">
+    <div class="section-label">設計原則 · 去 AI 味</div>
+    <div class="principles">
+      <div class="principle"><div class="no">✗ 避免</div>
+        紫→粉漸變、螢光 glow、glassmorphism 玻璃感 —— 一睇就知係 template。</div>
+      <div class="principle"><div class="yes">✓ 改用</div>
+        單一沉穩深綠 + 暖米白紙感，色彩克制、對比實在。</div>
+      <div class="principle"><div class="no">✗ 避免</div>
+        emoji 當 icon、乜都 rounded-2xl、置中大字 hero + 兩粒圓 button。</div>
+      <div class="principle"><div class="yes">✓ 改用</div>
+        明體標題帶編輯感、小圓角、左對齊不對稱版面、small-caps 標籤。</div>
+      <div class="principle"><div class="no">✗ 避免</div>
+        空泛營銷文案（「賦能你的體驗」）、假 placeholder 內容。</div>
+      <div class="principle"><div class="yes">✓ 改用</div>
+        具體真實內容：真品牌、真價格、香港場景、中立法律 copy。</div>
+    </div>
+  </section>
+
+  <!-- 配色 -->
+  <section class="block">
+    <div class="section-label">配色 Palette</div>
+    <div class="swatch-grid">
+      <div class="sw"><div class="chip" style="background:#f7f5f0"></div><div class="lab"><b>Paper</b><span>#f7f5f0</span></div></div>
+      <div class="sw"><div class="chip" style="background:#191713"></div><div class="lab"><b>Ink</b><span>#191713</span></div></div>
+      <div class="sw"><div class="chip" style="background:#1f3a2e"></div><div class="lab"><b>Accent 綠</b><span>#1f3a2e</span></div></div>
+      <div class="sw"><div class="chip" style="background:#8a6d3b"></div><div class="lab"><b>Gold 鑑定</b><span>#8a6d3b</span></div></div>
+      <div class="sw"><div class="chip" style="background:#8a3b2b"></div><div class="lab"><b>Danger 磚紅</b><span>#8a3b2b</span></div></div>
+      <div class="sw"><div class="chip" style="background:#e4e0d6"></div><div class="lab"><b>Line</b><span>#e4e0d6</span></div></div>
+    </div>
+  </section>
+
+  <!-- 字體 -->
+  <section class="block">
+    <div class="section-label">字體 Typography — 明體標題 + 無襯線 UI</div>
+    <div class="type-row"><span class="k">Display / H1</span><span class="display" style="font-size:34px">正品，交予信任</span></div>
+    <div class="type-row"><span class="k">Display / H2</span><span class="display" style="font-size:24px">具名鑑定師 · 星級由演算法派生</span></div>
+    <div class="type-row"><span class="k">Body</span><span>平台為資訊中介，撮合買賣雙方並託管款項；貨品真偽由具名鑑定師負責。</span></div>
+    <div class="type-row"><span class="k">Eyebrow</span><span class="eyebrow">Authenticated Resale · Hong Kong</span></div>
+  </section>
+
+  <!-- 元件 -->
+  <section class="block">
+    <div class="section-label">元件 Components</div>
+    <div class="two">
+      <div>
+        <p class="eyebrow" style="margin-bottom:12px">按鈕</p>
+        <div class="demo-row">
+          <button class="btn btn-primary">確認並付款</button>
+          <button class="btn btn-ghost">繼續逛</button>
+          <button class="btn btn-primary btn-lg">立即出價</button>
+        </div>
+
+        <p class="eyebrow" style="margin:24px 0 12px">信任指標（演算法派生）</p>
+        <div class="demo-row">
+          <span class="pill pill-verify">◆ 已通過鑑定</span>
+          <span class="pill pill-gold"><span class="stars">★★★★★</span> 4.9</span>
+          <span class="pill pill-tier">Tier 3 · 強制鑑定</span>
+        </div>
+
+        <p class="eyebrow" style="margin:24px 0 12px">聲明 copy</p>
+        <div class="note-box note-info">款項受平台託管保障，鑑定通過前不會放款予賣家。</div>
+        <div class="note-box note-warn" style="margin-top:10px">面交現金交易不受託管保障，請自行核實貨品。</div>
+      </div>
+
+      <div>
+        <p class="eyebrow" style="margin-bottom:12px">表單欄位</p>
+        <div class="field">
+          <label>店舖名稱 <span class="hint">公開顯示</span></label>
+          <input class="input" value="Milan 名牌鑑定工作室">
+        </div>
+        <div class="field">
+          <label>鑑定收費 <span class="hint">% of 貨價</span></label>
+          <input class="input" value="2.0%（最低 HK$600）">
+        </div>
+
+        <p class="eyebrow" style="margin:8px 0 12px">選項卡</p>
+        <div class="opt sel" style="margin-bottom:10px">
+          <span class="dot"></span>
+          <div><div class="t">線上託管</div><div class="d">款項先由平台託管，鑑定通過後放款</div></div>
+        </div>
+        <div class="opt">
+          <span class="dot"></span>
+          <div><div class="t">面交現金</div><div class="d">僅限面交場景</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 商品卡 -->
+  <section class="block">
+    <div class="section-label">商品卡 Product Cards（grid 高度對齊）</div>
+    <div class="grid-cards">
+      <a class="p-card"><div class="ph"><div class="wm">CHANEL</div></div>
+        <div class="body"><div class="title">Chanel Classic Flap Medium · Caviar 金扣</div>
+          <div class="meta">九成新 · 香港</div>
+          <div class="row"><span class="price">HK$68,000</span><span class="pill pill-verify">◆ 已鑑定</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">ROLEX</div></div>
+        <div class="body"><div class="title">Rolex Submariner Date 126610LN</div>
+          <div class="meta">全套 · 2023</div>
+          <div class="row"><span class="price">HK$118,000</span><span class="pill pill-tier">Tier 3</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">HERMÈS</div></div>
+        <div class="body"><div class="title">Hermès Birkin 25 Togo 金扣</div>
+          <div class="meta">近全新 · 連單</div>
+          <div class="row"><span class="price">HK$168,000</span><span class="pill pill-verify">◆ 已鑑定</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">POKÉMON</div></div>
+        <div class="body"><div class="title">Charizard 噴火龍 PSA 9 初版</div>
+          <div class="meta">PSA 鑑定卡</div>
+          <div class="row"><span class="price">HK$9,800</span><span class="pill pill-tier">Tier 2</span></div></div></a>
+    </div>
+  </section>
+
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="col"><div class="brand" style="font-size:18px">AUTHEN<span class="dot">·</span>TIK</div>
+      <p class="disclaimer" style="max-width:280px;margin-top:10px">
+        資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。</p></div>
+    <div class="col"><h4>買賣</h4><a>瀏覽商品</a><a>刊登出售</a><a>鑑定師名冊</a></div>
+    <div class="col"><h4>信任</h4><a>鑑定機制</a><a>款項託管</a><a>爭議處理</a></div>
+    <div class="col"><h4>關於</h4><a>條款</a><a>私隱</a><a>聯絡</a></div>
+  </div>
+</footer>
+
+</body>
+</html>

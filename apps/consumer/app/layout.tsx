@@ -1,6 +1,7 @@
 import './globals.css';
 import type { Metadata } from 'next';
 import { TopNav } from '@/components/top-nav';
+import { BannerBar } from '@/components/banner-bar';
 import { ConditionalFooter } from '@/components/conditional-footer';
 
 export const metadata: Metadata = {
@@ -16,6 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="zh-HK">
       <body>
         <div className="flex min-h-screen flex-col">
+          <BannerBar />
           <TopNav />
           <main className="flex-1">{children}</main>
           <ConditionalFooter />

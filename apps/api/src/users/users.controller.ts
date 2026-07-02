@@ -15,6 +15,7 @@ import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 
 const AVATAR_MAX_BYTES = 256 * 1024; // 256 KB, matches schema comment
+const AVATAR_ORIGINAL_MAX_BYTES = 512 * 1024; // 512 KB — pre-crop source
 
 class UpdateMeDto {
   @IsOptional() @IsString() @MinLength(1) @MaxLength(40)
@@ -22,6 +23,16 @@ class UpdateMeDto {
   /** base64 data URL, e.g. "data:image/png;base64,iVBORw0..." Pass empty string to clear. */
   @IsOptional() @IsString()
   avatarUrl?: string | null;
+  /** Uncompressed source so the customer can re-crop later. Empty string to clear. */
+  @IsOptional() @IsString()
+  avatarOriginalUrl?: string | null;
+  /** Crop transform parameters (zoom 1.0–3.0, tx/ty in 200px viewport units). */
+  @IsOptional()
+  avatarCropZoom?: number | null;
+  @IsOptional()
+  avatarCropX?: number | null;
+  @IsOptional()
+  avatarCropY?: number | null;
 }
 
 class ChangePasswordDto {
@@ -45,6 +56,10 @@ export class UsersController {
         email: true,
         displayName: true,
         avatarUrl: true,
+        avatarOriginalUrl: true,
+        avatarCropZoom: true,
+        avatarCropX: true,
+        avatarCropY: true,
         phone: true,
         phoneVerified: true,
         roles: true,
@@ -105,6 +120,28 @@ export class UsersController {
       }
     }
 
+    // Original-source persistence — lets the customer re-open the cropper
+    // with the same image, no re-upload.
+    if (dto.avatarOriginalUrl !== undefined) {
+      if (dto.avatarOriginalUrl === null || dto.avatarOriginalUrl === '') {
+        data.avatarOriginalUrl = null;
+        data.avatarCropZoom = null;
+        data.avatarCropX = null;
+        data.avatarCropY = null;
+      } else {
+        if (!dto.avatarOriginalUrl.startsWith('data:image/')) {
+          throw new BadRequestException('原圖必須係 data:image/* base64 URL');
+        }
+        if (Buffer.byteLength(dto.avatarOriginalUrl, 'utf8') > AVATAR_ORIGINAL_MAX_BYTES) {
+          throw new BadRequestException(`原圖太大（上限 ${AVATAR_ORIGINAL_MAX_BYTES / 1024}KB），請揀細啲嘅圖`);
+        }
+        data.avatarOriginalUrl = dto.avatarOriginalUrl;
+      }
+    }
+    if (dto.avatarCropZoom !== undefined) data.avatarCropZoom = dto.avatarCropZoom;
+    if (dto.avatarCropX !== undefined) data.avatarCropX = dto.avatarCropX;
+    if (dto.avatarCropY !== undefined) data.avatarCropY = dto.avatarCropY;
+
     if (Object.keys(data).length === 0) {
       throw new BadRequestException('無任何欄位更新');
     }
@@ -113,7 +150,11 @@ export class UsersController {
       const updated = await tx.user.update({
         where: { id: user.userId },
         data,
-        select: { id: true, email: true, displayName: true, avatarUrl: true, roles: true, kycStatus: true, createdAt: true },
+        select: {
+          id: true, email: true, displayName: true, avatarUrl: true,
+          avatarOriginalUrl: true, avatarCropZoom: true, avatarCropX: true, avatarCropY: true,
+          roles: true, kycStatus: true, createdAt: true,
+        },
       });
       // Q5=A — 統一用 User.displayName。User 改名後同步落 Authenticator.displayName。
       if (data.displayName !== undefined) {

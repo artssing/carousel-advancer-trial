@@ -1,0 +1,176 @@
+/* ============================================================
+   Authentik — "去 AI 味" 設計主題 (de-AI design theme)
+   ------------------------------------------------------------
+   設計立場：atelier / 編輯風。收斂、實在、可信。
+   刻意避開 AI 生成味：無紫色漸變、無 emoji 做 icon、
+   無 glassmorphism、無 everything-rounded、無空泛 hero。
+   改用：紙感留白、明體標題 + 無襯線 UI、hairline 邊框、
+   小圓角、small-caps 標籤、金色只用於「鑑定」語意。
+   ============================================================ */
+
+:root{
+  /* —— 色 —— 接近印刷紙品，唔螢光唔漸變 */
+  --paper:#f7f5f0;        /* 頁底：暖米白 */
+  --card:#ffffff;         /* 卡片 */
+  --ink:#191713;          /* 主文字：近黑帶暖 */
+  --ink-2:#57534b;        /* 次文字 */
+  --ink-3:#8f897d;        /* 輔助/說明 */
+  --line:#e4e0d6;         /* hairline 邊框 */
+  --line-strong:#cfc9bb;
+
+  --accent:#1f3a2e;       /* 主色：沉穩深綠（信任/已驗） */
+  --accent-2:#152a20;     /* hover 深綠 */
+  --accent-soft:#ebf0ec;  /* 淺綠底 */
+  --gold:#8a6d3b;         /* 金：只用於鑑定/星級語意 */
+  --gold-soft:#f3ecdd;
+  --danger:#8a3b2b;       /* 磚紅：警示，唔用鮮紅 */
+  --danger-soft:#f6e9e5;
+
+  /* —— 字 —— 明體標題（編輯感）+ 無襯線 UI —— */
+  --serif:"Noto Serif HK","Songti SC","Source Han Serif HK",
+          "Times New Roman",Georgia,serif;
+  --sans:"PingFang HK","Noto Sans HK","Hiragino Sans",
+         -apple-system,"Segoe UI",Roboto,sans-serif;
+
+  --radius:8px;           /* 統一小圓角，唔過圓 */
+  --radius-sm:5px;
+  --shadow:0 1px 2px rgba(25,23,19,.04);
+  --maxw:1120px;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:var(--sans);
+  background:var(--paper);
+  color:var(--ink);
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  font-size:15px;
+}
+a{color:inherit;text-decoration:none}
+img{display:block;max-width:100%}
+
+/* —— 版心 —— */
+.container{max-width:var(--maxw);margin:0 auto;padding:0 24px}
+
+/* —— 標籤（small caps，替代 AI 味嘅粗體大字）—— */
+.eyebrow{
+  font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;
+}
+.section-label{
+  font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--ink-3);font-weight:600;margin-bottom:16px;
+}
+
+/* —— 標題用明體 —— */
+.display{font-family:var(--serif);font-weight:600;letter-spacing:.01em;line-height:1.2}
+h1.display{font-size:38px}
+h2.display{font-size:26px}
+h3.display{font-size:20px}
+
+/* —— 頂欄 —— */
+.topbar{background:var(--card);border-bottom:1px solid var(--line)}
+.topbar .container{display:flex;align-items:center;justify-content:space-between;height:64px}
+.brand{font-family:var(--serif);font-size:20px;letter-spacing:.22em;font-weight:600}
+.brand .dot{color:var(--gold)}
+.nav{display:flex;gap:28px;font-size:14px;color:var(--ink-2)}
+.nav a:hover{color:var(--ink)}
+.nav-right{display:flex;gap:18px;align-items:center;font-size:14px}
+
+/* —— 按鈕 —— 唔用漸變唔用 glow —— */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  font-family:inherit;font-size:14px;font-weight:600;letter-spacing:.03em;
+  padding:12px 22px;border-radius:var(--radius);cursor:pointer;
+  border:1px solid transparent;transition:.15s;
+}
+.btn-primary{background:var(--accent);color:#fff}
+.btn-primary:hover{background:var(--accent-2)}
+.btn-ghost{background:transparent;border-color:var(--line-strong);color:var(--ink)}
+.btn-ghost:hover{border-color:var(--ink);background:#fff}
+.btn-block{width:100%}
+.btn-lg{padding:15px 26px;font-size:15px}
+
+/* —— 卡片 —— */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-pad{padding:24px}
+
+/* —— 信任/鑑定 pill（演算法派生，唔係平台頒發 badge）—— */
+.pill{
+  display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;
+  padding:4px 11px;border-radius:999px;
+}
+.pill-verify{color:var(--accent);background:var(--accent-soft)}
+.pill-gold{color:var(--gold);background:var(--gold-soft)}
+.pill-tier{color:var(--ink-2);background:#efece4;border:1px solid var(--line)}
+.stars{color:var(--gold);letter-spacing:1px;font-size:12px}
+
+/* —— 商品卡（grid 高度對齊：flex-col + mt-auto price）—— */
+.grid-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.p-card{display:flex;flex-direction:column;background:var(--card);
+  border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;transition:.15s}
+.p-card:hover{border-color:var(--line-strong);box-shadow:0 4px 16px rgba(25,23,19,.06)}
+.p-card .ph{aspect-ratio:1/1;background:linear-gradient(135deg,#e7e1d3,#f1ebdd);position:relative}
+.p-card .ph .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-family:var(--serif);font-size:13px;letter-spacing:.18em;color:#b3a88f}
+.p-card .body{padding:14px 16px 16px;display:flex;flex-direction:column;flex:1}
+.p-card .title{font-size:14px;font-weight:600;min-height:2.6em;line-height:1.3;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.p-card .meta{font-size:12px;color:var(--ink-3);margin-top:4px}
+.p-card .row{margin-top:auto;padding-top:12px;display:flex;align-items:center;justify-content:space-between}
+.p-card .price{font-size:16px;font-weight:600}
+
+/* —— 表單欄位 —— */
+.field{margin-bottom:18px}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--ink-2);margin-bottom:7px}
+.field .hint{font-size:12px;color:var(--ink-3);font-weight:400;margin-left:6px}
+.input,.select,.textarea{
+  width:100%;font-family:inherit;font-size:14px;color:var(--ink);
+  background:var(--card);border:1px solid var(--line-strong);border-radius:var(--radius-sm);
+  padding:11px 13px;transition:.15s;
+}
+.input:focus,.select:focus,.textarea:focus{outline:none;border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-soft)}
+.textarea{resize:vertical;min-height:90px}
+
+/* —— 選項卡（radio 樣，替代花巧 toggle）—— */
+.opt{border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;
+  cursor:pointer;background:var(--card);transition:.15s;display:flex;gap:12px;align-items:flex-start}
+.opt:hover{border-color:var(--line-strong)}
+.opt.sel{border-color:var(--accent);background:var(--accent-soft)}
+.opt .dot{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--line-strong);
+  flex-shrink:0;margin-top:2px}
+.opt.sel .dot{border-color:var(--accent);background:var(--accent);box-shadow:inset 0 0 0 3px #fff}
+.opt .t{font-size:14px;font-weight:600}
+.opt .d{font-size:12px;color:var(--ink-3);margin-top:3px}
+
+/* —— 中立聲明 copy —— */
+.disclaimer{font-size:12px;color:var(--ink-3);line-height:1.65}
+.note-box{font-size:12px;line-height:1.6;padding:11px 13px;border-radius:var(--radius-sm)}
+.note-warn{color:var(--danger);background:var(--danger-soft);border:1px solid #eed8d1}
+.note-info{color:var(--accent);background:var(--accent-soft)}
+
+/* —— 步驟指示 —— */
+.steps{display:flex;gap:26px;font-size:13px;color:var(--ink-3)}
+.steps .on{color:var(--ink);font-weight:600}
+.steps .on::before{content:"";display:inline-block;width:6px;height:6px;border-radius:50%;
+  background:var(--accent);margin-right:8px;vertical-align:middle}
+
+/* —— 頁尾 —— */
+.footer{border-top:1px solid var(--line);margin-top:64px;background:var(--card)}
+.footer .container{padding-top:40px;padding-bottom:40px;display:flex;
+  justify-content:space-between;gap:40px;flex-wrap:wrap}
+.footer .col h4{font-size:12px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--ink-3);margin-bottom:12px}
+.footer .col a{display:block;font-size:13px;color:var(--ink-2);padding:4px 0}
+.footer .col a:hover{color:var(--ink)}
+
+.divider{height:1px;background:var(--line);border:0;margin:0}
+
+@media(max-width:900px){
+  .grid-cards{grid-template-columns:repeat(2,1fr)}
+  .nav{display:none}
+  h1.display{font-size:30px}
+}

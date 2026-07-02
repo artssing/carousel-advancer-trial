@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>v4 主頁 Revamp · 對照</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .wrap{padding:56px 0 40px}
+  .opts{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:32px}
+  .opt-card{border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column}
+  .opt-card .prev{aspect-ratio:16/10;background:linear-gradient(135deg,#eef1f4,#e0e6ee);position:relative;border-bottom:1px solid var(--line)}
+  .opt-card .prev .tag{position:absolute;top:14px;left:14px;font-weight:800;color:var(--primary);font-size:22px}
+  .opt-card .prev .mini{position:absolute;inset:auto 14px 14px 14px;display:flex;gap:6px}
+  .opt-card .prev .mini span{height:8px;border-radius:2px;background:var(--line-2);flex:1}
+  .opt-card .body{padding:22px;display:flex;flex-direction:column;flex:1}
+  .opt-card h3{font-size:19px;color:var(--primary)}
+  .opt-card .k{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--action);font-weight:700;margin-bottom:8px}
+  .opt-card p{font-size:13px;color:var(--text-2);line-height:1.65;margin:10px 0 18px}
+  .opt-card .btn{margin-top:auto}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="container">
+    <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+    <nav class="nav"><a>設計主題</a><a>主頁 Revamp</a></nav>
+    <div class="nav-right">v4 · 3 個主頁方向</div>
+  </div>
+</header>
+
+<div class="container wrap">
+  <div class="eyebrow">Main Page Revamp · 沿用 v4 色系</div>
+  <h1 class="display" style="font-size:38px;margin:12px 0 8px">主頁三個 layout 方向</h1>
+  <p style="color:var(--text-2);max-width:640px">同一套 v4 主題（驗證綠 / 板岩藍 / 亮青、無襯線），三種完全唔同嘅資訊編排。撳入去逐個睇。</p>
+
+  <div class="opts">
+    <div class="opt-card">
+      <div class="prev"><span class="tag">A</span><div class="mini"><span style="flex:3"></span><span style="background:var(--action)"></span></div></div>
+      <div class="body">
+        <div class="k">Search-first</div>
+        <h3 class="display">搜尋主導 Marketplace</h3>
+        <p>中央大搜尋框做主角，配「實時鑑定」跑馬燈、品類 tiles、熱門交易格。似 StockX / GOAT 嘅搵嘢流。</p>
+        <a class="btn btn-primary" href="home-a.html">睇方案 A →</a>
+      </div>
+    </div>
+    <div class="opt-card">
+      <div class="prev"><span class="tag">B</span><div class="mini"><span style="flex:2;background:var(--action)"></span><span style="flex:1"></span></div></div>
+      <div class="body">
+        <div class="k">Editorial Drops</div>
+        <h3 class="display">編輯精選 Drop</h3>
+        <p>單一 spotlight 主打貨品做封面，下接策展橫向系列 row + 鑑定師專訪 feature。雜誌感、講故事。</p>
+        <a class="btn btn-primary" href="home-b.html">睇方案 B →</a>
+      </div>
+    </div>
+    <div class="opt-card">
+      <div class="prev"><span class="tag">C</span><div class="mini"><span></span><span></span><span style="background:var(--action)"></span></div></div>
+      <div class="body">
+        <div class="k">Department</div>
+        <h3 class="display">品類分區百貨</h3>
+        <p>促銷 banner + 品類快捷,再按手袋 / 腕錶 / 波鞋分區展示,每區有查看全部。資訊密度高、好逛。</p>
+        <a class="btn btn-primary" href="home-c.html">睇方案 C →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="col"><div class="brand" style="font-size:18px">AUTHEN<span class="dot">·</span>TIK</div>
+      <p class="disclaimer" style="max-width:280px;margin-top:12px">資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。</p></div>
+    <div class="col"><h4>買賣</h4><a>瀏覽商品</a><a>刊登出售</a><a>鑑定師名冊</a></div>
+    <div class="col"><h4>信任</h4><a>鑑定機制</a><a>款項託管</a><a>爭議處理</a></div>
+    <div class="col"><h4>關於</h4><a>條款</a><a>私隱</a><a>聯絡</a></div>
+  </div>
+</footer>
+</body>
+</html>

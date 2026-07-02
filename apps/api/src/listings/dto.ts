@@ -10,11 +10,15 @@ import {
   Min,
   MinLength,
 } from 'class-validator';
-import { Category, DeliveryMethod } from '@prisma/client';
+import { Category, ConditionGrade, DeliveryMethod } from '@prisma/client';
 
 export class CreateListingDto {
   @IsEnum(Category)
   category!: Category;
+
+  /** Founder ruling 2026-06-30: 新 listing 必填成色。舊 listing 可以 null。 */
+  @IsEnum(ConditionGrade)
+  condition!: ConditionGrade;
 
   /** Optional brand / sub-category. Either a canonical enum key (e.g. "LV")
    *  from brandsForCategory(), or free-text fallback (max 40 chars). */
@@ -65,6 +69,11 @@ export class CreateListingDto {
   @IsOptional()
   @IsString()
   sellerDistrict?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  sellerMeetupLocations?: string[];
 }
 
 /** Edit DTO — every field optional, server merges with existing */
@@ -72,6 +81,10 @@ export class UpdateListingDto {
   @IsOptional()
   @IsEnum(Category)
   category?: Category;
+
+  @IsOptional()
+  @IsEnum(ConditionGrade)
+  condition?: ConditionGrade;
 
   @IsOptional()
   @IsString()
@@ -118,4 +131,9 @@ export class UpdateListingDto {
   @IsOptional()
   @IsString()
   sellerDistrict?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  sellerMeetupLocations?: string[];
 }

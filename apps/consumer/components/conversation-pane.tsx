@@ -21,6 +21,8 @@ import { OfferCard } from './offer-card';
 // REST (lib/api.ts) and WS (here) without needing two env vars.
 const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/api\/?$/, '');
 
+type SendStatus = 'sending' | 'sent' | 'failed';
+
 interface Message {
   id: string;
   senderRole: 'BUYER' | 'SELLER' | 'AUTHENTICATOR' | 'SYSTEM';
@@ -28,6 +30,74 @@ interface Message {
   body: string;
   createdAt: string;
   sender?: { id: string; displayName: string } | null;
+  readByBuyer?: boolean;
+  readBySeller?: boolean;
+  readByAuth?: boolean;
+  // Optimistic-only fields (never on server messages)
+  tempId?: string;
+  sendStatus?: SendStatus;
+}
+
+interface PresenceInfo { online: boolean; lastSeenAt?: string | null; }
+
+function formatLastSeen(info: PresenceInfo | undefined): string | null {
+  if (!info) return null;
+  if (info.online) return '在線';
+  if (!info.lastSeenAt) return null;
+  const d = new Date(info.lastSeenAt);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const t = d.toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', hour12: false });
+  if (msgDay.getTime() >= today.getTime()) return `今日 ${t}`;
+  if (msgDay.getTime() >= yesterday.getTime()) return `昨日 ${t}`;
+  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${t}`;
+}
+
+/** Determine tick status for a message the current user sent */
+function getTickStatus(
+  msg: Message,
+  parties: Array<{ id: string; role: string }>,
+  currentUserId: string,
+): 'sending' | 'sent' | 'read' | 'failed' {
+  if (msg.sendStatus === 'sending') return 'sending';
+  if (msg.sendStatus === 'failed') return 'failed';
+  const otherRoles = parties.filter((p) => p.id !== currentUserId).map((p) => p.role);
+  if (otherRoles.length === 0) return 'sent';
+  const allRead = otherRoles.every((role) => {
+    if (role === 'BUYER') return msg.readByBuyer;
+    if (role === 'SELLER') return msg.readBySeller;
+    if (role === 'AUTHENTICATOR') return msg.readByAuth;
+    return false;
+  });
+  return allRead ? 'read' : 'sent';
+}
+
+/** Tick icon shown in own message bubbles */
+function MessageTick({ status, tooltip }: { status: 'sending' | 'sent' | 'read' | 'failed'; tooltip?: string }) {
+  if (status === 'sending') {
+    return (
+      <span
+        title="傳送中"
+        style={{
+          display: 'inline-block',
+          fontSize: '9px',
+          fontWeight: 'bold',
+          backgroundImage: 'linear-gradient(90deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0.75) 50%, rgba(255,255,255,0.2) 100%)',
+          backgroundSize: '200% 100%',
+          WebkitBackgroundClip: 'text',
+          backgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          color: 'transparent',
+          animation: 'msgTickSweep 1.4s linear infinite',
+        }}
+      >✓</span>
+    );
+  }
+  if (status === 'failed') return <span className="text-[9px] text-red-300" title="傳送失敗">!</span>;
+  if (status === 'read') return <span className="text-[9px] font-bold text-white" title={tooltip ?? '已讀'} style={{ letterSpacing: '-0.35em' }}>✓✓</span>;
+  return <span className="text-[9px] font-bold text-white" title="已送達">✓</span>;
 }
 
 const ROLE_LABEL: Record<string, string> = {
@@ -104,7 +174,7 @@ export interface ConversationPaneProps {
   /** All parties in this conversation (incl. viewer). When provided, renders a
    *  3-role pill bar so every participant (esp. authenticator) is visible.
    *  Without this, the header falls back to the single counterpartyName label. */
-  parties?: Array<{ id: string; displayName: string; role: 'BUYER' | 'SELLER' | 'AUTHENTICATOR' }>;
+  parties?: Array<{ id: string; displayName: string; role: 'BUYER' | 'SELLER' | 'AUTHENTICATOR'; lastSeenAt?: string | null }>;
   /** Render context — controls header buttons + link click behavior */
   chrome: 'drawer' | 'pane';
   /** Drawer close (X), or mobile pane back. Required for drawer; optional for pane */
@@ -144,6 +214,12 @@ export function ConversationPane({
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [typing, setTyping] = useState(false);
+  const [typingLabel, setTypingLabel] = useState('對方正在輸入…');
+  const [presenceMap, setPresenceMap] = useState<Record<string, PresenceInfo>>({});
+  // Ref-based dedup: prevent any residual duplicate broadcasts
+  const seenMessageIds = useRef(new Set<string>());
+  // Track when each optimistic was created so we can enforce a min animation display time
+  const optimisticSentAt = useRef(new Map<string, number>());
   // Parties loaded from API on socket join — fallback for callers that
   // don't pass `parties` prop (e.g. order detail / authenticator workbench).
   const [liveParties, setLiveParties] = useState<NonNullable<ConversationPaneProps['parties']>>([]);
@@ -154,6 +230,10 @@ export function ConversationPane({
   const [currentKind, setCurrentKind] = useState<ConvKind>('THREE_WAY');
   const [pairConvIds, setPairConvIds] = useState<Partial<Record<ConvKind, string>>>({});
   const [tabSwitching, setTabSwitching] = useState(false);
+  // Phase 2 cross-sell: lazy picker of seller's own active listings
+  const [crossSellOpen, setCrossSellOpen] = useState(false);
+  const [myListings, setMyListings] = useState<Array<{ id: string; title: string; priceHKD: number; images: string[] }> | null>(null);
+  const [myListingsLoading, setMyListingsLoading] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -285,6 +365,8 @@ export function ConversationPane({
     setActiveConvId(convIdProp ?? null);
     setInput('');
     setError(null);
+    seenMessageIds.current.clear();
+    optimisticSentAt.current.clear();
   }, [contextId, convIdProp]);
 
   useEffect(() => {
@@ -307,7 +389,11 @@ export function ConversationPane({
     socket.on('disconnect', () => setConnected(false));
 
     socket.on('joined', (data: { conversationId?: string; orderId?: string; listingId?: string }) => {
-      if (data?.conversationId) setActiveConvId(data.conversationId);
+      if (data?.conversationId) {
+        setActiveConvId(data.conversationId);
+        // Mark this conversation as read on join
+        socket.emit('read', { conversationId: data.conversationId });
+      }
       const url = convIdProp
         ? `${API_URL}/api/conversations/by-id/${convIdProp}`
         : orderId
@@ -318,7 +404,20 @@ export function ConversationPane({
         .then((d) => {
           if (d.conversationId) setActiveConvId(d.conversationId);
           if (d.messages) setMessages(d.messages);
-          if (Array.isArray(d.parties) && d.parties.length > 0) setLiveParties(d.parties);
+          if (Array.isArray(d.parties) && d.parties.length > 0) {
+            setLiveParties(d.parties);
+            // Seed presence map from DB lastSeenAt so header shows "最後上線" immediately
+            // without waiting for a WebSocket presence event (which only fires on connect/disconnect)
+            setPresenceMap((prev) => {
+              const next = { ...prev };
+              for (const p of d.parties) {
+                if (p.id !== currentUserId && p.lastSeenAt && !next[p.id]) {
+                  next[p.id] = { online: false, lastSeenAt: p.lastSeenAt };
+                }
+              }
+              return next;
+            });
+          }
           if (d.kind) {
             setCurrentKind(d.kind);
             if (d.conversationId) setPairConvIds((m) => ({ ...m, [d.kind]: d.conversationId }));
@@ -327,20 +426,85 @@ export function ConversationPane({
         .catch(() => {});
     });
 
-    socket.on('message', (msg: Message & { conversationId?: string }) => {
-      setMessages((prev) => {
-        const myConv = activeConvIdRef.current;
-        if (msg.conversationId && myConv && msg.conversationId !== myConv) return prev;
-        if (prev.some((m) => m.id === msg.id)) return prev;
-        return [...prev, msg];
-      });
+    socket.on('message', (msg: Message & { conversationId?: string; tempId?: string }) => {
+      // Safety-net dedup (gateway already uses client.to() to prevent most duplicates)
+      if (msg.id && seenMessageIds.current.has(msg.id)) return;
+      if (msg.id) seenMessageIds.current.add(msg.id);
+
+      const applyMessage = () => {
+        setMessages((prev) => {
+          const myConv = activeConvIdRef.current;
+          if (msg.conversationId && myConv && msg.conversationId !== myConv) return prev;
+          // Replace matching optimistic message
+          if (msg.tempId) {
+            const hasOptimistic = prev.some((m) => m.tempId === msg.tempId);
+            if (hasOptimistic) {
+              optimisticSentAt.current.delete(msg.tempId);
+              return prev.map((m) =>
+                m.tempId === msg.tempId ? { ...msg, sendStatus: 'sent' as const } : m,
+              );
+            }
+          }
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          const isOwn = msg.senderId === currentUserId;
+          return [...prev, { ...msg, sendStatus: isOwn ? 'sent' as const : undefined }];
+        });
+      };
+
+      // For own optimistic messages: enforce a 400ms minimum 'sending' animation display.
+      // In local dev the round-trip is <20ms — without this floor the shimmer is invisible.
+      const isOwnOptimistic = msg.senderId === currentUserId && !!msg.tempId;
+      if (isOwnOptimistic) {
+        const sentAt = optimisticSentAt.current.get(msg.tempId!) ?? Date.now();
+        const elapsed = Date.now() - sentAt;
+        const MIN_ANIM_MS = 400;
+        if (elapsed < MIN_ANIM_MS) {
+          setTimeout(applyMessage, MIN_ANIM_MS - elapsed);
+        } else {
+          applyMessage();
+        }
+      } else {
+        applyMessage();
+      }
+
       setTyping(false);
+      // Emit read for messages from others in active conv
+      if (msg.conversationId === activeConvIdRef.current && msg.senderId !== currentUserId) {
+        socket.emit('read', { conversationId: msg.conversationId });
+      }
     });
 
-    socket.on('typing', () => {
+    socket.on('typing', (data: { userId?: string; role?: string } | undefined) => {
+      if (data?.userId === currentUserId) return; // own typing, ignore
+      const roleLabel =
+        data?.role === 'BUYER' ? '買家'
+        : data?.role === 'SELLER' ? '賣家'
+        : data?.role === 'AUTHENTICATOR' ? '鑑定師'
+        : '對方';
+      setTypingLabel(`${roleLabel}正在輸入…`);
       setTyping(true);
       if (typingTimeout.current) clearTimeout(typingTimeout.current);
       typingTimeout.current = setTimeout(() => setTyping(false), 3000);
+    });
+
+    socket.on('presence', (data: { userId: string; online: boolean; lastSeenAt?: string }) => {
+      setPresenceMap((prev) => ({ ...prev, [data.userId]: { online: data.online, lastSeenAt: data.lastSeenAt } }));
+    });
+
+    socket.on('read_update', (data: { conversationId: string; role: string }) => {
+      const myConv = activeConvIdRef.current;
+      if (data.conversationId !== myConv) return;
+      setMessages((prev) =>
+        prev.map((m) => {
+          if (m.senderRole === 'SYSTEM') return m;
+          return {
+            ...m,
+            readByBuyer: data.role === 'BUYER' ? true : m.readByBuyer,
+            readBySeller: data.role === 'SELLER' ? true : m.readBySeller,
+            readByAuth: data.role === 'AUTHENTICATOR' ? true : m.readByAuth,
+          };
+        }),
+      );
     });
 
     socket.on('error', (data: { message: string }) => {
@@ -358,25 +522,89 @@ export function ConversationPane({
   }, [contextId, orderId, listingId, convIdProp]);
 
   function handleSend() {
-    if (!input.trim() || !socketRef.current || sending) return;
+    const body = input.trim();
+    if (!body || !socketRef.current || sending) return;
     setSending(true);
     setError(null);
-    const ctx = convIdProp ? { conversationId: convIdProp } : orderId ? { orderId } : { listingId };
-    socketRef.current.emit('send', { ...ctx, body: input.trim() });
     setInput('');
-    setSending(false);
+
+    const tempId = `tmp_${Date.now()}_${Math.random().toString(36).slice(2)}`;
+    const optimistic: Message = {
+      id: tempId,
+      tempId,
+      senderId: currentUserId,
+      senderRole: 'BUYER', // will be replaced by server message
+      body,
+      createdAt: new Date().toISOString(),
+      sendStatus: 'sending',
+    };
+    optimisticSentAt.current.set(tempId, Date.now());
+    setMessages((prev) => [...prev, optimistic]);
+
+    const ctx = activeConvId
+      ? { conversationId: activeConvId }
+      : convIdProp
+        ? { conversationId: convIdProp }
+        : orderId
+          ? { orderId }
+          : { listingId };
+
+    // Ack timeout: if no ack in 8s, mark failed
+    const failTimer = setTimeout(() => {
+      setMessages((prev) =>
+        prev.map((m) => m.tempId === tempId && m.sendStatus === 'sending' ? { ...m, sendStatus: 'failed' } : m),
+      );
+      setSending(false);
+    }, 8000);
+
+    socketRef.current.emit('send', { ...ctx, body, tempId }, (ack: { ok: boolean; error?: string }) => {
+      clearTimeout(failTimer);
+      setSending(false);
+      if (!ack?.ok) {
+        setMessages((prev) =>
+          prev.map((m) => m.tempId === tempId ? { ...m, sendStatus: 'failed' } : m),
+        );
+        setError(ack?.error ?? '訊息未能發出，請重試');
+      }
+      // On success: server will broadcast 'message' event which replaces the optimistic entry
+    });
+  }
+
+  function retryMessage(msg: Message) {
+    // Remove failed optimistic message and resend
+    setMessages((prev) => prev.filter((m) => m.tempId !== msg.tempId));
+    setInput(msg.body);
   }
 
   function handleTyping() {
     if (socketRef.current) {
-      const ctx = convIdProp ? { conversationId: convIdProp } : orderId ? { orderId } : { listingId };
-      socketRef.current.emit('typing', ctx);
+      const effectiveParties = (parties && parties.length > 0) ? parties : liveParties;
+      const myRole = effectiveParties.find((p) => p.id === currentUserId)?.role;
+      const convId = activeConvId ?? convIdProp;
+      const ctx = convId
+        ? { conversationId: convId }
+        : orderId
+          ? { orderId }
+          : { listingId };
+      socketRef.current.emit('typing', { ...ctx, role: myRole });
     }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   }
+
+  // Derive counterparty presence from presenceMap
+  const effectivePartiesForPresence = (parties && parties.length > 0) ? parties : liveParties;
+  const counterpartyIds = effectivePartiesForPresence.filter((p) => p.id !== currentUserId).map((p) => p.id);
+  // Online if any counterparty is online; last seen from first offline counterparty
+  const anyOnline = counterpartyIds.some((uid) => presenceMap[uid]?.online);
+  const firstLastSeen = counterpartyIds.map((uid) => presenceMap[uid]).find((p) => p && !p.online)?.lastSeenAt;
+  const presenceLabel = anyOnline
+    ? '在線'
+    : firstLastSeen
+      ? `最後上線：${formatLastSeen({ online: false, lastSeenAt: firstLastSeen })}`
+      : null;
 
   return (
     <div className="flex h-full w-full flex-col bg-white">
@@ -415,7 +643,11 @@ export function ConversationPane({
                 ) : (
                   <h3 className="truncate font-semibold text-slate-900">{counterpartyName}</h3>
                 )}
-                {connected && <span className="h-2 w-2 rounded-full bg-emerald-500" title="已連線" />}
+                {presenceLabel && (
+                  <span className={`text-[10px] font-medium ${anyOnline ? 'text-emerald-600' : 'text-slate-400'}`}>
+                    {presenceLabel}
+                  </span>
+                )}
               </div>
               {/* Party-pill bar — show all 3 roles when available (3-way transparency).
                   Current viewer gets a subtle "(你)" tag so they know they're in the list.
@@ -715,12 +947,20 @@ export function ConversationPane({
             );
           }
 
+          const tickStatus = isMe
+            ? getTickStatus(msg, effectivePartiesForPresence, currentUserId)
+            : null;
+
           return (
-            <div key={msg.id}>
+            <div key={msg.tempId ?? msg.id}>
               {showDateDivider && <DateDivider date={msgDate} />}
               <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${spacingClass}`}>
                 <div className={`max-w-[80%] rounded-2xl px-3.5 py-2 shadow-sm ${
-                  isMe ? 'bg-brand-600 text-white' : 'bg-white text-slate-800 ring-1 ring-slate-100'
+                  isMe
+                    ? msg.sendStatus === 'failed'
+                      ? 'bg-red-500 text-white'
+                      : 'bg-brand-600 text-white'
+                    : 'bg-white text-slate-800 ring-1 ring-slate-100'
                 }`}>
                   {!isMe && !groupedWithPrev && (
                     <p className="mb-0.5 text-[10px] font-medium text-slate-400">
@@ -728,9 +968,19 @@ export function ConversationPane({
                     </p>
                   )}
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.body}</p>
-                  <p className={`mt-0.5 text-right text-[9px] ${isMe ? 'text-brand-200' : 'text-slate-400'}`}>
-                    {formatTime(msgDate)}
-                  </p>
+                  <div className={`mt-0.5 flex items-center justify-end gap-1 text-[9px] ${isMe ? 'text-brand-200' : 'text-slate-400'}`}>
+                    <span>{formatTime(msgDate)}</span>
+                    {tickStatus && <MessageTick status={tickStatus} />}
+                    {tickStatus === 'failed' && (
+                      <button
+                        type="button"
+                        onClick={() => retryMessage(msg)}
+                        className="ml-0.5 rounded px-1 text-[9px] font-medium text-red-200 underline hover:text-white"
+                      >
+                        重試
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
@@ -740,7 +990,7 @@ export function ConversationPane({
         {typing && (
           <div className="mt-3 flex justify-start">
             <div className="rounded-2xl bg-slate-100 px-3.5 py-2">
-              <p className="text-xs text-slate-400 animate-pulse">對方正在輸入…</p>
+              <p className="text-xs text-slate-400 animate-pulse">{typingLabel}</p>
             </div>
           </div>
         )}
@@ -837,7 +1087,95 @@ export function ConversationPane({
             </p>
           )}
 
+          {/* Phase 2 cross-sell picker (only seller, only when open) */}
+          {(() => {
+            const ep = (parties && parties.length > 0) ? parties : liveParties;
+            const isSeller = ep.find((p) => p.id === currentUserId)?.role === 'SELLER';
+            if (!isSeller || !crossSellOpen) return null;
+            // Exclude the listing currently being discussed
+            const currentLid = listingLinkId ?? listingId;
+            const items = (myListings ?? []).filter((l) => l.id !== currentLid).slice(0, 6);
+            return (
+              <div className="mb-2 rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <p className="text-[11px] font-medium text-slate-700">分享我嘅其他 listing</p>
+                  <button
+                    type="button"
+                    onClick={() => setCrossSellOpen(false)}
+                    className="rounded p-1 text-slate-400 hover:bg-slate-100"
+                    aria-label="關閉"
+                  ><X className="h-3 w-3" /></button>
+                </div>
+                {myListingsLoading && (
+                  <p className="px-1 py-2 text-[10px] text-slate-400">載入中…</p>
+                )}
+                {!myListingsLoading && items.length === 0 && (
+                  <p className="px-1 py-2 text-[10px] text-slate-400">你冇其他在售 listing</p>
+                )}
+                {!myListingsLoading && items.length > 0 && (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {items.map((l) => (
+                      <button
+                        key={l.id}
+                        type="button"
+                        onClick={() => {
+                          const origin = typeof window !== 'undefined' ? window.location.origin : '';
+                          const text = `👉 我仲有呢件貨：${l.title}（HK$${l.priceHKD.toLocaleString()}）\n${origin}/listing/${l.id}`;
+                          setInput((prev) => prev ? `${prev}\n${text}` : text);
+                          setCrossSellOpen(false);
+                        }}
+                        className="flex items-start gap-1.5 rounded-lg border border-slate-100 p-1.5 text-left hover:border-brand-300 hover:bg-brand-50"
+                      >
+                        <div className="h-9 w-9 shrink-0 overflow-hidden rounded bg-slate-100">
+                          {l.images?.[0]
+                            ? <img src={l.images[0]} alt="" className="h-full w-full object-cover" />
+                            : <div className="flex h-full w-full items-center justify-center text-sm">🛍️</div>}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate text-[10px] font-medium text-slate-800">{l.title}</p>
+                          <p className="text-[10px] text-slate-500">HK${l.priceHKD.toLocaleString()}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <p className="mt-1.5 px-1 text-[9px] text-slate-400">
+                  揀完會放入訊息框，你確認後先 send。平台唔代發。
+                </p>
+              </div>
+            );
+          })()}
+
           <div className="flex items-end gap-2">
+            {/* Phase 2: Seller's cross-sell trigger — share my other listings */}
+            {(() => {
+              const ep = (parties && parties.length > 0) ? parties : liveParties;
+              const isSeller = ep.find((p) => p.id === currentUserId)?.role === 'SELLER';
+              if (!isSeller) return null;
+              return (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCrossSellOpen((v) => !v);
+                    if (!myListings && !myListingsLoading) {
+                      setMyListingsLoading(true);
+                      api.users.sellerListings(currentUserId, 12, 0)
+                        .then((r) => setMyListings(r.items))
+                        .catch(() => setMyListings([]))
+                        .finally(() => setMyListingsLoading(false));
+                    }
+                  }}
+                  title="分享我嘅其他 listing"
+                  className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
+                    crossSellOpen
+                      ? 'border-brand-300 bg-brand-50 text-brand-700'
+                      : 'border-slate-200 text-slate-500 hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700'
+                  }`}
+                >
+                  <Store className="h-4 w-4" />
+                </button>
+              );
+            })()}
             {/* 提出議價 trigger — listing convs always show; if active offer exists,
                 click → form pre-fills + on submit triggers replace-confirm dialog */}
             {conversationType === 'listing' && (

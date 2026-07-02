@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的上架 · Authentik</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .wrap{padding:32px 0 72px}
+  .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+  .statbar{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:28px}
+  .listrow{display:flex;gap:16px;align-items:center;padding:16px 18px;margin-bottom:12px}
+  .thumb{width:64px;height:64px;border-radius:10px;flex-shrink:0;position:relative;background:linear-gradient(135deg,#eef1f5,#dfe4ee)}
+  .thumb .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:700;font-size:10px;letter-spacing:.14em;color:#9aa3b5}
+  .listrow .mid{flex:1;min-width:0}
+  .listrow .title{font-weight:600;font-size:14px}
+  .listrow .sub{font-size:12px;color:var(--text-3);margin-top:3px}
+  .listrow .price{font-weight:800;color:var(--primary);white-space:nowrap}
+  .listrow .acts{display:flex;gap:8px;flex-shrink:0}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container">
+  <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+  <nav class="nav"><a href="browse.html">瀏覽</a><a href="#">鑑定師</a><a href="sell.html" class="on">出售</a><a href="#">信任機制</a></nav>
+  <div class="nav-right"><a href="orders.html">訂單</a><a href="account.html">帳戶</a><a href="my-listings.html" style="color:var(--primary);font-weight:600">我的上架</a></div>
+</div></header>
+
+<div class="container">
+  <div class="wrap">
+    <div class="head">
+      <div><h1 class="display" style="font-size:28px">我的上架</h1>
+        <p style="color:var(--text-3);font-size:13px;margin-top:4px">管理你刊登的貨品</p></div>
+      <a class="btn btn-primary" href="sell.html">＋ 刊登新貨品</a>
+    </div>
+
+    <div class="statbar">
+      <div class="card card-pad stat"><div class="n">12</div><div class="l">在售中</div></div>
+      <div class="card card-pad stat"><div class="n">3</div><div class="l">鑑定/交收中</div></div>
+      <div class="card card-pad stat"><div class="n">28</div><div class="l">已售出</div></div>
+      <div class="card card-pad stat"><div class="n">$1.82M</div><div class="l">累計成交</div></div>
+    </div>
+
+    <div class="tabs"><a class="on">在售中 (12)</a><a>進行中 (3)</a><a>已售出 (28)</a><a>草稿 (2)</a></div>
+
+    <div class="card listrow">
+      <div class="thumb"><div class="wm">CHANEL</div></div>
+      <div class="mid"><div class="title">Chanel Classic Flap Medium · Caviar 金扣</div>
+        <div class="sub">Tier 3 · 已刊登 4 日 · 138 瀏覽 · 6 追蹤</div></div>
+      <span class="pill pill-verify">◆ 已驗證</span>
+      <span class="price">HK$68,000</span>
+      <div class="acts"><button class="btn btn-ghost btn-sm">編輯</button><button class="btn btn-ghost btn-sm">下架</button></div>
+    </div>
+    <div class="card listrow">
+      <div class="thumb"><div class="wm">HERMÈS</div></div>
+      <div class="mid"><div class="title">Hermès Birkin 25 Togo Gold 金扣</div>
+        <div class="sub">Tier 3 · 已刊登 9 日 · 402 瀏覽 · 21 追蹤</div></div>
+      <span class="pill pill-verify">◆ 已驗證</span>
+      <span class="price">HK$168,000</span>
+      <div class="acts"><button class="btn btn-ghost btn-sm">編輯</button><button class="btn btn-ghost btn-sm">下架</button></div>
+    </div>
+    <div class="card listrow">
+      <div class="thumb"><div class="wm">LV</div></div>
+      <div class="mid"><div class="title">Louis Vuitton Neverfull MM 經典花</div>
+        <div class="sub">Tier 3 · 已刊登 2 日 · 54 瀏覽 · 3 追蹤</div></div>
+      <span class="pill pill-status">待鑑定配對</span>
+      <span class="price">HK$12,800</span>
+      <div class="acts"><button class="btn btn-ghost btn-sm">編輯</button><button class="btn btn-ghost btn-sm">下架</button></div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer"><div class="container">
+  <div class="col"><div class="brand" style="font-size:18px">AUTHEN<span class="dot">·</span>TIK</div>
+    <p class="disclaimer" style="max-width:280px;margin-top:12px">資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。</p></div>
+  <div class="col"><h4>買賣</h4><a href="browse.html">瀏覽商品</a><a href="sell.html">刊登出售</a><a href="#">鑑定師名冊</a></div>
+  <div class="col"><h4>信任</h4><a href="#">鑑定機制</a><a href="#">款項託管</a><a href="#">爭議處理</a></div>
+  <div class="col"><h4>關於</h4><a href="#">條款</a><a href="#">私隱</a><a href="#">聯絡</a></div>
+</div></footer>
+</body>
+</html>

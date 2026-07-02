@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鑑定師申請 · Authentik v2</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .ob{display:grid;grid-template-columns:260px 1fr;gap:46px;padding:40px 0 76px;align-items:start}
+  .ob-nav{position:sticky;top:90px}
+  .step{display:flex;gap:14px;padding:15px 0;border-bottom:1px solid var(--line)}
+  .step:last-child{border-bottom:0}
+  .step .num{width:26px;height:26px;border-radius:50%;border:1px solid var(--line-2);
+    display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:11px;flex-shrink:0;color:var(--text-3)}
+  .step.on .num{background:var(--jade);border-color:var(--jade);color:#04150e}
+  .step.done .num{background:rgba(52,211,154,.12);border-color:var(--jade);color:var(--jade)}
+  .step .t{font-size:14px;font-weight:600}
+  .step.on .t{color:var(--text)}
+  .step:not(.on) .t{color:var(--text-3)}
+  .step .d{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--text-3);margin-top:3px;text-transform:uppercase}
+  .panel{max-width:620px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .upload{border:1px dashed var(--line-2);border-radius:var(--radius);padding:24px;text-align:center;background:var(--surface)}
+  .upload .t{font-weight:600;font-size:14px}
+  .upload .d{font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--text-3);margin:6px 0 14px;text-transform:uppercase}
+  .foot-actions{display:flex;justify-content:space-between;margin-top:32px;padding-top:24px;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+    <nav class="nav"><a>鑑定工作台</a><a>收入</a><a>檔案</a></nav>
+    <div class="nav-right"><span class="mono">鑑定師申請</span></div>
+  </div>
+</header>
+
+<div class="container">
+  <div class="ob">
+    <aside class="ob-nav">
+      <div class="section-label">申請進度</div>
+      <div class="step done"><div class="num">✓</div><div><div class="t">帳戶與身分</div><div class="d">已驗證</div></div></div>
+      <div class="step on"><div class="num">2</div><div><div class="t">專業資歷</div><div class="d">專長 · 年資 · 證書</div></div></div>
+      <div class="step"><div class="num">3</div><div><div class="t">店舖與收費</div><div class="d">地址 · 費率</div></div></div>
+      <div class="step"><div class="num">4</div><div><div class="t">合約與 E&amp;O 保險</div><div class="d">責任聲明</div></div></div>
+      <div class="step"><div class="num">5</div><div><div class="t">審核</div><div class="d">1–3 工作天</div></div></div>
+    </aside>
+
+    <section class="panel">
+      <div class="eyebrow">步驟 2 / 5</div>
+      <h1 class="display" style="font-size:30px;margin-top:10px">專業資歷</h1>
+      <p style="color:var(--text-2);margin-top:8px">
+        你的資歷會構成公開檔案的一部分。星級不由此填寫決定 —— 星級純由日後完成單數與爭議率演算派生，平台不可手改。
+      </p>
+
+      <div style="margin-top:28px">
+        <div class="field">
+          <label>鑑定專長 <span style="color:var(--text-3);font-weight:400">· 可多選，決定可接單品類</span></label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:6px">
+            <span class="pill pill-verify">名牌手袋 ✓</span>
+            <span class="pill pill-tier">腕錶</span>
+            <span class="pill pill-tier">波鞋</span>
+            <span class="pill pill-tier">珠寶首飾</span>
+            <span class="pill pill-tier">卡牌收藏</span>
+          </div>
+        </div>
+
+        <div class="two">
+          <div class="field"><label>從業年資</label><input class="input" placeholder="例：8 年"></div>
+          <div class="field"><label>每週可接單量</label><input class="input" placeholder="例：30 單"></div>
+        </div>
+
+        <div class="field">
+          <label>專業簡介 <span style="color:var(--text-3);font-weight:400">· 公開顯示，建議 50–150 字</span></label>
+          <textarea class="textarea" placeholder="例：前拍賣行手袋部門鑑定師，專攻 Chanel 及 Hermès，熟悉五金年份碼與皮革工藝⋯"></textarea>
+        </div>
+
+        <div class="field">
+          <label>資歷證明 <span style="color:var(--text-3);font-weight:400">· 證書、僱主證明或作品集</span></label>
+          <div class="upload">
+            <div class="t">上載證明文件</div>
+            <div class="d">PDF / JPG / PNG · 單檔上限 10MB</div>
+            <button class="btn btn-ghost">選擇檔案</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="note-box note-info" style="margin-top:8px">
+        審核只核實你的身分與資歷真確性，不代表平台為你的鑑定結果背書。所有鑑定責任由你按合約及 E&amp;O 保險承擔。
+      </div>
+
+      <div class="foot-actions">
+        <button class="btn btn-ghost">← 上一步</button>
+        <button class="btn btn-primary btn-lg">儲存並繼續 →</button>
+      </div>
+    </section>
+  </div>
+</div>
+
+</body>
+</html>

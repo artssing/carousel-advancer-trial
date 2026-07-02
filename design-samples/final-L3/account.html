@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>個人檔案 · Authentik</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .acc{display:grid;grid-template-columns:220px 1fr;gap:32px;align-items:start;padding:32px 0 72px}
+  .side{position:sticky;top:90px}
+  .side a{display:block;padding:11px 14px;border-radius:8px;font-size:14px;color:var(--text-2);font-weight:500;margin-bottom:2px}
+  .side a:hover{background:var(--surface-2);color:var(--text)}
+  .side a.on{background:var(--verify-soft);color:var(--action);font-weight:600}
+  .panel{max-width:620px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .kyc{display:flex;gap:12px;align-items:center;padding:16px;border:1px solid var(--verify-border);background:var(--verify-soft);border-radius:10px;margin-bottom:24px}
+  .avatar-lg{width:72px;height:72px;border-radius:50%;background:linear-gradient(135deg,#eef1f5,#dfe4ee);display:flex;align-items:center;justify-content:center;font-family:var(--display);font-weight:800;font-size:26px;color:var(--primary)}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container">
+  <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+  <nav class="nav"><a href="browse.html">瀏覽</a><a href="#">鑑定師</a><a href="sell.html">出售</a><a href="#">信任機制</a></nav>
+  <div class="nav-right"><a href="orders.html">訂單</a><a href="account.html" style="color:var(--primary);font-weight:600">帳戶</a><button class="btn btn-primary btn-sm">刊登出售</button></div>
+</div></header>
+
+<div class="container">
+  <div class="acc">
+    <aside class="side">
+      <a class="on" href="account.html">個人檔案</a>
+      <a href="wallet.html">錢包</a>
+      <a href="payouts.html">提現方式</a>
+      <a href="orders.html">我的訂單</a>
+      <a href="my-listings.html">我的上架</a>
+      <a href="#">通知設定</a>
+      <a href="#" style="color:var(--danger)">登出</a>
+    </aside>
+
+    <section class="panel">
+      <h1 class="display" style="font-size:26px;margin-bottom:20px">個人檔案</h1>
+
+      <div class="kyc">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#008766" stroke-width="2"><path d="M12 2l7 4v6c0 5-3.5 8-7 10-3.5-2-7-5-7-10V6l7-4z"/><path d="M9 12l2 2 4-4"/></svg>
+        <div style="flex:1"><b style="color:var(--action)">身分已驗證</b><div style="font-size:12px;color:var(--text-2)">KYC 於 2024-03 完成，可買賣及提現。</div></div>
+      </div>
+
+      <div style="display:flex;gap:18px;align-items:center;margin-bottom:24px">
+        <div class="avatar-lg">E</div>
+        <button class="btn btn-ghost btn-sm">更換頭像</button>
+      </div>
+
+      <div class="two">
+        <div class="field"><label>顯示名稱</label><input class="input" value="Ernest Wong"></div>
+        <div class="field"><label>用戶名 <span class="hint">公開</span></label><input class="input" value="@ernestw"></div>
+      </div>
+      <div class="field"><label>電郵</label><input class="input" value="peanutyti@aircraftmail.com"></div>
+      <div class="two">
+        <div class="field"><label>電話</label><input class="input" value="+852 9123 4567"></div>
+        <div class="field"><label>地區</label><select class="select"><option>香港島</option><option>九龍</option><option>新界</option></select></div>
+      </div>
+      <div class="field"><label>自我介紹 <span class="hint">選填，公開顯示</span></label>
+        <textarea class="textarea" placeholder="例：收藏名牌手袋與腕錶多年⋯"></textarea></div>
+
+      <div style="display:flex;gap:12px;margin-top:16px;padding-top:24px;border-top:1px solid var(--line)">
+        <button class="btn btn-primary btn-lg">儲存變更</button>
+        <button class="btn btn-ghost">取消</button>
+      </div>
+    </section>
+  </div>
+</div>
+</body>
+</html>

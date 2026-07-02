@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>提現方式 · Authentik</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .acc{display:grid;grid-template-columns:220px 1fr;gap:32px;align-items:start;padding:32px 0 72px}
+  .side{position:sticky;top:90px}
+  .side a{display:block;padding:11px 14px;border-radius:8px;font-size:14px;color:var(--text-2);font-weight:500;margin-bottom:2px}
+  .side a:hover{background:var(--surface-2);color:var(--text)}
+  .side a.on{background:var(--verify-soft);color:var(--action);font-weight:600}
+  .panel{max-width:640px}
+  .method{display:flex;align-items:center;gap:14px;padding:16px 18px;margin-bottom:12px}
+  .method .ic{width:46px;height:46px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-weight:800;color:var(--primary);flex-shrink:0}
+  .method .d{flex:1}.method .t{font-weight:600}.method .s{font-size:12px;color:var(--text-3);margin-top:2px}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container">
+  <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+  <nav class="nav"><a href="browse.html">瀏覽</a><a href="#">鑑定師</a><a href="sell.html">出售</a><a href="#">信任機制</a></nav>
+  <div class="nav-right"><a href="orders.html">訂單</a><a href="account.html" style="color:var(--primary);font-weight:600">帳戶</a><button class="btn btn-primary btn-sm">刊登出售</button></div>
+</div></header>
+
+<div class="container">
+  <div class="acc">
+    <aside class="side">
+      <a href="account.html">個人檔案</a>
+      <a href="wallet.html">錢包</a>
+      <a class="on" href="payouts.html">提現方式</a>
+      <a href="orders.html">我的訂單</a>
+      <a href="my-listings.html">我的上架</a>
+      <a href="#">通知設定</a>
+      <a href="#" style="color:var(--danger)">登出</a>
+    </aside>
+
+    <section class="panel">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+        <h1 class="display" style="font-size:26px">提現方式</h1>
+        <button class="btn btn-primary btn-sm">＋ 新增</button>
+      </div>
+
+      <div class="card method">
+        <div class="ic">FPS</div>
+        <div class="d"><div class="t">轉數快 FPS · 尾號 4567 <span class="pill pill-verify" style="margin-left:6px">預設</span></div>
+          <div class="s">恒生銀行 · Ernest Wong</div></div>
+        <button class="btn btn-ghost btn-sm">管理</button>
+      </div>
+      <div class="card method">
+        <div class="ic">銀行</div>
+        <div class="d"><div class="t">本地銀行過戶 · 尾號 8890</div>
+          <div class="s">滙豐銀行 · Ernest Wong</div></div>
+        <button class="btn btn-ghost btn-sm">管理</button>
+      </div>
+
+      <div class="section-label" style="margin-top:32px">提現</div>
+      <div class="card card-pad">
+        <div class="field"><label>提現金額 <span class="hint">可提現餘額 HK$66,980</span></label><input class="input" value="50,000"></div>
+        <div class="field"><label>提現至</label><select class="select"><option>轉數快 FPS · 尾號 4567（預設）</option><option>本地銀行過戶 · 尾號 8890</option></select></div>
+        <div class="note-box note-info" style="margin:4px 0 16px">提現一般於 1 個工作天內到賬。首次提現需完成 KYC（已完成）。</div>
+        <button class="btn btn-primary btn-block btn-lg">確認提現</button>
+      </div>
+      <p class="disclaimer" style="margin-top:14px">平台為資訊中介，僅代管及轉付款項；實際到賬時間視乎收款銀行。</p>
+    </section>
+  </div>
+</div>
+</body>
+</html>

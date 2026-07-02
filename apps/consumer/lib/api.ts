@@ -83,6 +83,10 @@ export const api = {
       email: string;
       displayName: string;
       avatarUrl: string | null;
+      avatarOriginalUrl: string | null;
+      avatarCropZoom: number | null;
+      avatarCropX: number | null;
+      avatarCropY: number | null;
       phone: string | null;
       phoneVerified: boolean;
       roles: string[];
@@ -91,8 +95,23 @@ export const api = {
       authenticator: { id: string; displayName: string; status: string } | null;
     }>('/me'),
 
-  updateMe: (data: { displayName?: string; avatarUrl?: string | null }) =>
-    req<{ id: string; email: string; displayName: string; avatarUrl: string | null; roles: string[]; kycStatus: string; createdAt: string }>(
+  updateMe: (data: {
+    displayName?: string;
+    avatarUrl?: string | null;
+    avatarOriginalUrl?: string | null;
+    avatarCropZoom?: number | null;
+    avatarCropX?: number | null;
+    avatarCropY?: number | null;
+  }) =>
+    req<{
+      id: string; email: string; displayName: string;
+      avatarUrl: string | null;
+      avatarOriginalUrl: string | null;
+      avatarCropZoom: number | null;
+      avatarCropX: number | null;
+      avatarCropY: number | null;
+      roles: string[]; kycStatus: string; createdAt: string;
+    }>(
       '/me', { method: 'PATCH', body: JSON.stringify(data) },
     ),
 
@@ -104,7 +123,7 @@ export const api = {
   listings: {
     list: (
       category?: string, limit = 24, offset = 0, q?: string,
-      opts?: { minPrice?: number; maxPrice?: number; sort?: 'newest' | 'priceAsc' | 'priceDesc' | 'relevance'; excludeId?: string; brand?: string },
+      opts?: { minPrice?: number; maxPrice?: number; sort?: 'newest' | 'priceAsc' | 'priceDesc' | 'relevance'; excludeId?: string; brand?: string; conditionMin?: string },
     ) => {
       const params = new URLSearchParams();
       if (category) params.set('category', category);
@@ -116,6 +135,7 @@ export const api = {
       if (opts?.sort) params.set('sort', opts.sort);
       if (opts?.excludeId) params.set('excludeId', opts.excludeId);
       if (opts?.brand) params.set('brand', opts.brand);
+      if (opts?.conditionMin) params.set('conditionMin', opts.conditionMin);
       return req<{ items: any[]; total: number; hasMore: boolean }>(
         `/listings?${params.toString()}`,
       );
@@ -131,6 +151,7 @@ export const api = {
       description: string;
       priceHKD: number;
       category: string;
+      condition: string;
       brand?: string;
       images?: string[];
       allowedDeliveryMethods?: string[];
@@ -142,6 +163,7 @@ export const api = {
       description: string;
       priceHKD: number;
       category: string;
+      condition: string;
       brand: string;
       images: string[];
       allowedDeliveryMethods: string[];
@@ -388,5 +410,19 @@ export const api = {
     createRequest: (data: { payoutMethodId: string; amountHKD: number }) =>
       req<any>('/wallet/requests', { method: 'POST', body: JSON.stringify(data) }),
     getRequest: (id: string) => req<any>(`/wallet/requests/${id}`),
+  },
+
+  // ── Emergency banners (public GET, no auth) ──────────────────────────
+  banners: {
+    list: (audience: 'BUYERS' | 'SELLERS' | 'AUTHENTICATORS' | 'ALL' = 'BUYERS') =>
+      req<Array<{
+        id: string;
+        message: string;
+        severity: 'INFO' | 'WARNING' | 'CRITICAL';
+        audience: 'ALL' | 'BUYERS' | 'SELLERS' | 'AUTHENTICATORS';
+        dismissible: boolean;
+        priority: number;
+        createdAt: string;
+      }>>(`/banners?audience=${audience}`),
   },
 };

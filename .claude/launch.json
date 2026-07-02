@@ -23,10 +23,34 @@
       "autoPort": false
     },
     {
+      "name": "consumer-uat",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["next", "dev", "-p", "3018"],
+      "cwd": "/Users/admin/Desktop/claude/carousel-advancer-trial/apps/consumer",
+      "env": {
+        "NEXT_PUBLIC_API_URL": "http://localhost:4010/api",
+        "NEXT_PUBLIC_CONSUMER_URL": "http://localhost:3018",
+        "NEXT_PUBLIC_AUTHENTICATOR_URL": "http://localhost:3011"
+      },
+      "port": 3018,
+      "autoPort": false
+    },
+    {
       "name": "authenticator-uat",
       "runtimeExecutable": "bash",
       "runtimeArgs": ["/Users/admin/Desktop/claude/carousel-advancer-trial/scripts/dev-authenticator-uat.sh"],
       "port": 3011,
+      "autoPort": false
+    },
+    {
+      "name": "admin-uat",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": ["next", "dev", "-p", "3013"],
+      "cwd": "/Users/admin/Desktop/claude/carousel-advancer-trial/apps/admin",
+      "env": {
+        "NEXT_PUBLIC_API_URL": "http://localhost:4010/api"
+      },
+      "port": 3013,
       "autoPort": false
     }
   ]

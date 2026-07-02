@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>白底 L2 · 白 + 微灰層次</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* ===== L2 白 + 微灰層次：band / tiles 用淺灰做分區 ===== */
+  :root{ --bg:#FFFFFF; --surface-2:#f5f7f9; }
+  body{background:#FFFFFF}
+  .topbar{background:#FFFFFF}
+  .hero-a{text-align:center;padding:70px 0 40px}
+  .hero-a h1{font-size:46px;max-width:760px;margin:14px auto 0}
+  .hero-a p{color:var(--text-2);max-width:520px;margin:16px auto 0}
+  .searchbar{max-width:680px;margin:30px auto 14px;display:flex;background:#fff;
+    border:1px solid var(--line-2);border-radius:12px;box-shadow:0 12px 44px -20px rgba(10,37,64,.28);overflow:hidden}
+  .searchbar input{flex:1;border:0;outline:0;font-family:inherit;font-size:16px;padding:16px 20px;color:var(--text);background:transparent}
+  .searchbar button{border:0;cursor:pointer;font-family:inherit;font-weight:700;font-size:15px;background:var(--action);color:#fff;padding:0 30px}
+  .quick{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:6px}
+  .quick a{font-size:13px;color:var(--text-2);border:1px solid var(--line-2);border-radius:999px;padding:6px 14px;background:#fff}
+  .ticker{border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:40px 0 0;background:var(--surface-2);overflow:hidden}
+  .ticker .container{display:flex;align-items:center;gap:22px;height:52px}
+  .ticker .lab{font-size:11px;letter-spacing:.12em;text-transform:uppercase;font-weight:700;color:var(--action);display:flex;align-items:center;gap:8px;flex-shrink:0}
+  .ticker .lab::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 3px rgba(0,196,140,.2)}
+  .ticker .items{display:flex;gap:26px;overflow:hidden;white-space:nowrap;font-size:13px;color:var(--text-2)}
+  .ticker .items b{color:var(--text)} .ticker .items .v{color:var(--verify);font-weight:700}
+  .tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:44px}
+  .tile{position:relative;aspect-ratio:1/.78;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line-2);
+    background:linear-gradient(135deg,#eef1f5,#e2e8f0);display:flex;align-items:flex-end;padding:16px}
+  .tile .n{font-weight:800;font-size:16px;color:var(--primary)}
+  .tile .c{position:absolute;top:12px;right:14px;font-size:11px;color:var(--text-3);font-weight:600}
+  .sec-head{display:flex;align-items:baseline;justify-content:space-between;margin:56px 0 20px}
+  .sec-head a{font-size:13px;font-weight:600;color:var(--action)}
+  .level-flag{position:fixed;right:16px;bottom:16px;background:var(--primary);color:#fff;font-size:12px;font-weight:700;padding:8px 14px;border-radius:999px;z-index:50}
+</style>
+</head>
+<body>
+<div class="level-flag">L2 · 白 + 微灰</div>
+<header class="topbar"><div class="container">
+  <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+  <nav class="nav"><a>瀏覽</a><a>鑑定師</a><a>出售</a><a>信任機制</a></nav>
+  <div class="nav-right"><a>登入</a><button class="btn btn-primary" style="padding:9px 18px">刊登出售</button></div>
+</div></header>
+
+<div class="container">
+  <section class="hero-a">
+    <div class="eyebrow">Search · Verify · Buy</div>
+    <h1 class="display">搜尋任何名物，<span class="accent-word">鑑定通過</span>才成交</h1>
+    <p>逾一萬件正品貨源，每宗高價交易經具名鑑定師把關、款項託管。</p>
+    <div class="searchbar"><input placeholder="搜尋品牌、型號，例如 Rolex Submariner"><button>搜尋</button></div>
+    <div class="quick"><a>Chanel 手袋</a><a>Rolex 黑水鬼</a><a>Air Jordan 1</a><a>Hermès Birkin</a></div>
+  </section>
+</div>
+<div class="ticker"><div class="container"><span class="lab">實時鑑定</span>
+  <div class="items"><span><b>Chanel Classic Flap</b> · Milan Leung <span class="v">✓ 通過</span></span>
+    <span><b>Rolex Submariner</b> · ProCheck <span class="v">✓ 通過</span></span>
+    <span><b>Air Jordan 1 Chicago</b> · StepAuth <span class="v">✓ 通過</span></span></div></div></div>
+<div class="container">
+  <div class="sec-head" style="margin-top:44px"><h2 class="display">熱門品類</h2><a>全部品類 →</a></div>
+  <div class="tiles">
+    <a class="tile"><span class="c">2,140 件</span><span class="n">名牌手袋</span></a>
+    <a class="tile"><span class="c">1,320 件</span><span class="n">腕錶</span></a>
+    <a class="tile"><span class="c">3,780 件</span><span class="n">波鞋 / 潮物</span></a>
+    <a class="tile"><span class="c">960 件</span><span class="n">卡牌收藏</span></a>
+  </div>
+  <div class="sec-head"><h2 class="display">熱門交易</h2><a>查看全部 →</a></div>
+  <div class="grid-cards">
+    <a class="p-card"><div class="ph"><div class="wm">CHANEL</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+      <div class="body"><div class="title">Chanel Classic Flap Medium · Caviar 金扣</div><div class="meta">九成新</div>
+        <div class="row"><span class="price">HK$68,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">ROLEX</div></div>
+      <div class="body"><div class="title">Rolex Submariner Date 126610LN</div><div class="meta">全套 2023</div>
+        <div class="row"><span class="price">HK$118,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">NIKE</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+      <div class="body"><div class="title">Air Jordan 1 Retro High OG Chicago</div><div class="meta">US 9 · 全新</div>
+        <div class="row"><span class="price">HK$3,200</span><span class="pill pill-tier">T2</span></div></div></a>
+    <a class="p-card"><div class="ph"><div class="wm">HERMÈS</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+      <div class="body"><div class="title">Hermès Birkin 25 Togo Gold 金扣</div><div class="meta">連單據</div>
+        <div class="row"><span class="price">HK$168,000</span><span class="pill pill-tier">T3</span></div></div></a>
+  </div>
+</div>
+<footer class="footer"><div class="container">
+  <div class="col"><div class="brand" style="font-size:18px">AUTHEN<span class="dot">·</span>TIK</div>
+    <p class="disclaimer" style="max-width:280px;margin-top:12px">資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。</p></div>
+  <div class="col"><h4>買賣</h4><a>瀏覽商品</a><a>刊登出售</a><a>鑑定師名冊</a></div>
+  <div class="col"><h4>信任</h4><a>鑑定機制</a><a>款項託管</a><a>爭議處理</a></div>
+  <div class="col"><h4>關於</h4><a>條款</a><a>私隱</a><a>聯絡</a></div>
+</div></footer>
+</body>
+</html>

@@ -15,6 +15,7 @@ interface NavUser {
   id: string;
   displayName: string;
   email: string;
+  avatarUrl: string | null;
 }
 
 export function TopNav() {
@@ -38,7 +39,7 @@ export function TopNav() {
       api
         .me()
         .then((me) => {
-          if (active) setUser({ id: me.id, displayName: me.displayName, email: me.email });
+          if (active) setUser({ id: me.id, displayName: me.displayName, email: me.email, avatarUrl: me.avatarUrl });
         })
         .catch((e: any) => {
           if (e?.status === 401) clearToken();
@@ -142,8 +143,11 @@ export function TopNav() {
                 aria-haspopup="menu"
                 aria-expanded={menuOpen}
               >
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
-                  {user.displayName.slice(0, 1).toUpperCase()}
+                <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full bg-brand-100 text-xs font-semibold text-brand-700">
+                  {user.avatarUrl
+                    // eslint-disable-next-line @next/next/no-img-element
+                    ? <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+                    : user.displayName.slice(0, 1).toUpperCase()}
                 </span>
                 <span className="hidden max-w-[8rem] truncate font-medium text-slate-700 sm:inline">
                   {user.displayName}

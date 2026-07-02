@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>主頁 C · 品類分區百貨</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* C — 品類分區百貨：促銷 banner + 品類快捷 + 分品類 section */
+  .promo{display:grid;grid-template-columns:1.5fr 1fr;gap:16px;margin:32px 0 0}
+  .promo .big,.promo .small{border-radius:14px;overflow:hidden;position:relative;padding:38px;display:flex;flex-direction:column;justify-content:center;min-height:260px}
+  .promo .big{background:linear-gradient(120deg,#0A2540,#12365f);color:#fff}
+  .promo .small{background:linear-gradient(120deg,#e7ecf2,#d6dee9)}
+  .promo .big .eyebrow{color:var(--accent)}
+  .promo .big h2{color:#fff;font-size:32px;margin:12px 0 10px;max-width:360px}
+  .promo .big p{color:#b8c5d6;max-width:340px;margin-bottom:22px}
+  .promo .small .eyebrow{color:var(--action)}
+  .promo .small h3{color:var(--primary);font-size:22px;margin:10px 0 8px}
+  .promo .small p{color:var(--text-2);font-size:13px;margin-bottom:16px}
+  .promo .wm{position:absolute;right:24px;bottom:16px;font-family:var(--display);font-weight:800;letter-spacing:.16em;font-size:14px;opacity:.5}
+
+  .catnav{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:40px 0 8px}
+  .catnav a{border:1px solid var(--line);border-radius:var(--radius);background:var(--surface);
+    padding:18px 12px;text-align:center;font-weight:600;font-size:13px;color:var(--text-2)}
+  .catnav a:hover{border-color:var(--action);color:var(--action)}
+  .catnav a .c{display:block;font-size:11px;color:var(--text-3);font-weight:500;margin-top:4px}
+
+  .cat-sec{margin-top:52px}
+  .cat-sec .head{display:flex;align-items:baseline;justify-content:space-between;
+    padding-bottom:14px;border-bottom:2px solid var(--primary);margin-bottom:20px}
+  .cat-sec .head h2{font-size:24px}
+  .cat-sec .head a{font-size:13px;font-weight:600;color:var(--action)}
+
+  .trust-strip{display:grid;grid-template-columns:repeat(3,1fr);gap:0;margin-top:56px;
+    border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+  .trust-strip .t{padding:22px 24px;border-right:1px solid var(--line);display:flex;gap:14px;align-items:flex-start}
+  .trust-strip .t:last-child{border-right:0}
+  .trust-strip .no{font-weight:800;color:var(--action);font-size:15px}
+  .trust-strip .h{font-weight:600;margin-bottom:4px}
+  .trust-strip .p{font-size:12px;color:var(--text-3);line-height:1.6}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="container">
+    <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+    <nav class="nav"><a>瀏覽</a><a>鑑定師</a><a>出售</a><a>信任機制</a></nav>
+    <div class="nav-right"><a>登入</a><button class="btn btn-primary" style="padding:9px 18px">刊登出售</button></div>
+  </div>
+</header>
+
+<div class="container">
+  <!-- 促銷 banner -->
+  <section class="promo">
+    <div class="big">
+      <div class="eyebrow">Authenticated Resale · Hong Kong</div>
+      <h2 class="display">高價交易，鑑定通過才放款</h2>
+      <p>逾一萬港元貨品強制第三方鑑定，款項全程託管，不通過全額退款。</p>
+      <div><button class="btn btn-primary">了解鑑定機制</button></div>
+      <span class="wm">SECURE ESCROW</span>
+    </div>
+    <div class="small">
+      <div class="eyebrow">本週新上架</div>
+      <h3 class="display">腕錶專場</h3>
+      <p>Rolex · AP · Patek，全部經具名鑑定師把關。</p>
+      <div><button class="btn btn-navy" style="padding:10px 18px">立即選購</button></div>
+      <span class="wm" style="color:var(--primary)">WATCHES</span>
+    </div>
+  </section>
+
+  <!-- 品類快捷 -->
+  <div class="catnav">
+    <a>名牌手袋<span class="c">2,140</span></a>
+    <a>腕錶<span class="c">1,320</span></a>
+    <a>波鞋<span class="c">2,560</span></a>
+    <a>潮流服飾<span class="c">1,220</span></a>
+    <a>珠寶首飾<span class="c">640</span></a>
+    <a>卡牌收藏<span class="c">960</span></a>
+  </div>
+
+  <!-- 手袋 section -->
+  <section class="cat-sec">
+    <div class="head"><h2 class="display">名牌手袋</h2><a>查看全部 2,140 件 →</a></div>
+    <div class="grid-cards">
+      <a class="p-card"><div class="ph"><div class="wm">CHANEL</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+        <div class="body"><div class="title">Chanel Classic Flap Medium · Caviar 金扣</div><div class="meta">九成新</div>
+          <div class="row"><span class="price">HK$68,000</span><span class="pill pill-tier">T3</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">HERMÈS</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+        <div class="body"><div class="title">Hermès Birkin 25 Togo Gold 金扣</div><div class="meta">連單據</div>
+          <div class="row"><span class="price">HK$168,000</span><span class="pill pill-tier">T3</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">DIOR</div></div>
+        <div class="body"><div class="title">Dior Lady Dior Medium 藤格紋</div><div class="meta">連單</div>
+          <div class="row"><span class="price">HK$42,000</span><span class="pill pill-tier">T3</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">LV</div></div>
+        <div class="body"><div class="title">Louis Vuitton Capucines BB</div><div class="meta">近全新</div>
+          <div class="row"><span class="price">HK$32,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    </div>
+  </section>
+
+  <!-- 腕錶 section -->
+  <section class="cat-sec">
+    <div class="head"><h2 class="display">腕錶</h2><a>查看全部 1,320 件 →</a></div>
+    <div class="grid-cards">
+      <a class="p-card"><div class="ph"><div class="wm">ROLEX</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+        <div class="body"><div class="title">Rolex Submariner Date 126610LN</div><div class="meta">全套 2023</div>
+          <div class="row"><span class="price">HK$118,000</span><span class="pill pill-tier">T3</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">AP</div></div>
+        <div class="body"><div class="title">Audemars Piguet Royal Oak 15500</div><div class="meta">連保卡</div>
+          <div class="row"><span class="price">HK$328,000</span><span class="pill pill-tier">T3</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">OMEGA</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+        <div class="body"><div class="title">Omega Speedmaster Moonwatch</div><div class="meta">全套</div>
+          <div class="row"><span class="price">HK$48,000</span><span class="pill pill-tier">T3</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">CARTIER</div></div>
+        <div class="body"><div class="title">Cartier Santos Medium</div><div class="meta">九成新</div>
+          <div class="row"><span class="price">HK$54,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    </div>
+  </section>
+
+  <!-- 波鞋潮物 section -->
+  <section class="cat-sec">
+    <div class="head"><h2 class="display">波鞋 / 潮物</h2><a>查看全部 2,560 件 →</a></div>
+    <div class="grid-cards">
+      <a class="p-card"><div class="ph"><div class="wm">NIKE</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+        <div class="body"><div class="title">Air Jordan 1 Retro High OG Chicago</div><div class="meta">US 9 · 全新</div>
+          <div class="row"><span class="price">HK$3,200</span><span class="pill pill-tier">T2</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">SUPREME</div><span class="pill pill-verify top">◆ 已驗證</span></div>
+        <div class="body"><div class="title">Supreme Box Logo Hoodie FW23</div><div class="meta">L · 全新</div>
+          <div class="row"><span class="price">HK$4,800</span><span class="pill pill-tier">T2</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">BEARBRICK</div></div>
+        <div class="body"><div class="title">Bearbrick 1000% Kaws Dissected</div><div class="meta">連盒</div>
+          <div class="row"><span class="price">HK$18,000</span><span class="pill pill-tier">T3</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">POKÉMON</div></div>
+        <div class="body"><div class="title">Charizard 噴火龍 PSA 9 初版</div><div class="meta">PSA 鑑定卡</div>
+          <div class="row"><span class="price">HK$9,800</span><span class="pill pill-tier">T2</span></div></div></a>
+    </div>
+  </section>
+
+  <!-- 信任 strip -->
+  <section class="trust-strip">
+    <div class="t"><span class="no">01</span><div><div class="h">具名鑑定</div><div class="p">真偽歸屬具名鑑定師，星級演算派生，平台不背書。</div></div></div>
+    <div class="t"><span class="no">02</span><div><div class="h">款項託管</div><div class="p">付款先託管，通過並交收後放款，不通過全退。</div></div></div>
+    <div class="t"><span class="no">03</span><div><div class="h">分級把關</div><div class="p">逾一萬強制鑑定，系統拒絕無鑑定師落單。</div></div></div>
+  </section>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="col"><div class="brand" style="font-size:18px">AUTHEN<span class="dot">·</span>TIK</div>
+      <p class="disclaimer" style="max-width:280px;margin-top:12px">資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。</p></div>
+    <div class="col"><h4>買賣</h4><a>瀏覽商品</a><a>刊登出售</a><a>鑑定師名冊</a></div>
+    <div class="col"><h4>信任</h4><a>鑑定機制</a><a>款項託管</a><a>爭議處理</a></div>
+    <div class="col"><h4>關於</h4><a>條款</a><a>私隱</a><a>聯絡</a></div>
+  </div>
+</footer>
+
+</body>
+</html>

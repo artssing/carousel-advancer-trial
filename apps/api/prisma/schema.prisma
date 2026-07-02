@@ -40,6 +40,31 @@ enum ListingStatus {
   REMOVED
 }
 
+/// Seller-declared product condition. Ordinal 0 (newest) → 4 (oldest).
+/// Labels + definitions live in packages/utils/src/conditions.ts (SSOT).
+enum ConditionGrade {
+  BRAND_NEW
+  NEARLY_NEW
+  GOOD
+  LIGHT_USE
+  FAIR
+}
+
+/// Emergency banner severity (drives colour + icon on consumer/authenticator).
+enum BannerSeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+/// Which portal / role sees a banner. Server-side filtered per request.
+enum BannerAudience {
+  ALL
+  BUYERS
+  SELLERS
+  AUTHENTICATORS
+}
+
 enum OrderStatus {
   AWAITING_PAYMENT
   PAID
@@ -93,6 +118,14 @@ model User {
   /// Avatar — base64 data URL (Founder ruling Q3 2026-06-11: A = base64 in DB).
   /// Recommended client-side compress to ≤ 200×200 / ≤ 50KB. Server caps at 256KB.
   avatarUrl    String?
+  /// Uncompressed source of last upload so the customer can re-crop without
+  /// re-uploading the same file. Capped at 512KB (≈ 800×800 JPEG q0.85).
+  avatarOriginalUrl String?
+  /// Crop transform applied to avatarOriginalUrl → avatarUrl. Stored so we
+  /// can restore the cropper sliders to the user's last position.
+  avatarCropZoom    Float?
+  avatarCropX       Float?
+  avatarCropY       Float?
   /// True when email is attested by SSO provider (Google `email_verified`).
   /// Existing email/password users: false (UI doesn't surface yet — Founder OQ-5 A).
   emailVerified Boolean   @default(false)
@@ -111,6 +144,7 @@ model User {
   suspendedAt      DateTime?
   suspendedReason  String?
   suspendedById    String?   // operator userId (OPS_ADMIN+) who did it
+  lastSeenAt       DateTime? // updated on socket connect/disconnect for presence
   roles        UserRole[] @default([BUYER, SELLER])
   kycStatus    KycStatus  @default(VERIFIED) // dev: auto-verified
   createdAt    DateTime   @default(now())
@@ -194,6 +228,10 @@ model Listing {
   /// "ROLEX", "IPHONE_16_PRO") OR free-text fallback for long-tail brands.
   /// Resolve display label via brandLabel(category, brand) helper.
   brand       String?
+  /// Seller-declared condition grade. Required on all new listings (2026-06-30);
+  /// nullable to preserve legacy listings created before the field existed.
+  /// Filter semantic: "≥ min" via ordinal (see packages/utils/src/conditions.ts).
+  condition   ConditionGrade?
   title       String
   description String
   priceHKD    Int
@@ -221,8 +259,9 @@ model Listing {
   createdAt   DateTime      @default(now())
 
   // 賣家接受嘅交收方式（買家落單時揀其中一種）
-  allowedDeliveryMethods DeliveryMethod[] @default([SHIP])
-  sellerDistrict         String?          // 賣家所在區（面交配對用）
+  allowedDeliveryMethods  DeliveryMethod[] @default([SHIP])
+  sellerDistrict          String?          // 賣家所在區（面交配對用）
+  sellerMeetupLocations   String[]         @default([]) // MEETUP_DIRECT 賣家建議面交地點（買家落單時揀其中一個或填「其他」）
 
   orders        Order[]
   conversations Conversation[]
@@ -693,4 +732,29 @@ model AdminAction {
   @@index([targetUserId, createdAt])
   @@index([actorId, createdAt])
   @@index([action, createdAt])
+}
+
+/// Emergency banner — admin-editable notice shown at the top of consumer /
+/// authenticator apps. Founder ruling 2026-06-30: admin controls message,
+/// severity, audience, and how many are active. Hard cap = 3 active per app.
+/// Phase 2 backlog (approval flow, audit log, EN fallback, SSE push) in
+/// docs/banner-backlog.md.
+model Banner {
+  id          String         @id @default(cuid())
+  message     String         // Plain text only (server sanitizes to strip HTML)
+  severity    BannerSeverity @default(INFO)
+  audience    BannerAudience @default(ALL)
+  isActive    Boolean        @default(false)
+  startsAt    DateTime?      // null = active immediately when isActive=true
+  endsAt      DateTime?      // null = never auto-expire
+  dismissible Boolean        @default(true)
+  /// Display order among concurrently-active banners; higher = shown first.
+  priority    Int            @default(0)
+  createdBy   String         // User.id (must have ADMIN role)
+  updatedBy   String?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@index([isActive, priority])
+  @@index([audience, isActive])
 }

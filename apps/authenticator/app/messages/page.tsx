@@ -1,14 +1,16 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
-import { MessageCircle } from 'lucide-react';
+import { ChevronDown, ChevronRight, MessageCircle } from 'lucide-react';
 import { formatChatTime } from '@authentik/utils';
 import { api, hasToken, clearToken, getToken } from '@/lib/api';
 import { ConversationPane } from '@/components/conversation-pane';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
+// Strip trailing /api so socket.io connects to namespace root (NEXT_PUBLIC_API_URL
+// is set to http://host/api for REST helpers; ws needs http://host/chat, not /api/chat).
+const API_URL = (process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000').replace(/\/api\/?$/, '');
 
 interface ConvSummary {
   id: string;
@@ -39,6 +41,8 @@ export default function MessagesPage() {
   // Foreseen: 10k+ messages → API /conversations/search exists as a hedge;
   // current scale (<100 convs per user) → client filter = zero-latency.
   const [query, setQuery] = useState('');
+  // Phase 1 sidebar grouping: collapse state per counterparty group.
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (!hasToken()) { router.replace('/login'); return; }
@@ -130,6 +134,24 @@ export default function MessagesPage() {
     : conversations;
   const noResults = !!qLower && visibleConvs.length === 0;
 
+  // ── Phase 1: Group sidebar by counterparty ─────────────────────────────
+  // Mirrors consumer pane behaviour. For authenticator THREE_WAY convs,
+  // counterparty is the composite "Buyer / Seller" pair (no id), so we
+  // fall back to displayName as the group key.
+  const groups = useMemo(() => {
+    const map = new Map<string, { key: string; counterparty: ConvSummary['counterparty']; convs: ConvSummary[] }>();
+    for (const c of visibleConvs) {
+      const key = c.counterparty.id ?? `name:${c.counterparty.displayName}`;
+      let g = map.get(key);
+      if (!g) {
+        g = { key, counterparty: c.counterparty, convs: [] };
+        map.set(key, g);
+      }
+      g.convs.push(c);
+    }
+    return Array.from(map.values());
+  }, [visibleConvs]);
+
   const sidebar = (
     <aside className="flex h-full min-h-0 w-full flex-col border-r border-slate-200 bg-white md:w-72">
       <div className="border-b border-slate-100 px-4 py-3">
@@ -199,58 +221,111 @@ export default function MessagesPage() {
           </div>
         )}
 
-        {!loading && visibleConvs.map((conv) => {
-          const img = conv.listing?.images?.[0];
-          const preview = conv.lastMessage
-            ? `${ROLE_LABEL[conv.lastMessage.senderRole] ?? ''}：${conv.lastMessage.body}`
-            : '新對話';
-          const isActive = conv.id === activeConvId;
+        {!loading && groups.map((g) => {
+          const isGrouped = g.convs.length > 1;
+          const collapsed = isGrouped && collapsedGroups[g.key];
+          const totalUnread = g.convs.reduce((sum, c) => sum + c.unread, 0);
+          const latest = g.convs[0]!;
 
-          return (
-            <button
-              key={conv.id}
-              onClick={() => openConv(conv.id)}
-              className={`flex w-full items-start gap-2.5 border-l-2 px-3 py-2.5 text-left transition ${
-                isActive
-                  ? 'border-brand-600 bg-brand-50'
-                  : conv.unread > 0
-                    ? 'border-transparent bg-brand-50/30 hover:bg-slate-50'
-                    : 'border-transparent hover:bg-slate-50'
-              }`}
-            >
-              <div className="h-10 w-10 shrink-0 overflow-hidden rounded-lg bg-slate-100">
-                {img
-                  ? <img src={img} alt="" className="h-full w-full object-cover" />
-                  : <div className="flex h-full w-full items-center justify-center text-base">
-                      {conv.type === 'order' ? '📦' : '🛍️'}
+          const renderThread = (conv: ConvSummary, indent: boolean) => {
+            const img = conv.listing?.images?.[0];
+            const preview = conv.lastMessage
+              ? `${ROLE_LABEL[conv.lastMessage.senderRole] ?? ''}：${conv.lastMessage.body}`
+              : '新對話';
+            const isActive = conv.id === activeConvId;
+            return (
+              <button
+                key={conv.id}
+                onClick={() => openConv(conv.id)}
+                className={`flex w-full items-start gap-2.5 border-l-2 ${indent ? 'pl-7 pr-3 py-2' : 'px-3 py-2.5'} text-left transition ${
+                  isActive
+                    ? 'border-brand-600 bg-brand-50'
+                    : conv.unread > 0
+                      ? 'border-transparent bg-brand-50/30 hover:bg-slate-50'
+                      : 'border-transparent hover:bg-slate-50'
+                }`}
+              >
+                <div className="h-9 w-9 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                  {img
+                    ? <img src={img} alt="" className="h-full w-full object-cover" />
+                    : <div className="flex h-full w-full items-center justify-center text-base">
+                        {conv.type === 'order' ? '📦' : '🛍️'}
+                      </div>
+                  }
+                </div>
+                <div className="min-w-0 flex-1">
+                  {!indent && (
+                    <div className="flex items-center justify-between gap-1">
+                      <p className="truncate text-xs font-semibold text-slate-900">{conv.counterparty.displayName}</p>
+                      <span className="shrink-0 text-[9px] text-slate-400">
+                        {conv.lastMessage ? formatChatTime(conv.lastMessage.createdAt) : ''}
+                      </span>
                     </div>
-                }
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center justify-between gap-1">
-                  <p className="truncate text-xs font-semibold text-slate-900">
-                    {conv.counterparty.displayName}
+                  )}
+                  <p className={`truncate ${indent ? 'text-[11px] font-medium text-slate-700' : 'text-[11px] text-slate-500'}`}>
+                    {conv.listing?.title ?? (indent ? '對話' : '')}
                   </p>
-                  <span className="shrink-0 text-[9px] text-slate-400">
-                    {conv.lastMessage ? formatChatTime(conv.lastMessage.createdAt) : ''}
+                  <p className="mt-0.5 truncate text-[10px] text-slate-400">{preview.slice(0, 50)}</p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-0.5">
+                  {indent && conv.lastMessage && (
+                    <span className="text-[9px] text-slate-400">{formatChatTime(conv.lastMessage.createdAt)}</span>
+                  )}
+                  {conv.unread > 0 && !isActive && (
+                    <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+                      {conv.unread}
+                    </span>
+                  )}
+                  <span className={`rounded-full px-1.5 py-0 text-[8px] font-medium ${
+                    conv.type === 'order' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    {conv.type === 'order' ? '訂單' : '查詢'}
                   </span>
                 </div>
-                <p className="truncate text-[11px] text-slate-500">{conv.listing?.title ?? ''}</p>
-                <p className="mt-0.5 truncate text-[10px] text-slate-400">{preview.slice(0, 50)}</p>
-              </div>
-              <div className="flex shrink-0 flex-col items-end gap-0.5">
-                {conv.unread > 0 && !isActive && (
+              </button>
+            );
+          };
+
+          if (!isGrouped) return renderThread(latest, false);
+
+          return (
+            <div key={g.key} className="border-b border-slate-50 last:border-b-0">
+              <button
+                type="button"
+                onClick={() => setCollapsedGroups((prev) => ({ ...prev, [g.key]: !prev[g.key] }))}
+                className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-slate-50"
+                aria-expanded={!collapsed}
+                aria-label={`${g.counterparty.displayName} · ${g.convs.length} 個對話`}
+              >
+                {collapsed
+                  ? <ChevronRight className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+                  : <ChevronDown className="h-3.5 w-3.5 shrink-0 text-slate-400" />}
+                <div className="h-8 w-8 shrink-0 overflow-hidden rounded-full bg-slate-200">
+                  <div className="flex h-full w-full items-center justify-center text-[11px] font-bold text-slate-600">
+                    {g.counterparty.displayName.slice(0, 1).toUpperCase()}
+                  </div>
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-xs font-semibold text-slate-900">
+                    {g.counterparty.displayName}
+                    <span className="ml-1 text-[10px] font-medium text-slate-400">· {g.convs.length}</span>
+                  </p>
+                  <p className="truncate text-[10px] text-slate-400">
+                    {latest.lastMessage ? formatChatTime(latest.lastMessage.createdAt) : ''}
+                  </p>
+                </div>
+                {totalUnread > 0 && (
                   <span className="flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
-                    {conv.unread}
+                    {totalUnread}
                   </span>
                 )}
-                <span className={`rounded-full px-1.5 py-0 text-[8px] font-medium ${
-                  conv.type === 'order' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700'
-                }`}>
-                  {conv.type === 'order' ? '訂單' : '查詢'}
-                </span>
-              </div>
-            </button>
+              </button>
+              {!collapsed && (
+                <div>
+                  {g.convs.map((c) => renderThread(c, true))}
+                </div>
+              )}
+            </div>
           );
         })}
       </div>

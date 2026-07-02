@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>v3 奢華與權威 · 設計主題</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .hero-guide{padding:56px 0 40px;border-bottom:1px solid var(--line)}
+  .navlinks{display:flex;gap:10px;flex-wrap:wrap;margin-top:20px}
+  .navlinks a{font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:9px 16px;border:1px solid var(--line-2);border-radius:999px;color:var(--text-2);font-weight:600}
+  .navlinks a:hover{border-color:var(--primary);color:var(--primary)}
+  .block{padding:42px 0;border-bottom:1px solid var(--line)}
+  .swatch-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:14px}
+  .sw{border:1px solid var(--line);border-radius:var(--radius-sm);overflow:hidden;background:var(--surface)}
+  .sw .chip{height:60px}
+  .sw .lab{padding:8px 10px}
+  .sw .lab b{display:block;font-size:12px}
+  .sw .lab span{font-size:10px;color:var(--text-3);font-family:monospace}
+  .type-row{display:flex;align-items:baseline;gap:16px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .type-row .k{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);width:120px;flex-shrink:0;font-weight:600}
+  .demo-row{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:28px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <div class="container">
+    <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+    <nav class="nav"><a>設計主題</a><a>元件</a><a>版面</a></nav>
+    <div class="nav-right">v3 · Premium Authentication</div>
+  </div>
+</header>
+
+<div class="container">
+  <section class="hero-guide">
+    <div class="eyebrow">Theme v3 · 奢華與權威</div>
+    <h1 class="display" style="margin:14px 0 14px;max-width:680px">深海軍藍 × 香檳金 —— 銀行級的正品權威</h1>
+    <p style="max-width:620px;color:var(--text-2)">
+      靈感取自 Chrono24 與 eBay Authenticity Guarantee。深海軍藍導航帶出穩健專業，
+      香檳金作「已認證」與購買行動色；淺灰底護眼，明體標題彰顯高單價貨品的尊貴感。
+    </p>
+    <div class="navlinks">
+      <a href="home.html">首頁 →</a><a href="listing.html">商品詳情 →</a>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="section-label">配色 Palette</div>
+    <div class="swatch-grid">
+      <div class="sw"><div class="chip" style="background:#112240"></div><div class="lab"><b>Primary 海軍藍</b><span>#112240</span></div></div>
+      <div class="sw"><div class="chip" style="background:#C5A880"></div><div class="lab"><b>Accent 香檳金</b><span>#C5A880</span></div></div>
+      <div class="sw"><div class="chip" style="background:#F8F9FA;border:1px solid #eee"></div><div class="lab"><b>Background</b><span>#F8F9FA</span></div></div>
+      <div class="sw"><div class="chip" style="background:#FFFFFF;border:1px solid #eee"></div><div class="lab"><b>Surface</b><span>#FFFFFF</span></div></div>
+      <div class="sw"><div class="chip" style="background:#1A1D20"></div><div class="lab"><b>Text 碳灰</b><span>#1A1D20</span></div></div>
+      <div class="sw"><div class="chip" style="background:#E7E9ED"></div><div class="lab"><b>Line</b><span>#E7E9ED</span></div></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="section-label">字體 · 明體標題（奢華）</div>
+    <div class="type-row"><span class="k">Display H1</span><span class="display" style="font-size:34px">正品，交予信任</span></div>
+    <div class="type-row"><span class="k">Display H2</span><span class="display" style="font-size:24px">具名鑑定師 · 星級演算派生</span></div>
+    <div class="type-row"><span class="k">Body</span><span style="color:var(--text-2)">平台為資訊中介，撮合買賣雙方並託管款項；貨品真偽由具名鑑定師負責。</span></div>
+  </section>
+
+  <section class="block">
+    <div class="section-label">元件 Components</div>
+    <div class="two">
+      <div>
+        <p class="eyebrow" style="margin-bottom:12px">按鈕</p>
+        <div class="demo-row">
+          <button class="btn btn-primary">立即購買</button>
+          <button class="btn btn-navy">議價出價</button>
+          <button class="btn btn-ghost">繼續逛</button>
+        </div>
+        <p class="eyebrow" style="margin:24px 0 12px">信任指標</p>
+        <div class="demo-row">
+          <span class="pill pill-verify">◆ 已認證</span>
+          <span class="pill pill-gold"><span class="stars">★★★★★</span> 4.9</span>
+          <span class="pill pill-tier">Tier 3 · 強制鑑定</span>
+        </div>
+        <p class="eyebrow" style="margin:24px 0 12px">聲明 copy</p>
+        <div class="note-box note-info">款項受平台託管保障，鑑定通過前不會放款予賣家。</div>
+        <div class="note-box note-warn" style="margin-top:10px">面交現金交易不受託管保障，請自行核實貨品。</div>
+      </div>
+      <div>
+        <p class="eyebrow" style="margin-bottom:12px">表單 + 選項</p>
+        <div class="field"><label>店舖名稱</label><input class="input" value="Milan 名牌鑑定工作室"></div>
+        <div class="opt sel" style="margin-bottom:10px"><span class="dot"></span>
+          <div><div class="t">線上託管</div><div class="d">款項先由平台託管，通過後放款</div></div></div>
+        <div class="opt"><span class="dot"></span>
+          <div><div class="t">面交現金</div><div class="d">僅限面交場景</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="section-label">商品卡 Product Cards</div>
+    <div class="grid-cards">
+      <a class="p-card"><div class="ph"><div class="wm">CHANEL</div><span class="pill pill-verify top">◆ 已認證</span></div>
+        <div class="body"><div class="title">Chanel Classic Flap Medium · Caviar 金扣</div><div class="meta">九成新</div>
+          <div class="row"><span class="price">HK$68,000</span><span class="pill pill-tier">T3</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">ROLEX</div></div>
+        <div class="body"><div class="title">Rolex Submariner Date 126610LN</div><div class="meta">全套 2023</div>
+          <div class="row"><span class="price">HK$118,000</span><span class="pill pill-tier">T3</span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">HERMÈS</div><span class="pill pill-verify top">◆ 已認證</span></div>
+        <div class="body"><div class="title">Hermès Birkin 25 Togo 金扣</div><div class="meta">連單</div>
+          <div class="row"><span class="price">HK$168,000</span><span class="pill pill-gold"><span class="stars">★</span></span></div></div></a>
+      <a class="p-card"><div class="ph"><div class="wm">PATEK</div></div>
+        <div class="body"><div class="title">Patek Philippe Nautilus 5711</div><div class="meta">連保卡</div>
+          <div class="row"><span class="price">HK$880,000</span><span class="pill pill-tier">T3</span></div></div></a>
+    </div>
+  </section>
+</div>
+
+<footer class="footer">
+  <div class="container">
+    <div class="col"><div class="brand" style="font-size:18px;color:var(--primary)">AUTHEN<span class="dot">·</span>TIK</div>
+      <p class="disclaimer" style="max-width:280px;margin-top:12px">資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。</p></div>
+    <div class="col"><h4>買賣</h4><a>瀏覽商品</a><a>刊登出售</a><a>鑑定師名冊</a></div>
+    <div class="col"><h4>信任</h4><a>鑑定機制</a><a>款項託管</a><a>爭議處理</a></div>
+    <div class="col"><h4>關於</h4><a>條款</a><a>私隱</a><a>聯絡</a></div>
+  </div>
+</footer>
+</body>
+</html>

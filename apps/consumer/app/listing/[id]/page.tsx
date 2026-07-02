@@ -9,7 +9,7 @@ import {
   formatHKD, tierForPrice, calculateOrderFees, quoteAuthFee, formatSavings,
   categoryByApiEnum, brandLabel, brandFieldLabel,
   needsMyAction, sellerActionCta, getStatusLabel,
-  districtLabel,
+  districtLabel, conditionLabel,
 } from '@authentik/utils';
 import { ShieldCheck, MapPin, Truck, Users, UserCheck, Wallet, Lock, AlertTriangle } from 'lucide-react';
 import { api, hasToken, ApiError } from '@/lib/api';
@@ -56,7 +56,8 @@ export default function ListingPage({ params }: { params: { id: string } }) {
   const [selectedAuth, setSelectedAuth] = useState<string | null>(null);
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod | null>(null);
-  const [meetupLocation, setMeetupLocation] = useState('');  // MEETUP_DIRECT free-text
+  const [meetupLocation, setMeetupLocation] = useState('');  // MEETUP_DIRECT — 'OTHER' 或賣家地點
+  const [meetupCustomLocation, setMeetupCustomLocation] = useState(''); // 「其他」自填
   // MEETUP_AUTH / MEETUP_3WAY: branch picker driven by selectedAuth
   const [branches, setBranches] = useState<Array<{
     id: string; name: string; fullAddress: string; districtKey: string;
@@ -297,10 +298,17 @@ export default function ListingPage({ params }: { params: { id: string } }) {
       setError('請揀鑑定師嘅交收分店');
       return;
     }
-    if (deliveryMethod === 'MEETUP_DIRECT' && !meetupLocation.trim()) {
-      setError('面交交收請填寫交收地點');
+    if (deliveryMethod === 'MEETUP_DIRECT' && !meetupLocation) {
+      setError('請揀選面交地點');
       return;
     }
+    if (deliveryMethod === 'MEETUP_DIRECT' && meetupLocation === 'OTHER' && !meetupCustomLocation.trim()) {
+      setError('請填寫你建議嘅面交地點');
+      return;
+    }
+    const resolvedMeetupText = deliveryMethod === 'MEETUP_DIRECT'
+      ? (meetupLocation === 'OTHER' ? meetupCustomLocation.trim() : meetupLocation)
+      : undefined;
     setBusy(true);
     try {
       const order = await api.orders.create({
@@ -310,7 +318,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
         paymentMethod,
         offerId: lockedOffer?.id,
         meetupBranchId: needsBranch ? selectedBranchId ?? undefined : undefined,
-        meetupFreeText: deliveryMethod === 'MEETUP_DIRECT' ? meetupLocation.trim() : undefined,
+        meetupFreeText: resolvedMeetupText,
       });
       // ONLINE_ESCROW: redirect buyer to /checkout to do real payment auth.
       // OFFLINE_CASH: order stays AWAITING_PAYMENT until parties meet face-to-face.
@@ -461,7 +469,21 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                 </span>
               ) : null;
             })()}
+            {listing.condition && (
+              <span
+                className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs text-emerald-700 ring-1 ring-emerald-200"
+                title="成色由賣家自行申報，Authentik 不驗證"
+              >
+                <span className="text-emerald-500">●</span>
+                <span className="font-medium">賣方申報：{conditionLabel(listing.condition)}</span>
+              </span>
+            )}
           </div>
+          {listing.condition && (
+            <p className="mt-1 text-[10px] text-slate-400">
+              成色由賣家自行申報，Authentik 不驗證。Tier 2/3 商品如選擇鑑定，成色以鑑定師為準。
+            </p>
+          )}
 
           {/* Price — show negotiated price if locked */}
           {lockedOffer && lockedOffer.status === 'ACCEPTED' ? (
@@ -1021,18 +1043,47 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                 </div>
               )}
 
-              {/* MEETUP_DIRECT — buyer 自填 free-text */}
+              {/* MEETUP_DIRECT — 買家揀賣家建議地點，或填「其他」 */}
               {deliveryMethod === 'MEETUP_DIRECT' && (
                 <div className="mt-4">
-                  <label className="mb-1 block text-xs font-medium text-slate-600">交收地點</label>
-                  <input
-                    value={meetupLocation}
-                    onChange={(e) => setMeetupLocation(e.target.value)}
-                    placeholder="例：旺角港鐵站 E 出口"
-                    className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-200"
-                  />
+                  <label className="mb-2 block text-xs font-medium text-slate-600">面交地點</label>
+                  <div className="space-y-2">
+                    {(listing.sellerMeetupLocations ?? []).map((loc: string, i: number) => (
+                      <label key={i} className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm hover:border-brand-400 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
+                        <input
+                          type="radio"
+                          name="meetupLocation"
+                          value={loc}
+                          checked={meetupLocation === loc}
+                          onChange={() => { setMeetupLocation(loc); setMeetupCustomLocation(''); }}
+                          className="h-4 w-4 accent-brand-600"
+                        />
+                        {loc}
+                      </label>
+                    ))}
+                    <label className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm hover:border-brand-400 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
+                      <input
+                        type="radio"
+                        name="meetupLocation"
+                        value="OTHER"
+                        checked={meetupLocation === 'OTHER'}
+                        onChange={() => setMeetupLocation('OTHER')}
+                        className="h-4 w-4 accent-brand-600"
+                      />
+                      其他地點
+                    </label>
+                  </div>
+                  {meetupLocation === 'OTHER' && (
+                    <input
+                      value={meetupCustomLocation}
+                      onChange={(e) => setMeetupCustomLocation(e.target.value)}
+                      placeholder="請填寫你建議嘅面交地點"
+                      className="mt-2 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-200"
+                      autoFocus
+                    />
+                  )}
                   <p className="mt-1 text-[10px] text-slate-400">
-                    雙方面交純撮合，地點同賣家自由協商。
+                    賣家建議地點供參考，如需更改可揀「其他」並填寫。
                   </p>
                 </div>
               )}

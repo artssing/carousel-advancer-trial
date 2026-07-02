@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>刊登出售 · Authentik</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .wrap{display:grid;grid-template-columns:1fr 320px;gap:32px;align-items:start;padding:32px 0 72px}
+  .panel{max-width:640px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .uploads{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+  .up{aspect-ratio:1/1;border:1px dashed var(--line-2);border-radius:10px;display:flex;align-items:center;justify-content:center;color:var(--text-3);font-size:12px;background:var(--surface-2);cursor:pointer}
+  .up.filled{background:linear-gradient(135deg,#eef1f5,#dfe4ee);border-style:solid}
+  .tierbox{position:sticky;top:90px}
+  .tier-ind{padding:16px;border-radius:10px;border:1px solid var(--verify-border);background:var(--verify-soft);margin-bottom:16px}
+  .tier-ind .t{font-weight:700;color:var(--action)}
+  .brandhit{font-size:12px;color:var(--action);margin-top:6px;display:flex;align-items:center;gap:6px}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container">
+  <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+  <nav class="nav"><a href="browse.html">瀏覽</a><a href="#">鑑定師</a><a href="sell.html" class="on">出售</a><a href="#">信任機制</a></nav>
+  <div class="nav-right"><a href="orders.html">訂單</a><a href="account.html">帳戶</a><a href="my-listings.html">我的上架</a></div>
+</div></header>
+
+<div class="container">
+  <div class="wrap">
+    <section class="panel">
+      <h1 class="display" style="font-size:28px;margin-bottom:6px">刊登出售</h1>
+      <p style="color:var(--text-3);font-size:13px;margin-bottom:24px">填寫貨品資料。系統會按售價自動判斷鑑定分級。</p>
+
+      <div class="field">
+        <label>貨品標題</label>
+        <input class="input" value="Chanel Classic Flap Medium Caviar 金扣 黑色">
+        <div class="brandhit">◆ 自動辨識品牌：Chanel · 品類：名牌手袋</div>
+      </div>
+
+      <div class="two">
+        <div class="field"><label>品類</label>
+          <select class="select"><option>名牌手袋</option><option>腕錶</option><option>波鞋 / 潮物</option><option>卡牌收藏</option></select></div>
+        <div class="field"><label>狀況</label>
+          <select class="select"><option>全新</option><option selected>九成新</option><option>二手</option></select></div>
+      </div>
+
+      <div class="two">
+        <div class="field"><label>售價 (HKD)</label><input class="input" value="68,000"></div>
+        <div class="field"><label>系列編號 <span class="hint">選填</span></label><input class="input" value="A01112"></div>
+      </div>
+
+      <div class="field"><label>貨品描述</label>
+        <textarea class="textarea">2019 年入手，個人收藏，使用約十次。五金金扣無明顯刮花，四角無磨損，附原裝塵袋、保養卡及專門店單據。</textarea></div>
+
+      <div class="field"><label>貨品相片 <span class="hint">最多 8 張，第一張為封面</span></label>
+        <div class="uploads">
+          <div class="up filled"></div><div class="up filled"></div><div class="up filled"></div>
+          <div class="up">＋ 上載</div>
+        </div>
+      </div>
+
+      <div class="section-label" style="margin-top:28px">交收偏好</div>
+      <p style="color:var(--text-3);font-size:12px;margin-bottom:12px">你先聲明可接受方式，買家落單時再揀其一。</p>
+      <div class="two" style="grid-template-columns:1fr 1fr;gap:10px">
+        <div class="opt sel"><span class="dot"></span><div><div class="t">鑑定師處面交</div><div class="d">到鑑定師店舖交收</div></div></div>
+        <div class="opt sel"><span class="dot"></span><div><div class="t">三方面交</div><div class="d">鑑定師到場</div></div></div>
+        <div class="opt sel"><span class="dot"></span><div><div class="t">順豐寄送</div><div class="d">先寄鑑定師過檢</div></div></div>
+        <div class="opt" style="opacity:.5"><span class="dot"></span><div><div class="t">直接面交</div><div class="d">Tier 3 不適用</div></div></div>
+      </div>
+
+      <div class="section-label" style="margin-top:28px">指定鑑定師 <span style="color:var(--danger);font-weight:600;text-transform:none;letter-spacing:0">· Tier 3 必選</span></div>
+      <div class="opt sel" style="margin-bottom:10px"><span class="dot"></span>
+        <div style="flex:1"><div class="t">Milan Leung <span class="stars">★★★★★</span></div><div class="d">名牌手袋 · 收費 2.0%（最低 $600）· 尖沙咀</div></div></div>
+      <div class="opt"><span class="dot"></span>
+        <div style="flex:1"><div class="t">LuxeCheck 鑑定 <span class="stars">★★★★☆</span></div><div class="d">名牌手袋 · 收費 2.5%（最低 $500）· 中環</div></div></div>
+
+      <div style="display:flex;gap:12px;margin-top:28px;padding-top:24px;border-top:1px solid var(--line)">
+        <button class="btn btn-ghost">儲存草稿</button>
+        <a class="btn btn-primary btn-lg" href="my-listings.html" style="flex:1">發佈刊登</a>
+      </div>
+    </section>
+
+    <aside class="tierbox">
+      <div class="tier-ind">
+        <div class="t">◆ Tier 3 · 強制鑑定</div>
+        <p style="font-size:12px;color:var(--text-2);margin-top:6px">售價 ≥ HK$10,000，必須指定鑑定師，買家款項全程託管。</p>
+      </div>
+      <div class="card card-pad">
+        <div class="section-label">費用預覽</div>
+        <div style="font-size:13px;color:var(--text-2);display:flex;justify-content:space-between;padding:6px 0"><span>售價</span><b style="color:var(--text)">HK$68,000</b></div>
+        <div style="font-size:13px;color:var(--text-2);display:flex;justify-content:space-between;padding:6px 0"><span>平台費 1.5%</span><b style="color:var(--text)">−HK$1,020</b></div>
+        <div style="font-size:13px;color:var(--text-2);display:flex;justify-content:space-between;padding:6px 0"><span>鑑定費（買家付）</span><b style="color:var(--text)">$0</b></div>
+        <hr class="divider" style="margin:10px 0">
+        <div style="display:flex;justify-content:space-between;font-weight:700"><span>預計實收</span><span style="color:var(--primary)">HK$66,980</span></div>
+      </div>
+      <p class="disclaimer" style="margin-top:14px">最終金額以成交時 server 計算為準。平台為資訊中介，真偽由具名鑑定師負責。</p>
+    </aside>
+  </div>
+</div>
+</body>
+</html>
