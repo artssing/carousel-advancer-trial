@@ -24,12 +24,14 @@ env_config() {
     prod)
       ENV_NAME=prod
       API_PORT=4000; CONSUMER_PORT=3008; AUTH_PORT=3001; ADMIN_PORT=3003
+      STRIPE_GW_PORT=4242
       DB_NAME=authentik
       ENV_FILE=.env.prod
       ;;
     uat)
       ENV_NAME=uat
       API_PORT=4010; CONSUMER_PORT=3018; AUTH_PORT=3011; ADMIN_PORT=3013
+      STRIPE_GW_PORT=4252
       DB_NAME=authentik_uat
       ENV_FILE=.env.uat
       ;;
@@ -47,5 +49,5 @@ env_config() {
 # All ports for a given env (space-separated) — handy for stop.sh port sweeps.
 env_ports() {
   env_config "$1" || return 1
-  printf '%s %s %s %s' "$API_PORT" "$CONSUMER_PORT" "$AUTH_PORT" "$ADMIN_PORT"
+  printf '%s %s %s %s %s' "$API_PORT" "$CONSUMER_PORT" "$AUTH_PORT" "$ADMIN_PORT" "$STRIPE_GW_PORT"
 }

@@ -3,12 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Card, CardContent, PayoutDisclaimer } from '@authentik/ui';
-import { formatHKD, PAYOUT_STATUS_META, payoutMethodDisplayLabel, type PayoutMethodTypeKey, type PayoutStatusKey } from '@authentik/utils';
+import { PayoutDisclaimer } from '@authentik/ui';
+import { formatHKD } from '@authentik/utils';
 import { api, hasToken, ApiError } from '@/lib/api';
 import { CashoutWizard } from '@/components/wallet/cashout-wizard';
 import { StatusPill } from '@/components/wallet/status-pill';
-import { ChevronRight, Lock, Wallet as WalletIcon, Clock, TrendingUp, Send } from 'lucide-react';
+import { AccountSidebar } from '@/components/account/account-sidebar';
 
 type Balance = Awaited<ReturnType<typeof api.wallet.balance>>;
 type Method = Awaited<ReturnType<typeof api.wallet.methods>>[number];
@@ -34,7 +34,7 @@ export default function WalletPage() {
       ]);
       setBalance(b);
       setMethods(m);
-      setRecent(r.slice(0, 5));
+      setRecent(r.slice(0, 6));
     } catch (e) {
       setError(e instanceof ApiError ? e.message : '載入失敗');
     } finally {
@@ -43,198 +43,151 @@ export default function WalletPage() {
   }
 
   useEffect(() => {
-    if (!hasToken()) {
-      router.replace('/login?next=/account/wallet');
-      return;
-    }
+    if (!hasToken()) { router.replace('/login?next=/account/wallet'); return; }
     refresh();
   }, [router]);
 
-  // Poll while any payout is PENDING/PROCESSING (mock state machine)
   useEffect(() => {
     const active = recent.some((r) => r.status === 'PENDING' || r.status === 'PROCESSING');
     if (!active) return;
-    const t = setTimeout(() => {
-      setPollTick((n) => n + 1);
-      refresh();
-    }, 3000);
+    const t = setTimeout(() => { setPollTick((n) => n + 1); refresh(); }, 3000);
     return () => clearTimeout(t);
   }, [recent, pollTick]);
 
-  if (loading) return <div className="mx-auto max-w-3xl p-6 text-sm text-slate-500">載入中…</div>;
-  if (error) return <div className="mx-auto max-w-3xl p-6 text-sm text-red-600">{error}</div>;
-  if (!balance) return null;
+  const heldTotal = balance ? balance.lockedHKD + balance.pendingHoldHKD : 0;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5 p-4 sm:p-6">
-      <header className="flex items-center justify-between">
-        <h1 className="flex items-center gap-2 text-2xl font-bold">
-          <WalletIcon className="h-6 w-6 text-brand-600" /> 我的錢包
-        </h1>
-        <Link href="/account/wallet/methods" className="text-xs text-brand-600 hover:underline">
-          管理提款帳戶 →
-        </Link>
-      </header>
+    <div className="mx-auto max-w-container-l3 px-4 pb-16 pt-8 sm:px-6">
+      <div className="grid items-start gap-8 lg:grid-cols-[220px_1fr]">
+        <AccountSidebar />
 
-      {/* Balance three-tier */}
-      <Card>
-        <CardContent className="space-y-4 p-5">
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            <BalanceTile
-              icon={<Lock className="h-4 w-4" />}
-              label="鎖定中"
-              hint="鑑定 / 爭議中"
-              valueHKD={balance.lockedHKD}
-              tone="slate"
-            />
-            <BalanceTile
-              icon={<Clock className="h-4 w-4" />}
-              label="待結算"
-              hint="完成 72 小時後可提取"
-              valueHKD={balance.pendingHoldHKD}
-              tone="amber"
-            />
-            <BalanceTile
-              icon={<TrendingUp className="h-4 w-4" />}
-              label="可提取"
-              hint="現在可申請提款"
-              valueHKD={balance.availableHKD}
-              tone="emerald"
-              emphasis
-            />
-            <BalanceTile
-              icon={<Send className="h-4 w-4" />}
-              label="提款處理中"
-              hint={balance.inFlightCount > 0 ? `${balance.inFlightCount} 筆已申請、未到帳` : '無進行中提款'}
-              valueHKD={balance.inFlightHKD}
-              tone="blue"
-            />
-          </div>
-          <Button
-            onClick={() => setWizardOpen(true)}
-            disabled={balance.availableHKD < balance.minHKD}
-            className="w-full"
-          >
-            申請提款
-          </Button>
-          {balance.availableHKD < balance.minHKD && balance.availableHKD > 0 && (
-            <p className="text-center text-xs text-slate-500">
-              最低提款金額 HKD {balance.minHKD}。
-            </p>
-          )}
-          {balance.availableHKD === 0 && (
-            <p className="text-center text-xs text-slate-500">
-              暫無可提取餘額。完成交易並過咗 72 小時保護期後即可提款。
-            </p>
-          )}
-        </CardContent>
-      </Card>
+        <section>
+          <h1 className="mb-5 font-display-serif text-[26px] font-bold leading-tight tracking-[-0.01em] text-ink">
+            錢包
+          </h1>
 
-      {/* Breakdown by source */}
-      {balance.breakdown.length > 0 && (
-        <Card>
-          <CardContent className="p-5">
-            <h3 className="mb-3 text-sm font-semibold text-slate-700">餘額來源</h3>
-            <ul className="space-y-2">
-              {balance.breakdown.map((b) => (
-                <li key={`${b.orderId}-${b.role}`} className="flex items-center justify-between gap-3 text-sm">
-                  <div className="min-w-0 flex-1">
-                    <Link href={`/orders/${b.orderId}`} className="block truncate text-slate-900 hover:text-brand-600 hover:underline">
-                      {b.listingTitle}
-                    </Link>
-                    <p className="text-xs text-slate-500">
-                      {b.role === 'SELLER' ? '銷售收入' : '鑑定收入'}
-                      {b.bucket === 'PENDING' && b.eligibleAt && (
-                        <span className="ml-2">· 可提取於 {new Date(b.eligibleAt).toLocaleDateString('zh-HK')}</span>
-                      )}
-                    </p>
+          {loading ? (
+            <div className="h-40 animate-pulse rounded-[14px] bg-surface-2" />
+          ) : error ? (
+            <p className="rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p>
+          ) : balance ? (
+            <>
+              {/* ═══ Navy balance card ═══ */}
+              <div className="relative overflow-hidden rounded-[14px] bg-gradient-to-br from-ink to-[#123f5f] p-7 text-white shadow-sh3">
+                <div className="text-[12px] uppercase tracking-[0.1em] text-[#9db4cc]">可提現餘額</div>
+                <div className="mt-2 text-[38px] font-extrabold leading-none">{formatHKD(balance.availableHKD)}</div>
+                {heldTotal > 0 && (
+                  <div className="mt-1.5 text-[13px] text-[#9db4cc]">
+                    另有 {formatHKD(heldTotal)} 託管中（待鑑定 / 交收完成後入賬）
                   </div>
-                  <span
-                    className={`shrink-0 text-sm font-medium ${
-                      b.bucket === 'AVAILABLE' ? 'text-emerald-700'
-                        : b.bucket === 'PENDING' ? 'text-amber-700'
-                        : 'text-slate-500'
-                    }`}
+                )}
+                <div className="mt-5 flex gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setWizardOpen(true)}
+                    disabled={balance.availableHKD < balance.minHKD}
+                    className="rounded-lg bg-brand-600 px-5 py-2.5 text-[14px] font-bold text-white shadow-[0_8px_20px_-10px_rgba(0,135,102,0.5)] transition hover:bg-brand-400 disabled:opacity-40"
                   >
-                    {formatHKD(b.amountHKD)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
-      )}
+                    提現
+                  </button>
+                  <Link
+                    href="/account/wallet/payouts"
+                    className="rounded-lg border border-white/25 bg-white/10 px-5 py-2.5 text-[14px] font-semibold text-white transition hover:bg-white/20"
+                  >
+                    交易紀錄
+                  </Link>
+                </div>
+                <span className="pointer-events-none absolute bottom-3.5 right-5 font-display-serif text-[14px] font-extrabold tracking-[0.16em] opacity-35">
+                  SECURE ESCROW
+                </span>
+              </div>
 
-      {/* Recent payouts */}
-      <Card>
-        <CardContent className="p-5">
-          <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-700">最近提款</h3>
-            <Link href="/account/wallet/payouts" className="text-xs text-brand-600 hover:underline">
-              全部紀錄 →
-            </Link>
-          </div>
-          {recent.length === 0 ? (
-            <p className="py-4 text-center text-xs text-slate-500">尚未有提款紀錄</p>
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {recent.map((r) => (
-                <li key={r.id} className="flex items-center justify-between gap-3 py-2.5 text-sm">
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium text-slate-900">{formatHKD(r.amountHKD)}</p>
-                    <p className="truncate text-xs text-slate-500">
-                      {r.methodSnapshot?.displayLabel ?? '—'} · {r.reference}
-                    </p>
-                  </div>
-                  <StatusPill status={r.status} />
-                </li>
-              ))}
-            </ul>
+              {balance.availableHKD < balance.minHKD && balance.availableHKD > 0 && (
+                <p className="mt-2 text-xs text-neutral-text-hint">最低提款金額 HKD {balance.minHKD}。</p>
+              )}
+
+              {/* ═══ Subcards ═══ */}
+              <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className="rounded-xl border border-line bg-white p-5 shadow-sh1">
+                  <div className="text-[22px] font-extrabold text-ink">{formatHKD(heldTotal)}</div>
+                  <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-text-hint">託管中</div>
+                </div>
+                <div className="rounded-xl border border-line bg-white p-5 shadow-sh1">
+                  <div className="text-[22px] font-extrabold text-ink">{formatHKD(balance.grossEarnedHKD)}</div>
+                  <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-text-hint">累計收入</div>
+                </div>
+              </div>
+
+              {/* ═══ Balance sources (income) ═══ */}
+              {balance.breakdown.length > 0 && (
+                <div className="mt-4 rounded-xl border border-line bg-white p-5 shadow-sh1">
+                  <div className="mb-1 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">餘額來源</div>
+                  {balance.breakdown.map((b) => (
+                    <div key={`${b.orderId}-${b.role}`} className="flex items-center gap-3.5 border-b border-line py-3.5 last:border-b-0">
+                      <span className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-surface-2 text-[15px] font-extrabold ${b.bucket === 'AVAILABLE' ? 'text-verify' : 'text-neutral-text-muted'}`}>
+                        {b.bucket === 'AVAILABLE' ? '＋' : '◷'}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <Link href={`/orders/${b.orderId}`} className="block truncate text-[14px] font-semibold text-neutral-text hover:text-brand-700">
+                          {b.listingTitle}
+                        </Link>
+                        <div className="mt-0.5 text-[12px] text-neutral-text-hint">
+                          {b.role === 'SELLER' ? '銷售收入' : '鑑定收入'}
+                          {b.bucket === 'PENDING' && b.eligibleAt && (
+                            <span> · 可提取於 {new Date(b.eligibleAt).toLocaleDateString('zh-HK')}</span>
+                          )}
+                        </div>
+                      </div>
+                      <span className={`shrink-0 text-[14px] font-bold ${b.bucket === 'AVAILABLE' ? 'text-verify' : 'text-neutral-text-hint'}`}>
+                        {b.bucket === 'AVAILABLE' ? '+' : ''}{formatHKD(b.amountHKD)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* ═══ Recent payouts (outflow) ═══ */}
+              <div className="mt-4 rounded-xl border border-line bg-white p-5 shadow-sh1">
+                <div className="mb-1 flex items-center justify-between">
+                  <div className="text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">最近提款</div>
+                  <Link href="/account/wallet/payouts" className="text-[12px] font-semibold text-brand-600 hover:underline">全部紀錄 →</Link>
+                </div>
+                {recent.length === 0 ? (
+                  <p className="py-4 text-center text-[13px] text-neutral-text-hint">尚未有提款紀錄</p>
+                ) : (
+                  recent.map((r) => (
+                    <div key={r.id} className="flex items-center gap-3.5 border-b border-line py-3.5 last:border-b-0">
+                      <span className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-surface-2 text-[15px] font-extrabold text-neutral-text-muted">↑</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-[14px] font-semibold text-neutral-text">提現至 {r.methodSnapshot?.displayLabel ?? '—'}</div>
+                        <div className="mt-0.5 truncate text-[12px] text-neutral-text-hint">{r.reference}</div>
+                      </div>
+                      <StatusPill status={r.status} />
+                      <span className="shrink-0 text-[14px] font-bold text-neutral-text">−{formatHKD(r.amountHKD)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
+
+              <div className="mt-4">
+                <PayoutDisclaimer />
+              </div>
+            </>
+          ) : null}
+
+          {wizardOpen && balance && (
+            <CashoutWizard
+              availableHKD={balance.availableHKD}
+              feeHKD={balance.payoutFeeHKD}
+              minHKD={balance.minHKD}
+              maxHKD={balance.maxHKD}
+              methods={methods as any}
+              onSuccess={() => { setWizardOpen(false); refresh(); }}
+              onCancel={() => setWizardOpen(false)}
+            />
           )}
-        </CardContent>
-      </Card>
-
-      <PayoutDisclaimer />
-
-      {wizardOpen && (
-        <CashoutWizard
-          availableHKD={balance.availableHKD}
-          feeHKD={balance.payoutFeeHKD}
-          minHKD={balance.minHKD}
-          maxHKD={balance.maxHKD}
-          methods={methods as any}
-          onSuccess={() => {
-            setWizardOpen(false);
-            refresh();
-          }}
-          onCancel={() => setWizardOpen(false)}
-        />
-      )}
+        </section>
+      </div>
     </div>
   );
 }
-
-function BalanceTile({
-  icon, label, hint, valueHKD, tone, emphasis,
-}: {
-  icon: React.ReactNode; label: string; hint: string; valueHKD: number;
-  tone: 'slate' | 'amber' | 'emerald' | 'blue'; emphasis?: boolean;
-}) {
-  const toneCls = tone === 'emerald'
-    ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
-    : tone === 'amber'
-    ? 'border-amber-200 bg-amber-50 text-amber-900'
-    : tone === 'blue'
-    ? 'border-blue-200 bg-blue-50 text-blue-900'
-    : 'border-slate-200 bg-slate-50 text-slate-700';
-  return (
-    <div className={`rounded-lg border ${toneCls} p-3`}>
-      <p className="flex items-center gap-1.5 text-xs">{icon} {label}</p>
-      <p className={`mt-1 font-semibold ${emphasis ? 'text-2xl' : 'text-xl'}`}>
-        {formatHKD(valueHKD)}
-      </p>
-      <p className="text-[11px] opacity-75">{hint}</p>
-    </div>
-  );
-}
-

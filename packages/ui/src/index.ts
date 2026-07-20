@@ -4,6 +4,12 @@ export { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter }
 export { Badge, badgeVariants } from './components/badge';
 export { StarRating } from './components/star-rating';
 export { TierPill } from './components/tier-pill';
+export { Pill, pillVariants } from './components/pill';
+export type { PillProps } from './components/pill';
+export { Chip } from './components/chip';
+export type { ChipProps } from './components/chip';
+export { Opt } from './components/opt';
+export type { OptProps } from './components/opt';
 export { Input } from './components/input';
 export { Label } from './components/label';
 export {
@@ -19,3 +25,5 @@ export { ListingThumb } from './components/listing-thumb';
 export type { ListingThumbProps } from './components/listing-thumb';
 export { ConfirmDialog } from './components/confirm-dialog';
 export type { ConfirmDialogProps } from './components/confirm-dialog';
+export { OtpInput } from './components/otp-input';
+export type { OtpInputProps } from './components/otp-input';

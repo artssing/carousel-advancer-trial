@@ -1,0 +1,53 @@
+{
+  "name": "Authentik Health Check (每 10 分鐘)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": { "interval": [{ "field": "minutes", "minutesInterval": 10 }] }
+      },
+      "id": "sched",
+      "name": "每 10 分鐘",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "url": "http://host.docker.internal:4110/api/listings",
+        "options": { "timeout": 5000 }
+      },
+      "id": "check-api",
+      "name": "查 UAT API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [480, 300],
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot<<<TELEGRAM_BOT_TOKEN>>>/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"<<<TELEGRAM_CHAT_ID>>>\",\n  \"text\": \"⚠️ Authentik UAT API (4110) 冇回應，可能死咗。\"\n}",
+        "options": {}
+      },
+      "id": "alert",
+      "name": "出事先 send",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [760, 420]
+    }
+  ],
+  "connections": {
+    "每 10 分鐘": { "main": [[{ "node": "查 UAT API", "type": "main", "index": 0 }]] },
+    "查 UAT API": {
+      "main": [
+        [],
+        [{ "node": "出事先 send", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

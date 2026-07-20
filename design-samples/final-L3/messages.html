@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>訊息 · Authentik</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .im{display:grid;grid-template-columns:310px 1fr 292px;height:calc(100vh - 66px)}
+  /* 對話列表 */
+  .convlist{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .convhead{padding:16px 16px 10px;display:flex;align-items:center;justify-content:space-between}
+  .convhead h2{font-size:17px;font-weight:800;color:var(--primary)}
+  .convsearch{padding:0 16px 12px}
+  .convsearch input{width:100%;font-family:inherit;font-size:13px;border:1px solid var(--line-2);border-radius:8px;padding:9px 12px;box-shadow:inset 0 1px 2px rgba(10,37,64,.03)}
+  .convs{overflow-y:auto;flex:1}
+  .conv{display:flex;gap:11px;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--line)}
+  .conv:hover{background:var(--surface-2)}
+  .conv.on{background:var(--verify-soft)}
+  .conv .av{width:44px;height:44px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#eef1f5,#dfe4ee);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--primary);position:relative}
+  .conv .av .tier{position:absolute;right:-2px;bottom:-2px;background:var(--action);color:#fff;font-size:8px;font-weight:800;border-radius:999px;padding:1px 4px;border:2px solid #fff}
+  .conv .c{flex:1;min-width:0}
+  .conv .top{display:flex;justify-content:space-between;align-items:baseline}
+  .conv .nm{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .conv .tm{font-size:11px;color:var(--text-3);flex-shrink:0;margin-left:6px}
+  .conv .lastmsg{font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .conv .unread{align-self:center;background:var(--action);color:#fff;font-size:11px;font-weight:800;border-radius:999px;padding:0 6px;min-width:18px;text-align:center}
+  /* 聊天窗 */
+  .thread{display:flex;flex-direction:column;min-height:0}
+  .thead{display:flex;align-items:center;gap:12px;padding:13px 18px;border-bottom:1px solid var(--line)}
+  .thead .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#eef1f5,#dfe4ee);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--primary)}
+  .thead .who{font-weight:700;font-size:15px}
+  .thead .sub{font-size:12px;color:var(--text-3)}
+  .thead .roles{margin-left:auto;display:flex;gap:6px}
+  .msgs{flex:1;overflow-y:auto;padding:20px 22px;display:flex;flex-direction:column;gap:12px;background:var(--surface-2)}
+  .sys{align-self:center;font-size:12px;color:var(--text-3);background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 14px;text-align:center}
+  .msg{max-width:66%;display:flex;flex-direction:column;gap:3px}
+  .msg .who{font-size:11px;color:var(--text-3);font-weight:600}
+  .bubble{padding:10px 13px;border-radius:14px;font-size:14px;line-height:1.5}
+  .msg.them{align-self:flex-start}
+  .msg.them .bubble{background:#fff;border:1px solid var(--line);border-top-left-radius:4px}
+  .msg.me{align-self:flex-end;align-items:flex-end}
+  .msg.me .bubble{background:var(--action);color:#fff;border-top-right-radius:4px}
+  .msg .rcpt{font-size:10px;color:var(--text-3)}
+  .msg .rcpt .read{color:var(--action)}
+  /* 議價 offer 卡 */
+  .offer{align-self:center;width:84%;max-width:440px;background:#fff;border:1px solid var(--verify-border);border-radius:14px;padding:0;overflow:hidden;box-shadow:var(--sh-2)}
+  .offer .oh{background:var(--verify-soft);padding:11px 16px;display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:var(--action-2)}
+  .offer .ob{padding:14px 16px}
+  .offer .price-row{display:flex;align-items:baseline;gap:10px;margin-bottom:4px}
+  .offer .np{font-size:26px;font-weight:800;color:var(--primary)}
+  .offer .op{font-size:14px;color:var(--text-3);text-decoration:line-through}
+  .offer .save{font-size:12px;color:var(--action);font-weight:700}
+  .offer .meta{font-size:12px;color:var(--text-3);margin-bottom:12px}
+  .offer .acts{display:flex;gap:8px}
+  /* 面交 sentinel */
+  .sentinel{align-self:center;width:80%;max-width:420px;background:#fff;border:1px solid var(--verify-border);border-radius:12px;padding:14px 16px;box-shadow:var(--sh-1)}
+  .sentinel .h{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:var(--action-2)}
+  .sentinel .body{font-size:13px;color:var(--text-2);margin:6px 0 10px}
+  .sentinel .acts{display:flex;gap:8px}
+  /* 輸入 */
+  .composer{border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:10px;align-items:center}
+  .composer .plus{width:38px;height:38px;border-radius:50%;border:1px solid var(--line-2);background:#fff;color:var(--text-2);cursor:pointer;flex-shrink:0;font-size:20px;display:flex;align-items:center;justify-content:center}
+  .composer input{flex:1;font-family:inherit;font-size:14px;border:1px solid var(--line-2);border-radius:999px;padding:11px 16px}
+  .composer .send{width:42px;height:42px;border-radius:50%;border:0;background:var(--action);color:#fff;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  /* 情境卡（右）*/
+  .ctx{border-left:1px solid var(--line);padding:18px;overflow-y:auto}
+  .ctx .minicard{border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--sh-1);cursor:pointer;transition:.16s}
+  .ctx .minicard:hover{transform:translateY(-2px);box-shadow:var(--sh-3)}
+  .ctx .minicard .im-ph{aspect-ratio:16/10;background:linear-gradient(135deg,#eef1f5,#dfe4ee);display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.12em;color:#9aa3b5;font-size:12px;position:relative}
+  .ctx .minicard .im-ph .top{position:absolute;top:10px;left:10px}
+  .ctx .minicard .b{padding:12px 14px}
+  .ctx .kv{font-size:12px;display:flex;justify-content:space-between;padding:5px 0;color:var(--text-2)}
+  .ctx .kv b{color:var(--text)}
+</style>
+</head>
+<body>
+<header class="topbar"><div class="container">
+  <div class="brand">AUTHEN<span class="dot">·</span>TIK</div>
+  <nav class="nav"><a href="browse.html">瀏覽</a><a href="#">鑑定師</a><a href="sell.html">出售</a><a href="#">信任機制</a></nav>
+  <div class="nav-right"><a href="orders.html">訂單</a><a href="messages.html" style="color:var(--primary);font-weight:600">訊息</a><a href="account.html">帳戶</a><button class="btn btn-primary btn-sm">刊登出售</button></div>
+</div></header>
+
+<div class="im">
+  <!-- 對話列表 -->
+  <div class="convlist">
+    <div class="convhead"><h2>訊息</h2><span class="pill pill-tier">3 個對話</span></div>
+    <div class="convsearch"><input placeholder="搜尋對話…"></div>
+    <div class="convs">
+      <div class="conv on">
+        <div class="av">J<span class="tier">T3</span></div>
+        <div class="c"><div class="top"><span class="nm">Jenny K.（賣家）</span><span class="tm">14:02</span></div>
+          <div class="lastmsg">好，15:00 尖沙咀鑑定師處見。</div></div>
+      </div>
+      <div class="conv">
+        <div class="av">T</div>
+        <div class="c"><div class="top"><span class="nm">Tom W.（賣家）</span><span class="tm">昨日</span></div>
+          <div class="lastmsg">你：可唔可以 $3,000 成交？</div></div>
+        <span class="unread">1</span>
+      </div>
+      <div class="conv">
+        <div class="av">S</div>
+        <div class="c"><div class="top"><span class="nm">SneakerHub（賣家）</span><span class="tm">週四</span></div>
+          <div class="lastmsg">多謝惠顧，已安排順豐。</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 聊天窗 -->
+  <div class="thread">
+    <div class="thead">
+      <div class="av">J</div>
+      <div><div class="who">Jenny K.（賣家）</div><div class="sub">Chanel Classic Flap · 訂單 #AZ-10482</div></div>
+      <div class="roles"><span class="pill pill-tier">賣家</span><span class="pill pill-verify">◆ 鑑定師 Milan</span></div>
+    </div>
+
+    <div class="msgs">
+      <div class="sys">你就 Chanel Classic Flap Medium 開始對話</div>
+
+      <div class="msg me"><div class="bubble">你好，個袋仲喺度嗎？可唔可以平少少？</div>
+        <span class="rcpt"><span class="read">✓✓ 已讀</span> · 13:20</span></div>
+      <div class="msg them"><span class="who">Jenny K.</span><div class="bubble">喺呀，九成新，齊單齊卡。可以畀你少少。</div></div>
+
+      <!-- 議價 offer 卡（賣家還價）-->
+      <div class="offer">
+        <div class="oh"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00745a" stroke-width="2"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>賣家還價</div>
+        <div class="ob">
+          <div class="price-row"><span class="np">HK$64,000</span><span class="op">HK$68,000</span><span class="save">↓ 平 HK$4,000</span></div>
+          <div class="meta">此議價 24 小時內有效 · 接受後將以此價落單並進入鑑定託管流程</div>
+          <div class="acts"><button class="btn btn-primary btn-sm" style="flex:1">接受並結帳</button><button class="btn btn-ghost btn-sm" style="flex:1">還價</button><button class="btn btn-ghost btn-sm">拒絕</button></div>
+        </div>
+      </div>
+
+      <div class="msg me"><div class="bubble">Deal！咁我而家落單，Tier 3 要鑑定師驗埋先放心。</div>
+        <span class="rcpt"><span class="read">✓✓ 已讀</span> · 13:44</span></div>
+
+      <div class="sys">訂單 #AZ-10482 已建立 · Milan Leung 已指派為鑑定師 · 款項已託管</div>
+
+      <!-- 面交 sentinel -->
+      <div class="sentinel">
+        <div class="h"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#00745a" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>已安排三方面交</div>
+        <div class="body">今日 15:00 · Milan 名牌鑑定工作室（尖沙咀）· 鑑定師即場過檢，通過即放款</div>
+        <div class="acts"><button class="btn btn-primary btn-sm">加入行事曆</button><button class="btn btn-ghost btn-sm">查看地圖</button></div>
+      </div>
+
+      <div class="msg them"><span class="who">Jenny K.</span><div class="bubble">好，15:00 尖沙咀鑑定師處見。</div></div>
+    </div>
+
+    <div class="composer">
+      <button class="plus">＋</button>
+      <input placeholder="輸入訊息…">
+      <button class="send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+    </div>
+  </div>
+
+  <!-- 情境卡（可撳去商品，避免 dead-end）-->
+  <div class="ctx">
+    <div class="section-label">此對話商品</div>
+    <a class="minicard" href="listing.html">
+      <div class="im-ph">CHANEL<span class="pill pill-verify top">◆ 已驗證</span></div>
+      <div class="b"><div style="font-weight:600;font-size:13px">Chanel Classic Flap Medium · Caviar 金扣</div>
+        <div class="mono" style="margin-top:4px;font-size:11px;color:var(--text-3)">#AZ-10482 · Tier 3</div></div>
+    </a>
+    <div style="margin-top:14px">
+      <div class="kv"><span>成交價</span><b>HK$64,000</b></div>
+      <div class="kv"><span>鑑定費</span><b>HK$1,280</b></div>
+      <div class="kv"><span>狀態</span><b style="color:var(--action)">款項託管中</b></div>
+      <div class="kv"><span>交收</span><b>三方面交 · 今日 15:00</b></div>
+    </div>
+    <a class="btn btn-primary btn-block btn-sm" href="orders.html" style="margin-top:14px">查看訂單</a>
+    <a class="btn btn-ghost btn-block btn-sm" href="listing.html" style="margin-top:8px">查看商品</a>
+    <p class="disclaimer" style="margin-top:12px">款項受平台託管，鑑定通過並完成交收後方放款；平台為資訊中介，不擔保真偽。</p>
+  </div>
+</div>
+</body>
+</html>

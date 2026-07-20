@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Card, CardContent, PayoutDisclaimer } from '@authentik/ui';
-import { formatHKD, PAYOUT_STATUS_META, type PayoutStatusKey } from '@authentik/utils';
+import { PayoutDisclaimer } from '@authentik/ui';
+import { formatHKD, type PayoutStatusKey } from '@authentik/utils';
 import { api, hasToken, ApiError } from '@/lib/api';
-import { ArrowLeft, Copy, Check } from 'lucide-react';
+import { Copy, Check } from 'lucide-react';
 import { StatusPill } from '@/components/wallet/status-pill';
+import { AccountSidebar } from '@/components/account/account-sidebar';
 
 type Request = Awaited<ReturnType<typeof api.wallet.requests>>[number];
 
@@ -70,103 +71,105 @@ export default function PayoutsHistoryPage() {
     { key: 'FAILED', label: '失敗' },
   ];
 
-  if (loading) return <div className="mx-auto max-w-3xl p-6 text-sm text-slate-500">載入中…</div>;
-
   return (
-    <div className="mx-auto max-w-3xl space-y-4 p-4 sm:p-6">
-      <header className="flex items-center gap-2">
-        <Link href="/account/wallet" className="rounded-md p-1 hover:bg-slate-100">
-          <ArrowLeft className="h-4 w-4" />
-        </Link>
-        <h1 className="text-xl font-bold">提款紀錄</h1>
-      </header>
+    <div className="mx-auto max-w-container-l3 px-4 pb-16 pt-8 sm:px-6">
+      <div className="grid items-start gap-8 lg:grid-cols-[220px_1fr]">
+        <AccountSidebar />
 
-      <div className="flex flex-wrap gap-2">
-        {tabs.map((t) => (
-          <button
-            key={t.key}
-            onClick={() => setFilter(t.key)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition ${
-              filter === t.key ? 'bg-brand-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+        <section className="max-w-[720px]">
+          <h1 className="mb-5 font-display-serif text-[26px] font-bold leading-tight tracking-[-0.01em] text-ink">
+            提款紀錄
+          </h1>
 
-      {error && <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
+          {/* L3 underline tabs */}
+          <div className="mb-5 flex gap-1 overflow-x-auto scrollbar-hide touch-pan-x overscroll-x-contain border-b border-line">
+            {tabs.map((t) => {
+              const isActive = filter === t.key;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setFilter(t.key)}
+                  className={`shrink-0 -mb-px border-b-2 px-4 py-3 text-[14px] font-semibold transition ${
+                    isActive ? 'border-brand-600 text-ink' : 'border-transparent text-neutral-text-hint hover:text-neutral-text-muted'
+                  }`}
+                >
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
 
-      {filtered.length === 0 ? (
-        <Card>
-          <CardContent className="p-8 text-center text-sm text-slate-500">
-            尚未有任何提款紀錄
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-2">
-          {filtered.map((r) => (
-            <Card key={r.id}>
-              <CardContent className="space-y-2 p-4 text-sm">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className="text-base font-semibold">{formatHKD(r.amountHKD)}</p>
-                    <p className="text-xs text-slate-500">
-                      實收 {formatHKD(r.netHKD)} · 手續費 {r.feeHKD === 0 ? '免費' : formatHKD(r.feeHKD)}
-                    </p>
-                  </div>
-                  <StatusPill status={r.status} />
-                </div>
+          {loading ? (
+            <div className="h-20 animate-pulse rounded-xl bg-surface-2" />
+          ) : (
+            <>
+              {error && <div className="mb-3 rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger">{error}</div>}
 
-                <div className="space-y-1 text-xs text-slate-600">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500">到帳帳戶</span>
-                    <span className="truncate text-right">
-                      {r.methodSnapshot?.displayLabel ?? '—'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500">參考編號</span>
-                    <button
-                      onClick={() => copy(r.reference)}
-                      className="inline-flex items-center gap-1 font-mono text-slate-700 hover:text-brand-600"
-                    >
-                      {r.reference}
-                      {copied === r.reference ? <Check className="h-3 w-3 text-emerald-600" /> : <Copy className="h-3 w-3" />}
-                    </button>
-                  </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-slate-500">提交時間</span>
-                    <span>{new Date(r.createdAt).toLocaleString('zh-HK')}</span>
-                  </div>
-                  {r.processedAt && (
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-500">處理時間</span>
-                      <span>{new Date(r.processedAt).toLocaleString('zh-HK')}</span>
+              {filtered.length === 0 ? (
+                <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-neutral-text-muted shadow-sh1">
+                  尚未有任何提款紀錄
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {filtered.map((r) => (
+                    <div key={r.id} className="rounded-xl border border-line bg-white p-5 shadow-sh1">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="text-[18px] font-extrabold text-ink">{formatHKD(r.amountHKD)}</p>
+                          <p className="mt-0.5 text-[12px] text-neutral-text-hint">
+                            實收 {formatHKD(r.netHKD)} · 手續費 {r.feeHKD === 0 ? '免費' : formatHKD(r.feeHKD)}
+                          </p>
+                        </div>
+                        <StatusPill status={r.status} />
+                      </div>
+
+                      <div className="mt-3 space-y-1.5 border-t border-line pt-3 text-[13px]">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-neutral-text-hint">到帳帳戶</span>
+                          <span className="truncate text-right text-neutral-text-muted">{r.methodSnapshot?.displayLabel ?? '—'}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-neutral-text-hint">參考編號</span>
+                          <button onClick={() => copy(r.reference)} className="inline-flex items-center gap-1 font-mono text-neutral-text-muted hover:text-brand-600">
+                            {r.reference}
+                            {copied === r.reference ? <Check className="h-3 w-3 text-verify" /> : <Copy className="h-3 w-3" />}
+                          </button>
+                        </div>
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-neutral-text-hint">提交時間</span>
+                          <span className="text-neutral-text-muted">{new Date(r.createdAt).toLocaleString('zh-HK')}</span>
+                        </div>
+                        {r.processedAt && (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-neutral-text-hint">處理時間</span>
+                            <span className="text-neutral-text-muted">{new Date(r.processedAt).toLocaleString('zh-HK')}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {r.status === 'FAILED' && (
+                        <div className="mt-3 rounded-lg bg-danger-soft p-3 text-[12px] text-danger">
+                          <p className="font-semibold">
+                            失敗原因：{FAIL_REASON_LABEL[r.failureReason ?? ''] ?? r.failureReason ?? '未知'}
+                          </p>
+                          <p className="mt-1">
+                            請喺<Link href="/account/wallet/methods" className="mx-1 underline">提款帳戶</Link>核對資料，或者
+                            <Link href="/account/wallet" className="mx-1 underline">重新申請提款</Link>。
+                          </p>
+                        </div>
+                      )}
                     </div>
-                  )}
+                  ))}
                 </div>
+              )}
 
-                {r.status === 'FAILED' && (
-                  <div className="rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-800">
-                    <p className="font-semibold">
-                      失敗原因：{FAIL_REASON_LABEL[r.failureReason ?? ''] ?? r.failureReason ?? '未知'}
-                    </p>
-                    <p className="mt-1">
-                      請喺
-                      <Link href="/account/wallet/methods" className="ml-1 underline">提款帳戶</Link>
-                      核對資料，或者
-                      <Link href="/account/wallet" className="ml-1 underline">重新申請提款</Link>。
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      <PayoutDisclaimer />
+              <div className="mt-4">
+                <PayoutDisclaimer />
+              </div>
+            </>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

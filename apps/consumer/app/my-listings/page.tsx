@@ -3,19 +3,19 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Badge, Button, TierPill, ListingThumb } from '@authentik/ui';
+import { Button, Pill, TierPill, ListingThumb, ConfirmDialog } from '@authentik/ui';
 import { formatHKD, tierForPrice, categoryByApiEnum } from '@authentik/utils';
-import { Coins, ShoppingBag, TrendingUp } from 'lucide-react';
 import { api, hasToken } from '@/lib/api';
+import { ShareIgModal, type ShareListing } from '@/components/share-ig-modal';
 
 type StatusFilter = 'all' | 'ACTIVE' | 'RESERVED' | 'SOLD';
 
-const STATUS_LABEL: Record<string, { text: string; variant: 'success' | 'warning' | 'danger' | 'default' }> = {
-  ACTIVE:   { text: '上架中',  variant: 'success' },
-  DRAFT:    { text: '草稿',    variant: 'default' },
-  RESERVED: { text: '已預留',  variant: 'warning' },
-  SOLD:     { text: '已售出',  variant: 'default' },
-  REMOVED:  { text: '已下架',  variant: 'danger' },
+const STATUS_PILL: Record<string, { text: string; variant: 'verify' | 'status' | 'tier' | 'gold' }> = {
+  ACTIVE:   { text: '上架中',  variant: 'verify' },
+  DRAFT:    { text: '草稿',    variant: 'tier' },
+  RESERVED: { text: '待鑑定配對', variant: 'status' },
+  SOLD:     { text: '已售出',  variant: 'tier' },
+  REMOVED:  { text: '已下架',  variant: 'tier' },
 };
 
 const DELIVERY_LABEL: Record<string, string> = {
@@ -25,129 +25,150 @@ const DELIVERY_LABEL: Record<string, string> = {
   MEETUP_DIRECT: '雙方面交',
 };
 
+/** Compact money for the stat card, e.g. HK$1.82M / HK$120K / HK$8,500. */
+function compactHKD(v: number): string {
+  if (v >= 1_000_000) return `HK$${(v / 1_000_000).toFixed(2).replace(/\.00$/, '')}M`;
+  if (v >= 10_000) return `HK$${(v / 1_000).toFixed(0)}K`;
+  return formatHKD(v);
+}
+
 export default function MyListingsPage() {
   const router = useRouter();
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<{ active: number; reserved: number; sold: number; completedOrders: number; lifetimeEarnings: number; monthEarnings: number } | null>(null);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
+  const [shareListing, setShareListing] = useState<ShareListing | null>(null);
+  // Soft-delete inline 2-step confirm（lesson #16 — terminal action 必須二次確認）
+  const [deletePrompt, setDeletePrompt] = useState<string | null>(null);
+  const [actBusy, setActBusy] = useState<string | null>(null);
+  const [actError, setActError] = useState<string | null>(null);
+
+  function reload() {
+    Promise.all([api.listings.mine(), api.listings.mineStats()])
+      .then(([l, s]) => { setListings(l); setStats(s); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }
 
   useEffect(() => {
     if (!hasToken()) {
       router.replace('/login?redirect=/my-listings');
       return;
     }
-    Promise.all([api.listings.mine(), api.listings.mineStats()])
-      .then(([l, s]) => {
-        setListings(l);
-        setStats(s);
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+    reload();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
+
+  async function doDelete(id: string) {
+    setActBusy(id);
+    setActError(null);
+    try {
+      await api.listings.softDelete(id);
+      setDeletePrompt(null);
+      reload();
+    } catch (e: any) {
+      setActError(e?.message ?? '刪除失敗');
+    } finally {
+      setActBusy(null);
+    }
+  }
+
+  async function doRestore(id: string) {
+    setActBusy(id);
+    setActError(null);
+    try {
+      await api.listings.restoreOwn(id);
+      reload();
+    } catch (e: any) {
+      setActError(e?.message ?? '還原失敗');
+    } finally {
+      setActBusy(null);
+    }
+  }
 
   const active   = listings.filter((l) => l.status === 'ACTIVE');
   const reserved = listings.filter((l) => l.status === 'RESERVED');
   const sold     = listings.filter((l) => l.status === 'SOLD');
   const other    = listings.filter((l) => !['ACTIVE', 'RESERVED', 'SOLD'].includes(l.status));
 
-  // Order: reserved (action needed) → active → sold → other
   const allSorted = [...reserved, ...active, ...sold, ...other];
   const sorted = useMemo(() => {
     if (statusFilter === 'all') return allSorted;
     return allSorted.filter((l) => l.status === statusFilter);
   }, [allSorted, statusFilter]);
 
+  const statCards = [
+    { n: String(active.length),   l: '在售中' },
+    { n: String(reserved.length), l: '進行中' },
+    { n: String(sold.length),     l: '已售出' },
+    { n: stats ? compactHKD(stats.lifetimeEarnings) : '—', l: '累計成交' },
+  ];
+
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8">
-      <div className="mb-6 flex items-center justify-between">
+    <div className="mx-auto max-w-container-l3 px-4 pb-16 pt-8 sm:px-6">
+      {/* ═══ Head ═══ */}
+      <div className="mb-5 flex items-end justify-between gap-4">
         <div>
-          <h1 className="font-display text-2xl font-bold text-slate-900">我的商品</h1>
-          {!loading && (
-            <p className="mt-0.5 text-xs text-slate-400">
-              共 {listings.length} 件商品
-              {active.length > 0 && ` · ${active.length} 件上架中`}
-              {reserved.length > 0 && ` · ${reserved.length} 件已預留`}
-              {sold.length > 0 && ` · ${sold.length} 件已售出`}
-            </p>
-          )}
+          <h1 className="font-display-serif text-[28px] font-bold leading-tight tracking-[-0.01em] text-ink">
+            我的上架
+          </h1>
+          <p className="mt-1 text-[13px] text-neutral-text-hint">管理你刊登的貨品</p>
         </div>
         <Link href="/sell">
-          <Button size="sm">上架新商品</Button>
+          <Button>＋ 刊登新貨品</Button>
         </Link>
       </div>
-
-      {/* ── Earnings stats card ────────────────────────────────────────────── */}
-      {!loading && stats && (
-        <div className="mb-4 grid grid-cols-3 gap-3 rounded-2xl border border-slate-100 bg-gradient-to-br from-brand-50 to-white p-4">
-          <div>
-            <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-slate-500">
-              <Coins className="h-3 w-3" /> 累計收入
-            </p>
-            <p className="mt-0.5 font-display text-lg font-bold text-brand-700">
-              {formatHKD(stats.lifetimeEarnings)}
-            </p>
-          </div>
-          <div>
-            <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-slate-500">
-              <TrendingUp className="h-3 w-3" /> 本月收入
-            </p>
-            <p className="mt-0.5 font-display text-lg font-bold text-emerald-700">
-              {formatHKD(stats.monthEarnings)}
-            </p>
-          </div>
-          <div>
-            <p className="flex items-center gap-1 text-[10px] font-medium uppercase tracking-wider text-slate-500">
-              <ShoppingBag className="h-3 w-3" /> 完成單數
-            </p>
-            <p className="mt-0.5 font-display text-lg font-bold text-slate-800">
-              {stats.completedOrders}
-            </p>
-          </div>
-        </div>
+      {actError && (
+        <p className="mb-4 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{actError}</p>
       )}
 
-      {/* ── Status filter tabs ─────────────────────────────────────────────── */}
+      {/* ═══ Statbar ═══ */}
+      <div className="mb-7 grid grid-cols-2 gap-4 md:grid-cols-4">
+        {statCards.map((s) => (
+          <div key={s.l} className="rounded-xl border border-line bg-white p-5 shadow-sh1">
+            <div className="text-[32px] font-extrabold leading-none text-ink">{s.n}</div>
+            <div className="mt-2 text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-text-hint">{s.l}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ═══ Tabs ═══ */}
       {!loading && listings.length > 0 && (
-        <div className="mb-4 flex gap-1 overflow-x-auto pb-1">
+        <div className="mb-6 flex gap-1 overflow-x-auto scrollbar-hide touch-pan-x overscroll-x-contain border-b border-line">
           {([
             ['all', '全部', listings.length],
-            ['ACTIVE', '上架中', active.length],
-            ['RESERVED', '已預留', reserved.length],
+            ['ACTIVE', '在售中', active.length],
+            ['RESERVED', '進行中', reserved.length],
             ['SOLD', '已售出', sold.length],
-          ] as const).map(([k, label, count]) => (
-            <button
-              key={k}
-              onClick={() => setStatusFilter(k as StatusFilter)}
-              className={`flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs transition ${
-                statusFilter === k
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {label}
-              <span className={`rounded-full px-1.5 py-0 text-[9px] ${
-                statusFilter === k ? 'bg-white/20' : 'bg-white text-slate-500'
-              }`}>
-                {count}
-              </span>
-            </button>
-          ))}
+          ] as const).map(([k, label, count]) => {
+            const isActive = statusFilter === k;
+            return (
+              <button
+                key={k}
+                onClick={() => setStatusFilter(k as StatusFilter)}
+                className={`shrink-0 -mb-px border-b-2 px-4 py-3 text-[14px] font-semibold transition ${
+                  isActive
+                    ? 'border-brand-600 text-ink'
+                    : 'border-transparent text-neutral-text-hint hover:text-neutral-text-muted'
+                }`}
+              >
+                {label} ({count})
+              </button>
+            );
+          })}
         </div>
       )}
 
       {/* Loading */}
       {loading && (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-              <div className="flex gap-4 p-4">
-                <div className="h-20 w-20 shrink-0 animate-pulse rounded-xl bg-slate-200" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
-                  <div className="h-4 w-1/3 animate-pulse rounded bg-slate-200" />
-                  <div className="h-5 w-28 animate-pulse rounded-full bg-slate-200" />
-                </div>
+            <div key={i} className="flex items-center gap-4 rounded-xl border border-line bg-white p-4 shadow-sh1">
+              <div className="h-16 w-16 shrink-0 animate-pulse rounded-[10px] bg-surface-2" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-3/4 animate-pulse rounded bg-surface-2" />
+                <div className="h-3 w-1/3 animate-pulse rounded bg-surface-2" />
               </div>
             </div>
           ))}
@@ -156,84 +177,129 @@ export default function MyListingsPage() {
 
       {/* Empty */}
       {!loading && listings.length === 0 && (
-        <div className="mt-12 text-center">
+        <div className="mt-14 rounded-xl border border-line bg-white p-10 text-center shadow-sh1">
           <p className="text-3xl">🏪</p>
-          <p className="mt-3 font-medium text-slate-700">你未有上架任何商品</p>
-          <p className="mt-1 text-sm text-slate-400">上架商品後會喺呢度管理。</p>
-          <Link href="/sell"><Button className="mt-4">上架商品</Button></Link>
+          <p className="mt-3 font-medium text-neutral-text">你未有上架任何商品</p>
+          <p className="mt-1 text-sm text-neutral-text-hint">上架商品後會喺呢度管理。</p>
+          <Link href="/sell"><Button className="mt-5">上架商品</Button></Link>
         </div>
       )}
 
-      {/* Listing cards */}
+      {/* ═══ Listing rows ═══ */}
       {!loading && sorted.length > 0 && (
         <div className="space-y-3">
           {sorted.map((l) => {
             const img = l.images?.[0];
             const tier = tierForPrice(l.priceHKD) as 1 | 2 | 3;
-            const st = STATUS_LABEL[l.status] ?? { text: l.status, variant: 'default' as const };
+            const st = STATUS_PILL[l.status] ?? { text: l.status, variant: 'tier' as const };
             const methods: string[] = l.allowedDeliveryMethods ?? [];
+            const ageDays = l.createdAt
+              ? Math.max(0, Math.floor((Date.now() - new Date(l.createdAt).getTime()) / 86400000))
+              : null;
 
             return (
-              <Link key={l.id} href={`/listing/${l.id}`}>
-                <div className={`overflow-hidden rounded-2xl border bg-white shadow-sm transition hover:shadow-md ${
-                  l.status === 'RESERVED' ? 'border-amber-300' : 'border-slate-100'
-                }`}>
-                  <div className="flex gap-4 p-4">
-                    {/* Image */}
-                    <ListingThumb
-                      src={img}
-                      alt={l.title}
-                      emoji={categoryByApiEnum(l.category)?.emoji}
-                      className="h-20 w-20 shrink-0 rounded-xl"
-                    />
+              <div
+                key={l.id}
+                // 成個 row clickable（stretched-link，lesson #19）：title link 有
+                // after:inset-0 overlay 蓋全行；action buttons 用 relative 升上層。
+                className={`relative flex cursor-pointer items-center gap-4 rounded-xl border bg-white p-4 shadow-sh1 transition hover:shadow-sh2 ${
+                  l.status === 'RESERVED' ? 'border-verify' : 'border-line'
+                }`}
+              >
+                <Link href={`/listing/${l.id}`} className="shrink-0">
+                  <ListingThumb
+                    src={img}
+                    alt={l.title}
+                    emoji={categoryByApiEnum(l.category)?.emoji}
+                    className="h-16 w-16 rounded-[10px]"
+                  />
+                </Link>
 
-                    {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate font-semibold text-slate-900">{l.title}</p>
-                      <div className="mt-1 flex flex-wrap items-center gap-2">
-                        {l.originalPriceHKD && l.originalPriceHKD > l.priceHKD ? (
-                          <>
-                            <span className="text-base font-bold text-rose-600">{formatHKD(l.priceHKD)}</span>
-                            <span className="text-xs text-slate-400 line-through">{formatHKD(l.originalPriceHKD)}</span>
-                          </>
-                        ) : (
-                          <span className="text-base font-bold text-brand-600">{formatHKD(l.priceHKD)}</span>
-                        )}
-                        <TierPill tier={tier} />
-                        <Badge variant={st.variant}>{st.text}</Badge>
-                      </div>
-                      {/* Pending price drop pill — seller-only awareness (Q4=A) */}
-                      {l.pendingPriceHKD && l.pendingPriceEffectiveAt && (
-                        <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800">
-                          ⏳ 待生效特價 HKD {l.pendingPriceHKD.toLocaleString('en-HK')} · {new Date(l.pendingPriceEffectiveAt).toLocaleString('zh-HK')}
-                        </div>
-                      )}
-
-                      {/* Delivery methods */}
-                      {methods.length > 0 && (
-                        <div className="mt-1.5 flex flex-wrap gap-1">
-                          {methods.map((m: string) => (
-                            <span key={m} className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-medium text-slate-500">
-                              {DELIVERY_LABEL[m] ?? m}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
-                      {/* Date */}
-                      {l.createdAt && (
-                        <p className="mt-1 text-[10px] text-slate-400">
-                          上架：{new Date(l.createdAt).toLocaleDateString('zh-HK')}
-                        </p>
-                      )}
-                    </div>
+                <div className="min-w-0 flex-1">
+                  <Link href={`/listing/${l.id}`} className="block truncate text-[14px] font-semibold text-neutral-text after:absolute after:inset-0 after:content-[''] hover:text-brand-700">
+                    {l.title}
+                  </Link>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-neutral-text-hint">
+                    <TierPill tier={tier} className="text-[10px] !py-0.5" />
+                    <span>·</span>
+                    {ageDays != null && <span>已刊登 {ageDays} 日</span>}
+                    {methods.length > 0 && (
+                      <>
+                        <span>·</span>
+                        <span>{methods.map((m) => DELIVERY_LABEL[m] ?? m).join(' / ')}</span>
+                      </>
+                    )}
                   </div>
+                  {l.pendingPriceHKD && l.pendingPriceEffectiveAt && (
+                    <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800">
+                      ⏳ 待生效特價 HKD {l.pendingPriceHKD.toLocaleString('en-HK')} · {new Date(l.pendingPriceEffectiveAt).toLocaleString('zh-HK')}
+                    </div>
+                  )}
                 </div>
-              </Link>
+
+                <Pill variant={st.variant} size="md" className="hidden shrink-0 sm:inline-flex">
+                  {st.text}
+                </Pill>
+
+                <div className="shrink-0 text-right">
+                  {l.originalPriceHKD && l.originalPriceHKD > l.priceHKD ? (
+                    <>
+                      <div className="text-[16px] font-extrabold text-danger">{formatHKD(l.priceHKD)}</div>
+                      <div className="text-[11px] text-neutral-text-hint line-through">{formatHKD(l.originalPriceHKD)}</div>
+                    </>
+                  ) : (
+                    <div className="text-[16px] font-extrabold text-ink">{formatHKD(l.priceHKD)}</div>
+                  )}
+                </div>
+
+                <div className="relative flex shrink-0 flex-col gap-1.5 sm:flex-row">
+                  {(l.status === 'ACTIVE' || l.status === 'DRAFT') && (
+                    <Link href={`/sell?edit=${l.id}` as any}>
+                      <Button variant="ghost" size="sm">編輯</Button>
+                    </Link>
+                  )}
+                  {l.status === 'ACTIVE' && (l.images?.length ?? 0) > 0 && (
+                    <Button variant="ghost" size="sm" onClick={() => setShareListing(l)}>分享</Button>
+                  )}
+                  <Link href={`/listing/${l.id}`}>
+                    <Button variant="ghost" size="sm">查看</Button>
+                  </Link>
+                  {/* Soft delete（founder 2026-07-10）— ConfirmDialog v2 */}
+                  {(l.status === 'ACTIVE' || l.status === 'DRAFT') && (
+                    <Button variant="ghost" size="sm" className="!text-red-600 hover:!bg-red-50" onClick={() => setDeletePrompt(l.id)}>
+                      刪除
+                    </Button>
+                  )}
+                  {/* REMOVED：自刪可還原；平台下架要搵客服 */}
+                  {l.status === 'REMOVED' && (
+                    l.removedByRole === 'ADMIN' ? (
+                      <span className="self-center text-[11px] text-neutral-text-hint">已被平台下架 · 請聯絡客服</span>
+                    ) : (
+                      <Button variant="ghost" size="sm" disabled={actBusy === l.id} onClick={() => doRestore(l.id)}>
+                        {actBusy === l.id ? '…' : '還原'}
+                      </Button>
+                    )
+                  )}
+                </div>
+              </div>
             );
           })}
         </div>
       )}
+      {shareListing && <ShareIgModal listing={shareListing} onClose={() => setShareListing(null)} />}
+
+      {/* ConfirmDialog v2 — soft delete（可還原，T3） */}
+      <ConfirmDialog
+        open={!!deletePrompt}
+        severity="danger"
+        title="刪除呢件商品？"
+        description={deletePrompt ? listings.find((l) => l.id === deletePrompt)?.title : undefined}
+        consequence="商品會即時落架，買家搵唔到。刪錯咗可以隨時喺呢度撳「還原」。"
+        confirmLabel="確認刪除"
+        busy={actBusy === deletePrompt}
+        onConfirm={() => deletePrompt && doDelete(deletePrompt)}
+        onCancel={() => setDeletePrompt(null)}
+      />
     </div>
   );
 }

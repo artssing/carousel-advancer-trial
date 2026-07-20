@@ -2,10 +2,29 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle, Badge, StarRating } from '@authentik/ui';
 import { formatHKD } from '@authentik/utils';
-import { TrendingUp, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { api, type InboxOrder, type Me } from '@/lib/api';
+import { AuthTopline, AuthContent } from '@/components/auth-topline';
+import { EAndOWarning } from '@/components/eando-warning';
+
+const DELIVERY_LABEL: Record<string, string> = {
+  SHIP: '順豐到件',
+  MEETUP_AUTH: '鑑定師處面交',
+  MEETUP_3WAY: '三方面交',
+  MEETUP_DIRECT: '雙方面交',
+};
+
+const STATUS_PILL: Record<string, { label: string; cls: string }> = {
+  PAID: { label: '待開始', cls: 'bg-authBrand-soft text-authBrand-600' },
+  SHIPPED_TO_AUTHENTICATOR: { label: '已收貨', cls: 'bg-authBrand-soft text-authBrand-600' },
+  AUTHENTICATING: { label: '進行中', cls: 'bg-verdict-incon-soft text-verdict-incon' },
+};
+
+const VERDICT_PILL: Record<string, { label: string; cls: string }> = {
+  AUTH_PASSED: { label: '✓ 通過', cls: 'bg-verdict-pass-soft text-verdict-pass' },
+  AUTH_FAILED: { label: '✕ 不通過', cls: 'bg-verdict-fail-soft text-verdict-fail' },
+  AUTH_INCONCLUSIVE: { label: '？ 未能確定', cls: 'bg-verdict-incon-soft text-verdict-incon' },
+};
 
 export default function DashboardPage() {
   const [me, setMe] = useState<Me | null>(null);
@@ -13,10 +32,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     Promise.all([api.me(), api.orders.inbox()])
-      .then(([meData, inbox]) => {
-        setMe(meData);
-        setOrders(inbox);
-      })
+      .then(([meData, inbox]) => { setMe(meData); setOrders(inbox); })
       .catch(() => {});
   }, []);
 
@@ -24,126 +40,179 @@ export default function DashboardPage() {
   const DONE_STATUSES = ['AUTH_PASSED', 'AUTH_FAILED', 'SHIPPED_TO_BUYER', 'DELIVERED', 'COMPLETED'];
   const pending = orders.filter((o) => !DONE_STATUSES.includes(o.status));
   const completed = orders.filter((o) => DONE_STATUSES.includes(o.status));
-  // 面交 PAID 嘅單都算 urgent（鑑定師需要行動）
   const MEETUP_METHODS = ['MEETUP_AUTH', 'MEETUP_3WAY'];
   const actionNeeded = pending.filter((o) =>
     o.status === 'AUTHENTICATING' ||
     o.status === 'SHIPPED_TO_AUTHENTICATOR' ||
     (o.status === 'PAID' && MEETUP_METHODS.includes((o as any).deliveryMethod ?? ''))
   );
-  const nextUrgent = actionNeeded[0];
-  // 本月收入
+
+  // Today's meetups
+  const todayMeetups = pending.filter((o) => MEETUP_METHODS.includes((o as any).deliveryMethod ?? ''));
+
   const currentMonth = new Date().toISOString().slice(0, 7);
   const thisMonthCompleted = completed.filter((o) => (o.createdAt ?? '').startsWith(currentMonth));
   const monthlyIncome = thisMonthCompleted.reduce((sum, o) => sum + o.authFeeHKD, 0);
-  // 爭議率
-  const disputeRateStr = auth?.disputeRate != null
+  const disputeRatePct = auth?.disputeRate != null
     ? `${(auth.disputeRate * 100).toFixed(1)}%`
     : '0%';
 
+  const todayLabel = new Date().toLocaleDateString('zh-HK', {
+    year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
+  });
+
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8">
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="font-display text-2xl font-bold">
-            {auth?.storeName ?? auth?.displayName ?? '鑑定師 Portal'}
-          </h1>
-          {auth && (
-            <div className="mt-1 flex items-center gap-2 text-sm text-slate-500">
-              <StarRating value={auth.starRating} size="sm" showValue />
-              · 已鑑定 {auth.completedCount} 件
-            </div>
-          )}
+    <>
+      <AuthTopline title="工作台" subtitle={todayLabel} />
+      <AuthContent>
+        <EAndOWarning eAndOInsuranceExpiresAt={auth?.eAndOInsuranceExpiresAt} />
+
+        {/* ═══ 4-col stat row ═══ */}
+        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+          <StatCard value={String(actionNeeded.length)} label="待鑑定" tint="authBrand" />
+          <StatCard value={monthlyIncome > 0 ? formatHKD(monthlyIncome) : 'HK$0'} label="本月收入" tint="authBrand" />
+          <StatCard value={disputeRatePct} label="爭議率" tint="pass" />
+          <StatCard
+            value={
+              <>
+                {auth?.starRating ?? '—'} <span className="text-verdict-incon">★</span>
+              </>
+            }
+            label="平均評分"
+            tint="authBrand"
+          />
         </div>
-        {auth && (
-          <Badge variant={auth.status === 'ACTIVE' ? 'success' : 'warning'}>
-            {auth.status === 'ACTIVE' ? 'Active' : auth.status}
-          </Badge>
-        )}
-      </div>
 
-      <div className="grid gap-4 md:grid-cols-4">
-        <Stat icon={Clock} label="需要處理" value={String(actionNeeded.length)} hint={`共 ${pending.length} 件進行中`} tint="amber" />
-        <Stat icon={CheckCircle2} label="本月完成" value={String(thisMonthCompleted.length)} hint={`累計 ${completed.length} 件`} tint="emerald" />
-        <Stat
-          icon={TrendingUp}
-          label="本月收入"
-          value={monthlyIncome > 0 ? formatHKD(monthlyIncome) : 'HK$0'}
-          hint={currentMonth}
-          tint="brand"
-        />
-        <Stat icon={AlertTriangle} label="爭議率" value={disputeRateStr} tint="slate" />
-      </div>
+        {/* ═══ 2-col split: queue + right rail ═══ */}
+        <div className="grid gap-5 lg:grid-cols-[1.4fr_1fr]">
+          {/* Left: pending queue */}
+          <div className="rounded-xl border border-line bg-white p-6 shadow-auth-sh1">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">
+                待鑑定佇列
+              </div>
+              <Link href="/inbox" className="text-[13px] font-semibold text-authBrand-500 hover:text-authBrand-600">
+                前往收件匣 →
+              </Link>
+            </div>
 
-      {actionNeeded.length > 0 && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>需要處理（{actionNeeded.length}）</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {actionNeeded.slice(0, 3).map((o) => (
-              <Link key={o.id} href={`/authenticate/${o.id}`}>
-                <div className="rounded-lg bg-amber-50 p-4 text-amber-900 transition hover:bg-amber-100">
-                  <p className="font-medium">
-                    {o.listing.title} · {formatHKD(o.salePriceHKD)}
-                  </p>
-                  <p className="mt-1 text-sm">#{o.id.slice(0, 8)} · 點擊進入鑑定工作台</p>
-                </div>
-              </Link>
-            ))}
-            {actionNeeded.length > 3 && (
-              <Link href="/inbox" className="block text-center text-sm text-brand-600 hover:underline">
-                查看全部 {actionNeeded.length} 件 →
-              </Link>
+            {actionNeeded.length === 0 ? (
+              <p className="py-8 text-center text-sm text-neutral-text-hint">目前無需要你立即處理嘅訂單</p>
+            ) : (
+              actionNeeded.slice(0, 4).map((o) => {
+                const pill = STATUS_PILL[o.status];
+                return (
+                  <div key={o.id} className="flex items-center gap-3 border-b border-line py-3.5 last:border-b-0">
+                    <div className="relative h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[9px] bg-gradient-to-br from-authBrand-100 to-authBrand-200">
+                      {o.listing.images?.[0] ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={o.listing.images[0]} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <div className="flex h-full w-full items-center justify-center font-mono text-[9px] font-bold uppercase tracking-[0.1em] text-authBrand-500">
+                          {(o.listing as any).brand ?? 'ITEM'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-semibold text-neutral-text">
+                        {o.listing.title}
+                      </p>
+                      <p className="mt-0.5 truncate text-[12px] text-neutral-text-hint">
+                        訂單 #{o.id.slice(0, 8).toUpperCase()} ·{' '}
+                        {DELIVERY_LABEL[(o as any).deliveryMethod ?? ''] ?? (o as any).deliveryMethod}
+                      </p>
+                    </div>
+                    {pill && (
+                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${pill.cls}`}>
+                        {pill.label}
+                      </span>
+                    )}
+                    <Link
+                      href={`/authenticate/${o.id}`}
+                      className="shrink-0 rounded-lg bg-authBrand-500 px-4 py-2 text-[13px] font-bold text-white shadow-auth-btn transition hover:bg-authBrand-600"
+                    >
+                      {o.status === 'AUTHENTICATING' ? '繼續' : '鑑定'}
+                    </Link>
+                  </div>
+                );
+              })
             )}
-          </CardContent>
-        </Card>
-      )}
+          </div>
 
-      {actionNeeded.length === 0 && (
-        <Card className="mt-6">
-          <CardContent className="p-6 text-center text-sm text-slate-400">
-            目前無需要你立即處理嘅訂單。
-          </CardContent>
-        </Card>
-      )}
-    </div>
+          {/* Right: today meetups + recent results */}
+          <div className="space-y-5">
+            {/* Today meetups */}
+            {todayMeetups.length > 0 && (
+              <div className="rounded-xl border border-line bg-white p-6 shadow-auth-sh1">
+                <div className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">
+                  今日面交
+                </div>
+                {todayMeetups.slice(0, 3).map((o) => (
+                  <div key={o.id} className="flex items-start gap-3 border-b border-line py-3 last:border-b-0">
+                    <span className="w-[52px] shrink-0 text-[15px] font-extrabold text-authBrand-500">
+                      {(o as any).scheduledMeetupAt
+                        ? new Date((o as any).scheduledMeetupAt).toLocaleTimeString('zh-HK', {
+                            hour: '2-digit', minute: '2-digit', hour12: false,
+                          })
+                        : '—'}
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-[14px] font-semibold text-neutral-text">
+                        {o.listing.title} · {DELIVERY_LABEL[(o as any).deliveryMethod ?? '']}
+                      </p>
+                      <p className="mt-0.5 truncate text-[12px] text-neutral-text-hint">
+                        {(o as any).meetupBranch?.name ?? '面交'}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Recent results */}
+            {completed.length > 0 && (
+              <div className="rounded-xl border border-line bg-white p-6 shadow-auth-sh1">
+                <div className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">
+                  最近結果
+                </div>
+                {completed.slice(0, 4).map((o) => {
+                  const verdict = VERDICT_PILL[o.status] ?? VERDICT_PILL.AUTH_PASSED!;
+                  return (
+                    <div key={o.id} className="flex items-center justify-between border-b border-line py-2 last:border-b-0">
+                      <span className="truncate text-[13px] text-neutral-text">{o.listing.title}</span>
+                      <span className={`ml-2 shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${verdict.cls}`}>
+                        {verdict.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+      </AuthContent>
+    </>
   );
 }
 
-function Stat({
-  icon: Icon,
-  label,
-  value,
-  hint,
-  tint,
+function StatCard({
+  value, label, tint,
 }: {
-  icon: React.ComponentType<{ className?: string }>;
+  value: React.ReactNode;
   label: string;
-  value: string;
-  hint?: string;
-  tint: 'amber' | 'emerald' | 'brand' | 'slate';
+  tint: 'authBrand' | 'pass' | 'incon';
 }) {
-  const tintMap = {
-    amber: 'text-amber-700 bg-amber-50',
-    emerald: 'text-emerald-700 bg-emerald-50',
-    brand: 'text-brand-700 bg-brand-50',
-    slate: 'text-slate-700 bg-slate-50',
-  };
+  const numColor = tint === 'pass'
+    ? 'text-verdict-pass'
+    : tint === 'incon'
+    ? 'text-verdict-incon'
+    : 'text-authBrand-900';
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-center gap-3">
-          <div className={`rounded-lg p-2 ${tintMap[tint]}`}>
-            <Icon className="h-5 w-5" />
-          </div>
-          <div>
-            <p className="text-xs text-slate-500">{label}</p>
-            <p className="text-xl font-bold">{value}</p>
-            {hint && <p className="text-xs text-slate-400">{hint}</p>}
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="rounded-xl border border-line bg-white p-5 shadow-auth-sh1">
+      <div className={`text-[22px] font-extrabold ${numColor}`}>{value}</div>
+      <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-text-hint">
+        {label}
+      </div>
+    </div>
   );
 }

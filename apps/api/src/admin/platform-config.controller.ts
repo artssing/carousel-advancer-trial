@@ -8,6 +8,10 @@ import { PrismaService } from '../prisma/prisma.service';
 const PUBLIC_KEYS = new Set([
   'videoUploadEnabled',
   'payoutFeeHKD',
+  // Login-method feature toggles — read by the public login page to decide
+  // which OAuth buttons to render. Apple flow is NOT built yet (kept off).
+  'authGoogleEnabled',
+  'authAppleEnabled',
 ]);
 
 @Controller('platform-config')

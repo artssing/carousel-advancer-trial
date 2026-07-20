@@ -54,7 +54,10 @@ export default function AboutPage() {
         </div>
       </section>
 
-      <section className="mt-6 space-y-3 rounded-2xl border border-slate-200 bg-white p-6">
+      {/* Anchor target for top-nav 「鑑定師」 link (see top-nav.tsx NAV_LINKS).
+          Also given `scroll-mt-*` so the sticky chrome doesn't cover the heading
+          when the browser jumps to the anchor. */}
+      <section id="authenticators" className="mt-6 scroll-mt-[calc(var(--chrome-h)+16px)] space-y-3 rounded-2xl border border-slate-200 bg-white p-6">
         <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
           <Users className="h-5 w-5 text-brand-600" /> 鑑定師制度
         </h2>

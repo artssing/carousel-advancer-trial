@@ -13,6 +13,7 @@
     "@authentik/api-client": "*",
     "@authentik/ui": "*",
     "@authentik/utils": "*",
+    "jsqr": "^1.4.0",
     "lucide-react": "^0.358.0",
     "next": "^14.2.3",
     "react": "^18.3.1",

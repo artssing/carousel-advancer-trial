@@ -3,7 +3,10 @@ import type { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 import { CurrentUser, CurrentUserData } from './current-user.decorator';
 import { JwtAuthGuard } from './jwt-auth.guard';
-import { LoginDto, RegisterDto, SendOtpDto, VerifyOtpDto } from './dto';
+import {
+  LoginDto, RegisterDto, SendOtpDto, VerifyOtpDto,
+  SendEmailOtpDto, VerifyEmailOtpDto,
+} from './dto';
 
 const CONSUMER_URL = process.env.NEXT_PUBLIC_CONSUMER_URL ?? 'http://localhost:3008';
 
@@ -109,6 +112,41 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   verifyPhoneOtp(@Body() dto: VerifyOtpDto, @CurrentUser() user: CurrentUserData) {
     return this.auth.verifyOtp(dto.phone, dto.code, dto.purpose, user.userId);
+  }
+
+  // ── Email OTP (Register v2 — 2026-07-05) ────────────────────────────
+  /** Send email OTP. Anonymous for REGISTER_EMAIL; consumes bearer if present. */
+  @Post('email/send-otp')
+  sendEmailOtp(@Body() dto: SendEmailOtpDto, @Ip() ip: string, @Req() req: Request) {
+    let userId: string | undefined;
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      try {
+        const claim: any = (this.auth as any).jwt.verify(authHeader.slice(7));
+        userId = claim?.sub;
+      } catch {}
+    }
+    return this.auth.sendEmailOtp(dto.email, dto.purpose, ip, userId);
+  }
+
+  /**
+   * Verify email OTP (VERIFY_EMAIL flow only — for authenticated users re-attesting).
+   * REGISTER_EMAIL flow consumes OTP inline via `register()` — do NOT expose here.
+   */
+  @Post('email/verify-otp')
+  @UseGuards(JwtAuthGuard)
+  verifyEmailOtp(@Body() dto: VerifyEmailOtpDto, @CurrentUser() user: CurrentUserData) {
+    return this.auth.verifyEmailOtp(dto.email, dto.code, user.userId);
+  }
+
+  // ── Username availability (Register v2 — 2026-07-05) ────────────────
+  /**
+   * Public availability check for `/@username` handle. Returns { available, reason? }.
+   * Rate-limited by absence-of-token — real limit is IP-based upstream (nginx / cloudflare).
+   */
+  @Get('username/check')
+  checkUsername(@Query('username') username: string) {
+    return this.auth.checkUsername(username ?? '');
   }
 
   /** Consumer complete-profile page POSTs here after user finishes 完善資料. */

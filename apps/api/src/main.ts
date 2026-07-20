@@ -1,7 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe, Logger } from '@nestjs/common';
-import { json, urlencoded } from 'express';
+import { json, raw, urlencoded } from 'express';
 import { join } from 'path';
 import { AppModule } from './app.module';
 
@@ -18,6 +18,9 @@ async function bootstrap() {
   // Founder ruling Q3 2026-06-11: front-end enforces actual per-file caps (15MB
   // video, compressed images ~500KB each); backlog item to split video into
   // separate multipart endpoint so non-listing routes don't carry this overhead.
+  // Stripe webhook needs the EXACT raw bytes for HMAC signature verification —
+  // mount raw() on that route before json() eats the body.
+  app.use('/api/webhooks/stripe', raw({ type: '*/*' }));
   app.use(json({ limit: '50mb' }));
   app.use(urlencoded({ extended: true, limit: '50mb' }));
   const origins = (process.env.CORS_ORIGIN ?? '').split(',').filter(Boolean);

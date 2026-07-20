@@ -88,6 +88,7 @@ enum OrderStatus {
   COMPLETED
   DISPUTED
   REFUNDED
+  PAYMENT_EXPIRED                   // 買家確認訂單後 30 分鐘內未付款 — cron sweep 終態（founder 2026-07-20）
 }
 
 enum AuthenticatorStatus {
@@ -115,6 +116,14 @@ model User {
   /// Nullable for SSO-only users (Google login first, never set password).
   passwordHash String?
   displayName  String
+  /// Public unique handle (`/@username` URL). Auto-generated at register from
+  /// email/displayName (e.g. `ernest1234`) so it can start unique; user can
+  /// customise later on Profile page (with checkUsername availability API).
+  /// Nullable for legacy seed users pre-registration-v2; backfill = backlog.
+  username     String?    @unique
+  /// User's collecting/trading interests (Q3 register step 4 chips step).
+  /// Optional — used to personalise homepage recommendations later.
+  interests    Category[]
   /// Avatar — base64 data URL (Founder ruling Q3 2026-06-11: A = base64 in DB).
   /// Recommended client-side compress to ≤ 200×200 / ≤ 50KB. Server caps at 256KB.
   avatarUrl    String?
@@ -164,6 +173,7 @@ model User {
   payoutRequests      PayoutRequest[]
   oauthAccounts       OAuthAccount[]
   adminNotes          AdminNote[]
+  authenticatorApplications AuthenticatorApplication[] @relation("authenticatorApplications")
 }
 
 /// Admin internal notes on a user — version history (Q4=A append-only, never
@@ -217,6 +227,35 @@ enum OtpPurpose {
   REGISTER_PHONE   // new account or existing user adding phone first time
   CHANGE_PHONE     // existing user replacing verified phone (requires 24h cooldown)
   LOGIN_PHONE      // passwordless OTP login (iteration 1; defined now for completeness)
+  PAYOUT_CONFIRM   // 2FA step-up for payout / add payout method (SMS = preferred channel once real provider lands — Phase 2)
+}
+
+/// Email OTP request — mirrors OtpRequest pattern for phone.
+/// Founder ruling 2026-07-05: register v2 uses mandatory email verification.
+/// Dev mode uses fixed code 888888 (same as phone OTP); real email provider
+/// (SendGrid / SES) is backlog. Email not enumerated: send-otp always returns
+/// 200 regardless of existing user.
+model EmailOtpRequest {
+  id           String            @id @default(cuid())
+  email        String            // lower-cased
+  codeHash     String            // bcrypt(code, rounds=8)
+  purpose      EmailOtpPurpose
+  userId       String?           // set for CHANGE_EMAIL / VERIFY_EMAIL (authenticated)
+  expiresAt    DateTime
+  attemptsLeft Int               @default(5)
+  consumedAt   DateTime?         // single-use replay protection
+  ipAddress    String?
+  createdAt    DateTime          @default(now())
+
+  @@index([email, purpose, createdAt])
+  @@index([ipAddress, createdAt])
+}
+
+enum EmailOtpPurpose {
+  REGISTER_EMAIL   // new account email verification (register v2)
+  VERIFY_EMAIL     // existing unverified user verifying email
+  CHANGE_EMAIL     // future — rotating email address (backlog)
+  PAYOUT_CONFIRM   // 2FA step-up for payout / add payout method (founder 2026-07-13: email = MVP channel)
 }
 
 model Listing {
@@ -256,6 +295,12 @@ model Listing {
   /// = videoPosterUrl if videoIsCover, else images[0], else null.
   coverUrl       String?
   status      ListingStatus @default(ACTIVE)
+  // ── Soft-delete audit（founder ruling 2026-07-10）───────────────────
+  // Customer 刪除 = soft delete only（status → REMOVED + 下面三欄），row 永遠
+  // 留喺 DB 可還原。Hard delete 只限 admin/superuser 直接落 DB 做。
+  removedAt      DateTime?
+  removedByRole  String?       // "SELLER" | "ADMIN" — 邊個觸發（賣家自刪 vs 平台下架）
+  removedReason  String?       // ADMIN 下架必填；SELLER 自刪可空
   createdAt   DateTime      @default(now())
 
   // 賣家接受嘅交收方式（買家落單時揀其中一種）
@@ -302,6 +347,44 @@ enum PriceChangeStatus {
   APPLIED      // priceHKD updated; originalPriceHKD frozen (if first)
   CANCELLED    // not applied — see cancelReason
   DIRECT_EDIT  // instant edit (same or higher price), no delay
+}
+
+/// 鑑定師申請（founder 2026-07-13 MVP：申請 + 審批 + suspend/remove）。
+/// 申請階段 draft data 同 live Authenticator 分開 — 唔污染公開 profile。
+/// 一間公司一個 account（staff 分層 = 做大先諗）。
+/// 審批 copy 紅線：核實身分資歷真確性，唔代表平台為鑑定結果背書。
+model AuthenticatorApplication {
+  id               String    @id @default(cuid())
+  /// 申請人 user（要先有平台帳戶先可以申請）
+  userId           String
+  user             User      @relation("authenticatorApplications", fields: [userId], references: [id])
+  displayName      String
+  storeName        String?
+  categories       Category[]
+  yearsExperience  Int?
+  bio              String?
+  /// 資歷證明（base64 data URLs / 外部 links，MVP 照 listing images pattern）
+  credentialDocs   String[]  @default([])
+  /// E&O 保險證明 + 到期日
+  eAndOProofDoc    String?
+  eAndOExpiresAt   DateTime?
+  /// 自訂收費（approve 時 copy 落 Authenticator）
+  feeRatePct       Float     @default(0.05)
+  feeMinHKD        Int       @default(100)
+  locationAddress  String?
+  district         String?
+  /// SUBMITTED → NEEDS_MORE_INFO → SUBMITTED（改完再交）
+  /// SUBMITTED → APPROVED / REJECTED（終態）/ WITHDRAWN
+  status           String    @default("SUBMITTED")
+  /// Admin 審批備註（NEEDS_MORE_INFO 時話申請人知缺咩；REJECTED 原因）
+  reviewNote       String?
+  reviewedById     String?
+  reviewedAt       DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  @@index([status, createdAt])
+  @@index([userId])
 }
 
 model Authenticator {
@@ -548,8 +631,18 @@ model Order {
   returnSellerAckAt    DateTime?  // FAILED 退貨：賣家 ack 取回（不阻塞買家退款）
   // Auto-cancel marker
   autoCanceledAt       DateTime?  // 7-day timeout 自動取消時間
+  // ── Ack v2（2026-07-10 founder 拍板）────────────────────────────────
+  // SF 單號：寄出唔再係齋 button，必須提供 tracking（A2/A4/B）
+  sellerShipTrackingNo String?   // 賣家寄出（畀鑑定師或直寄買家）
+  authShipTrackingNo   String?   // 鑑定師 PASSED 後寄出畀買家
+  // T+3 自動完成鐘（merged clock：auto-complete = 即時 cashout eligible）。
+  // 寄出畀買家時寫死 now+3d；sweep 掃過期 + 非 DISPUTED → COMPLETED。
+  autoCompleteAt       DateTime?
   // Custody flag — true 期間鑑定師物理持貨，DISPUTED 時必 true
   custodyHeld          Boolean   @default(false)
+  /// Custody 入口 audit（founder 2026-07-14）："QR"（正常 drop-off scan）或
+  /// "PHONE_FALLBACK"（賣家用唔到 QR，以登記電話號碼核實身分）。Null = 舊單。
+  custodyVia           String?
   // Re-photo loop audit trail (MEETUP_AUTH Phase A)
   // handoverHistory shape: Array<{ round, photos[], uploadedAt, ackedAt?, rejectedAt?, rejectionPresets?, rejectionComment? }>
   handoverHistory      Json      @default("[]")
@@ -557,6 +650,8 @@ model Order {
   rePhotoRequestedAt   DateTime?                     // 最近一次 reject 時間（SLA 用）
   // ──────────────────────────────────────────────────────────────────
   createdAt            DateTime  @default(now())
+  /// 買家撳「確認訂單」時 server 設 now+30min；過期由 cron sweepPaymentExpired 處理（founder 2026-07-20）
+  paymentDeadlineAt    DateTime?
   paidAt               DateTime?
   shippedToAuthAt      DateTime?
   receivedByAuthAt     DateTime?
@@ -569,6 +664,7 @@ model Order {
   /// Set in same tx as completedAt by orders.service when entering COMPLETED.
   cashoutEligibleAt    DateTime?
   conversations        Conversation[]   // one per kind (THREE_WAY default + optional pair channels)
+  qrTokens             QrToken[]
   evidenceFiles        OrderEvidence[]  // authenticator verdict-time evidence (video/photo) — see EvidenceKind
 }
 
@@ -583,6 +679,26 @@ enum EvidenceKind {
 /// backing PASSED/FAILED/INCONCLUSIVE). Stored via StorageService (local disk
 /// MVP, swappable to S3/R2 — see apps/api/src/storage/). Immutable once
 /// created — dispute/E&O retention requires no post-hoc edit or delete.
+
+/// Ack v2 — QR 交收 token（買家取貨 / 賣家到店交貨身份核實）。
+/// Server-issued 短命 nonce：60 秒過期、一次性、綁 order+user+role。
+/// 冇 fallback（founder 2026-07-10：買家冇電 = 交收唔到）。
+model QrToken {
+  id          String    @id @default(cuid())
+  orderId     String
+  order       Order     @relation(fields: [orderId], references: [id])
+  userId      String    // token 持有人（買家或賣家）
+  role        String    // "BUYER_PICKUP" | "SELLER_DROPOFF"
+  token       String    @unique
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  consumedBy  String?   // 鑑定師 userId
+  createdAt   DateTime  @default(now())
+
+  @@index([orderId])
+  @@index([expiresAt])
+}
+
 model OrderEvidence {
   id             String       @id @default(cuid())
   orderId        String
@@ -703,10 +819,88 @@ model PayoutRequest {
   reference       String        @unique
   failureReason   String?       // BANK_REJECTED / INVALID_ACCOUNT / KYC_REQUIRED / etc.
   processedAt     DateTime?     // SUCCEEDED / FAILED / REVERSED timestamp
+  /// 2FA audit（founder 2026-07-13）: channel used to verify this payout.
+  /// "EMAIL" (MVP) / "SMS" (Phase 2) / "TOTP" (backlog). Null = legacy pre-2FA row.
+  verifiedVia     String?
+  verifiedAt      DateTime?
   createdAt       DateTime      @default(now())
 
   @@index([userId, createdAt])
   @@index([status])
+}
+
+/// 2FA step-up intent（founder 2026-07-13 拍板 — docs/proposals/payout-2fa-proposal.md）。
+/// Binds an OTP to ONE specific money-moving action so a code can't be replayed
+/// against a different amount / account (anti-replay core). 10-min TTL, single-use.
+/// Flow: initiate（server 驗完先發 OTP + 建 intent）→ confirm（code + intentId → 執行）。
+model PayoutIntent {
+  id         String           @id @default(cuid())
+  userId     String
+  kind       PayoutIntentKind
+  /// Frozen action payload at initiate time:
+  ///  PAYOUT_REQUEST → { payoutMethodId, amountHKD }
+  ///  ADD_METHOD     → { type, accountIdentifier, bankCode?, accountName, isDefault? }
+  /// Amount/method 改咗 = 新 intent = 新 OTP；舊 code 對新 intent 無效。
+  payload    Json
+  /// Channel the OTP was sent on — "EMAIL" (MVP) / "SMS" (Phase 2)
+  channel    String
+  expiresAt  DateTime
+  /// Single-use: set on successful confirm. Second confirm on same intent → 409
+  /// (multi-device double-submit race protection).
+  consumedAt DateTime?
+  createdAt  DateTime         @default(now())
+
+  @@index([userId, createdAt])
+}
+
+enum PayoutIntentKind {
+  PAYOUT_REQUEST   // create payout request（提款）
+  ADD_METHOD       // add payout method（新增收款戶口 — ATO 第一步都要閘）
+}
+
+/// Analytics event log（docs/proposals/analytics-tagging-spec.md §7，founder
+/// 2026-07-14 拍板 MVP）。Append-only immutable log；enum 用 String 因為白名單
+/// 喺 packages/utils/src/analytics-events.ts（SSOT）validate，schema 唔重複定義。
+/// 高 volume event（session_heartbeat）唔落呢度 — 只更新 in-memory presence。
+model AnalyticsEvent {
+  id          String   @id @default(cuid())
+  eventName   String
+  /// client 產生，去重
+  eventId     String   @unique
+  occurredAt  DateTime
+  receivedAt  DateTime @default(now())
+  /// PROD | UAT — 環境隔離（admin dashboard 預設只睇 PROD）
+  env         String
+  /// CONSUMER | AUTHENTICATOR | ADMIN
+  portal      String
+  anonymousId String
+  userId      String?
+  /// GUEST | BUYER | SELLER | AUTHENTICATOR | ADMIN | MULTI — action 當刻 role context
+  role        String
+  sessionId   String
+  pagePath    String
+  referrer    String?
+  /// MOBILE | DESKTOP | TABLET
+  device      String
+  properties  Json
+
+  @@index([eventName, occurredAt])
+  @@index([anonymousId, occurredAt])
+  @@index([userId, occurredAt])
+  @@index([sessionId, occurredAt])
+}
+
+/// Identity merge mapping（spec §3）：login 時寫 anonymous_id → user_id，
+/// 一對多（換裝置/清 cache）。舊 event 唔 retroactive 改寫；journey query
+/// 經呢張表拉埋所有曾連結嘅 anonymousId。
+model AnalyticsIdentityLink {
+  id          String   @id @default(cuid())
+  anonymousId String
+  userId      String
+  createdAt   DateTime @default(now())
+
+  @@unique([anonymousId, userId])
+  @@index([userId])
 }
 
 /// Generic key-value config (Q1 — admin-tunable platform fees, etc.)
@@ -738,7 +932,7 @@ model AdminAction {
 /// authenticator apps. Founder ruling 2026-06-30: admin controls message,
 /// severity, audience, and how many are active. Hard cap = 3 active per app.
 /// Phase 2 backlog (approval flow, audit log, EN fallback, SSE push) in
-/// docs/banner-backlog.md.
+/// docs/backlog/banner-backlog.md.
 model Banner {
   id          String         @id @default(cuid())
   message     String         // Plain text only (server sanitizes to strip HTML)

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>收件匣 · 鑑定師 Portal</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .group{margin-bottom:28px}
+  .group .gh{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .group .gh .dot{width:8px;height:8px;border-radius:50%}
+  .group .gh h2{font-size:15px;font-weight:700}
+  .group .gh .ct{font-size:12px;color:var(--text-3);font-weight:600}
+  .row{display:flex;gap:14px;align-items:center;padding:16px;margin-bottom:10px}
+  .thumb{width:56px;height:56px;border-radius:10px;flex-shrink:0;position:relative;background:linear-gradient(135deg,#eef1fc,#dfe4f6)}
+  .thumb .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:9px;letter-spacing:.1em;color:#95a0c8}
+  .row .mid{flex:1;min-width:0}
+  .row .t{font-weight:600;font-size:14px}
+  .row .s{font-size:12px;color:var(--text-3);margin-top:3px}
+  .row .price{font-weight:800;color:var(--primary);white-space:nowrap}
+  .row .meta{text-align:right;font-size:12px;color:var(--text-3)}
+</style>
+</head>
+<body>
+<div class="portal">
+  <aside class="sidebar">
+    <div class="brand">AUTHEN<span>·</span>TIK</div>
+    <div class="role">鑑定師 Portal</div>
+    <nav class="snav">
+      <a href="dashboard.html">工作台</a>
+      <a class="on" href="inbox.html">收件匣 <span class="badge">5</span></a>
+      <a href="messages.html">訊息 <span class="badge">2</span></a>
+      <a href="earnings.html">收入</a>
+      <a href="profile.html">檔案</a>
+    </nav>
+    <div class="me"><div class="av">米</div><div><div class="nm">Milan Leung</div><div class="st">★★★★★ · 在職</div></div></div>
+  </aside>
+
+  <div class="main">
+    <div class="topline">
+      <div><h1 class="display">收件匣</h1><div class="pt">5 宗待處理 · 2 宗今日面交</div></div>
+      <div class="tabs" style="margin:0;border:0"><a class="on">全部</a><a>手袋</a><a>其他</a></div>
+    </div>
+
+    <div class="content">
+      <!-- 待接單 -->
+      <div class="group">
+        <div class="gh"><span class="dot" style="background:var(--action)"></span><h2>待接單</h2><span class="ct">2 宗</span></div>
+        <div class="card row">
+          <div class="thumb"><div class="wm">CHANEL</div></div>
+          <div class="mid"><div class="t">Chanel Classic Flap Medium · Caviar 金扣</div>
+            <div class="s">訂單 #AZ-10482 · 順豐到件（已簽收）· 買家 Alice C.</div></div>
+          <span class="price">HK$68,000</span>
+          <a class="btn btn-primary btn-sm" href="authenticate.html">開始鑑定</a>
+        </div>
+        <div class="card row">
+          <div class="thumb"><div class="wm">DIOR</div></div>
+          <div class="mid"><div class="t">Dior Lady Dior Medium 藤格紋</div>
+            <div class="s">訂單 #AZ-10471 · 順豐到件（已簽收）· 買家 Bob L.</div></div>
+          <span class="price">HK$42,000</span>
+          <a class="btn btn-primary btn-sm" href="authenticate.html">開始鑑定</a>
+        </div>
+      </div>
+
+      <!-- 進行中 -->
+      <div class="group">
+        <div class="gh"><span class="dot" style="background:var(--incon)"></span><h2>進行中</h2><span class="ct">1 宗</span></div>
+        <div class="card row">
+          <div class="thumb"><div class="wm">HERMÈS</div></div>
+          <div class="mid"><div class="t">Hermès Birkin 25 Togo Gold 金扣</div>
+            <div class="s">訂單 #AZ-10478 · 已上載 3 段影片 · 待提交結果</div></div>
+          <span class="pill pill-incon">草稿</span>
+          <a class="btn btn-primary btn-sm" href="authenticate.html">繼續</a>
+        </div>
+      </div>
+
+      <!-- 面交入口 -->
+      <div class="group">
+        <div class="gh"><span class="dot" style="background:var(--pass)"></span><h2>面交入口</h2><span class="ct">2 宗 · 今日</span></div>
+        <div class="card row">
+          <div class="thumb"><div class="wm">HERMÈS</div></div>
+          <div class="mid"><div class="t">Hermès Birkin 25 · 三方面交</div>
+            <div class="s">尖沙咀工作室 · 買 Alice C. / 賣 Jenny K.</div></div>
+          <div class="meta">今日<br><b style="color:var(--action);font-size:14px">15:00</b></div>
+          <a class="btn btn-ghost btn-sm" href="authenticate.html">面交鑑定</a>
+        </div>
+        <div class="card row">
+          <div class="thumb"><div class="wm">ROLEX</div></div>
+          <div class="mid"><div class="t">Rolex Submariner · 鑑定師處面交</div>
+            <div class="s">尖沙咀工作室 · 買 David W. / 賣 Tom W.</div></div>
+          <div class="meta">今日<br><b style="color:var(--action);font-size:14px">17:30</b></div>
+          <a class="btn btn-ghost btn-sm" href="authenticate.html">面交鑑定</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

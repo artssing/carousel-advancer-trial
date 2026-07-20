@@ -7,6 +7,7 @@ import {
   Post,
   Query,
   UseGuards,
+  Delete,
 } from '@nestjs/common';
 import { Category, ConditionGrade } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -47,7 +48,10 @@ export class ListingsController {
       maxPrice: Number.isFinite(max!) ? max : undefined,
       sort: sortVal,
       excludeId,
-      brand: brand?.trim() || undefined,
+      // Multi-select: `brand=chanel,gucci` (comma-separated) → OR match.
+      brands: brand
+        ? brand.split(',').map((b) => b.trim()).filter(Boolean)
+        : undefined,
       conditionMin: condMin,
     });
   }
@@ -76,6 +80,20 @@ export class ListingsController {
   @UseGuards(JwtAuthGuard)
   create(@CurrentUser() user: CurrentUserData, @Body() dto: CreateListingDto) {
     return this.listings.create(user.userId, dto);
+  }
+
+  /** Soft delete own listing（founder 2026-07-10：customer 刪除永遠 soft）。 */
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  softDelete(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
+    return this.listings.softDelete(id, user.userId);
+  }
+
+  /** Restore own soft-deleted listing（admin 下架嘅唔還原到）。 */
+  @Patch(':id/restore')
+  @UseGuards(JwtAuthGuard)
+  restoreOwn(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
+    return this.listings.restoreOwn(id, user.userId);
   }
 
   @Patch(':id')

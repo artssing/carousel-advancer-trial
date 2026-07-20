@@ -1,0 +1,80 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Authentik APP stack (production-artifact 模式：next build/start + node dist)
+#
+# 同一份檔案服務 UAT + PROD，靠 --env-file + -p (project name) 區分，
+# 延續 start.sh / env-config.sh 嘅思路（container-internal port 固定，
+# host port 由 env 決定）。
+#
+#   PROD :  docker compose --env-file .env.compose.prod -p authentik      up -d --build
+#   UAT  :  docker compose --env-file .env.compose.uat  -p authentik_uat  up -d --build
+#
+# ⚠️ 依賴現有 postgres container（docker-compose.yml）先起：
+#      docker compose -f docker-compose.yml up -d postgres
+#    api 經 host.docker.internal:5432 連返個 postgres（兩個 DB 喺同一 container）。
+# ─────────────────────────────────────────────────────────────────────────
+services:
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: authentik-api:${IMAGE_TAG:-local}
+    restart: unless-stopped
+    env_file:
+      - ${API_ENV_FILE:-apps/api/.env.prod}   # JWT_SECRET / CORS / GOOGLE_* 等
+    environment:
+      # 覆蓋 .env 入面嘅 localhost → container 要用 host.docker.internal 連 host postgres
+      DATABASE_URL: "postgresql://authentik:authentik_dev@host.docker.internal:5432/${DB_NAME:-authentik}?schema=public"
+      API_PORT: "4000"                          # container 內固定；host port 見下面 map
+      RUN_DB_PUSH: "${RUN_DB_PUSH:-1}"          # UAT=1；PROD 想手動控制可設 0
+    extra_hosts:
+      - "host.docker.internal:host-gateway"     # Linux Docker 兼容（Mac/Win 內建）
+    ports:
+      - "${API_PORT_HOST:-4000}:4000"
+
+  consumer:
+    build:
+      context: .
+      dockerfile: apps/consumer/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "${PUBLIC_API_URL:-http://localhost:4000/api}"
+        NEXT_PUBLIC_CONSUMER_URL: "${PUBLIC_CONSUMER_URL:-http://localhost:3008}"
+        NEXT_PUBLIC_AUTHENTICATOR_URL: "${PUBLIC_AUTHENTICATOR_URL:-http://localhost:3001}"
+        NEXT_PUBLIC_ADMIN_URL: "${PUBLIC_ADMIN_URL:-http://localhost:3003}"
+    image: authentik-consumer:${IMAGE_TAG:-local}
+    restart: unless-stopped
+    ports:
+      - "${CONSUMER_PORT_HOST:-3008}:3008"
+    depends_on:
+      - api
+
+  authenticator:
+    build:
+      context: .
+      dockerfile: apps/authenticator/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "${PUBLIC_API_URL:-http://localhost:4000/api}"
+        NEXT_PUBLIC_CONSUMER_URL: "${PUBLIC_CONSUMER_URL:-http://localhost:3008}"
+        NEXT_PUBLIC_AUTHENTICATOR_URL: "${PUBLIC_AUTHENTICATOR_URL:-http://localhost:3001}"
+        NEXT_PUBLIC_ADMIN_URL: "${PUBLIC_ADMIN_URL:-http://localhost:3003}"
+    image: authentik-authenticator:${IMAGE_TAG:-local}
+    restart: unless-stopped
+    ports:
+      - "${AUTH_PORT_HOST:-3001}:3001"
+    depends_on:
+      - api
+
+  admin:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "${PUBLIC_API_URL:-http://localhost:4000/api}"
+        NEXT_PUBLIC_CONSUMER_URL: "${PUBLIC_CONSUMER_URL:-http://localhost:3008}"
+        NEXT_PUBLIC_AUTHENTICATOR_URL: "${PUBLIC_AUTHENTICATOR_URL:-http://localhost:3001}"
+        NEXT_PUBLIC_ADMIN_URL: "${PUBLIC_ADMIN_URL:-http://localhost:3003}"
+    image: authentik-admin:${IMAGE_TAG:-local}
+    restart: unless-stopped
+    ports:
+      - "${ADMIN_PORT_HOST:-3003}:3003"
+    depends_on:
+      - api

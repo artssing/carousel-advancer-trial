@@ -38,9 +38,98 @@ const PUBLIC_SELECT = {
   eAndOInsuranceExpiresAt: true,
 } as const;
 
+/** Applicant-facing fields returned for "my application" status page. */
+const APPLICATION_SELECT = {
+  id: true, displayName: true, storeName: true, categories: true,
+  yearsExperience: true, bio: true, feeRatePct: true, feeMinHKD: true,
+  locationAddress: true, district: true, eAndOExpiresAt: true,
+  status: true, reviewNote: true, reviewedAt: true, createdAt: true, updatedAt: true,
+} as const;
+
 @Controller('authenticators')
 export class AuthenticatorsController {
   constructor(private readonly prisma: PrismaService) {}
+
+  // ══ 鑑定師申請（founder 2026-07-13 MVP）══════════════════════════════
+  // Open application：任何已登入 user 都可以申請做鑑定師。審批係 admin。
+
+  /** 提交 / 重新提交申請。NEEDS_MORE_INFO 時可以改完再交（同一 row）。 */
+  @Post('applications')
+  @UseGuards(JwtAuthGuard)
+  async submitApplication(
+    @CurrentUser() user: CurrentUserData,
+    @Body() dto: {
+      displayName: string; storeName?: string; categories?: Category[];
+      yearsExperience?: number; bio?: string; feeRatePct?: number; feeMinHKD?: number;
+      locationAddress?: string; district?: string;
+      credentialDocs?: string[]; eAndOProofDoc?: string; eAndOExpiresAt?: string;
+    },
+  ) {
+    // 已經係 ACTIVE 鑑定師唔使再申請
+    const existingAuth = await this.prisma.authenticator.findUnique({ where: { userId: user.userId } });
+    if (existingAuth) throw new BadRequestException('你已經係鑑定師，唔需要再申請');
+    if (!dto.displayName?.trim()) throw new BadRequestException('請填寫鑑定師 / 店名');
+
+    // 一個 user 最多一個 in-flight application（SUBMITTED / NEEDS_MORE_INFO）
+    const inflight = await this.prisma.authenticatorApplication.findFirst({
+      where: { userId: user.userId, status: { in: ['SUBMITTED', 'NEEDS_MORE_INFO'] } },
+      orderBy: { createdAt: 'desc' },
+    });
+    const data = {
+      displayName: dto.displayName.trim(),
+      storeName: dto.storeName?.trim() || null,
+      categories: dto.categories ?? [],
+      yearsExperience: dto.yearsExperience ?? null,
+      bio: dto.bio?.trim() || null,
+      feeRatePct: dto.feeRatePct ?? 0.05,
+      feeMinHKD: dto.feeMinHKD ?? 100,
+      locationAddress: dto.locationAddress?.trim() || null,
+      district: dto.district?.trim() || null,
+      credentialDocs: dto.credentialDocs ?? [],
+      eAndOProofDoc: dto.eAndOProofDoc ?? null,
+      eAndOExpiresAt: dto.eAndOExpiresAt ? new Date(dto.eAndOExpiresAt) : null,
+      status: 'SUBMITTED' as const,
+      reviewNote: null,
+    };
+    if (inflight) {
+      return this.prisma.authenticatorApplication.update({
+        where: { id: inflight.id }, data, select: APPLICATION_SELECT,
+      });
+    }
+    return this.prisma.authenticatorApplication.create({
+      data: { userId: user.userId, ...data }, select: APPLICATION_SELECT,
+    });
+  }
+
+  /** 我最新一份申請（狀態頁用）。null = 未申請過。 */
+  @Get('applications/me')
+  @UseGuards(JwtAuthGuard)
+  async myApplication(@CurrentUser() user: CurrentUserData) {
+    const auth = await this.prisma.authenticator.findUnique({
+      where: { userId: user.userId },
+      select: { id: true, status: true, displayName: true },
+    });
+    const app = await this.prisma.authenticatorApplication.findFirst({
+      where: { userId: user.userId },
+      orderBy: { createdAt: 'desc' },
+      select: APPLICATION_SELECT,
+    });
+    return { authenticator: auth, application: app };
+  }
+
+  /** 申請人撤回自己 in-flight 申請。 */
+  @Patch('applications/me/withdraw')
+  @UseGuards(JwtAuthGuard)
+  async withdrawApplication(@CurrentUser() user: CurrentUserData) {
+    const app = await this.prisma.authenticatorApplication.findFirst({
+      where: { userId: user.userId, status: { in: ['SUBMITTED', 'NEEDS_MORE_INFO'] } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!app) throw new NotFoundException('冇進行中嘅申請');
+    return this.prisma.authenticatorApplication.update({
+      where: { id: app.id }, data: { status: 'WITHDRAWN' }, select: APPLICATION_SELECT,
+    });
+  }
 
   @Get()
   list(@Query('category') category?: Category) {

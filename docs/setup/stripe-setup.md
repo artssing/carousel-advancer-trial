@@ -1,7 +1,24 @@
 # Stripe 線上託管 — Production Setup 指引
 
 > Phase 1 MVP（已實作）：mock mode，模擬整個 PaymentIntent flow，唔需要 Stripe account 都可以開發 / 測試。
+> **Phase 1.5（2026-07-20 已實作）**：production-shape 拓撲 —— 真 `stripe` SDK + 獨立 mock gateway + 簽名 webhook。
 > Production 上線時跟以下步驟由 mock → test → live。
+
+---
+
+## 0.5 Phase 1.5 — mock gateway 拓撲（而家 UAT 就係咁行）
+
+```
+Browser ──create-intent──▶ API（真 stripe SDK, STRIPE_API_BASE override）──▶ mock gateway (apps/mock-stripe)
+Browser ──/confirm（CORS，代替 stripe.js confirmPayment）──▶ mock gateway
+mock gateway ──簽名 webhook（t=..,v1=HMAC，stripe.webhooks.constructEvent 驗到）──▶ POST /api/webhooks/stripe
+API webhook handler（idempotent）──▶ Payment AUTHORIZED/CAPTURED + Order PAID；frontend poll /status
+```
+
+- Gateway：`apps/mock-stripe/server.ts`（零 dependency；`start.sh` 讀到 `STRIPE_MODE≠mock` + `STRIPE_API_BASE=localhost:<port>` 自動起）。Port SSOT `scripts/env-config.sh`：prod 4242 / uat 4252。
+- **UAT = `STRIPE_MODE=test` + mock gateway；PROD 暫時仍 `mock`**（in-process 舊路徑保留）。
+- 已 wire：adapter real branches（create/capture/cancel/refund/constructEvent）、webhook endpoint（raw body + 簽名驗證，冇 JWT）、admin force-refund/release-escrow 先過 gateway 後寫 DB、decline/retry、T1 instant charge、T2/3 hold + capture。E2E 已喺 UAT 驗證（2026-07-20）。
+- **轉真 Stripe（test mode）**＝ `.env` 換真 `sk_test_*`/`whsec_*` + **刪 `STRIPE_API_BASE`** + frontend 換 `<PaymentElement>`（§3c）。Backend 唔使再改。
 
 ---
 
@@ -12,7 +29,7 @@
 | Mode | 行為 |
 |------|------|
 | `mock` (default) | 純 in-memory simulation，唔 call 外面 network。Test cards 4242…/4000…/4000…9995 等決定 success / decline。**Phase 1 default。** |
-| `test` | 用真 Stripe SDK 嘅 test mode (`sk_test_...`)。要 install npm `stripe` package + wire 真實 SDK call。**未實作 — 留俾將來。** |
+| `test` | 真 `stripe` SDK。設 `STRIPE_API_BASE` = 接本地 mock gateway（Phase 1.5，UAT 而家咁行）；唔設 = 接真 Stripe test servers。 |
 | `live` | Production keys (`sk_live_...`)。真錢交易。 |
 
 而家所有環境都 default `mock`。`.env` 唔需要任何 `STRIPE_*` 變數。
@@ -55,14 +72,14 @@ Dashboard → Developers → API keys：
 
 ## 3. Wire Stripe 入 codebase
 
-### 3a. Install SDK
+### 3a. ~~Install SDK~~（✅ 已裝）
 
 ```bash
 cd apps/api
 npm install stripe
 ```
 
-### 3b. 補完 `stripe-adapter.ts` 嘅 `realStripeUnsupported()` branches
+### 3b. ~~補完 `stripe-adapter.ts` real branches~~（✅ 2026-07-20 已完成）
 
 `apps/api/src/payments/stripe-adapter.ts` 預留咗 3 個 mode-switch 點：`createIntent` / `confirmIntent` / `captureIntent` / `cancelIntent` / `refundIntent` / `verifyWebhookSignature`。每個都有 `if (STRIPE_MODE === 'mock')` 早 return，real branch call `realStripeUnsupported()`（throw）。
 
@@ -113,7 +130,7 @@ Real-mode flow:
 4. Webhook `payment_intent.succeeded` fires → `PaymentsService` updates `Payment.status = AUTHORIZED/CAPTURED` + `Order.status = PAID`
 5. Frontend polls `/payments/:orderId/status` until orderStatus !== AWAITING_PAYMENT
 
-### 3d. Webhook endpoint (ES4 — defer 到上線時)
+### 3d. ~~Webhook endpoint~~（✅ 2026-07-20 已完成：`apps/api/src/payments/stripe-webhook.controller.ts`；raw body 喺 main.ts mount）
 
 Create `apps/api/src/webhooks/stripe.controller.ts`:
 
@@ -210,8 +227,8 @@ Mock mode 認 number 直接 simulate（無 challenge popup）；test mode 用真
 
 - [ ] HK acquiring approved (KYB done)
 - [ ] Production API keys copied to `.env`（**唔好 commit**）
-- [ ] Webhook endpoint registered on Dashboard，signing secret in `.env`
-- [ ] `stripe-adapter.ts` real-mode branches 實作完
+- [ ] Webhook endpoint registered on Dashboard，signing secret in `.env`（endpoint code 已完成：`stripe-webhook.controller.ts`）
+- [x] `stripe-adapter.ts` real-mode branches 實作完（2026-07-20，mock gateway E2E 驗證）
 - [ ] `<PaymentElement>` 替代 mock test-card picker
 - [ ] `JwtModule.registerAsync` migration done（lesson #5 fix — env load ordering）
 - [ ] Webhook 用 ngrok / Stripe CLI 喺 staging E2E test 成功
@@ -220,7 +237,7 @@ Mock mode 認 number 直接 simulate（無 challenge popup）；test mode 用真
 - [ ] Tier-aware capture trigger E2E（Tier 1 instant / Tier 2-3 hold + capture at AUTH_PASSED / DELIVERED no-auth）
 - [ ] Buyer cancel-hold E2E
 - [ ] Reconciliation：Stripe Dashboard 對 Order DB rows 一致
-- [ ] Stripe webhook retry policy（如 server down）— `payments` table idempotent on `gatewayRef`
+- [x] Stripe webhook retry policy（如 server down）— `payments` table idempotent on `gatewayRef`（handler status-guard 已做，gateway retry 3 次驗證）
 - [ ] Production logging：Stripe events 入 Sentry / Datadog
 
 ---

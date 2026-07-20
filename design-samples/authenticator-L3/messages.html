@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>訊息 · 鑑定師 Portal</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* IM 專用：三欄，滿高，無 content padding */
+  .im{display:grid;grid-template-columns:300px 1fr 288px;height:calc(100vh - 65px)}
+  /* 對話列表 */
+  .convlist{border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+  .convsearch{padding:14px}
+  .convsearch input{width:100%;font-family:inherit;font-size:13px;border:1px solid var(--line-2);border-radius:8px;padding:9px 12px}
+  .convs{overflow-y:auto;flex:1}
+  .conv{display:flex;gap:11px;padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--line)}
+  .conv:hover{background:var(--surface-2)}
+  .conv.on{background:var(--brand-soft)}
+  .conv .av{width:42px;height:42px;border-radius:50%;flex-shrink:0;background:linear-gradient(135deg,#eef1fe,#dfe4fb);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--action-2)}
+  .conv .c{flex:1;min-width:0}
+  .conv .top{display:flex;justify-content:space-between;align-items:baseline}
+  .conv .nm{font-weight:600;font-size:14px}
+  .conv .tm{font-size:11px;color:var(--text-3)}
+  .conv .lastmsg{font-size:12px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+  .conv .unread{background:var(--action);color:#fff;font-size:11px;font-weight:800;border-radius:999px;padding:0 6px;min-width:18px;text-align:center}
+  /* 聊天窗 */
+  .thread{display:flex;flex-direction:column;min-height:0}
+  .thead{display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--line)}
+  .thead .av{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#eef1fe,#dfe4fb);display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--action-2)}
+  .thead .who{font-weight:700;font-size:15px}
+  .thead .sub{font-size:12px;color:var(--text-3)}
+  .thead .roles{margin-left:auto;display:flex;gap:6px}
+  .msgs{flex:1;overflow-y:auto;padding:20px 22px;display:flex;flex-direction:column;gap:12px;background:var(--surface-2)}
+  .sys{align-self:center;font-size:12px;color:var(--text-3);background:#fff;border:1px solid var(--line);border-radius:999px;padding:5px 14px}
+  .msg{max-width:66%;display:flex;flex-direction:column;gap:3px}
+  .msg .who{font-size:11px;color:var(--text-3);font-weight:600}
+  .bubble{padding:10px 13px;border-radius:14px;font-size:14px;line-height:1.5}
+  .msg.them{align-self:flex-start}
+  .msg.them .bubble{background:#fff;border:1px solid var(--line);border-top-left-radius:4px}
+  .msg.me{align-self:flex-end;align-items:flex-end}
+  .msg.me .bubble{background:var(--action);color:#fff;border-top-right-radius:4px}
+  .msg .rcpt{font-size:10px;color:var(--text-3)}
+  .msg .rcpt .read{color:var(--action)}
+  /* sentinel 卡（面交 / offer）*/
+  .sentinel{align-self:center;width:80%;max-width:420px;background:#fff;border:1px solid var(--brand-border);border-radius:12px;padding:14px 16px;box-shadow:var(--sh-1)}
+  .sentinel .h{display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:var(--action-2)}
+  .sentinel .body{font-size:13px;color:var(--text-2);margin:6px 0 10px}
+  .sentinel .acts{display:flex;gap:8px}
+  /* 輸入 */
+  .composer{border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:10px;align-items:center}
+  .composer input{flex:1;font-family:inherit;font-size:14px;border:1px solid var(--line-2);border-radius:999px;padding:11px 16px}
+  .composer .send{width:42px;height:42px;border-radius:50%;border:0;background:var(--action);color:#fff;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  /* 情境卡（右）*/
+  .ctx{border-left:1px solid var(--line);padding:18px;overflow-y:auto}
+  .ctx .minicard{border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--sh-1);cursor:pointer}
+  .ctx .minicard:hover{box-shadow:var(--sh-2)}
+  .ctx .minicard .im-ph{aspect-ratio:16/10;background:linear-gradient(135deg,#eef1fc,#dfe4f6);display:flex;align-items:center;justify-content:center;font-weight:700;letter-spacing:.12em;color:#95a0c8;font-size:12px}
+  .ctx .minicard .b{padding:12px 14px}
+  .ctx .kv{font-size:12px;display:flex;justify-content:space-between;padding:5px 0;color:var(--text-2)}
+  .ctx .kv b{color:var(--text)}
+</style>
+</head>
+<body>
+<div class="portal">
+  <aside class="sidebar">
+    <div class="brand">AUTHEN<span>·</span>TIK</div>
+    <div class="role">鑑定師 Portal</div>
+    <nav class="snav">
+      <a href="dashboard.html">工作台</a>
+      <a href="inbox.html">收件匣 <span class="badge">5</span></a>
+      <a class="on" href="messages.html">訊息 <span class="badge">2</span></a>
+      <a href="earnings.html">收入</a>
+      <a href="profile.html">檔案</a>
+    </nav>
+    <div class="me"><div class="av">米</div><div><div class="nm">Milan Leung</div><div class="st">★★★★★ · 在職</div></div></div>
+  </aside>
+
+  <div class="main">
+    <div class="im">
+      <!-- 對話列表 -->
+      <div class="convlist">
+        <div class="convsearch"><input placeholder="搜尋對話…"></div>
+        <div class="convs">
+          <div class="conv on">
+            <div class="av">A</div>
+            <div class="c"><div class="top"><span class="nm">Alice C. · Jenny K.</span><span class="tm">14:02</span></div>
+              <div class="lastmsg">好，15:00 尖沙咀見。</div></div>
+          </div>
+          <div class="conv">
+            <div class="av">D</div>
+            <div class="c"><div class="top"><span class="nm">David W. · Tom W.</span><span class="tm">昨日</span></div>
+              <div class="lastmsg">Rolex 面交改咗 17:30。</div></div>
+            <span class="unread">2</span>
+          </div>
+          <div class="conv">
+            <div class="av">B</div>
+            <div class="c"><div class="top"><span class="nm">Bob L.</span><span class="tm">週四</span></div>
+              <div class="lastmsg">收到，已寄出。</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 聊天窗 -->
+      <div class="thread">
+        <div class="thead">
+          <div class="av">A</div>
+          <div><div class="who">Alice C. · Jenny K.</div><div class="sub">訂單 #AZ-10482 · 三方對話</div></div>
+          <div class="roles"><span class="pill pill-tier">買家</span><span class="pill pill-tier">賣家</span><span class="pill pill-brand">你 · 鑑定師</span></div>
+        </div>
+
+        <div class="msgs">
+          <div class="sys">訂單 #AZ-10482 已建立 · Milan Leung 已指派為鑑定師</div>
+
+          <div class="msg them"><span class="who">Jenny K.（賣家）</span>
+            <div class="bubble">你好 Milan，個袋已經寄咗去你工作室，順豐單號 SF123456789。</div></div>
+          <div class="msg them"><span class="who">Alice C.（買家）</span>
+            <div class="bubble">麻煩晒，想問大概幾時有鑑定結果？</div></div>
+
+          <div class="msg me">
+            <div class="bubble">收到貨，今日會做鑑定。若三方面交可以即場過檢，我下午 15:00 喺尖沙咀工作室得閒。</div>
+            <span class="rcpt"><span class="read">✓✓ 已讀</span> · 13:48</span></div>
+
+          <!-- 面交 sentinel -->
+          <div class="sentinel">
+            <div class="h"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>已安排三方面交</div>
+            <div class="body">今日 15:00 · Milan 名牌鑑定工作室（尖沙咀漢口道 28 號 1203 室）· 買賣雙方到場即場交收</div>
+            <div class="acts"><button class="btn btn-primary btn-sm">加入行事曆</button><button class="btn btn-ghost btn-sm">查看地圖</button></div>
+          </div>
+
+          <div class="msg them"><span class="who">Alice C.（買家）</span><div class="bubble">好，15:00 尖沙咀見。</div></div>
+          <div class="msg them"><span class="who">Jenny K.（賣家）</span><div class="bubble">👌 準時到。</div></div>
+        </div>
+
+        <div class="composer">
+          <input placeholder="輸入訊息…">
+          <button class="send"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg></button>
+        </div>
+      </div>
+
+      <!-- 情境卡（可撳去訂單，避免 dead-end）-->
+      <div class="ctx">
+        <div class="section-label">此對話關聯訂單</div>
+        <a class="minicard" href="authenticate.html">
+          <div class="im-ph">CHANEL</div>
+          <div class="b">
+            <div style="font-weight:600;font-size:13px">Chanel Classic Flap Medium · Caviar 金扣</div>
+            <div class="mono" style="margin-top:4px">#AZ-10482 · Tier 3</div>
+          </div>
+        </a>
+        <div style="margin-top:14px">
+          <div class="kv"><span>貨價</span><b>HK$68,000</b></div>
+          <div class="kv"><span>你的鑑定費</span><b>HK$1,360</b></div>
+          <div class="kv"><span>狀態</span><b style="color:var(--action)">待鑑定</b></div>
+          <div class="kv"><span>交收</span><b>三方面交</b></div>
+        </div>
+        <a class="btn btn-primary btn-block btn-sm" href="authenticate.html" style="margin-top:14px">前往鑑定工作台</a>
+        <p class="disclaimer" style="margin-top:12px">平台為資訊中介；此對話僅作協調，真偽判定以你正式提交之鑑定結果為準。</p>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,59 @@
+# ─────────────────────────────────────────────────────────────────────────
+# CI infra stack —  Jenkins + n8n（同 app stack 完全分開）
+#   起 / 停：用 ./ci.sh（唔好手動記指令）
+#     ./ci.sh start | stop | status | logs
+#
+# 設計：
+#   • Jenkins :8080  — build 引擎；借 host docker socket build image + deploy
+#   • n8n     :5678  — 膠水/通知/approve/定時
+#   • 兩個都 mount 自己 volume（job 歷史 / workflow 唔會冇咗）
+#   • repo bind-mount 落 Jenkins /repo（本地 P1 唔使 GitHub creds，secret .env 都喺度）
+# ─────────────────────────────────────────────────────────────────────────
+services:
+  jenkins:
+    build:
+      context: ci/jenkins
+      dockerfile: Dockerfile
+    image: authentik-jenkins:local
+    container_name: authentik-jenkins
+    restart: unless-stopped
+    # 本地方便：root 直接用到 host docker socket（Mac/Win Docker Desktop 最穩）
+    user: root
+    environment:
+      JENKINS_OPTS: "--prefix=/"
+      TZ: "Asia/Hong_Kong"
+      # build 完自動 POST 結果去 n8n（n8n 同 jenkins 喺同一 docker 網絡，用 service 名）。
+      # n8n 個 workflow ACTIVATE 咗、webhook path = build-status 先收到。冇 workflow 都唔會爆（notify 失敗唔阻 pipeline）。
+      N8N_NOTIFY_URL: "http://n8n:5678/webhook/build-status"
+    ports:
+      - "8080:8080"      # Jenkins UI
+      - "50000:50000"    # agent port（保留）
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${REPO_DIR:-./}:/repo          # 本地 repo（build context + deploy 用）
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: authentik-n8n
+    restart: unless-stopped
+    environment:
+      TZ: "Asia/Hong_Kong"
+      GENERIC_TIMEZONE: "Asia/Hong_Kong"
+      N8N_PORT: "5678"
+      N8N_SECURE_COOKIE: "false"        # localhost http 用，免 cookie 阻登入
+      N8N_RUNNERS_ENABLED: "true"
+      # 如果日後要畀 GitHub webhook 打入嚟，set 成你 tunnel 個 public URL：
+      # WEBHOOK_URL: "https://xxxx.trycloudflare.com/"
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  jenkins_home:
+  n8n_data:

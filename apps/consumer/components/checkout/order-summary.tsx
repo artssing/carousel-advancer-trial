@@ -1,9 +1,9 @@
 'use client';
 
-/** Sticky order summary sidebar (desktop) / collapsible pill (mobile).
+/** L3 Order summary — sticky right-column .card-glow with fee breakdown.
  *  All amounts read from server-computed Order.totals (lesson — never recompute). */
 import { useState } from 'react';
-import { Lock } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
 import { formatHKD } from '@authentik/utils';
 
 interface Props {
@@ -20,25 +20,27 @@ export function OrderSummary({ order, amountHKD, isHold }: Props) {
       <button
         type="button"
         onClick={() => setOpenMobile((o) => !o)}
-        className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm md:hidden"
+        className="flex w-full items-center justify-between rounded-xl border border-line bg-white px-4 py-3 text-sm shadow-sh1 md:hidden"
         aria-expanded={openMobile}
       >
-        <span className="font-medium text-slate-700">你支付</span>
-        <span className="flex items-center gap-1">
-          <span className="text-lg font-bold text-brand-700">{formatHKD(amountHKD)}</span>
-          <span className="text-xs text-slate-400">{openMobile ? '▴' : '▾'}</span>
+        <span className="font-medium text-neutral-text">應付總額</span>
+        <span className="flex items-center gap-1.5">
+          <span className="text-[20px] font-extrabold text-brand-700">{formatHKD(amountHKD)}</span>
+          <span className="text-xs text-neutral-text-hint">{openMobile ? '▴' : '▾'}</span>
         </span>
       </button>
       {openMobile && (
-        <div className="mb-3 rounded-lg border border-slate-200 bg-white p-3 text-xs md:hidden">
+        <div className="mb-3 mt-2 rounded-xl border border-line bg-white p-4 shadow-sh1 md:hidden">
           <Breakdown order={order} amountHKD={amountHKD} isHold={isHold} />
         </div>
       )}
 
-      {/* Desktop sticky sidebar (visible ≥ md) */}
-      <aside className="hidden md:block md:sticky md:top-4 md:w-80 md:shrink-0">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm shadow-sm">
-          <h3 className="mb-3 text-sm font-semibold text-slate-700">訂單摘要</h3>
+      {/* Desktop sticky sidebar (visible ≥ md) — L3 card-glow */}
+      <aside className="chrome-follow hidden md:sticky md:top-[calc(var(--chrome-h)+16px)] md:block md:w-[380px] md:shrink-0">
+        <div className="rounded-xl border border-verify-border bg-white p-6 shadow-[0_12px_30px_-16px_rgba(0,135,102,0.4)]">
+          <div className="mb-4 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">
+            費用明細
+          </div>
           <Breakdown order={order} amountHKD={amountHKD} isHold={isHold} />
         </div>
       </aside>
@@ -49,38 +51,44 @@ export function OrderSummary({ order, amountHKD, isHold }: Props) {
 function Breakdown({ order, amountHKD, isHold }: Props) {
   return (
     <>
-      <div className="space-y-2">
-        <Row label="商品價格" value={formatHKD(order.salePriceHKD)} />
+      <div className="flex flex-col">
+        <Row label="貨品價格" value={formatHKD(order.salePriceHKD)} />
         {order.authFeeHKD > 0 && (
           <Row
-            label={`鑑定費${order.authenticator?.displayName ? `（${order.authenticator.displayName}）` : ''}`}
+            label="鑑定費"
+            hint={order.authenticator?.displayName ?? undefined}
             value={formatHKD(order.authFeeHKD)}
           />
         )}
-        <Row label="平台費（1.5%）" value={formatHKD(order.platformFeeHKD)} />
+        <Row label="平台服務費" hint="1.5%" value={formatHKD(order.platformFeeHKD)} />
       </div>
-      <hr className="my-3 border-slate-200" />
-      <div className="flex items-baseline justify-between">
-        <span className="text-base font-semibold text-slate-800">你支付</span>
-        <span className="text-xl font-bold text-brand-700">{formatHKD(amountHKD)}</span>
+      <hr className="my-3 border-t border-line" />
+      <div className="flex items-baseline justify-between font-semibold">
+        <span className="text-[15px] text-neutral-text">應付總額</span>
+        <span className="text-[24px] font-extrabold text-brand-700">{formatHKD(amountHKD)}</span>
       </div>
-      <div className="mt-3 flex items-start gap-2 rounded-md bg-slate-50 p-2 text-[11px] text-slate-600">
-        <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0 text-emerald-600" />
+      <div className="mt-4 flex items-start gap-2 rounded-lg border border-verify-border bg-verify-soft/70 px-3 py-2.5 text-[12px] leading-relaxed text-verify">
+        <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
         <p>
           {isHold
-            ? '平台 hold 信用卡，鑑定通過 / 交收完成先正式扣款。取消會自動釋放，1-5 日內銀行帳單消失。'
-            : 'Tier 1 訂單即時扣款。如取消會 refund，銀行 5-10 個工作天入賬。'}
+            ? '款項受平台託管保障，鑑定通過並完成交收前不會放款予賣家；鑑定不通過可全額退款。'
+            : 'Tier 1 訂單即時扣款。如取消會 refund，銀行 5–10 個工作天入賬。'}
         </p>
       </div>
     </>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function Row({ label, hint, value }: { label: string; hint?: string; value: string }) {
   return (
-    <div className="flex items-center justify-between text-xs">
-      <span className="text-slate-600">{label}</span>
-      <span className="font-medium text-slate-800">{value}</span>
+    <div className="flex items-start justify-between py-2 text-[14px]">
+      <span className="text-neutral-text-muted">
+        {label}
+        {hint && (
+          <span className="mt-0.5 block text-[11px] text-neutral-text-hint">{hint}</span>
+        )}
+      </span>
+      <span className="text-neutral-text">{value}</span>
     </div>
   );
 }

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>鑑定工作台 · 鑑定師 Portal</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .work{display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start}
+  .gal{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:8px}
+  .gal .im{aspect-ratio:1/1;border-radius:9px;border:1px solid var(--line);background:linear-gradient(135deg,#eef1fc,#dfe4f6);position:relative}
+  .gal .im .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:10px;letter-spacing:.12em;color:#95a0c8}
+  .kv{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+  .kv div{padding:11px 14px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .kv div:nth-child(2n){border-right:0}
+  .kv .k{font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--text-3);margin-bottom:3px}
+  .kv b{font-weight:600;font-size:13px}
+  .upload{border:1px dashed var(--line-2);border-radius:10px;padding:20px;text-align:center;background:var(--surface-2)}
+  .evid{display:flex;gap:10px;margin-top:12px;flex-wrap:wrap}
+  .evid .v{width:96px;height:64px;border-radius:8px;background:linear-gradient(135deg,#242c63,#333e70);position:relative;display:flex;align-items:center;justify-content:center}
+  .evid .v svg{opacity:.9}
+  .evid .v .len{position:absolute;right:5px;bottom:4px;font-size:10px;color:#d6cbee;font-weight:600}
+  .vpanel{position:sticky;top:82px}
+</style>
+</head>
+<body>
+<div class="portal">
+  <aside class="sidebar">
+    <div class="brand">AUTHEN<span>·</span>TIK</div>
+    <div class="role">鑑定師 Portal</div>
+    <nav class="snav">
+      <a href="dashboard.html">工作台</a>
+      <a class="on" href="inbox.html">收件匣 <span class="badge">5</span></a>
+      <a href="messages.html">訊息 <span class="badge">2</span></a>
+      <a href="earnings.html">收入</a>
+      <a href="profile.html">檔案</a>
+    </nav>
+    <div class="me"><div class="av">米</div><div><div class="nm">Milan Leung</div><div class="st">★★★★★ · 在職</div></div></div>
+  </aside>
+
+  <div class="main">
+    <div class="topline">
+      <div><div class="pt"><a href="inbox.html" style="color:var(--action);font-weight:600">收件匣</a> / 訂單 #AZ-10482</div>
+        <h1 class="display" style="margin-top:2px">鑑定工作台</h1></div>
+      <span class="pill pill-brand">順豐到件 · 待提交</span>
+    </div>
+
+    <div class="content">
+      <div class="work">
+        <div>
+          <!-- 貨品 -->
+          <div class="card card-pad" style="margin-bottom:16px">
+            <div class="section-label">貨品資料</div>
+            <div style="display:flex;gap:14px;margin-bottom:14px">
+              <div style="width:80px;height:80px;border-radius:10px;flex-shrink:0;background:linear-gradient(135deg,#eef1fc,#dfe4f6);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;letter-spacing:.14em;color:#95a0c8">CHANEL</div>
+              <div><div style="font-weight:600">Chanel Classic Flap Medium · Caviar 金扣</div>
+                <div class="mono" style="margin-top:4px">系列編號 A01112 · 黑色荔枝皮</div>
+                <div style="margin-top:8px;display:flex;gap:6px"><span class="pill pill-tier">Tier 3</span><span class="pill pill-tier">九成新</span></div></div>
+              <div style="margin-left:auto;text-align:right"><div class="mono">你的鑑定費</div><b style="font-size:16px;color:var(--action)">HK$1,360</b></div>
+            </div>
+            <div class="kv">
+              <div><div class="k">賣家</div><b>Jenny K. ★★★★★</b></div>
+              <div><div class="k">買家</div><b>Alice C.</b></div>
+              <div><div class="k">附件</div><b>塵袋 · 保卡 · 單據</b></div>
+              <div><div class="k">交收</div><b>順豐到件（已簽收）</b></div>
+            </div>
+          </div>
+
+          <!-- 賣家上載相 -->
+          <div class="card card-pad" style="margin-bottom:16px">
+            <div class="section-label">賣家上載相片</div>
+            <div class="gal"><div class="im"><div class="wm">正面</div></div><div class="im"><div class="wm">五金</div></div><div class="im"><div class="wm">內裡</div></div><div class="im"><div class="wm">日期碼</div></div><div class="im"><div class="wm">底部</div></div><div class="im"><div class="wm">單據</div></div></div>
+          </div>
+
+          <!-- 鑑定證據上載 -->
+          <div class="card card-pad">
+            <div class="section-label">鑑定證據 · 影片 + 相片</div>
+            <div class="upload">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2" style="margin:0 auto 8px"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              <div style="font-weight:600;font-size:14px">上載鑑定影片</div>
+              <div class="mono" style="margin:4px 0 12px">MP4 / MOV · 建議連續拍攝五金、車線、日期碼</div>
+              <button class="btn btn-ghost btn-sm">選擇檔案</button>
+              <input type="file" accept="video/*" hidden>
+            </div>
+            <div class="evid">
+              <div class="v"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="len">0:42</span></div>
+              <div class="v"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg><span class="len">1:08</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 判定面板 -->
+        <div>
+          <div class="card card-pad vpanel">
+            <div class="section-label">鑑定結果</div>
+            <div class="opt sel-pass" style="margin-bottom:10px"><span class="dot" style="border-color:var(--pass);background:var(--pass)"></span>
+              <div><div class="t" style="color:var(--pass)">✓ 通過（正品）</div><div class="d">確認為真品，可放款予賣家</div></div></div>
+            <div class="opt" style="margin-bottom:10px"><span class="dot"></span>
+              <div><div class="t">✕ 不通過（非正品）</div><div class="d">判定為仿品，買家全額退款</div></div></div>
+            <div class="opt" style="margin-bottom:14px"><span class="dot"></span>
+              <div><div class="t">？ 未能確定</div><div class="d">證據不足，需進一步處理</div></div></div>
+
+            <div class="note-incon" style="margin-bottom:16px">
+              <b>「未能確定」說明：</b>當貨品狀態、缺件或影像不足以下定論時使用。系統會通知買賣雙方，訂單轉入人工覆核，不會即時放款或退款。
+            </div>
+
+            <div class="field"><label>鑑定備註 <span class="hint">會記入報告</span></label>
+              <textarea class="textarea" placeholder="例：五金雷射刻字清晰、車線密度一致、日期碼與年份相符⋯">五金雷射刻字清晰，車線密度一致，日期碼與年份相符，皮革紋理及氣味正常。判定為正品。</textarea></div>
+
+            <label style="display:flex;gap:9px;align-items:flex-start;font-size:12px;color:var(--text-2);margin-bottom:16px">
+              <input type="checkbox" checked style="margin-top:2px">
+              <span>本人以具名鑑定師身分，按合約及 E&amp;O 保險為此判定負責。</span></label>
+
+            <button class="btn btn-pass btn-block btn-lg">提交鑑定結果</button>
+            <p class="disclaimer" style="margin-top:12px">提交後結果通知買賣雙方；平台為資訊中介，不參與或覆核你的專業判定。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

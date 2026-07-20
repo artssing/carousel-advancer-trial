@@ -14,6 +14,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Tag, AlertTriangle, CheckCircle2, XCircle, RefreshCw, Clock } from 'lucide-react';
 import { api } from '@/lib/api';
+import { ConfirmDialog } from '@authentik/ui';
 
 interface OfferRow {
   id: string;
@@ -74,6 +75,8 @@ export function OfferCard({ offerId, currentUserId, onAction }: OfferCardProps) 
   const [counterPrice, setCounterPrice] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
   const [withdrawConfirmOpen, setWithdrawConfirmOpen] = useState(false);
+  // ConfirmDialog v2（founder 2026-07-12）：reject 都要二次確認
+  const [rejectConfirmOpen, setRejectConfirmOpen] = useState(false);
 
   function load() {
     api.offers.get(offerId).then(setOffer).catch((e) => setError(e?.message ?? '無法載入'));
@@ -206,7 +209,7 @@ export function OfferCard({ offerId, currentUserId, onAction }: OfferCardProps) 
             <button
               type="button"
               disabled={busy}
-              onClick={() => act(() => api.offers.reject(offer.id))}
+              onClick={() => setRejectConfirmOpen(true)}
               className="inline-flex items-center gap-1 rounded-md border border-slate-300 bg-white px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
             >
               <XCircle className="h-3.5 w-3.5" />拒絕
@@ -246,7 +249,7 @@ export function OfferCard({ offerId, currentUserId, onAction }: OfferCardProps) 
         )}
 
         {/* Proposer-side: withdraw option */}
-        {offer.status === 'PENDING' && isProposer && !withdrawConfirmOpen && (
+        {offer.status === 'PENDING' && isProposer && (
           <div className="mt-3 flex items-center justify-between">
             <span className="text-[11px] text-slate-400">等待對方回覆…</span>
             <button
@@ -261,42 +264,33 @@ export function OfferCard({ offerId, currentUserId, onAction }: OfferCardProps) 
           </div>
         )}
 
-        {/* Withdraw confirmation panel */}
-        {offer.status === 'PENDING' && isProposer && withdrawConfirmOpen && (
-          <div className="mt-3 rounded-lg border border-red-200 bg-red-50 p-3">
-            <div className="flex items-start gap-2">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" />
-              <div className="flex-1">
-                <p className="text-xs font-medium text-red-900">確認撤回出價？</p>
-                <p className="mt-0.5 text-[11px] text-red-700">
-                  撤回後呢個出價會立即作廢，對方就再見唔到。如果想 keep 繼續傾，可以等對方還價或者直接「另出價」。
-                </p>
-              </div>
-            </div>
-            <div className="mt-2 flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setWithdrawConfirmOpen(false)}
-                disabled={busy}
-                className="rounded-md border border-slate-300 bg-white px-3 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-              >
-                取消
-              </button>
-              <button
-                type="button"
-                disabled={busy}
-                onClick={() => {
-                  setWithdrawConfirmOpen(false);
-                  act(() => api.offers.withdraw(offer.id));
-                }}
-                className="inline-flex items-center gap-1 rounded-md bg-red-600 px-3 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-50"
-              >
-                <XCircle className="h-3.5 w-3.5" />
-                確認撤回
-              </button>
-            </div>
-          </div>
-        )}
+        {/* ConfirmDialog v2（founder 2026-07-12）— 撤回 / 拒絕 一律 modal */}
+        <ConfirmDialog
+          open={withdrawConfirmOpen}
+          onCancel={() => setWithdrawConfirmOpen(false)}
+          onConfirm={() => {
+            setWithdrawConfirmOpen(false);
+            act(() => api.offers.withdraw(offer.id));
+          }}
+          title="確認撤回出價？"
+          consequence="撤回後呢個出價會立即作廢，對方就再見唔到。想繼續傾可以等對方還價或者直接另出價。"
+          confirmLabel="確認撤回"
+          severity="danger"
+          busy={busy}
+        />
+        <ConfirmDialog
+          open={rejectConfirmOpen}
+          onCancel={() => setRejectConfirmOpen(false)}
+          onConfirm={() => {
+            setRejectConfirmOpen(false);
+            act(() => api.offers.reject(offer.id));
+          }}
+          title="確認拒絕呢個出價？"
+          consequence="拒絕後呢個出價會作廢。對方可以再出新價，你都可以還價代替直接拒絕。"
+          confirmLabel="確認拒絕"
+          severity="warning"
+          busy={busy}
+        />
 
         {error && (
           <p className="mt-2 rounded bg-red-50 px-2 py-1 text-[11px] text-red-700">{error}</p>

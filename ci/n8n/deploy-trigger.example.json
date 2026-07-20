@@ -1,0 +1,47 @@
+{
+  "name": "🚀 Deploy Authentik (trigger Jenkins)",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "🚀 Deploy Authentik",
+        "formDescription": "揀環境，撳 Submit 觸發 Jenkins build（UAT 直接部署；PROD 會停喺 Jenkins 等 approve）",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Environment",
+              "fieldType": "dropdown",
+              "fieldOptions": { "values": [ { "option": "uat" }, { "option": "prod" } ] },
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "form-trigger",
+      "name": "Deploy Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2,
+      "position": [280, 300],
+      "webhookId": "deploy-authentik"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=http://jenkins:8080/job/authentik-pipeline/buildWithParameters?ENVIRONMENT={{ $json.Environment }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBasicAuth",
+        "options": {}
+      },
+      "id": "trigger-build",
+      "name": "Trigger Jenkins Build",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [520, 300]
+    }
+  ],
+  "connections": {
+    "Deploy Form": { "main": [[{ "node": "Trigger Jenkins Build", "type": "main", "index": 0 }]] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

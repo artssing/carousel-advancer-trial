@@ -66,7 +66,7 @@ stop_env() { # $1 = prod|uat
   kill_port_and_supervisor "$API_PORT"
   sleep 1
   # Final sweep — anything still holding a port gets KILLed.
-  kill_ports "$API_PORT:API" "$CONSUMER_PORT:Consumer" "$AUTH_PORT:Authenticator" "$ADMIN_PORT:Admin"
+  kill_ports "$API_PORT:API" "$CONSUMER_PORT:Consumer" "$AUTH_PORT:Authenticator" "$ADMIN_PORT:Admin" "$STRIPE_GW_PORT:StripeGW"
 }
 
 if [[ "$TARGET" == "all" ]]; then

@@ -56,7 +56,7 @@ export class ListingsService {
     limit = 24,
     offset = 0,
     q?: string,
-    opts?: { minPrice?: number; maxPrice?: number; sort?: 'newest' | 'priceAsc' | 'priceDesc' | 'relevance'; excludeId?: string; brand?: string; conditionMin?: ConditionGrade },
+    opts?: { minPrice?: number; maxPrice?: number; sort?: 'newest' | 'priceAsc' | 'priceDesc' | 'relevance'; excludeId?: string; brands?: string[]; conditionMin?: ConditionGrade },
   ) {
     await this.promoteExpiredDrops();
 
@@ -75,7 +75,9 @@ export class ListingsService {
     const where: any = {
       status: { in: [ListingStatus.ACTIVE, ListingStatus.RESERVED] },
       ...(category ? { category } : {}),
-      ...(opts?.brand ? { brand: opts.brand } : {}),
+      // Brand filter is multi-select (OR semantics): buyer picks one or more
+      // brands in the sidebar → any listing matching ANY selected brand shows.
+      ...(opts?.brands?.length ? { brand: { in: opts.brands } } : {}),
       ...(terms.length
         ? {
             AND: terms.map((t) => ({
@@ -346,6 +348,56 @@ export class ListingsService {
    * Update an existing listing — only the seller, and only while ACTIVE
    * (once RESERVED/SOLD, listing details lock to preserve order audit trail).
    */
+  /**
+   * Seller soft-deletes own listing（founder ruling 2026-07-10）。
+   * Soft only：status → REMOVED + removedByRole=SELLER；row 永遠留 DB 可還原。
+   * Hard delete 只限 admin/superuser 直接落 DB — 唔會有 API。
+   * RESERVED（有 in-flight order / escrow）同 SOLD（歷史紀錄）唔准刪。
+   */
+  async softDelete(listingId: string, sellerId: string) {
+    const listing = await this.prisma.listing.findUnique({ where: { id: listingId } });
+    if (!listing) throw new NotFoundException('Listing not found');
+    if (listing.sellerId !== sellerId) throw new ForbiddenException('只可以刪除自己嘅商品');
+    if (listing.status === ListingStatus.RESERVED) {
+      throw new BadRequestException('呢件商品有進行中嘅訂單，未可以刪除 — 請先完成或取消訂單');
+    }
+    if (listing.status === ListingStatus.SOLD) {
+      throw new BadRequestException('已售出商品係交易紀錄一部分，唔可以刪除');
+    }
+    if (listing.status === ListingStatus.REMOVED) {
+      throw new BadRequestException('商品已經刪除咗');
+    }
+    return this.prisma.listing.update({
+      where: { id: listingId },
+      data: {
+        status: ListingStatus.REMOVED,
+        removedAt: new Date(),
+        removedByRole: 'SELLER',
+        removedReason: null,
+      },
+    });
+  }
+
+  /**
+   * Seller restores own soft-deleted listing — only if THEY deleted it.
+   * Admin takedowns（removedByRole=ADMIN）賣家唔可以自己還原。
+   */
+  async restoreOwn(listingId: string, sellerId: string) {
+    const listing = await this.prisma.listing.findUnique({ where: { id: listingId } });
+    if (!listing) throw new NotFoundException('Listing not found');
+    if (listing.sellerId !== sellerId) throw new ForbiddenException('只可以還原自己嘅商品');
+    if (listing.status !== ListingStatus.REMOVED) {
+      throw new BadRequestException('商品唔喺已刪除狀態');
+    }
+    if (listing.removedByRole === 'ADMIN') {
+      throw new BadRequestException('呢件商品係由平台下架，請聯絡客服處理');
+    }
+    return this.prisma.listing.update({
+      where: { id: listingId },
+      data: { status: ListingStatus.ACTIVE, removedAt: null, removedByRole: null, removedReason: null },
+    });
+  }
+
   async update(listingId: string, sellerId: string, dto: UpdateListingDto) {
     const existing = await this.prisma.listing.findUnique({
       where: { id: listingId },

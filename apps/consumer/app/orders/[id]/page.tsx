@@ -67,6 +67,8 @@ export default function OrderDetailPage() {
   const [rePhotoComment, setRePhotoComment] = useState('');
   // Cancel confirm (inline 2-step, lesson #16)
   const [cancelConfirmOpen, setCancelConfirmOpen] = useState(false);
+  // ConfirmDialog v2（founder 2026-07-12）：放款/取消全部行 modal
+  const [releaseConfirmOpen, setReleaseConfirmOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   /** Dispute confirm dialog — retires window.prompt for styled UI + clear
    *  warning that escalation cannot be silently undone. Reason captured by
@@ -103,11 +105,10 @@ export default function OrderDetailPage() {
     setRePhotoComment('');
   }
 
-  async function submitCancel() {
+  async function submitCancelWithReason(reason: string) {
     await doAction('取消交易', () =>
-      api.orders.cancelHandover(order.id, cancelReason.trim() || undefined),
+      api.orders.cancelHandover(order.id, reason.trim() || undefined),
     );
-    setCancelConfirmOpen(false);
     setCancelReason('');
   }
 
@@ -413,7 +414,7 @@ export default function OrderDetailPage() {
             <p className="text-xs text-emerald-800">確認收到貨後，款項即時釋放畀賣家，交易完成。如貨品有問題，請即撳「提出爭議」。</p>
             <Button
               disabled={busy}
-              onClick={() => doAction('確認收到', () => api.orders.confirmDelivered(order.id, []))}
+              onClick={() => setReleaseConfirmOpen(true)}
             >
               確認已收到商品
             </Button>
@@ -501,48 +502,14 @@ export default function OrderDetailPage() {
                 </p>
               )}
 
-              {!cancelConfirmOpen ? (
-                <button
-                  type="button"
-                  className="w-full py-1.5 text-center text-xs text-rose-600 hover:underline"
-                  disabled={busy}
-                  onClick={() => setCancelConfirmOpen(true)}
-                >
-                  取消交易（不可撤回）
-                </button>
-              ) : (
-                <div className="rounded border border-rose-300 bg-rose-50 p-3 text-sm">
-                  <p className="font-medium text-rose-900">確認取消交易？</p>
-                  <p className="mt-1 text-[11px] text-rose-700">
-                    買家會即時獲全額退款，商品重新上架。鑑定師已影相 record 會保留作 audit。此操作不可撤回。
-                  </p>
-                  <textarea
-                    value={cancelReason}
-                    onChange={(e) => setCancelReason(e.target.value)}
-                    placeholder="（可選）取消原因"
-                    rows={2}
-                    className="mt-2 w-full rounded border border-rose-300 bg-white p-2 text-xs"
-                  />
-                  <div className="mt-2 flex gap-2">
-                    <Button
-                      variant="danger"
-                      size="sm"
-                      disabled={busy}
-                      onClick={submitCancel}
-                    >
-                      確認取消
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={busy}
-                      onClick={() => { setCancelConfirmOpen(false); setCancelReason(''); }}
-                    >
-                      返回
-                    </Button>
-                  </div>
-                </div>
-              )}
+              <button
+                type="button"
+                className="w-full py-1.5 text-center text-xs text-rose-600 hover:underline"
+                disabled={busy}
+                onClick={() => setCancelConfirmOpen(true)}
+              >
+                取消交易（不可撤回）
+              </button>
             </div>
 
             {/* Re-photo request modal: preset checkboxes + comment */}
@@ -767,6 +734,43 @@ export default function OrderDetailPage() {
       {/* Dispute confirm — escalates a PAID order into the dispute pipeline.
           requireReason forces the buyer/seller to state the issue before
           submit. Replaces the old window.prompt() flow. */}
+      {/* T1 放款 — 買家確認收貨即釋放 escrow 畀賣家（唔准背景 dismiss） */}
+      <ConfirmDialog
+        open={releaseConfirmOpen}
+        onCancel={() => setReleaseConfirmOpen(false)}
+        onConfirm={() => {
+          setReleaseConfirmOpen(false);
+          doAction('確認收到', () => api.orders.confirmDelivered(order.id, []));
+        }}
+        title="確認已收到商品？"
+        description={<p>{order.listing?.title}</p>}
+        consequence="呢個動作會即時釋放款項畀賣家，訂單轉為完成，不可撤回。貨品有問題請改用「提出爭議」。"
+        confirmLabel="確認收貨 + 放款"
+        severity="danger"
+        busy={busy}
+        dismissOnBackdrop={false}
+      />
+
+      {/* T2 取消交易 — 全額退款買家 + 商品重新上架 */}
+      <ConfirmDialog
+        open={cancelConfirmOpen}
+        onCancel={() => { setCancelConfirmOpen(false); setCancelReason(''); }}
+        onConfirm={(reason) => {
+          setCancelReason(reason ?? '');
+          setCancelConfirmOpen(false);
+          submitCancelWithReason(reason ?? '');
+        }}
+        title="確認取消交易？"
+        consequence="買家會即時獲全額退款，商品重新上架。鑑定師已影相 record 會保留作 audit。此操作不可撤回。"
+        confirmLabel="確認取消"
+        cancelLabel="返回"
+        severity="danger"
+        busy={busy}
+        requireReason
+        reasonLabel="取消原因"
+        reasonPlaceholder="例：賣家臨時唔賣 / 約唔到時間…"
+      />
+
       <ConfirmDialog
         open={disputeConfirmOpen}
         onCancel={() => setDisputeConfirmOpen(false)}

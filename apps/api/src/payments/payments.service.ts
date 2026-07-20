@@ -46,6 +46,14 @@ export class PaymentsService {
     if (order.paymentMethod !== 'ONLINE_ESCROW') {
       throw new BadRequestException('This order is offline cash, no online payment needed');
     }
+    // 付款時限（founder 2026-07-20）：未 double-confirm（draft，貨未 lock）
+    // 唔准開 intent；過咗 deadline 亦唔准 — cron 好快會轉 PAYMENT_EXPIRED。
+    if (!order.paymentDeadlineAt) {
+      throw new BadRequestException('請先確認訂單（review）先可以付款');
+    }
+    if (order.paymentDeadlineAt.getTime() < Date.now()) {
+      throw new BadRequestException('付款時限已過，訂單即將取消 — 請重新落單');
+    }
 
     // Reuse existing PENDING_AUTH payment if any (idempotent — buyer refresh)
     if (order.activePaymentId) {
@@ -60,7 +68,7 @@ export class PaymentsService {
           where: { id: existing.id },
           data: { gatewayRef: intent.id },
         });
-        return { clientSecret: intent.clientSecret, paymentId: existing.id, amountHKD: existing.amountHKD, mode: stripeAdapter.mode };
+        return { clientSecret: intent.clientSecret, paymentId: existing.id, amountHKD: existing.amountHKD, mode: stripeAdapter.mode, gatewayUrl: stripeAdapter.gatewayPublicUrl() };
       }
     }
 
@@ -96,6 +104,7 @@ export class PaymentsService {
       paymentId: payment.id,
       amountHKD,
       mode: stripeAdapter.mode,
+      gatewayUrl: stripeAdapter.gatewayPublicUrl(),
     };
   }
 
@@ -172,6 +181,104 @@ export class PaymentsService {
     return { ok: false, code: 'unknown_state', message: `Unexpected intent status: ${intent.status}` };
   }
 
+  /** Audit which channel the buyer paid with (CARD / ALIPAY_HK / …). The mock
+   *  path records this inside confirmFromMock; the gateway path confirms
+   *  browser→gateway directly so the client reports the method separately. */
+  async logMethod(orderId: string, userId: string, method: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.buyerId !== userId) throw new ForbiddenException('Not your order');
+    if (!order.activePaymentId) return { ok: false };
+    await this.prisma.payment.update({
+      where: { id: order.activePaymentId },
+      data: { method },
+    });
+    return { ok: true };
+  }
+
+  /** Webhook entrypoint (real/test mode) — gateway events land here instead of
+   *  confirmFromMock. MUST be idempotent: Stripe (and the mock gateway) retries
+   *  delivery, and captureForOrder() may have already written CAPTURED before
+   *  the corresponding webhook arrives. */
+  async handleGatewayEvent(event: { type: string; data: { object: any } }) {
+    const obj = event.data?.object ?? {};
+    // charge.refunded carries a Charge; everything else a PaymentIntent.
+    const intentId: string | undefined = event.type === 'charge.refunded' ? obj.payment_intent : obj.id;
+    if (!intentId) return { ignored: true, reason: 'no intent id' };
+
+    const payment = await this.prisma.payment.findUnique({
+      where: { gatewayRef: intentId },
+      include: { order: true },
+    });
+    if (!payment) return { ignored: true, reason: `no payment for ${intentId}` };
+
+    const markPaidTx = async (paymentData: Record<string, unknown>) => {
+      await this.prisma.$transaction(async (tx) => {
+        await tx.payment.update({ where: { id: payment.id }, data: paymentData });
+        if (payment.order.status === 'AWAITING_PAYMENT') {
+          await tx.order.update({
+            where: { id: payment.orderId },
+            data: { status: 'PAID', paidAt: new Date(), escrowHeld: true },
+          });
+        }
+      });
+    };
+
+    switch (event.type) {
+      case 'payment_intent.amount_capturable_updated': // manual-capture auth OK
+        if (payment.status === 'PENDING_AUTH' || payment.status === 'FAILED') {
+          await markPaidTx({ status: 'AUTHORIZED', authorizedAt: new Date(), failureCode: null, failureMessage: null });
+        }
+        return { handled: true };
+
+      case 'payment_intent.succeeded': // instant charge OR capture completed
+        if (payment.status !== 'CAPTURED' && payment.status !== 'REFUNDED') {
+          await markPaidTx({
+            status: 'CAPTURED',
+            capturedAt: new Date(),
+            ...(payment.authorizedAt ? {} : { authorizedAt: new Date() }),
+            failureCode: null,
+            failureMessage: null,
+          });
+        }
+        return { handled: true };
+
+      case 'payment_intent.payment_failed':
+        if (payment.status === 'PENDING_AUTH' || payment.status === 'FAILED') {
+          await this.prisma.payment.update({
+            where: { id: payment.id },
+            data: {
+              status: 'FAILED',
+              failureCode: obj.last_payment_error?.code ?? 'unknown',
+              failureMessage: obj.last_payment_error?.message ?? '付款失敗，請重試',
+            },
+          });
+        }
+        return { handled: true };
+
+      case 'payment_intent.canceled':
+        if (payment.status !== 'CAPTURED' && payment.status !== 'CANCELLED' && payment.status !== 'REFUNDED') {
+          await this.prisma.payment.update({
+            where: { id: payment.id },
+            data: { status: 'CANCELLED', cancelledAt: new Date() },
+          });
+        }
+        return { handled: true };
+
+      case 'charge.refunded':
+        if (payment.status === 'CAPTURED') {
+          await this.prisma.payment.update({
+            where: { id: payment.id },
+            data: { status: 'REFUNDED', refundedAt: new Date() },
+          });
+        }
+        return { handled: true };
+
+      default:
+        return { ignored: true, reason: `unhandled type ${event.type}` };
+    }
+  }
+
   /** Capture an authorized hold. Called by orders.service at the configured
    *  trigger point (AUTH_PASSED / DELIVERED). No-op for already-captured. */
   async captureForOrder(orderId: string) {
@@ -233,6 +340,7 @@ export class PaymentsService {
       orderId,
       orderStatus: order.status,
       escrowHeld: order.escrowHeld,
+      paymentDeadlineAt: order.paymentDeadlineAt,
       payment: p ? {
         id: p.id,
         status: p.status,

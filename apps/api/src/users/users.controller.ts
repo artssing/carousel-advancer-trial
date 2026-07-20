@@ -33,6 +33,9 @@ class UpdateMeDto {
   avatarCropX?: number | null;
   @IsOptional()
   avatarCropY?: number | null;
+  /** Register-v2 interests — Category enum values to seed personalisation. */
+  @IsOptional()
+  interests?: string[];
 }
 
 class ChangePasswordDto {
@@ -141,6 +144,11 @@ export class UsersController {
     if (dto.avatarCropZoom !== undefined) data.avatarCropZoom = dto.avatarCropZoom;
     if (dto.avatarCropX !== undefined) data.avatarCropX = dto.avatarCropX;
     if (dto.avatarCropY !== undefined) data.avatarCropY = dto.avatarCropY;
+
+    if (dto.interests !== undefined) {
+      const arr = Array.isArray(dto.interests) ? dto.interests : [];
+      data.interests = Array.from(new Set(arr)).slice(0, 20);
+    }
 
     if (Object.keys(data).length === 0) {
       throw new BadRequestException('無任何欄位更新');

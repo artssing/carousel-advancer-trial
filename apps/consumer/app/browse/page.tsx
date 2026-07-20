@@ -3,54 +3,94 @@
 // useSearchParams needs dynamic rendering (not static prerender) — production build fix.
 export const dynamic = 'force-dynamic';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Route } from 'next';
-import Link from 'next/link';
-import { Search } from 'lucide-react';
-import { Card, CardContent, TierPill, Button, ListingThumb } from '@authentik/ui';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Chip } from '@authentik/ui';
 import {
-  formatHKD, tierForPrice, browseCategories, categoryById, categoryByApiEnum, formatSavings,
+  browseCategories, categoryById,
   brandsForCategory, hasBrandPicker, brandFieldLabel, brandLabel, parseSearchQuery,
-  CONDITION_GRADES, conditionLabel,
+  CONDITION_GRADES, conditionLabel, stationDisplayLabel,
 } from '@authentik/utils';
 import { api } from '@/lib/api';
+import { track } from '@/lib/analytics';
+import { ProductCard, ProductCardSkeleton } from '@/components/product-card';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const DESKTOP_PAGE_SIZE = 24;
 const MOBILE_PAGE_SIZE = 12;
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return '剛剛上架';
-  if (mins < 60) return `${mins} 分鐘前`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours} 小時前`;
-  const days = Math.floor(hours / 24);
-  if (days < 30) return `${days} 日前`;
-  const months = Math.floor(days / 30);
-  if (months < 12) return `${months} 個月前`;
-  return `${Math.floor(months / 12)} 年前`;
-}
-
-// Derived from `packages/utils/categories.ts` — the canonical registry.
 const BROWSE_CATEGORIES = browseCategories();
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
+// L3 price tiers → 4 preset price-range choices in the sidebar.
+// Selecting one writes the corresponding min/max to the URL.
+const TIER_PRESETS = [
+  { key: 't1', label: 'Tier 1 · < $1,000',   min: '',      max: '999'   },
+  { key: 't2', label: 'Tier 2 · $1k–9,999',  min: '1000',  max: '9999'  },
+  { key: 't3', label: 'Tier 3 · ≥ $10,000',  min: '10000', max: ''      },
+] as const;
+type TierKey = typeof TIER_PRESETS[number]['key'];
 
-function SkeletonCard() {
+// ─── Sidebar primitives (.fgroup / .fitem from L3 theme) ─────────────────────
+
+function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-slate-100 bg-white">
-      <div className="aspect-square animate-pulse bg-slate-200" />
-      <div className="space-y-2 p-3">
-        <div className="h-4 w-16 animate-pulse rounded bg-slate-200" />
-        <div className="h-3 w-full animate-pulse rounded bg-slate-200" />
-        <div className="h-3 w-3/4 animate-pulse rounded bg-slate-200" />
-        <div className="h-4 w-20 animate-pulse rounded bg-slate-200" />
-      </div>
+    <div className="border-b border-line py-4 first:pt-0 last:border-b-0">
+      <h4 className="mb-3 text-[13px] font-bold text-neutral-text">{title}</h4>
+      <div className="flex flex-col">{children}</div>
     </div>
+  );
+}
+
+function FilterItem({
+  label,
+  selected,
+  onClick,
+  suffix,
+  mode = 'radio',
+}: {
+  label: React.ReactNode;
+  selected: boolean;
+  onClick: () => void;
+  suffix?: React.ReactNode;
+  /**
+   * Affordance must match behaviour: single-select groups (category / tier /
+   * condition) render a round radio dot; multi-select groups (brand) render a
+   * square checkbox. Never show a checkbox on mutually-exclusive options.
+   */
+  mode?: 'radio' | 'checkbox';
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      role={mode === 'radio' ? 'radio' : 'checkbox'}
+      aria-checked={selected}
+      className={`flex items-center gap-[9px] py-[5px] text-left text-[13px] transition ${
+        selected ? 'text-neutral-text' : 'text-neutral-text-muted hover:text-neutral-text'
+      }`}
+    >
+      {mode === 'radio' ? (
+        <span
+          className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-[1.5px] transition ${
+            selected ? 'border-verify' : 'border-line-2'
+          }`}
+          aria-hidden="true"
+        >
+          {selected && <span className="h-2 w-2 rounded-full bg-verify" />}
+        </span>
+      ) : (
+        <span
+          className={`h-4 w-4 shrink-0 rounded border-[1.5px] transition ${
+            selected ? 'border-verify bg-verify' : 'border-line-2'
+          }`}
+          aria-hidden="true"
+        />
+      )}
+      <span className="flex-1 truncate">{label}</span>
+      {suffix && <span className="text-[11px] text-neutral-text-hint">{suffix}</span>}
+    </button>
   );
 }
 
@@ -58,14 +98,9 @@ function SkeletonCard() {
 
 export default function BrowsePage() {
   const router = useRouter();
-  // Reactive URL params — re-renders whenever query string changes (e.g. via TopNav Link).
-  // Past bug: useState(() => URL) only reads once on mount, so navigating between
-  // /browse?cat=X and /browse?cat=Y did not trigger a refresh.
   const searchParams = useSearchParams();
   const category = searchParams?.get('cat') ?? null;
   const searchQuery = searchParams?.get('q') ?? '';
-  // Default to relevance ranking whenever there's a search query (so the best
-  // match floats to the top); otherwise newest. Explicit sort param always wins.
   const sort =
     (searchParams?.get('sort') as 'newest' | 'priceAsc' | 'priceDesc' | 'relevance' | null) ??
     (searchQuery ? 'relevance' : 'newest');
@@ -73,7 +108,12 @@ export default function BrowsePage() {
   const maxPriceStr = searchParams?.get('max') ?? '';
   const minPrice = minPriceStr ? Number(minPriceStr) : undefined;
   const maxPrice = maxPriceStr ? Number(maxPriceStr) : undefined;
-  const brand = searchParams?.get('brand') ?? null;
+  // Multi-select brand filter: comma-separated in URL (`brand=chanel,gucci`).
+  const brandParam = searchParams?.get('brand') ?? '';
+  const brands = useMemo(
+    () => brandParam.split(',').map((b) => b.trim()).filter(Boolean),
+    [brandParam],
+  );
   const conditionMin = searchParams?.get('cond') ?? null;
 
   const [inputValue, setInputValue] = useState<string>(searchQuery);
@@ -88,32 +128,45 @@ export default function BrowsePage() {
   const [hasMore, setHasMore]         = useState(false);
   const [total, setTotal]             = useState(0);
   const [isMobile, setIsMobile]       = useState(false);
+  const [drawerOpen, setDrawerOpen]   = useState(false);
 
-  // ── sentinel node tracked via ref-callback ────────────────────────────────
   const [sentinelNode, setSentinelNode] = useState<HTMLDivElement | null>(null);
   const sentinelRefCallback = useCallback((node: HTMLDivElement | null) => {
     setSentinelNode(node);
   }, []);
 
-  // ── Synchronous refs to avoid stale closures ──────────────────────────────
   const loadingMoreRef = useRef(false);
   const hasMoreRef     = useRef(false);
   const offsetRef      = useRef(0);
-
+  // Analytics（spec §2.3）：同一 query 只 track 一次；event_id 留做
+  // search_result_clicked 嘅 funnel join key（query_id）。
+  const lastTrackedQueryRef = useRef<string | null>(null);
+  const searchEventIdRef    = useRef<string | null>(null);
   useEffect(() => { hasMoreRef.current = hasMore; }, [hasMore]);
 
-  // ── Detect mobile ──────────────────────────────────────────────────────────
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 768);
     check();
     window.addEventListener('resize', check);
     return () => window.removeEventListener('resize', check);
   }, []);
-
   const pageSize = isMobile ? MOBILE_PAGE_SIZE : DESKTOP_PAGE_SIZE;
 
-  // ── URL sync helpers ───────────────────────────────────────────────────────
-  function buildUrl(cat: string | null, q: string, opts?: { sort?: string; min?: string; max?: string; brand?: string | null; cond?: string | null }) {
+  // Lock body scroll while drawer is open
+  useEffect(() => {
+    if (drawerOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => { document.body.style.overflow = prev; };
+    }
+  }, [drawerOpen]);
+
+  // ── URL sync helpers ────────────────────────────────────────────────────
+  function buildUrl(
+    cat: string | null,
+    q: string,
+    opts?: { sort?: string; min?: string; max?: string; brands?: string[] | null; cond?: string | null },
+  ) {
     const params = new URLSearchParams();
     if (cat) params.set('cat', cat);
     if (q)   params.set('q', q);
@@ -123,56 +176,60 @@ export default function BrowsePage() {
     if (min) params.set('min', min);
     const max = opts?.max ?? maxPriceStr;
     if (max) params.set('max', max);
-    // brand: explicit null clears; undefined inherits current
-    const br = opts?.brand === null ? null : (opts?.brand ?? brand);
-    if (br) params.set('brand', br);
+    const br = opts?.brands === null ? [] : (opts?.brands ?? brands);
+    if (br.length) params.set('brand', br.join(','));
     const cd = opts?.cond === null ? null : (opts?.cond ?? conditionMin);
     if (cd) params.set('cond', cd);
     const qs = params.toString();
     return qs ? `/browse?${qs}` : '/browse';
   }
 
-  // Use push (not replace) so filter changes create history entries + force
-  // useSearchParams to definitely re-fire even on same-path nav.
   function navigate(url: string) {
     router.push(url as Route);
     if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
   }
+
   function handleCategoryChange(newCat: string | null) {
-    // Brand list is category-specific — clear stale brand when category changes
-    navigate(buildUrl(newCat, searchQuery, { brand: null }));
+    navigate(buildUrl(newCat, searchQuery, { brands: null }));
   }
-  function handleBrandChange(newBrand: string | null) {
-    navigate(buildUrl(category, searchQuery, { brand: newBrand }));
+  /** Toggle a brand in/out of the multi-select set. */
+  function handleBrandToggle(brandId: string) {
+    const next = brands.includes(brandId)
+      ? brands.filter((b) => b !== brandId)
+      : [...brands, brandId];
+    navigate(buildUrl(category, searchQuery, { brands: next }));
+  }
+  function clearBrands() {
+    navigate(buildUrl(category, searchQuery, { brands: null }));
   }
   function handleConditionChange(newCond: string | null) {
     navigate(buildUrl(category, searchQuery, { cond: newCond }));
   }
+  function handleTierChange(t: TierKey | null) {
+    if (t === null) {
+      navigate(buildUrl(category, searchQuery, { min: '', max: '' }));
+      return;
+    }
+    const preset = TIER_PRESETS.find((p) => p.key === t)!;
+    navigate(buildUrl(category, searchQuery, { min: preset.min, max: preset.max }));
+  }
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = inputValue.trim();
-    if (!trimmed) {
-      navigate(buildUrl(category, ''));
-      return;
-    }
-    // Smart parse: pull a category out of the query (auto-applied as a filter,
-    // shown as a removable chip). Keep the FULL query text in `q` so the search
-    // box + 搜尋 chip still show exactly what the customer typed — the category
-    // keyword is only stripped internally when building the API call (see
-    // `apiSearch` below), not from what the user sees.
-    // A fresh search expresses fresh intent: if it detects a category, switch to
-    // it (so "iphone 17 pro" → then "Chanel 手袋…" correctly re-targets handbag,
-    // not stuck on the previous iphone filter). Only fall back to the current
-    // category when the new query detects none (e.g. just "256gb").
+    if (!trimmed) { navigate(buildUrl(category, '')); return; }
     const parsed = parseSearchQuery(trimmed);
     const nextCat = parsed.categoryId ?? category;
-    // Category changed → clear stale brand sub-filter (brand list is per-category).
-    const brandOpt = nextCat !== category ? { brand: null as string | null } : {};
-    navigate(buildUrl(nextCat, trimmed, { sort: 'relevance', ...brandOpt }));
+    const brandOpt = nextCat !== category ? { brands: null as string[] | null } : {};
+    // Smart-search auto-apply: seed `cond` from parsed conditionMin only if
+    // it changed (avoid overwriting an explicit sidebar-picked value with the
+    // same value + trip re-render). Chip UI + removal handler already exist.
+    const condOpt = parsed.conditionMin && parsed.conditionMin !== conditionMin
+      ? { cond: parsed.conditionMin }
+      : {};
+    navigate(buildUrl(nextCat, trimmed, { sort: 'relevance', ...brandOpt, ...condOpt }));
   }
   function applyPriceFilter(e: React.FormEvent) {
     e.preventDefault();
-    // Trim "0" / NaN values
     const cleanMin = minInput && Number(minInput) > 0 ? minInput : '';
     const cleanMax = maxInput && Number(maxInput) > 0 ? maxInput : '';
     navigate(buildUrl(category, searchQuery, { min: cleanMin, max: cleanMax }));
@@ -182,24 +239,31 @@ export default function BrowsePage() {
   }
   function clearAllFilters() {
     setMinInput(''); setMaxInput('');
-    navigate(buildUrl(category, '', { sort: 'newest', min: '', max: '' }));
+    navigate(buildUrl(null, '', { sort: 'newest', min: '', max: '', brands: null, cond: null }));
   }
 
-  // The query text actually sent to the API for matching/ranking. We show the
-  // FULL query in the search box + chip, but when the auto-detected category is
-  // applied as a filter we strip its keyword from the API terms — otherwise the
-  // word (e.g. 「手袋」) would be required in title/desc/brand text too and
-  // over-filter. If the user removed/changed the category, the full text is used.
+  // Currently-selected tier preset (or null if no exact match).
+  const currentTier = useMemo<TierKey | null>(() => {
+    for (const p of TIER_PRESETS) {
+      if (minPriceStr === p.min && maxPriceStr === p.max) return p.key;
+    }
+    return null;
+  }, [minPriceStr, maxPriceStr]);
+
   const apiSearch = (() => {
     if (!searchQuery) return undefined;
     const parsed = parseSearchQuery(searchQuery);
-    if (category && category === parsed.categoryId) {
-      return parsed.terms.join(' ') || undefined;
-    }
+    // When category OR condition was auto-applied via parsing (URL now reflects
+    // them as filters), send only residual `terms` so server doesn't ALSO
+    // require that phrase in title/description (double-restrict — same rule
+    // as category consumption).
+    const catAutoApplied = category && category === parsed.categoryId;
+    const condAutoApplied = conditionMin && conditionMin === parsed.conditionMin;
+    if (catAutoApplied || condAutoApplied) return parsed.terms.join(' ') || undefined;
     return searchQuery;
   })();
 
-  // ── Load first page when filters change ─────────
+  // ── First page load ────────────────────────────────────────────────────
   useEffect(() => {
     setLoading(true);
     setListings([]);
@@ -210,7 +274,7 @@ export default function BrowsePage() {
     const enumVal = categoryById(category)?.apiEnum;
     api.listings
       .list(enumVal, pageSize, 0, apiSearch, {
-        minPrice, maxPrice, sort, brand: brand ?? undefined, conditionMin: conditionMin ?? undefined,
+        minPrice, maxPrice, sort, brand: brands.length ? brands.join(',') : undefined, conditionMin: conditionMin ?? undefined,
       })
       .then(({ items, total: t, hasMore: more }) => {
         setListings(items);
@@ -218,23 +282,39 @@ export default function BrowsePage() {
         setHasMore(more);
         hasMoreRef.current = more;
         offsetRef.current = items.length;
+        // Analytics：search_performed（+ zero_result）— 每個新 query 一次
+        if (searchQuery && searchQuery !== lastTrackedQueryRef.current) {
+          lastTrackedQueryRef.current = searchQuery;
+          const parsed = parseSearchQuery(searchQuery);
+          const props = {
+            query_raw: searchQuery,
+            parsed_category: parsed.categoryId ?? null,
+            auto_applied_filters: [
+              ...(parsed.categoryId ? [`category:${parsed.categoryId}`] : []),
+              ...(parsed.conditionMin ? [`condition:${parsed.conditionMin}`] : []),
+            ],
+            remaining_terms: parsed.terms,
+            result_count: t,
+            sort,
+          };
+          searchEventIdRef.current = track('search_performed', props);
+          if (t === 0) track('search_zero_result', props);
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [category, brand, conditionMin, apiSearch, pageSize, sort, minPrice, maxPrice]);
+  }, [category, brandParam, conditionMin, apiSearch, pageSize, sort, minPrice, maxPrice, searchQuery]);
 
-  // ── loadMore ──────────────────────────────────────────────────────────────
+  // ── loadMore ──────────────────────────────────────────────────────────
   const loadMore = useCallback(() => {
     if (loadingMoreRef.current || !hasMoreRef.current) return;
     loadingMoreRef.current = true;
     setLoadingMore(true);
-
     const enumVal = categoryById(category)?.apiEnum;
     const currentOffset = offsetRef.current;
-
     api.listings
       .list(enumVal, pageSize, currentOffset, apiSearch, {
-        minPrice, maxPrice, sort, brand: brand ?? undefined, conditionMin: conditionMin ?? undefined,
+        minPrice, maxPrice, sort, brand: brands.length ? brands.join(',') : undefined, conditionMin: conditionMin ?? undefined,
       })
       .then(({ items, hasMore: more }) => {
         offsetRef.current = currentOffset + items.length;
@@ -243,16 +323,13 @@ export default function BrowsePage() {
         hasMoreRef.current = more;
       })
       .catch(() => {})
-      .finally(() => {
-        loadingMoreRef.current = false;
-        setLoadingMore(false);
-      });
-  }, [category, brand, conditionMin, apiSearch, pageSize, sort, minPrice, maxPrice]);
+      .finally(() => { loadingMoreRef.current = false; setLoadingMore(false); });
+  }, [category, brandParam, conditionMin, apiSearch, pageSize, sort, minPrice, maxPrice]);
 
   const loadMoreRef = useRef(loadMore);
   useEffect(() => { loadMoreRef.current = loadMore; });
 
-  // ── Mobile IntersectionObserver ───────────────────────────────────────────
+  // ── Mobile IntersectionObserver ───────────────────────────────────────
   useEffect(() => {
     if (!isMobile || !sentinelNode) return;
     const observer = new IntersectionObserver(
@@ -263,388 +340,370 @@ export default function BrowsePage() {
     return () => observer.disconnect();
   }, [isMobile, sentinelNode]);
 
-  const skeletonCount = pageSize;
-
-  return (
-    <div className="mx-auto max-w-[1400px] px-4 py-8 md:px-8">
-
-      {/* ── Search bar ─────────────────────────────────────────────────────── */}
-      <form onSubmit={handleSearch} className="mb-4 flex gap-2">
-        <div className="relative flex-1 md:max-w-md">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            type="search"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="搜尋商品、品牌、型號…"
-            className="h-10 w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-sm outline-none transition focus:border-brand-400 focus:ring-2 focus:ring-brand-100"
-          />
-        </div>
-        <button
-          type="submit"
-          className="h-10 rounded-xl bg-brand-600 px-4 text-sm font-medium text-white transition hover:bg-brand-700"
-        >
-          搜尋
-        </button>
-      </form>
-
-      {/* ── Category chips ─────────────────────────────────────────────────── */}
-      <div className="mb-6 flex flex-wrap gap-2 text-sm">
-        <button
+  // ── Sidebar body (rendered in desktop aside AND mobile drawer) ────────
+  const sidebar = (
+    <div>
+      {/* 品類 */}
+      <FilterGroup title="品類">
+        <FilterItem
+          label="全部品類"
+          selected={!category}
           onClick={() => handleCategoryChange(null)}
-          className={`rounded-full border px-3 py-1 transition ${
-            !category ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white'
-          }`}
-        >
-          全部
-        </button>
+        />
         {BROWSE_CATEGORIES.map((c) => (
-          <button
+          <FilterItem
             key={c.id}
+            label={c.labelZh}
+            selected={category === c.id}
             onClick={() => handleCategoryChange(c.id)}
-            className={`flex items-center gap-1.5 rounded-full border px-3 py-1 transition ${
-              category === c.id
-                ? 'border-brand-500 bg-brand-50 text-brand-700'
-                : 'border-slate-200 bg-white'
-            }`}
-          >
-            {c.labelZh}
-            {!c.enabledInSell && (
-              <span className="rounded-full bg-amber-100 px-1.5 py-0 text-[9px] font-medium text-amber-700">
-                即將推出
-              </span>
-            )}
-          </button>
+            suffix={!c.enabledInSell ? '即將' : undefined}
+          />
         ))}
-      </div>
+      </FilterGroup>
 
-      {/* ── Brand sub-filter (appears only when a category with brands is selected) ── */}
-      {category && hasBrandPicker(category as any) && (() => {
-        const brands = brandsForCategory(category as any);
-        const fieldLabel = brandFieldLabel(category as any);
-        const allLabel = `所有${fieldLabel}`;
-        return (
-          <div className="mb-6 -mt-3 flex flex-wrap items-center gap-2 text-xs">
-            <span className="font-medium text-slate-500">{fieldLabel}：</span>
-            <button
-              onClick={() => handleBrandChange(null)}
-              className={`rounded-full border px-2.5 py-0.5 transition ${
-                !brand ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white'
-              }`}
-            >
-              {allLabel}
-            </button>
-            {brands.slice(0, 10).map((b) => (
-              <button
-                key={b.id}
-                onClick={() => handleBrandChange(b.id)}
-                className={`rounded-full border px-2.5 py-0.5 transition ${
-                  brand === b.id ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white'
-                }`}
-              >
-                {b.label}
-              </button>
-            ))}
-            {/* If current brand is free-text (not in preset list), still show as active chip */}
-            {brand && !brands.some((b) => b.id === brand) && (
-              <button
-                onClick={() => handleBrandChange(null)}
-                className="rounded-full border border-brand-500 bg-brand-50 px-2.5 py-0.5 text-brand-700"
-                title="點擊清除呢個自訂品牌 filter"
-              >
-                {brand} ×
-              </button>
-            )}
-          </div>
-        );
-      })()}
-
-      {/* ── Condition "at-least" filter (Carousell-style pill row) ─────────── */}
-      {(() => {
-        const activeSpec = conditionMin
-          ? CONDITION_GRADES.find((g) => g.id === conditionMin)
-          : undefined;
-        return (
-          <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
-            <span className="font-medium text-slate-500">狀況以上：</span>
-            <button
-              onClick={() => handleConditionChange(null)}
-              className={`rounded-full border px-2.5 py-0.5 transition ${
-                !conditionMin ? 'border-brand-500 bg-brand-50 text-brand-700' : 'border-slate-200 bg-white'
-              }`}
-            >
-              不限
-            </button>
-            {CONDITION_GRADES.map((g) => {
-              const isActiveOrBetter = activeSpec ? g.ordinal <= activeSpec.ordinal : false;
-              const isThreshold = conditionMin === g.id;
-              return (
-                <button
-                  key={g.id}
-                  onClick={() => handleConditionChange(isThreshold ? null : g.id)}
-                  className={`rounded-full border px-2.5 py-0.5 transition ${
-                    isThreshold
-                      ? 'border-brand-500 bg-brand-500 text-white'
-                      : isActiveOrBetter
-                        ? 'border-brand-300 bg-brand-50 text-brand-700'
-                        : 'border-slate-200 bg-white text-slate-600'
-                  }`}
-                  title={`${g.label} 或以上 — ${g.description}`}
-                >
-                  {g.label}
-                </button>
-              );
-            })}
-          </div>
-        );
-      })()}
-
-      {/* ── Sort + price filter bar ────────────────────────────────────────── */}
-      <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-slate-100 bg-white p-2 text-xs">
-        {/* Sort */}
-        <div className="flex items-center gap-1">
-          <span className="text-slate-500">排序：</span>
-          {([
-            // 相關度 only makes sense (and is the default) when searching.
-            ...(searchQuery ? [['relevance', '相關度'] as const] : []),
-            ['newest',    '最新'],
-            ['priceAsc',  '價低 ↑'],
-            ['priceDesc', '價高 ↓'],
-          ] as const).map(([k, label]) => (
-            <button
-              key={k}
-              type="button"
-              onClick={() => setSort(k)}
-              className={`rounded-full px-2 py-0.5 transition ${
-                sort === k
-                  ? 'bg-brand-600 text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-        <div className="mx-1 h-4 w-px bg-slate-200" />
-        {/* Price range */}
-        <form onSubmit={applyPriceFilter} className="flex items-center gap-1.5">
-          <span className="text-slate-500">價錢 HK$</span>
+      {/* 價格層 */}
+      <FilterGroup title="價格層">
+        <FilterItem
+          label="不限"
+          selected={currentTier === null && !minPriceStr && !maxPriceStr}
+          onClick={() => handleTierChange(null)}
+        />
+        {TIER_PRESETS.map((p) => (
+          <FilterItem
+            key={p.key}
+            label={p.label}
+            selected={currentTier === p.key}
+            onClick={() => handleTierChange(p.key)}
+          />
+        ))}
+        {/* Custom range input — always visible under the presets */}
+        <form onSubmit={applyPriceFilter} className="mt-3 flex flex-wrap items-center gap-1.5 text-[12px]">
+          <span className="text-neutral-text-hint">HK$</span>
           <input
             type="number" inputMode="numeric" min={0}
             value={minInput} onChange={(e) => setMinInput(e.target.value)}
             placeholder="最低"
-            className="w-20 rounded border border-slate-200 px-2 py-0.5 text-xs outline-none focus:border-brand-400"
+            className="w-full max-w-[80px] rounded border border-line-2 px-2 py-1 text-[12px] outline-none focus:border-verify"
           />
-          <span className="text-slate-400">–</span>
+          <span className="text-neutral-text-hint">–</span>
           <input
             type="number" inputMode="numeric" min={0}
             value={maxInput} onChange={(e) => setMaxInput(e.target.value)}
             placeholder="最高"
-            className="w-20 rounded border border-slate-200 px-2 py-0.5 text-xs outline-none focus:border-brand-400"
+            className="w-full max-w-[80px] rounded border border-line-2 px-2 py-1 text-[12px] outline-none focus:border-verify"
           />
           <button
             type="submit"
-            className="rounded bg-slate-700 px-2 py-0.5 text-xs text-white hover:bg-slate-900"
+            className="ml-auto rounded bg-neutral-text px-2 py-1 text-[11px] font-semibold text-white hover:bg-ink"
           >
             套用
           </button>
-          {(minPrice || maxPrice) && (
-            <button
-              type="button"
-              onClick={() => navigate(buildUrl(category, searchQuery, { min: '', max: '' }))}
-              className="text-[10px] text-slate-400 hover:text-red-600 hover:underline"
-            >
-              清除
-            </button>
-          )}
         </form>
-      </div>
+      </FilterGroup>
 
-      {/* ── Active filters indicator ───────────────────────────────────────── */}
-      {/* relevance is the implicit default while searching — not advertised as a
-          removable filter chip (only the explicit price sorts are). */}
-      {(sort === 'priceAsc' || sort === 'priceDesc' || minPrice || maxPrice || searchQuery || category || conditionMin) && (
-        <div className="mb-3 flex flex-wrap items-center gap-1.5 text-[11px]">
-          <span className="text-slate-400">篩選中：</span>
+      {/* 狀況 — "at-least" semantic, radio-style single selection */}
+      <FilterGroup title="狀況以上">
+        <p className="mb-2 text-[11px] text-neutral-text-hint">顯示所選或更好嘅成色</p>
+        <FilterItem
+          label="不限"
+          selected={!conditionMin}
+          onClick={() => handleConditionChange(null)}
+        />
+        {CONDITION_GRADES.map((g) => (
+          <FilterItem
+            key={g.id}
+            label={g.label}
+            selected={conditionMin === g.id}
+            onClick={() => handleConditionChange(g.id)}
+          />
+        ))}
+      </FilterGroup>
+
+      {/* 品牌 — only when a category with brands is selected. MULTI-select
+          (checkbox affordance): picking several brands = OR match. */}
+      {category && hasBrandPicker(category as any) && (() => {
+        const catBrands = brandsForCategory(category as any);
+        const fieldLabel = brandFieldLabel(category as any);
+        // Brands in the URL that aren't in this category's curated list
+        // (e.g. carried over from smart search / manual URL) — keep visible
+        // + removable so the filter is never invisible.
+        const customBrands = brands.filter((id) => !catBrands.some((b) => b.id === id));
+        return (
+          <FilterGroup title={fieldLabel}>
+            <p className="mb-2 text-[11px] text-neutral-text-hint">可選多個</p>
+            <FilterItem
+              mode="checkbox"
+              label={`全部${fieldLabel}`}
+              selected={brands.length === 0}
+              onClick={clearBrands}
+            />
+            {catBrands.slice(0, 12).map((b) => (
+              <FilterItem
+                key={b.id}
+                mode="checkbox"
+                label={b.label}
+                selected={brands.includes(b.id)}
+                onClick={() => handleBrandToggle(b.id)}
+              />
+            ))}
+            {customBrands.map((id) => (
+              <FilterItem
+                key={id}
+                mode="checkbox"
+                label={`${id}（自訂）`}
+                selected={true}
+                onClick={() => handleBrandToggle(id)}
+              />
+            ))}
+          </FilterGroup>
+        );
+      })()}
+    </div>
+  );
+
+  return (
+    <div className="mx-auto max-w-container-l3 px-4 sm:px-6">
+      {/* ═══ Search row ═══════════════════════════════════════════════════════ */}
+      <form onSubmit={handleSearch} className="pb-2 pt-6">
+        <div className="flex overflow-hidden rounded-xl border border-line bg-white shadow-sh2">
+          <label className="flex flex-1 items-center pl-5">
+            <Search className="h-4 w-4 shrink-0 text-neutral-text-hint" />
+            <input
+              type="search"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="搜尋品牌、型號、關鍵字…"
+              className="w-full border-0 py-[13px] pl-3 pr-4 text-[15px] text-neutral-text outline-none placeholder:text-neutral-text-hint"
+            />
+          </label>
+          <button
+            type="submit"
+            className="shrink-0 bg-brand-600 px-6 text-[15px] font-bold text-white transition hover:bg-brand-400"
+          >
+            搜尋
+          </button>
+        </div>
+      </form>
+
+      {/* ═══ Active filter chips ═════════════════════════════════════════════ */}
+      {(searchQuery || category || brands.length > 0 || conditionMin || minPriceStr || maxPriceStr) && (
+        <div className="flex flex-wrap gap-2 pb-1 pt-2.5">
           {category && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-2 py-0.5 text-brand-700">
+            <Chip
+              onRemove={() => navigate(buildUrl(null, searchQuery, { brands: null }))}
+              removeLabel="移除品類"
+            >
               品類：{categoryById(category)?.labelZh ?? category}
-              <button onClick={() => navigate(buildUrl(null, searchQuery))} aria-label="移除品類">×</button>
-            </span>
+            </Chip>
+          )}
+          {/* One chip PER selected brand — each independently removable. */}
+          {brands.map((id) => {
+            const l = category ? brandLabel(category as any, id) : id;
+            return (
+              <Chip
+                key={id}
+                onRemove={() => handleBrandToggle(id)}
+                removeLabel={`移除品牌 ${l || id}`}
+              >
+                {category ? brandFieldLabel(category as any) : '品牌'}：{l || id}
+              </Chip>
+            );
+          })}
+          {conditionMin && (
+            <Chip onRemove={() => handleConditionChange(null)} removeLabel="移除狀況">
+              狀況：{conditionLabel(conditionMin as any)} 或以上
+            </Chip>
+          )}
+          {(minPriceStr || maxPriceStr) && (
+            <Chip
+              onRemove={() => navigate(buildUrl(category, searchQuery, { min: '', max: '' }))}
+              removeLabel="移除價錢"
+            >
+              價錢：HK${minPriceStr || '0'}–{maxPriceStr ? `HK$${maxPriceStr}` : '不限'}
+            </Chip>
           )}
           {searchQuery && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">
+            <Chip onRemove={() => navigate(buildUrl(category, ''))} removeLabel="移除搜尋">
               搜尋：{searchQuery}
-              <button onClick={() => navigate(buildUrl(category, ''))} aria-label="移除搜尋">×</button>
-            </span>
-          )}
-          {(sort === 'priceAsc' || sort === 'priceDesc') && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">
-              排序：{sort === 'priceAsc' ? '價低→高' : '價高→低'}
-              <button onClick={() => setSort(searchQuery ? 'relevance' : 'newest')} aria-label="重設排序">×</button>
-            </span>
-          )}
-          {(minPrice || maxPrice) && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-slate-700">
-              價錢：HK${minPrice ?? '0'}–{maxPrice ? `HK$${maxPrice}` : '不限'}
-              <button onClick={() => navigate(buildUrl(category, searchQuery, { min: '', max: '' }))} aria-label="移除價錢">×</button>
-            </span>
-          )}
-          {conditionMin && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-brand-100 px-2 py-0.5 text-brand-700">
-              狀況：{conditionLabel(conditionMin as any)} 或以上
-              <button onClick={() => handleConditionChange(null)} aria-label="移除狀況">×</button>
-            </span>
+            </Chip>
           )}
           <button
             onClick={clearAllFilters}
-            className="ml-1 text-slate-400 hover:text-red-600 hover:underline"
+            className="text-xs text-neutral-text-hint hover:text-danger hover:underline"
           >
             全部重設
           </button>
         </div>
       )}
 
-      {/* ── Count ──────────────────────────────────────────────────────────── */}
-      {!loading && (
-        <p className="mb-4 text-xs text-slate-400">
-          {searchQuery ? `「${searchQuery}」的搜尋結果 · ` : ''}
-          共 {total} 件商品
-          {(minPrice || maxPrice) && (
-            <span className="ml-1">
-              · HK${minPrice ?? '0'} – {maxPrice ? `HK$${maxPrice}` : '不限'}
-            </span>
-          )}
-          {listings.length < total ? `・已顯示 ${listings.length} 件` : ''}
-        </p>
-      )}
+      {/* ═══ Layout: sidebar + main ══════════════════════════════════════════ */}
+      <div className="grid items-start gap-7 pt-4 md:grid-cols-[230px_1fr]">
+        {/* Desktop sidebar */}
+        <aside className="chrome-follow sticky top-[calc(var(--chrome-h)+16px)] hidden md:block">
+          {sidebar}
+        </aside>
 
-      {/* ── Grid ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-        {loading
-          ? Array.from({ length: skeletonCount }).map((_, i) => <SkeletonCard key={i} />)
-          : listings.map((l) => (
-              <Link key={l.id} href={`/listing/${l.id}`} className="flex">
-                <Card className="flex w-full flex-col overflow-hidden transition hover:shadow-md">
-                  <div className="relative aspect-square shrink-0">
-                    {/* Browse cards use server-derived coverUrl (videoPoster if
-                        videoIsCover, else images[0]). Falls back to branded
-                        gradient placeholder when neither exists. */}
-                    <ListingThumb
-                      src={l.coverUrl ?? l.images?.[0] ?? null}
-                      alt={l.title}
-                      emoji={categoryByApiEnum(l.category)?.emoji}
-                      className={`aspect-square h-full w-full ${l.status === 'RESERVED' ? 'opacity-75' : ''}`}
+        {/* Main results */}
+        <div>
+          {/* Results-top */}
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <div className="text-sm text-neutral-text-muted">
+              {loading
+                ? '載入中…'
+                : (
+                  <>
+                    找到 <b className="font-semibold text-neutral-text">{total}</b> 件符合結果
+                  </>
+                )}
+            </div>
+            <div className="flex items-center gap-2">
+              {/* Mobile filter trigger */}
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(true)}
+                className="flex items-center gap-1.5 rounded-lg border border-line-2 bg-white px-3 py-2 text-[13px] font-semibold text-neutral-text shadow-sh1 hover:border-verify md:hidden"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                篩選
+              </button>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as any)}
+                className="rounded-lg border border-line-2 bg-white px-3 py-2 text-[13px] text-neutral-text shadow-sh1 outline-none transition hover:border-verify focus:border-verify"
+              >
+                {searchQuery && <option value="relevance">相關度</option>}
+                <option value="newest">最新上架</option>
+                <option value="priceAsc">價格：低至高</option>
+                <option value="priceDesc">價格：高至低</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Grid */}
+          <div className="grid grid-cols-2 gap-[18px] md:grid-cols-3">
+            {loading
+              ? Array.from({ length: pageSize }).map((_, i) => <ProductCardSkeleton key={i} />)
+              : listings.map((l, idx) => (
+                  // display:contents wrapper — 唔影響 grid layout，純粹捕捉
+                  // search_result_clicked（spec §2.3 funnel join）
+                  <div
+                    key={l.id}
+                    className="contents"
+                    onClickCapture={() => {
+                      if (searchQuery && searchEventIdRef.current) {
+                        track('search_result_clicked', {
+                          query_id: searchEventIdRef.current,
+                          listing_id: l.id,
+                          result_position: idx + 1,
+                        });
+                      }
+                      try { sessionStorage.setItem('analytics_listing_source', searchQuery ? 'search' : 'browse'); } catch {}
+                    }}
+                  >
+                    <ProductCard
+                      listing={l}
+                      meta={
+                        [
+                          l.condition ? conditionLabel(l.condition) : null,
+                          stationDisplayLabel(l.sellerDistrict),
+                        ].filter(Boolean).join(' · ') || undefined
+                      }
                     />
-                    {l.status === 'RESERVED' && (
-                      <span className="absolute left-2 top-2 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white shadow">
-                        已 hold
-                      </span>
-                    )}
-                    {l.hasVideo && (
-                      <span className="absolute right-2 bottom-2 flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-[10px] text-white">
-                        ▶ 影片
-                      </span>
-                    )}
                   </div>
-                  <CardContent className="flex flex-1 flex-col gap-2 p-3">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      <TierPill tier={tierForPrice(l.priceHKD) as 1 | 2 | 3} />
-                      {l.brand && (() => {
-                        const cat = categoryByApiEnum(l.category);
-                        const label = cat ? brandLabel(cat.id as any, l.brand) : l.brand;
-                        return label ? (
-                          <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-700">
-                            {label}
-                          </span>
-                        ) : null;
-                      })()}
-                      {l.condition && (
-                        <span
-                          className="rounded bg-emerald-50 px-1.5 py-0.5 text-[10px] font-medium text-emerald-700 ring-1 ring-emerald-100"
-                          title="賣方申報成色（未經 Authentik 驗證）"
-                        >
-                          {conditionLabel(l.condition)}
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="line-clamp-2 min-h-[2.5rem] text-sm font-medium leading-tight">
-                      {l.title}
-                    </h3>
-                    <div className="mt-auto">
-                      {(() => {
-                        const savings = formatSavings(l.originalPriceHKD, l.priceHKD);
-                        return savings ? (
-                          <div className="flex flex-wrap items-baseline gap-1.5">
-                            <p className="text-base font-semibold text-rose-600">{formatHKD(l.priceHKD)}</p>
-                            <p className="text-[11px] text-slate-400 line-through">{formatHKD(l.originalPriceHKD)}</p>
-                            <span className="rounded bg-rose-100 px-1 py-0.5 text-[10px] font-medium text-rose-700">{savings.display}</span>
-                          </div>
-                        ) : (
-                          <p className="text-base font-semibold">{formatHKD(l.priceHKD)}</p>
-                        );
-                      })()}
-                      {l.createdAt && (
-                        <p className="text-[10px] text-slate-400">{timeAgo(l.createdAt)}</p>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
+                ))}
+            {loadingMore &&
+              Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={`more-${i}`} />)}
+          </div>
 
-        {loadingMore &&
-          Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={`more-${i}`} />)}
+          {/* Empty */}
+          {!loading && listings.length === 0 && (() => {
+            const activeCat = categoryById(category);
+            const isComingSoon = activeCat && !activeCat.enabledInSell;
+            return (
+              <div className="mt-14 rounded-xl border border-line bg-white p-10 text-center shadow-sh1">
+                {isComingSoon ? (
+                  <>
+                    <p className="font-display-serif text-lg font-bold text-ink">
+                      {activeCat.emoji} 「{activeCat.labelZh}」品類即將推出
+                    </p>
+                    <p className="mt-2 text-sm text-neutral-text-muted">
+                      我哋暫未開放此品類嘅交易，敬請期待。
+                    </p>
+                  </>
+                ) : (
+                  <p className="text-sm text-neutral-text-muted">
+                    {searchQuery ? `找不到「${searchQuery}」嘅相關商品。` : '此篩選暫無商品。'}
+                  </p>
+                )}
+                <button
+                  onClick={() => { setInputValue(''); router.replace('/browse'); }}
+                  className="mt-4 text-sm font-semibold text-brand-600 hover:text-brand-700"
+                >
+                  查看全部 →
+                </button>
+              </div>
+            );
+          })()}
+
+          {/* Desktop load more */}
+          {!isMobile && hasMore && !loading && (
+            <div className="mt-10 flex flex-col items-center gap-2">
+              <button
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="rounded-lg border border-line-2 bg-white px-6 py-3 text-sm font-semibold text-neutral-text shadow-sh1 transition hover:border-verify hover:text-verify disabled:opacity-40"
+              >
+                {loadingMore ? '載入中…' : '載入更多'}
+              </button>
+              <p className="text-xs text-neutral-text-hint">已顯示 {listings.length} / {total} 件</p>
+            </div>
+          )}
+
+          {/* Mobile sentinel */}
+          {isMobile && <div ref={sentinelRefCallback} className="h-12" />}
+
+          {/* End */}
+          {!hasMore && !loading && listings.length > 0 && (
+            <p className="mt-8 text-center text-xs text-neutral-text-hint">
+              — 已顯示全部 {total} 件商品 —
+            </p>
+          )}
+        </div>
       </div>
 
-      {/* ── Empty ──────────────────────────────────────────────────────────── */}
-      {!loading && listings.length === 0 && (() => {
-        const activeCat = categoryById(category);
-        const isComingSoon = activeCat && !activeCat.enabledInSell;
-        return (
-          <div className="mt-12 text-center">
-            {isComingSoon ? (
-              <>
-                <p className="text-sm font-medium text-slate-700">
-                  {activeCat.emoji} 「{activeCat.labelZh}」品類即將推出
-                </p>
-                <p className="mt-1 text-xs text-slate-400">
-                  我哋暫未開放此品類嘅交易，敬請期待。
-                </p>
-              </>
-            ) : (
-              <p className="text-sm text-slate-400">
-                {searchQuery ? `找不到「${searchQuery}」的相關商品。` : '此品類暫無商品。'}
-              </p>
-            )}
-            <button
-              onClick={() => { setInputValue(''); router.replace('/browse'); }}
-              className="mt-2 text-xs text-brand-600 hover:underline"
-            >
-              查看全部
-            </button>
-          </div>
-        );
-      })()}
-
-      {/* ── Desktop load more ──────────────────────────────────────────────── */}
-      {!isMobile && hasMore && !loading && (
-        <div className="mt-10 flex flex-col items-center gap-2">
-          <Button variant="outline" onClick={loadMore} disabled={loadingMore}>
-            {loadingMore ? '載入中…' : '載入更多'}
-          </Button>
-          <p className="text-xs text-slate-400">已顯示 {listings.length} / {total} 件</p>
+      {/* ═══ Mobile filter drawer ═══════════════════════════════════════════ */}
+      {drawerOpen && (
+        <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true">
+          <div
+            className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
+            onClick={() => setDrawerOpen(false)}
+          />
+          <aside className="absolute right-0 top-0 flex h-full w-80 max-w-[85vw] flex-col bg-white shadow-sh3">
+            <div className="flex items-center justify-between border-b border-line px-5 py-4">
+              <h3 className="font-display-serif text-lg font-bold text-ink">篩選</h3>
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(false)}
+                className="rounded-lg p-2 text-neutral-text-muted hover:bg-surface-2"
+                aria-label="關閉篩選"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto px-5 pb-6">
+              {sidebar}
+            </div>
+            <div className="border-t border-line bg-white p-4">
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(false)}
+                className="w-full rounded-lg bg-brand-600 py-3 text-[15px] font-bold text-white transition hover:bg-brand-400"
+              >
+                查看 {total} 件結果
+              </button>
+            </div>
+          </aside>
         </div>
-      )}
-
-      {/* ── Mobile sentinel ────────────────────────────────────────────────── */}
-      {isMobile && <div ref={sentinelRefCallback} className="h-12" />}
-
-      {/* ── End ────────────────────────────────────────────────────────────── */}
-      {!hasMore && !loading && listings.length > 0 && (
-        <p className="mt-8 text-center text-xs text-slate-400">
-          — 已顯示全部 {total} 件商品 —
-        </p>
       )}
     </div>
   );

@@ -39,7 +39,23 @@ if ! docker info >/dev/null 2>&1; then
   ok "Docker daemon ready"
 fi
 
-# ── 0b. Skip services whose port is already occupied ─────────────────────
+# ── 0b. Self-heal：node_modules/.bin 執行權限 ─────────────────────────────
+# Snapshot / backup restore / 某啲 copy 工具會抹走 exec bit（2026-07-14 實案：
+# @nestjs/cli/bin/nest.js 變咗 -rw-r--r-- → API 起唔到，log 得一句 Permission
+# denied）。每次 start 前掃一次，自動修返，唔使人手 debug。
+FIXED_BINS=0
+while IFS= read -r -d '' bindir; do
+  for f in "$bindir"/*; do
+    [ -e "$f" ] || continue
+    if [ ! -x "$f" ]; then
+      target="$(readlink -f "$f" 2>/dev/null || echo "$f")"
+      chmod +x "$target" 2>/dev/null && FIXED_BINS=$((FIXED_BINS+1)) || true
+    fi
+  done
+done < <(find "$ROOT" -name '.bin' -type d -path '*/node_modules/*' -not -path '*/.git/*' -print0 2>/dev/null)
+[[ "$FIXED_BINS" -gt 0 ]] && ok "自動修復 $FIXED_BINS 個 node_modules binary 執行權限"
+
+# ── 0c. Skip services whose port is already occupied ─────────────────────
 SKIP_API=0; SKIP_CONSUMER=0; SKIP_AUTH=0; SKIP_ADMIN=0
 check_port() { lsof -ti tcp:"$1" >/dev/null 2>&1; }
 check_port "$API_PORT"      && { warn "Port $API_PORT (API) 已佔用 — 跳過";            SKIP_API=1; }
@@ -94,6 +110,32 @@ else
   printf "  ${D}DB($DB_NAME) 已有 $USERS 個用戶，跳過 seed${R}\n"
 fi
 
+# ── 2b. Mock Stripe gateway（只喺 STRIPE_MODE≠mock + STRIPE_API_BASE 指住
+#        本地 gateway port 先開；prod 而家係 mock mode 唔會開）──────────────
+GW_MODE=$(grep -E '^STRIPE_MODE=' "apps/api/$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2-)
+GW_BASE=$(grep -E '^STRIPE_API_BASE=' "apps/api/$ENV_FILE" 2>/dev/null | tail -1 | cut -d= -f2-)
+if [[ "${GW_MODE:-mock}" != "mock" && "${GW_BASE:-}" == *"localhost:${STRIPE_GW_PORT}"* ]]; then
+  if check_port "$STRIPE_GW_PORT"; then
+    ok "Mock Stripe gateway 已跑 (port $STRIPE_GW_PORT) — 跳過"
+  else
+    say "啟動 mock Stripe gateway (port $STRIPE_GW_PORT)…"
+    ( cd apps/api && set -a; . "./$ENV_FILE"; set +a && \
+      PORT="$STRIPE_GW_PORT" WEBHOOK_URL="$API_URL/webhooks/stripe" \
+      exec npx tsx ../mock-stripe/server.ts ) \
+      > "$LOG_DIR/${ENV_NAME}-stripe-gw.log" 2>&1 &
+    disown
+    GW_READY=0
+    for _ in {1..15}; do
+      curl -fsS -o /dev/null "http://localhost:$STRIPE_GW_PORT/" 2>/dev/null && { GW_READY=1; ok "Mock Stripe gateway ready"; break; }
+      sleep 1
+    done
+    if [[ "$GW_READY" != "1" ]]; then
+      warn "Mock Stripe gateway 15 秒內未 ready — $LOG_DIR/${ENV_NAME}-stripe-gw.log 最後 10 行："
+      tail -10 "$LOG_DIR/${ENV_NAME}-stripe-gw.log" 2>/dev/null | sed 's/^/    /'
+    fi
+  fi
+fi
+
 # ── 3. API ───────────────────────────────────────────────────────────────
 if [[ "$SKIP_API" == "1" ]]; then
   ok "API 已跑 (port $API_PORT) — 跳過"
@@ -102,10 +144,18 @@ else
   ( cd apps/api && set -a; . "./$ENV_FILE"; set +a && exec npx nest start --watch ) \
     > "$LOG_DIR/${ENV_NAME}-api.log" 2>&1 &
   disown
+  API_READY=0
   for _ in {1..60}; do
-    curl -fsS -o /dev/null "$API_URL/listings?limit=1" 2>/dev/null && { ok "API ready"; break; }
+    curl -fsS -o /dev/null "$API_URL/listings?limit=1" 2>/dev/null && { API_READY=1; ok "API ready"; break; }
     sleep 1
   done
+  # Fail loudly（2026-07-14）：起唔到唔好齋卡 — 即場掉 log 出嚟等人一眼睇到死因。
+  if [[ "$API_READY" != "1" ]]; then
+    warn "API 60 秒內未 ready — $LOG_DIR/${ENV_NAME}-api.log 最後 15 行："
+    tail -15 "$LOG_DIR/${ENV_NAME}-api.log" 2>/dev/null | sed 's/^/    /'
+    warn "修完再行 ./start.sh $ENV_NAME（已跑起嘅服務會自動跳過）"
+    exit 1
+  fi
 fi
 
 # ── 4. Frontends ─────────────────────────────────────────────────────────
@@ -124,12 +174,17 @@ start_front() { # $1=appdir  $2=port  $3=logname
 [[ "$SKIP_AUTH"     == "1" ]] && ok "Authenticator 已跑 ($AUTH_PORT) — 跳過"     || start_front authenticator "$AUTH_PORT"     authenticator
 [[ "$SKIP_ADMIN"    == "1" ]] && ok "Admin 已跑 ($ADMIN_PORT) — 跳過"            || start_front admin         "$ADMIN_PORT"    admin
 
-for name_port in "Consumer:$CONSUMER_PORT" "Authenticator:$AUTH_PORT" "Admin:$ADMIN_PORT"; do
-  name="${name_port%%:*}"; port="${name_port##*:}"
+for name_port in "Consumer:$CONSUMER_PORT:consumer" "Authenticator:$AUTH_PORT:authenticator" "Admin:$ADMIN_PORT:admin"; do
+  IFS=':' read -r name port logname <<< "$name_port"
+  FRONT_READY=0
   for _ in {1..60}; do
-    curl -fsS -o /dev/null "http://localhost:$port/" 2>/dev/null && { ok "$name ready (port $port)"; break; }
+    curl -fsS -o /dev/null "http://localhost:$port/" 2>/dev/null && { FRONT_READY=1; ok "$name ready (port $port)"; break; }
     sleep 1
   done
+  if [[ "$FRONT_READY" != "1" ]]; then
+    warn "$name 60 秒內未 ready — $LOG_DIR/${ENV_NAME}-$logname.log 最後 10 行："
+    tail -10 "$LOG_DIR/${ENV_NAME}-$logname.log" 2>/dev/null | sed 's/^/    /'
+  fi
 done
 
 # ── 5. Summary ────────────────────────────────────────────────────────────

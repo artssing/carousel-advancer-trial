@@ -33,8 +33,12 @@ export default function AdminHome() {
       {error && <p className="mt-3 rounded bg-red-950 px-3 py-2 text-sm text-red-300">{error}</p>}
       <div className="mt-6 grid gap-4 md:grid-cols-3 lg:grid-cols-6">
         {kpis.map((k) => {
+          // Lesson #20：hover affordance 只可以落有 link 嘅 tile — link:null 嘅
+          // tile 唔可以有 hover:border（睇落郁得但撳落冇反應）。
           const Inner = (
-            <div className="rounded-xl border border-slate-800 bg-slate-900 p-5 transition hover:border-slate-700">
+            <div className={`rounded-xl border border-slate-800 bg-slate-900 p-5 ${
+              k.link ? 'cursor-pointer transition hover:border-slate-700' : ''
+            }`}>
               <p className="text-xs uppercase tracking-wide text-slate-400">{k.label}</p>
               <p className="mt-1 text-2xl font-bold">{k.value}</p>
             </div>

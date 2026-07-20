@@ -3,18 +3,33 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ShieldCheck, Inbox, LayoutDashboard, User, Coins, LogOut, MessageCircle, MapPin } from 'lucide-react';
+import {
+  Inbox, LayoutDashboard, User, Coins, LogOut, MessageCircle, MapPin, ScanLine,
+} from 'lucide-react';
 import { api, clearToken, hasToken } from '@/lib/api';
 
+/**
+ * L3 鑑定師 Portal chrome — deep-indigo gradient sidebar + dark mobile bottom nav.
+ * Source: design-samples/authenticator-L3/theme.css (`.sidebar` + `.snav`).
+ *
+ * Badge color convention (founder ruling 2026-07-05):
+ *   - Ordinary nav badge (e.g. inbox count): `authBrand-300` (light indigo,
+ *     brand-consistent, feels "just count").
+ *   - IM unread badge: `red-500` (screaming red = urgency, breaks brand color).
+ *
+ * E&O insurance warning moved OUT of the sidebar into main content (per
+ * coordinator note: amber alert on dark indigo bg is visually jarring +
+ * legally-sensitive content shouldn't be truncated inside chrome).
+ */
 const nav = [
-  { href: '/', label: '概覽', icon: LayoutDashboard, mobile: true },
-  { href: '/inbox', label: '待鑑定', icon: Inbox, mobile: true },
-  { href: '/messages', label: '訊息', icon: MessageCircle, showBadge: true, mobile: true },
-  { href: '/earnings', label: '收入', icon: Coins, mobile: true },
-  // Branches + profile: desktop sidebar only; mobile users use top-right menu
-  // (avoiding bottom-nav overcrowding > 5 tabs)
-  { href: '/branches', label: '分店地址', icon: MapPin, mobile: false },
-  { href: '/profile', label: '店面 Profile', icon: User, mobile: true },
+  { href: '/', label: '概覽', icon: LayoutDashboard, mobile: true, badge: 0 },
+  { href: '/inbox', label: '待鑑定', icon: Inbox, mobile: true, badge: 0 },
+  { href: '/scan', label: 'QR 交收', icon: ScanLine, mobile: true, badge: 0 },
+  { href: '/messages', label: '訊息', icon: MessageCircle, showUnread: true, mobile: true, badge: 0 },
+  { href: '/earnings', label: '收入', icon: Coins, mobile: true, badge: 0 },
+  // Branches + profile: desktop sidebar only (avoiding bottom-nav overcrowding > 5 tabs)
+  { href: '/branches', label: '分店地址', icon: MapPin, mobile: false, badge: 0 },
+  { href: '/profile', label: '店面 Profile', icon: User, mobile: true, badge: 0 },
 ];
 
 interface SidebarProps {
@@ -55,62 +70,46 @@ export function Sidebar({ authProfile }: SidebarProps) {
   const pathname = usePathname();
   const unread = useUnreadCount();
 
-  // E&O insurance warning
-  const eAndOWarning = (() => {
-    if (!authProfile?.eAndOInsuranceExpiresAt) return null;
-    const daysLeft = Math.ceil(
-      (new Date(authProfile.eAndOInsuranceExpiresAt).getTime() - Date.now()) / (86400000)
-    );
-    if (daysLeft <= 0) return { text: '保險已過期', color: 'bg-red-500' };
-    if (daysLeft <= 30) return { text: `保險 ${daysLeft} 日後到期`, color: 'bg-amber-500' };
-    return null;
-  })();
-
   function onLogout() {
     clearToken();
     router.push('/login');
   }
 
+  const initial = (authProfile?.displayName ?? '?').slice(0, 1);
+
   return (
-    <aside className="hidden w-60 shrink-0 flex-col border-r border-slate-200 bg-white md:flex">
-      <div className="border-b border-slate-100 p-4">
-        <Link href="/" className="flex items-center gap-2 font-semibold">
-          <ShieldCheck className="h-5 w-5 text-emerald-600" />
-          <span className="text-sm">鑑定師 Portal</span>
-        </Link>
-      </div>
+    <aside
+      className="sticky top-0 hidden h-screen w-[236px] shrink-0 flex-col bg-gradient-to-b from-authBrand-900 to-authBrand-950 px-4 py-5 text-white md:flex"
+    >
+      {/* Brand — matches .sidebar .brand */}
+      <Link href="/" className="block px-2 pb-1 text-[18px] font-extrabold tracking-[0.18em]">
+        AUTHEN<span className="text-authBrand-300">·</span>TIK
+      </Link>
+      <p className="px-2 pb-5 text-[11px] uppercase tracking-[0.1em] text-authBrand-200/70">
+        鑑定師 Portal
+      </p>
 
-      {authProfile && (
-        <div className="border-b border-slate-100 px-4 py-3">
-          <p className="text-xs font-medium text-slate-700">{authProfile.storeName ?? authProfile.displayName}</p>
-          <p className="text-xs text-slate-500">{'★'.repeat(Math.min(authProfile.starRating, 5))} · {authProfile.completedCount} 件</p>
-          {eAndOWarning && (
-            <div className="mt-1.5 flex items-center gap-1.5">
-              <span className={`inline-block h-1.5 w-1.5 rounded-full ${eAndOWarning.color}`} />
-              <span className="text-[10px] font-medium text-amber-700">{eAndOWarning.text}</span>
-            </div>
-          )}
-        </div>
-      )}
-
-      <nav className="flex-1 space-y-0.5 p-2 text-sm">
+      {/* Nav — .snav */}
+      <nav className="flex flex-1 flex-col gap-0.5">
         {nav.map((n) => {
           const Icon = n.icon;
           const active = isActive(pathname, n.href);
-          const showBadge = (n as any).showBadge && unread > 0;
+          const showUnread = (n as any).showUnread && unread > 0;
           return (
             <Link
               key={n.href}
               href={n.href}
-              className={`flex items-center gap-2.5 rounded-lg px-3 py-2.5 transition
-                ${active
-                  ? 'border-l-[3px] border-brand-600 bg-brand-50 font-medium text-brand-700'
-                  : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'}`}
+              className={`flex items-center gap-3 rounded-[9px] px-3 py-2.5 text-[14px] font-medium transition ${
+                active
+                  ? 'bg-authBrand-500 text-white shadow-auth-btn'
+                  : 'text-authBrand-200/80 hover:bg-white/[0.07] hover:text-white'
+              }`}
             >
-              <Icon className={`h-4 w-4 ${active ? 'text-brand-600' : 'text-slate-400'}`} />
+              <Icon className="h-[18px] w-[18px] shrink-0 opacity-90" />
               <span className="flex-1">{n.label}</span>
-              {showBadge && (
-                <span className="flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
+              {showUnread && (
+                // IM unread → red for urgency (founder ruling)
+                <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-extrabold text-white">
                   {unread > 9 ? '9+' : unread}
                 </span>
               )}
@@ -119,41 +118,62 @@ export function Sidebar({ authProfile }: SidebarProps) {
         })}
       </nav>
 
-      <div className="border-t border-slate-100 p-2">
-        <button
-          onClick={onLogout}
-          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-sm text-slate-500 transition hover:bg-slate-50"
-        >
-          <LogOut className="h-4 w-4" />
-          登出
-        </button>
-      </div>
+      {/* Profile card at bottom — .sidebar .me */}
+      {authProfile && (
+        <div className="mt-2 flex items-center gap-2.5 border-t border-white/10 px-2 pt-3">
+          <div className="flex h-[34px] w-[34px] shrink-0 items-center justify-center rounded-full bg-white/15 text-[14px] font-bold">
+            {initial}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="truncate text-[13px] font-semibold text-white">
+              {authProfile.storeName ?? authProfile.displayName}
+            </p>
+            <p className="text-[11px] text-authBrand-200/70">
+              {'★'.repeat(Math.min(authProfile.starRating, 5))} · 在職
+            </p>
+          </div>
+          <button
+            onClick={onLogout}
+            title="登出"
+            className="rounded p-1 text-authBrand-200/70 transition hover:bg-white/10 hover:text-white"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
+        </div>
+      )}
     </aside>
   );
 }
 
-/** Mobile bottom tab bar — shown below md breakpoint */
+/**
+ * L3 Mobile bottom nav — dark indigo to match desktop sidebar (brand continuity).
+ * Active tab uses authBrand-300 (light indigo) which reads well on the dark bg.
+ */
 export function MobileBottomNav() {
   const pathname = usePathname();
   const unread = useUnreadCount();
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-50 flex border-t border-slate-200 bg-white md:hidden">
+    <nav className="fixed inset-x-0 bottom-0 z-50 flex bg-gradient-to-b from-authBrand-900 to-authBrand-950 shadow-[0_-8px_24px_-8px_rgba(38,48,94,0.5)] md:hidden">
       {nav.filter((n) => (n as any).mobile !== false).map((n) => {
         const Icon = n.icon;
         const active = isActive(pathname, n.href);
-        const showBadge = (n as any).showBadge && unread > 0;
+        const showUnread = (n as any).showUnread && unread > 0;
         return (
           <Link
             key={n.href}
             href={n.href}
-            className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] transition
-              ${active ? 'text-brand-600' : 'text-slate-400'}`}
+            className={`relative flex flex-1 flex-col items-center gap-0.5 py-2 text-[10px] font-medium transition ${
+              active ? 'text-white' : 'text-authBrand-200/70'
+            }`}
           >
-            <Icon className={`h-5 w-5 ${active ? 'text-brand-600' : 'text-slate-400'}`} />
+            <Icon className="h-5 w-5" />
             {n.label}
-            {showBadge && (
-              <span className="absolute right-3 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
+            {active && (
+              <span className="absolute -top-0.5 left-1/2 h-[3px] w-6 -translate-x-1/2 rounded-b-full bg-authBrand-300" />
+            )}
+            {showUnread && (
+              <span className="absolute right-3 top-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-extrabold text-white">
                 {unread > 9 ? '9+' : unread}
               </span>
             )}

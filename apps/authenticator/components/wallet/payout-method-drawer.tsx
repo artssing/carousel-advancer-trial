@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { Button, Card, CardContent } from '@authentik/ui';
+import { useEffect, useState } from 'react';
+import { Button, Card, CardContent, OtpInput } from '@authentik/ui';
 import {
   HK_BANKS, PAYOUT_METHOD_TYPES, validatePayoutAccount,
   payoutMethodDisplayLabel, type PayoutMethodTypeKey,
 } from '@authentik/utils';
 import { api, ApiError } from '@/lib/api';
-import { AlertTriangle, Loader2, Star, Trash2, X } from 'lucide-react';
+import { AlertTriangle, Loader2, ShieldCheck, Star, Trash2, X } from 'lucide-react';
 
 type Method = {
   id: string; type: PayoutMethodTypeKey;
@@ -34,6 +34,20 @@ export function PayoutMethodDrawer({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // 2FA state（founder 2026-07-13：加收款戶口要 step-up）
+  const [otpIntentId, setOtpIntentId] = useState<string | null>(null);
+  const [otpMasked, setOtpMasked] = useState('');
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpResetKey, setOtpResetKey] = useState(0);
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [resendCooldown, setResendCooldown] = useState(0);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
+
   const typeMeta = PAYOUT_METHOD_TYPES.find((t) => t.key === type)!;
 
   function reset() {
@@ -47,15 +61,52 @@ export function PayoutMethodDrawer({
     if (!v.ok) { setFormError(v.reason ?? '帳戶資料無效'); return; }
     setSubmitting(true);
     try {
-      await api.wallet.addMethod({
+      // 2FA step 1: server validates + freezes intent + sends email OTP.
+      const res = await api.wallet.initiateAddMethod({
         type, accountIdentifier: identifier.trim(),
         bankCode: typeMeta.needsBank ? bankCode : undefined,
         accountName: accountName.trim(), isDefault,
       });
-      reset(); setAdding(false); onChanged();
+      setOtpIntentId(res.intentId);
+      setOtpMasked(res.maskedTarget);
+      setOtpError(null);
+      setResendCooldown(60);
     } catch (e) {
       setFormError(e instanceof ApiError ? e.message : '新增失敗');
     } finally { setSubmitting(false); }
+  }
+
+  /** 2FA step 2: verify code → method actually created. */
+  async function submitOtpCode(code: string) {
+    if (!otpIntentId || otpBusy) return;
+    setOtpBusy(true);
+    setOtpError(null);
+    try {
+      await api.wallet.confirmAddMethod({ intentId: otpIntentId, code });
+      setOtpIntentId(null);
+      reset(); setAdding(false); onChanged();
+    } catch (e) {
+      setOtpError(e instanceof ApiError ? e.message : '驗證失敗，請稍後再試');
+      setOtpResetKey((k) => k + 1);
+    } finally { setOtpBusy(false); }
+  }
+
+  async function resendOtp() {
+    if (resendCooldown > 0) return;
+    setOtpError(null);
+    setOtpResetKey((k) => k + 1);
+    try {
+      const res = await api.wallet.initiateAddMethod({
+        type, accountIdentifier: identifier.trim(),
+        bankCode: typeMeta.needsBank ? bankCode : undefined,
+        accountName: accountName.trim(), isDefault,
+      });
+      setOtpIntentId(res.intentId);
+      setOtpMasked(res.maskedTarget);
+      setResendCooldown(60);
+    } catch (e) {
+      setOtpError(e instanceof ApiError ? e.message : '重新發送失敗，請稍後再試');
+    }
   }
 
   async function setAsDefault(id: string) {
@@ -124,7 +175,55 @@ export function PayoutMethodDrawer({
           ))}
         </div>
 
-        {adding ? (
+        {/* 2FA OTP panel（authBrand 靛藍 — ruling #18） */}
+        {adding && otpIntentId && (
+          <div className="mt-4 space-y-4 rounded-lg border border-slate-200 p-4">
+            <div className="space-y-1 text-center">
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-authBrand-500/10">
+                <ShieldCheck className="h-5 w-5 text-authBrand-500" />
+              </div>
+              <p className="text-sm font-semibold text-slate-900">驗證身份</p>
+              <p className="text-xs text-slate-500">為保障資金安全，新增收款戶口需要驗證。</p>
+              <p className="text-xs text-slate-500">
+                驗證碼已發送至 <span className="font-medium text-slate-700">{otpMasked}</span>
+              </p>
+            </div>
+            <OtpInput
+              portal="authenticator"
+              onComplete={submitOtpCode}
+              disabled={otpBusy}
+              error={!!otpError}
+              resetKey={otpResetKey}
+            />
+            {otpBusy && (
+              <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> 驗證中…
+              </div>
+            )}
+            {otpError && (
+              <p className="rounded-md border border-red-200 bg-red-50 p-2 text-center text-xs text-red-700">{otpError}</p>
+            )}
+            <div className="flex items-center justify-between text-xs">
+              <button
+                type="button"
+                onClick={() => { setOtpIntentId(null); setOtpError(null); }}
+                className="text-slate-500 hover:text-slate-700 hover:underline"
+              >
+                ← 返回修改
+              </button>
+              <button
+                type="button"
+                onClick={resendOtp}
+                disabled={resendCooldown > 0}
+                className="text-authBrand-500 hover:underline disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline"
+              >
+                {resendCooldown > 0 ? `重新發送 (${resendCooldown}s)` : '重新發送驗證碼'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {adding && !otpIntentId ? (
           <div className="mt-4 space-y-3 rounded-lg border border-slate-200 p-3">
             <h3 className="text-sm font-semibold">新增帳戶</h3>
             <label className="block text-sm">
@@ -172,13 +271,13 @@ export function PayoutMethodDrawer({
                 {methods.length === 0 ? '稍後再加' : '取消'}
               </Button>
               <Button onClick={submitAdd} disabled={submitting} className="flex-1">
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : '儲存帳戶'}
+                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : '傳送驗證碼'}
               </Button>
             </div>
           </div>
-        ) : (
+        ) : !adding ? (
           <Button onClick={() => setAdding(true)} className="mt-3 w-full">+ 新增帳戶</Button>
-        )}
+        ) : null}
       </div>
     </div>
   );

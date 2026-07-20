@@ -1,19 +1,46 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { ConfirmDialog } from '@authentik/ui';
 import { api } from '@/lib/api';
 
+/**
+ * Disputes — list + resolve (P0).
+ * Resolution = server-computed state transition only (REFUND_BUYER /
+ * RELEASE_SELLER) — admin never edits amounts. Note is mandatory and must
+ * reference the named authenticator's verdict, never a platform authenticity
+ * judgement (L'Oréal v eBay posture).
+ */
 export default function DisputesPage() {
   const [list, setList] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // ConfirmDialog v2（founder 2026-07-12）
+  const [resolving, setResolving] = useState<{ id: string; resolution: 'REFUND_BUYER' | 'RELEASE_SELLER'; title?: string } | null>(null);
+  const [busy, setBusy] = useState(false);
 
-  useEffect(() => {
+  function refresh() {
     api.admin.disputes()
       .then(setList)
       .catch((e) => setError(e?.message ?? '載入失敗'))
       .finally(() => setLoading(false));
-  }, []);
+  }
+  useEffect(refresh, []);
+
+  async function confirmResolve(dialogNote?: string) {
+    if (!resolving || !dialogNote?.trim()) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await api.admin.resolveDispute(resolving.id, resolving.resolution, dialogNote.trim());
+      setResolving(null);
+      refresh();
+    } catch (e: any) {
+      setError(e?.message ?? '處理失敗');
+    } finally {
+      setBusy(false);
+    }
+  }
 
   return (
     <div className="px-8 py-8 text-slate-100">
@@ -47,10 +74,45 @@ export default function DisputesPage() {
               <p className="mt-2 text-[10px] text-slate-500">
                 落單於 {new Date(o.createdAt).toLocaleString('zh-HK', { hour12: false })}
               </p>
+
+              {/* ── Resolve actions (OPS_ADMIN+) — ConfirmDialog v2 ── */}
+              <div className="mt-3 flex gap-2 border-t border-slate-800 pt-3">
+                <button
+                  onClick={() => setResolving({ id: o.id, resolution: 'REFUND_BUYER', title: o.listing?.title })}
+                  className="rounded-lg bg-red-900/60 px-3 py-1.5 text-xs font-semibold text-red-200 hover:bg-red-900"
+                >
+                  退款買家
+                </button>
+                <button
+                  onClick={() => setResolving({ id: o.id, resolution: 'RELEASE_SELLER', title: o.listing?.title })}
+                  className="rounded-lg bg-emerald-900/60 px-3 py-1.5 text-xs font-semibold text-emerald-200 hover:bg-emerald-900"
+                >
+                  放款賣家
+                </button>
+              </div>
             </div>
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!resolving}
+        portal="admin"
+        severity="danger"
+        title={resolving?.resolution === 'REFUND_BUYER' ? '爭議裁決 — 退款買家？' : '爭議裁決 — 放款賣家？'}
+        description={resolving?.title}
+        consequence={resolving?.resolution === 'REFUND_BUYER'
+          ? '呢個動作會將訂單轉為 REFUNDED、買家獲全額退款、商品返回 ACTIVE。備註必須引述具名鑑定師嘅判定／證據，唔可以寫成平台自己嘅真偽判斷。'
+          : '呢個動作會將訂單轉為 COMPLETED、放款畀賣家。備註必須引述具名鑑定師嘅判定／證據，唔可以寫成平台自己嘅真偽判斷。'}
+        confirmLabel={resolving?.resolution === 'REFUND_BUYER' ? '確認退款' : '確認放款'}
+        requireReason
+        reasonLabel="處理備註（必填，寫入 audit log）"
+        reasonPlaceholder="例：據鑑定師 Milan Authentication 判定為 FAIL，按證據退款買家"
+        dismissOnBackdrop={false}
+        busy={busy}
+        onConfirm={(r) => confirmResolve(r)}
+        onCancel={() => setResolving(null)}
+      />
     </div>
   );
 }

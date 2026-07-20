@@ -12,6 +12,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  ConfirmDialog,
   Input,
   Label,
   TierPill,
@@ -19,10 +20,20 @@ import {
 import {
   sellCategories, categoryById, categoryByApiEnum, tierForPrice,
   brandsForCategory, hasBrandPicker, brandFieldLabel, matchBrandFromTitle,
-  CONDITION_GRADES,
+  CONDITION_GRADES, formatHKD, stationDisplayLabel, stationCodesFromValue,
 } from '@authentik/utils';
 import { api, hasToken, ApiError } from '@/lib/api';
-import { ImagePlus, X } from 'lucide-react';
+import { StationPicker } from '@/components/station-picker';
+import { ImagePlus, X, GripVertical } from 'lucide-react';
+import {
+  DndContext, closestCenter, PointerSensor, TouchSensor, KeyboardSensor,
+  useSensor, useSensors, type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext, sortableKeyboardCoordinates, arrayMove, rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const MAX_IMAGES = 5;
 // Sanity ceiling — bigger than any iPhone Pro Max RAW (~50MB). Anything past
@@ -209,7 +220,10 @@ export default function SellPage() {
     return `m${_mediaIdCounter.current}`;
   }
   const [deliveryMethods, setDeliveryMethods] = useState<DeliveryMethod[]>(['SHIP']);
-  const [sellerDistrict, setSellerDistrict] = useState('');
+  // MTR station codes (multi-candidate, e.g. ["MOK","TST"]) — stored CSV in
+  // the same String? column (zero migration); legacy listings may hold old
+  // free text — stationCodesFromValue()/stationDisplayLabel() render both.
+  const [sellerStations, setSellerStations] = useState<string[]>([]);
   const [sellerMeetupLocations, setSellerMeetupLocations] = useState<string[]>(['']);
   const addMeetupLocation = () => setSellerMeetupLocations(prev => [...prev, '']);
   const updateMeetupLocation = (i: number, val: string) =>
@@ -220,6 +234,10 @@ export default function SellPage() {
   const [busy, setBusy] = useState(false);
   /** Edit-mode prefill loading */
   const [loading, setLoading] = useState(isEditMode);
+  // Soft-delete inline 2-step confirm（edit mode only）
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   // Price drop awareness (Founder ruling 2026-06-19):
   //   loadedPrice — current sale price at the time we loaded the form
   //   loadedOriginalPrice — anchor price (if listing currently in "on sale" state)
@@ -292,7 +310,7 @@ export default function SellPage() {
           setVideoIsCover(!!listing.videoIsCover);
         }
         setDeliveryMethods(listing.allowedDeliveryMethods ?? ['SHIP']);
-        setSellerDistrict(listing.sellerDistrict ?? '');
+        setSellerStations(stationCodesFromValue(listing.sellerDistrict));
         setSellerMeetupLocations(listing.sellerMeetupLocations?.length ? listing.sellerMeetupLocations : ['']);
         const catCfg = categoryByApiEnum(listing.category);
         if (catCfg) setCategoryId(catCfg.id);
@@ -352,17 +370,28 @@ export default function SellPage() {
     e.target.value = '';
   }
 
-  function moveMedia(idx: number, dir: -1 | 1) {
+  // ── dnd-kit reorder handler ───────────────────────────────────────────
+  // Fires on drag release (mouse / touch / keyboard). arrayMove preserves all
+  // MediaItem fields (id + src + file), only permutes order. Cover badge auto-
+  // updates because it's derived from `i === 0` in the render loop.
+  function onImageDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (!over || active.id === over.id) return;
     setMediaItems((prev) => {
-      const next = idx + dir;
-      if (next < 0 || next >= prev.length) return prev;
-      const copy = [...prev];
-      const tmp = copy[idx]!;
-      copy[idx] = copy[next]!;
-      copy[next] = tmp;
-      return copy;
+      const oldIdx = prev.findIndex((m) => m.id === active.id);
+      const newIdx = prev.findIndex((m) => m.id === over.id);
+      if (oldIdx < 0 || newIdx < 0) return prev;
+      return arrayMove(prev, oldIdx, newIdx);
     });
   }
+
+  // Sensors: pointer for desktop, touch w/ 200ms delay to distinguish drag vs
+  // vertical scroll on mobile (Lesson #17 principle), keyboard for a11y.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
 
   function removeMedia(idx: number) {
     setMediaItems((prev) => {
@@ -449,7 +478,7 @@ export default function SellPage() {
         brand: brand.trim() || undefined,
         images: finalImages,
         allowedDeliveryMethods: deliveryMethods,
-        sellerDistrict: sellerDistrict.trim() || undefined,
+        sellerDistrict: sellerStations.join(',') || undefined,
         sellerMeetupLocations: deliveryMethods.includes('MEETUP_DIRECT')
           ? sellerMeetupLocations.map(l => l.trim()).filter(Boolean)
           : [],
@@ -491,7 +520,8 @@ export default function SellPage() {
         return;
       }
       setPendingOffersDialog(null);
-      router.push(`/listing/${listing.id}`);
+      // New listing → land with IG share wizard open (sell-success share entry).
+      router.push(isEditMode ? `/listing/${listing.id}` : `/listing/${listing.id}?share=1`);
       router.refresh();
     } catch (err: any) {
       setError(err instanceof ApiError ? err.message : `Failed to ${isEditMode ? 'update' : 'create'} listing`);
@@ -503,21 +533,23 @@ export default function SellPage() {
   if (loading) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-8">
-        <div className="h-8 w-48 animate-pulse rounded bg-slate-200" />
-        <div className="mt-6 h-72 animate-pulse rounded-xl bg-slate-100" />
+        <div className="h-8 w-48 animate-pulse rounded bg-surface-2" />
+        <div className="mt-6 h-72 animate-pulse rounded-xl bg-surface-2" />
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="font-display text-2xl font-bold">
-        {isEditMode ? '編輯商品' : '上架新商品'}
+    <div className="mx-auto max-w-container-l3 px-4 pb-16 pt-8 sm:px-6">
+     <div className="grid items-start gap-8 lg:grid-cols-[1fr_320px]">
+      <div className="min-w-0">
+      <h1 className="font-display-serif text-[28px] font-bold leading-tight tracking-[-0.01em] text-ink">
+        {isEditMode ? '編輯商品' : '刊登出售'}
       </h1>
-      <p className="mt-1 text-sm text-slate-600">
+      <p className="mt-1.5 text-[13px] text-neutral-text-hint">
         {isEditMode
           ? '只可以喺商品上架中（未有買家落單）時修改。被預訂或售出後就會 locked。'
-          : '賣家須通過 KYC · 商品鑑定費由賣家承擔（從成交價自動扣除）· 鑑定失敗則退回賣家'}
+          : '填寫貨品資料。系統會按售價自動判斷鑑定分級。'}
       </p>
 
       {/* Price-drop info banners (edit mode only) */}
@@ -546,8 +578,8 @@ export default function SellPage() {
       {pendingOffersDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-lg">
-            <h3 className="text-base font-semibold text-slate-900">確認減價？</h3>
-            <p className="mt-2 text-sm text-slate-600">
+            <h3 className="text-base font-semibold text-ink">確認減價？</h3>
+            <p className="mt-2 text-sm text-neutral-text-muted">
               此商品有 <span className="font-semibold text-brand-700">{pendingOffersDialog.count}</span> 個未處理嘅議價。
               減價會排程喺 <span className="font-semibold">48 小時</span> 後生效；期間買家仍會見原售價，
               你嘅議價對手亦可能會基於原價繼續傾。建議先處理議價再改價。
@@ -595,73 +627,57 @@ export default function SellPage() {
               onChange={onVideoSelected}
             />
 
-            {/* Image grid with ← → ✕ reorder buttons */}
-            <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-              {mediaItems.map((m, i) => {
-                const isCover = i === 0 && !(video && videoIsCover);
-                return (
-                  <div key={m.id} className="relative aspect-square">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={m.src}
-                      alt={`商品圖片 ${i + 1}`}
-                      className="h-full w-full rounded-lg object-cover"
+            {/* Sortable image grid — drag/touch/keyboard to reorder.
+                Whole tile is a drag handle for easy mobile targeting.
+                Cover badge auto-updates because it's derived from `i === 0`. */}
+            {mediaItems.length > 1 && (
+              <p className="mb-2 text-[11px] text-neutral-text-hint">
+                💡 拖拉圖片可改變次序；第一張自動成為主圖
+              </p>
+            )}
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={onImageDragEnd}
+            >
+              <SortableContext
+                items={mediaItems.map((m) => m.id)}
+                strategy={rectSortingStrategy}
+              >
+                <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                  {mediaItems.map((m, i) => (
+                    <SortableImageTile
+                      key={m.id}
+                      m={m}
+                      index={i}
+                      isCover={i === 0 && !(video && videoIsCover)}
+                      onRemove={() => removeMedia(i)}
                     />
-                    {isCover && (
-                      <span className="absolute left-1 top-1 rounded bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow">主圖</span>
-                    )}
+                  ))}
+                  {totalImages < MAX_IMAGES && (
                     <button
                       type="button"
-                      onClick={() => removeMedia(i)}
-                      className="absolute -right-1.5 -top-1.5 rounded-full bg-slate-700 p-0.5 text-white hover:bg-red-600"
-                      aria-label="移除"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-line-2 text-neutral-text-hint hover:border-brand-400 hover:text-brand-500"
                     >
-                      <X className="h-3 w-3" />
+                      <ImagePlus className="h-6 w-6" />
+                      <span className="text-xs">加圖片</span>
                     </button>
-                    {/* Reorder buttons */}
-                    <div className="absolute inset-x-0 bottom-0 flex justify-between gap-1 rounded-b-lg bg-black/40 px-1 py-0.5">
-                      <button
-                        type="button"
-                        onClick={() => moveMedia(i, -1)}
-                        disabled={i === 0}
-                        className="rounded p-0.5 text-white disabled:opacity-30 hover:bg-white/20"
-                        aria-label="左移"
-                      >‹</button>
-                      <span className="text-[10px] text-white/80">{i + 1}</span>
-                      <button
-                        type="button"
-                        onClick={() => moveMedia(i, 1)}
-                        disabled={i === mediaItems.length - 1}
-                        className="rounded p-0.5 text-white disabled:opacity-30 hover:bg-white/20"
-                        aria-label="右移"
-                      >›</button>
-                    </div>
-                  </div>
-                );
-              })}
-              {totalImages < MAX_IMAGES && (
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-500"
-                >
-                  <ImagePlus className="h-6 w-6" />
-                  <span className="text-xs">加圖片</span>
-                </button>
-              )}
-            </div>
-            <p className="mt-2 text-xs text-slate-400">
-              最多 {MAX_IMAGES} 張 · 支援 iPhone / Android 原相（會自動壓縮）·
-              用 ‹ › 調順序 · 第一張為主圖
+                  )}
+                </div>
+              </SortableContext>
+            </DndContext>
+            <p className="mt-2 text-xs text-neutral-text-hint">
+              最多 {MAX_IMAGES} 張 · 支援 iPhone / Android 原相（會自動壓縮）· 第一張為主圖
             </p>
 
             {/* Video section (toggle gated) */}
             {videoUploadEnabled && (
-              <div className="mt-4 border-t border-slate-100 pt-4">
+              <div className="mt-4 border-t border-line pt-4">
                 {video ? (
                   <div className="space-y-2">
                     <div className="flex items-center gap-3">
-                      <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                      <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-lg bg-surface-2">
                         {video.posterUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img src={video.posterUrl} alt="video poster" className="h-full w-full object-cover" />
@@ -670,13 +686,13 @@ export default function SellPage() {
                       </div>
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium">已加影片</p>
-                        <p className="text-xs text-slate-500">≤ 15 秒 / ≤ 15MB · 自動截首幀做縮圖</p>
-                        <label className="mt-1 flex items-center gap-2 text-xs text-slate-700">
+                        <p className="text-xs text-neutral-text-muted">≤ 15 秒 / ≤ 15MB · 自動截首幀做縮圖</p>
+                        <label className="mt-1 flex items-center gap-2 text-xs text-neutral-text">
                           <input
                             type="checkbox"
                             checked={videoIsCover}
                             onChange={(e) => setVideoIsCover(e.target.checked)}
-                            className="rounded border-slate-300"
+                            className="rounded border-line-2"
                           />
                           將影片作為主圖（browse card cover）
                         </label>
@@ -692,7 +708,7 @@ export default function SellPage() {
                   <button
                     type="button"
                     onClick={() => videoInputRef.current?.click()}
-                    className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 px-4 py-3 text-sm text-slate-500 hover:border-brand-400 hover:text-brand-500"
+                    className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-line-2 px-4 py-3 text-sm text-neutral-text-muted hover:border-brand-400 hover:text-brand-500"
                   >
                     ▶ 加入商品影片（選填，最多 15 秒）
                   </button>
@@ -727,7 +743,7 @@ export default function SellPage() {
                   id="cat"
                   value={categoryId}
                   onChange={(e) => changeCategory(e.target.value)}
-                  className="mt-1 flex h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm"
+                  className="mt-1 flex h-10 w-full rounded-lg border border-line-2 bg-white px-3 text-sm"
                 >
                   {sellCategories().map((c) => (
                     <option key={c.id} value={c.id}>
@@ -774,7 +790,7 @@ export default function SellPage() {
               return (
                 <div>
                   <Label>
-                    {fieldLabel} <span className="text-xs font-normal text-slate-400">（選填）</span>
+                    {fieldLabel} <span className="text-xs font-normal text-neutral-text-hint">（選填）</span>
                   </Label>
 
                   {/* Mode A: user picked 「其他」 → free-text input */}
@@ -790,7 +806,7 @@ export default function SellPage() {
                       <button
                         type="button"
                         onClick={() => { setBrandCustomMode(false); setBrand(''); setBrandTouchedManually(true); setBrandAutoDetected(false); }}
-                        className="text-xs text-slate-500 hover:underline"
+                        className="text-xs text-neutral-text-muted hover:underline"
                       >
                         返回揀預設
                       </button>
@@ -801,9 +817,9 @@ export default function SellPage() {
                       <button
                         type="button"
                         onClick={() => { setBrandOpen((o) => !o); setBrandSearch(''); }}
-                        className="flex h-10 w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-3 text-sm transition hover:border-slate-400"
+                        className="flex h-10 w-full items-center justify-between rounded-lg border border-line-2 bg-white px-3 text-sm transition hover:border-line-2"
                       >
-                        <span className={selectedLabel ? 'text-slate-900' : 'text-slate-400'}>
+                        <span className={selectedLabel ? 'text-ink' : 'text-neutral-text-hint'}>
                           {selectedLabel ?? `請揀${fieldLabel}`}
                           {isFreeText && (
                             <span className="ml-1 rounded bg-amber-100 px-1 py-0.5 text-[9px] text-amber-700">
@@ -833,14 +849,14 @@ export default function SellPage() {
                               清除
                             </span>
                           )}
-                          <span className="text-xs text-slate-400">{brandOpen ? '▲' : '▼'}</span>
+                          <span className="text-xs text-neutral-text-hint">{brandOpen ? '▲' : '▼'}</span>
                         </span>
                       </button>
 
                       {brandOpen && (
-                        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-slate-200 bg-white shadow-lg">
+                        <div className="absolute z-20 mt-1 w-full overflow-hidden rounded-lg border border-line bg-white shadow-lg">
                           {/* Sticky search */}
-                          <div className="border-b border-slate-100 p-2">
+                          <div className="border-b border-line p-2">
                             <Input
                               autoFocus
                               value={brandSearch}
@@ -852,7 +868,7 @@ export default function SellPage() {
                           {/* Scrollable list */}
                           <div className="max-h-64 overflow-y-auto">
                             {matched.length === 0 ? (
-                              <p className="px-3 py-3 text-xs text-slate-500">
+                              <p className="px-3 py-3 text-xs text-neutral-text-muted">
                                 揾唔到「{brandSearch}」相關{fieldLabel}。揀「其他」自訂。
                               </p>
                             ) : (
@@ -868,7 +884,7 @@ export default function SellPage() {
                                     setBrandAutoDetected(false);
                                   }}
                                   className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition hover:bg-brand-50 ${
-                                    brand === b.id ? 'bg-brand-50 text-brand-700' : 'text-slate-700'
+                                    brand === b.id ? 'bg-brand-50 text-brand-700' : 'text-neutral-text'
                                   }`}
                                 >
                                   <span>{b.label}</span>
@@ -898,7 +914,7 @@ export default function SellPage() {
                     </div>
                   )}
 
-                  <p className="mt-1 text-[10px] text-slate-400">
+                  <p className="mt-1 text-[10px] text-neutral-text-hint">
                     揀預設{fieldLabel}之後將來可以幫你 AI 自動識別商品；自訂亦會儲存但 AI 識別會較弱。
                   </p>
                 </div>
@@ -915,7 +931,7 @@ export default function SellPage() {
                     className={`flex cursor-pointer items-start gap-2 rounded-lg border p-2.5 transition ${
                       condition === g.id
                         ? 'border-brand-500 bg-brand-50'
-                        : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                        : 'border-line hover:border-line-2 hover:bg-surface-2'
                     }`}
                   >
                     <input
@@ -927,13 +943,13 @@ export default function SellPage() {
                       className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600"
                     />
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-medium text-slate-900">{g.label}</p>
-                      <p className="text-xs text-slate-500">{g.description}</p>
+                      <p className="text-sm font-medium text-ink">{g.label}</p>
+                      <p className="text-xs text-neutral-text-muted">{g.description}</p>
                     </div>
                   </label>
                 ))}
               </div>
-              <p className="mt-1 text-[10px] text-slate-400">
+              <p className="mt-1 text-[10px] text-neutral-text-hint">
                 成色由你申報，Authentik 不驗證。Tier 2/3 商品鑑定時以鑑定師意見為準。
               </p>
             </div>
@@ -945,14 +961,14 @@ export default function SellPage() {
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
-                className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-lg border border-line-2 bg-white px-3 py-2 text-sm"
                 placeholder="購入日期、配件齊全度、瑕疵說明、購入地點 / 單據…"
                 required
               />
             </div>
             {previewTier && (
-              <div className="rounded-lg bg-slate-50 p-3 text-sm">
-                <span className="text-slate-600">此價格對應：</span>
+              <div className="rounded-lg bg-surface-2 p-3 text-sm">
+                <span className="text-neutral-text-muted">此價格對應：</span>
                 <span className="ml-2 inline-block">
                   <TierPill tier={previewTier} showDescription />
                 </span>
@@ -967,7 +983,7 @@ export default function SellPage() {
             <CardTitle>接受嘅交收方式</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-neutral-text-muted">
               揀你願意接受嘅交收方式（可多選），買家落單時會喺你接受嘅方式入面揀一種。
             </p>
             <div className="space-y-2">
@@ -976,7 +992,7 @@ export default function SellPage() {
                 return (
                   <label
                     key={opt.value}
-                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${checked ? 'border-brand-500 bg-brand-50/40' : 'border-slate-200'}`}
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition ${checked ? 'border-brand-500 bg-brand-50/40' : 'border-line'}`}
                   >
                     <input
                       type="checkbox"
@@ -986,26 +1002,37 @@ export default function SellPage() {
                     />
                     <div>
                       <p className="text-sm font-medium">{opt.label}</p>
-                      <p className="text-xs text-slate-500">{opt.desc}</p>
+                      <p className="text-xs text-neutral-text-muted">{opt.desc}</p>
                     </div>
                   </label>
                 );
               })}
             </div>
             <div>
-              <Label htmlFor="district">你所在區域（面交配對用，選填）</Label>
-              <Input
-                id="district"
-                value={sellerDistrict}
-                onChange={(e) => setSellerDistrict(e.target.value)}
-                placeholder="例：旺角 / 觀塘 / 銅鑼灣"
-                className="mt-1"
+              <Label htmlFor="district">你所在區域（面交配對用，選填，可揀多個候選）</Label>
+              {/* Structured MTR pick only — free text never lands (founder 2026-07-08) */}
+              <StationPicker
+                values={sellerStations}
+                onChange={(codes) => {
+                  setSellerStations(codes);
+                  // Convenience: seed 面交地點 rows with newly-added station names
+                  // so the seller refines (「旺角站 E 出口」) instead of typing from
+                  // scratch — buyer picks among these rows at checkout.
+                  setSellerMeetupLocations((prev) => {
+                    const kept = prev.filter((p) => p.trim());
+                    const labels = codes
+                      .map((c) => stationDisplayLabel(c) ?? '')
+                      .filter((l) => l && !kept.some((k) => k.startsWith(l)));
+                    const next = [...kept, ...labels];
+                    return next.length ? next : [''];
+                  });
+                }}
               />
             </div>
             {deliveryMethods.includes('MEETUP_DIRECT') && (
               <div className="mt-4">
                 <Label>面交地點（買家落單時揀選）</Label>
-                <p className="mb-2 text-xs text-slate-500">請提供至少一個建議面交地點，買家可揀選或填寫其他地點。</p>
+                <p className="mb-2 text-xs text-neutral-text-muted">請提供至少一個建議面交地點，買家可揀選或填寫其他地點。</p>
                 <div className="space-y-2">
                   {sellerMeetupLocations.map((loc, i) => (
                     <div key={i} className="flex gap-2">
@@ -1019,7 +1046,7 @@ export default function SellPage() {
                         <button
                           type="button"
                           onClick={() => removeMeetupLocation(i)}
-                          className="rounded-md px-2 text-slate-400 hover:text-red-500"
+                          className="rounded-md px-2 text-neutral-text-hint hover:text-red-500"
                         >
                           ✕
                         </button>
@@ -1050,17 +1077,177 @@ export default function SellPage() {
           </p>
         )}
 
-        <div className="mt-6 flex justify-end gap-2">
+        <div className="mt-6 flex items-center gap-3 border-t border-line pt-6">
           <Link href={isEditMode && editId ? `/listing/${editId}` : '/browse'}>
-            <Button type="button" variant="outline">取消</Button>
+            <Button type="button" variant="ghost">取消</Button>
           </Link>
-          <Button type="submit" disabled={busy || (totalImages === 0 && !video)}>
+          <Button type="submit" size="lg" className="flex-1" disabled={busy || (totalImages === 0 && !video)}>
             {busy
               ? (isEditMode ? '儲存中…' : '發佈中…')
-              : (isEditMode ? '儲存修改' : '發佈上架')}
+              : (isEditMode ? '儲存修改' : '發佈刊登')}
           </Button>
         </div>
+
+        {/* Soft delete（founder 2026-07-10）— ConfirmDialog v2 T3 light（可還原） */}
+        {isEditMode && editId && (
+          <>
+            <button
+              type="button"
+              onClick={() => setDeleteConfirm(true)}
+              className="mt-4 w-full rounded-xl border border-red-200 bg-white py-2.5 text-sm font-medium text-red-600 transition hover:border-red-400 hover:bg-red-50"
+            >
+              刪除呢件商品
+            </button>
+            {deleteError && <p className="mt-2 text-xs font-medium text-red-700">{deleteError}</p>}
+            <ConfirmDialog
+              open={deleteConfirm}
+              severity="danger"
+              title="刪除呢件商品？"
+              description={title}
+              consequence="商品會即時落架，買家搵唔到。刪錯咗可以隨時喺「我的上架」還原。"
+              confirmLabel="確認刪除"
+              busy={deleting}
+              onConfirm={async () => {
+                setDeleting(true);
+                setDeleteError(null);
+                try {
+                  await api.listings.softDelete(editId);
+                  router.push('/my-listings');
+                } catch (err: any) {
+                  setDeleteError(err instanceof ApiError ? err.message : '刪除失敗');
+                  setDeleting(false);
+                  setDeleteConfirm(false);
+                }
+              }}
+              onCancel={() => { setDeleteConfirm(false); setDeleteError(null); }}
+            />
+          </>
+        )}
       </form>
+      </div>
+
+      {/* ═══ Sticky right rail — tier indicator + fee preview ═══ */}
+      <aside className="chrome-follow lg:sticky lg:top-[calc(var(--chrome-h)+16px)]">
+        {previewTier ? (
+          <div className="mb-4 rounded-[10px] border border-verify-border bg-verify-soft p-4">
+            <div className="text-[15px] font-bold text-verify">
+              ◆ Tier {previewTier} · {previewTier === 3 ? '強制鑑定' : previewTier === 2 ? '可選鑑定' : '純撮合'}
+            </div>
+            <p className="mt-1.5 text-[12px] leading-relaxed text-neutral-text-muted">
+              {previewTier === 3
+                ? '售價 ≥ HK$10,000，必須指定鑑定師，買家款項全程託管。'
+                : previewTier === 2
+                  ? '售價 HK$1,000–9,999，買家可選擇是否鑑定。'
+                  : '售價 < HK$1,000，純撮合交易。'}
+            </p>
+          </div>
+        ) : (
+          <div className="mb-4 rounded-[10px] border border-line bg-surface-2 p-4 text-[12px] text-neutral-text-hint">
+            輸入售價後，系統會即時顯示鑑定分級。
+          </div>
+        )}
+
+        <div className="rounded-xl border border-line bg-white p-5 shadow-sh1">
+          <div className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">
+            費用預覽
+          </div>
+          {(() => {
+            const p = typeof price === 'number' ? price : 0;
+            const platformFee = Math.round(p * 0.015);
+            const net = p - platformFee;
+            return (
+              <>
+                <div className="flex justify-between py-1.5 text-[13px] text-neutral-text-muted">
+                  <span>售價</span><b className="font-semibold text-neutral-text">{formatHKD(p)}</b>
+                </div>
+                <div className="flex justify-between py-1.5 text-[13px] text-neutral-text-muted">
+                  <span>平台費 1.5%</span><b className="font-semibold text-neutral-text">−{formatHKD(platformFee)}</b>
+                </div>
+                <div className="flex justify-between py-1.5 text-[13px] text-neutral-text-muted">
+                  <span>鑑定費（買家付）</span><b className="font-semibold text-neutral-text">$0</b>
+                </div>
+                <hr className="my-2.5 border-t border-line" />
+                <div className="flex items-baseline justify-between font-bold">
+                  <span className="text-[14px] text-neutral-text">預計實收</span>
+                  <span className="text-[18px] text-brand-700">{formatHKD(net)}</span>
+                </div>
+              </>
+            );
+          })()}
+        </div>
+        <p className="mt-3.5 text-[11px] leading-relaxed text-neutral-text-hint">
+          最終金額以成交時 server 計算為準。平台為資訊中介，真偽由具名鑑定師負責。
+        </p>
+      </aside>
+     </div>
+    </div>
+  );
+}
+
+// ── Sortable image tile (dnd-kit) ────────────────────────────────────────
+// Whole tile is the drag handle for large mobile tap area. Delete button
+// stops propagation so tapping ✕ doesn't accidentally start a drag.
+function SortableImageTile({
+  m, index, isCover, onRemove,
+}: {
+  m: { id: string; src: string; file?: File };
+  index: number;
+  isCover: boolean;
+  onRemove: () => void;
+}) {
+  const {
+    attributes, listeners, setNodeRef, transform, transition, isDragging,
+  } = useSortable({ id: m.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    // Lift the dragged tile above others and dim slightly for feedback.
+    opacity: isDragging ? 0.45 : 1,
+    zIndex: isDragging ? 10 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      className="relative aspect-square cursor-grab touch-none select-none active:cursor-grabbing"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={m.src}
+        alt={`商品圖片 ${index + 1}`}
+        className="h-full w-full rounded-lg object-cover pointer-events-none"
+        draggable={false}
+      />
+      {isCover && (
+        <span className="pointer-events-none absolute left-1 top-1 rounded bg-amber-500 px-1.5 py-0.5 text-[9px] font-bold text-white shadow">
+          主圖
+        </span>
+      )}
+      {/* Grip hint — bottom-left, subtle. Hidden while dragging (visually redundant). */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute bottom-1 left-1 rounded bg-black/40 p-0.5 text-white opacity-0 transition group-hover:opacity-100"
+      >
+        <GripVertical className="h-3 w-3" />
+      </span>
+      {/* Numeric order badge — helps user parse current order at a glance. */}
+      <span className="pointer-events-none absolute bottom-1 right-1 rounded-full bg-black/55 px-1.5 py-0.5 text-[10px] font-bold text-white">
+        {index + 1}
+      </span>
+      {/* Remove ✕ — stop propagation to avoid triggering drag when tapping. */}
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onRemove(); }}
+        onPointerDown={(e) => e.stopPropagation()}
+        className="absolute -right-1.5 -top-1.5 rounded-full bg-ink p-0.5 text-white hover:bg-red-600"
+        aria-label="移除"
+      >
+        <X className="h-3 w-3" />
+      </button>
     </div>
   );
 }

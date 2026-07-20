@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { AlertOctagon, AlertTriangle, Info, X } from 'lucide-react';
 import { api } from '@/lib/api';
 
-/** Poll interval — 60s per coordinator (see docs/banner-backlog.md for
+/** Poll interval — 60s per coordinator (see docs/backlog/banner-backlog.md for
  *  SSE-based sub-10s alternative). */
 const POLL_MS = 60_000;
 const DISMISS_KEY = 'authentik_dismissed_banners';
@@ -84,7 +84,7 @@ export function BannerBar() {
   if (visible.length === 0) return null;
 
   return (
-    <div className="sticky top-0 z-30 w-full">
+    <div className="w-full">
       {visible.map((b) => {
         const style = SEVERITY_STYLE[b.severity];
         return (

@@ -18,6 +18,8 @@ import {
 import { api, ApiError } from '@/lib/api';
 import { ConversationDrawer } from '@/components/conversation-drawer';
 import { PhotoUploader } from '@/components/photo-uploader';
+import Link from 'next/link';
+import { AuthTopline, AuthContent } from '@/components/auth-topline';
 
 // ─── Cross-app navigation ──────────────────────────────────────────────────
 // Authenticator portal on port 3001; /seller, /listing routes only exist on
@@ -367,9 +369,17 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
       return;
     }
     if (!signature.trim()) { setSubmitError('請輸入電子簽名（你的全名）'); return; }
+    // Ack v2 (D): MEETUP_3WAY PASSED = 即場交收 + 放款 — 必須明確確認
+    // 「貨物已當面交予買家」（「真」同「交咗貨」係兩件事，分開記錄）。
+    if (order.deliveryMethod === 'MEETUP_3WAY' && verdict === 'PASSED' && !handedOver) {
+      setSubmitError('三方面交：請先剔「貨物已當面交予買家」— 提交後訂單即完成並放款');
+      return;
+    }
     setSubmitError(null);
     setVerdictConfirmOpen(true);
   }
+
+  const [handedOver, setHandedOver] = useState(false);
 
   async function doSubmitVerdict() {
     // Re-assert the preflight invariant: dialog only opens after onSubmitVerdict
@@ -400,8 +410,18 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
     } finally { setBusy(false); }
   }
 
-  if (loading) return <div className="px-6 py-8 text-sm text-slate-500">載入中…</div>;
-  if (error) return <div className="px-6 py-8 text-sm text-red-600">{error}</div>;
+  if (loading) return (
+    <>
+      <AuthTopline title="鑑定工作台" subtitle="載入中…" />
+      <AuthContent><div className="h-40 animate-pulse rounded-xl bg-surface-2" /></AuthContent>
+    </>
+  );
+  if (error) return (
+    <>
+      <AuthTopline title="鑑定工作台" />
+      <AuthContent><p className="rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p></AuthContent>
+    </>
+  );
   if (!order) return null;
 
   const checklist: string[] =
@@ -422,11 +442,11 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-emerald-100">
           <CheckCircle2 className="h-8 w-8 text-emerald-600" />
         </div>
-        <h2 className="font-display text-xl font-bold text-slate-900">{submitSuccess}</h2>
-        <p className="mt-2 text-sm text-slate-500">
+        <h2 className="font-display text-xl font-bold text-ink">{submitSuccess}</h2>
+        <p className="mt-2 text-sm text-neutral-text-muted">
           鑑定費：{formatHKD(order.authFeeHKD)} · 簽名人：{signature}
         </p>
-        <p className="mt-1 text-xs text-slate-400">#{orderId.slice(0, 8)} · {order.listing?.title}</p>
+        <p className="mt-1 text-xs text-neutral-text-hint">#{orderId.slice(0, 8)} · {order.listing?.title}</p>
         <Button className="mt-6" onClick={() => router.push('/inbox')}>
           返回 Inbox
         </Button>
@@ -439,31 +459,31 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
     <div className="space-y-4 lg:sticky lg:top-4 lg:max-h-[calc(100vh-2rem)] lg:overflow-y-auto">
       {/* ── Listing card ───────────────────────────────────────────────── */}
       <Card className="w-full">
-        <CardHeader className="border-b border-slate-100">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+        <CardHeader className="border-b border-line">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-text-hint">
             賣家上架嘅貨品
           </p>
           <CardTitle className="text-base">
             <XLink
               href={`/listing/${order.listing?.id}`}
-              className="inline-flex items-center gap-1 hover:text-brand-700 hover:underline"
+              className="inline-flex items-center gap-1 hover:text-authBrand-600 hover:underline"
               title="開新分頁睇上架詳情"
             >
               {order.listing?.title ?? '—'}
-              <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+              <ExternalLink className="h-3.5 w-3.5 shrink-0 text-neutral-text-hint" />
             </XLink>
           </CardTitle>
-          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-slate-500">
-            <span className="font-medium text-slate-700">{formatHKD(order.salePriceHKD ?? 0)}</span>
+          <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-neutral-text-muted">
+            <span className="font-medium text-neutral-text">{formatHKD(order.salePriceHKD ?? 0)}</span>
             {order.listing?.category && (
-              <span className="rounded-full bg-slate-100 px-2 py-0.5">{order.listing.category}</span>
+              <span className="rounded-full bg-surface-2 px-2 py-0.5">{order.listing.category}</span>
             )}
           </div>
         </CardHeader>
         <CardContent className="space-y-3 p-3">
           {/* Main image */}
           {images.length > 0 ? (
-            <div className="aspect-square w-full overflow-hidden rounded-lg bg-slate-100">
+            <div className="aspect-square w-full overflow-hidden rounded-lg bg-surface-2">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={images[safeActive]}
@@ -472,9 +492,9 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
               />
             </div>
           ) : (
-            <div className="flex aspect-square w-full items-center justify-center rounded-lg bg-slate-100 text-xs text-slate-400">
+            <div className="flex aspect-square w-full items-center justify-center rounded-lg bg-surface-2 text-xs text-neutral-text-hint">
               <div className="text-center">
-                <ImageIcon className="mx-auto h-8 w-8 text-slate-300" />
+                <ImageIcon className="mx-auto h-8 w-8 text-neutral-text-hint" />
                 <p className="mt-1">賣家未提供圖片</p>
               </div>
             </div>
@@ -486,7 +506,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
                   key={i}
                   type="button"
                   onClick={() => setActiveImg(i)}
-                  className={`h-14 w-14 shrink-0 overflow-hidden rounded-md border-2 ${i === safeActive ? 'border-brand-500' : 'border-transparent'}`}
+                  className={`h-14 w-14 shrink-0 overflow-hidden rounded-md border-2 ${i === safeActive ? 'border-authBrand-500' : 'border-transparent'}`}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={src} alt="" className="h-full w-full object-cover" />
@@ -497,19 +517,19 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
 
           {/* Description */}
           <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-text-hint">
               賣家原 description
             </p>
             <div
-              className={`mt-1 whitespace-pre-wrap text-sm leading-relaxed text-slate-700 ${descExpanded ? '' : 'line-clamp-6 lg:line-clamp-none'}`}
+              className={`mt-1 whitespace-pre-wrap text-sm leading-relaxed text-neutral-text ${descExpanded ? '' : 'line-clamp-6 lg:line-clamp-none'}`}
             >
-              {order.listing?.description?.trim() || <span className="text-slate-400">賣家未填寫描述</span>}
+              {order.listing?.description?.trim() || <span className="text-neutral-text-hint">賣家未填寫描述</span>}
             </div>
             {order.listing?.description && (order.listing.description.length > 200) && (
               <button
                 type="button"
                 onClick={() => setDescExpanded((v) => !v)}
-                className="mt-1 text-xs text-brand-600 hover:underline lg:hidden"
+                className="mt-1 text-xs text-authBrand-500 hover:underline lg:hidden"
               >
                 {descExpanded ? '收起 ▲' : '睇完整描述 ▼'}
               </button>
@@ -520,29 +540,29 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
 
       {/* ── Seller card ────────────────────────────────────────────────── */}
       <Card className="w-full">
-        <CardHeader className="border-b border-slate-100">
-          <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+        <CardHeader className="border-b border-line">
+          <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-text-hint">
             賣家
           </p>
         </CardHeader>
         <CardContent className="p-3">
           <XLink
             href={`/seller/${order.seller?.id}`}
-            className="group flex items-center gap-2 rounded-lg hover:bg-slate-50"
+            className="group flex items-center gap-2 rounded-lg hover:bg-surface-2"
             title="開新分頁睇賣家檔案"
           >
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand-100 text-sm font-semibold text-brand-700">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-authBrand-soft text-sm font-semibold text-authBrand-600">
               {(order.seller?.displayName ?? '?').slice(0, 1).toUpperCase()}
             </span>
             <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium text-slate-800 group-hover:text-brand-700">
+              <p className="truncate text-sm font-medium text-neutral-text group-hover:text-authBrand-600">
                 {order.seller?.displayName ?? '—'}
               </p>
-              <p className="text-[10px] text-slate-400 group-hover:text-brand-600">
+              <p className="text-[10px] text-neutral-text-hint group-hover:text-authBrand-500">
                 睇賣家檔案 →
               </p>
             </div>
-            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-slate-400" />
+            <ExternalLink className="h-3.5 w-3.5 shrink-0 text-neutral-text-hint" />
           </XLink>
 
           {/* Factual signals — algorithm-derived only, no platform endorsement */}
@@ -556,10 +576,10 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
                   <ShieldCheck className="h-3 w-3" />KYC 驗證
                 </span>
               )}
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">
+              <span className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-neutral-text-muted">
                 已售 {sellerInfo.soldAsSellerCount} 件
               </span>
-              <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] text-slate-600">
+              <span className="inline-flex items-center gap-1 rounded-full bg-surface-2 px-2 py-0.5 text-[10px] text-neutral-text-muted">
                 上架 {sellerInfo.activeListingsCount}
               </span>
             </div>
@@ -575,19 +595,19 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
           className="flex w-full items-center justify-between px-4 py-3 text-left"
         >
           <div>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+            <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-text-hint">
               買家
             </p>
-            <p className="mt-0.5 text-sm font-medium text-slate-700">
+            <p className="mt-0.5 text-sm font-medium text-neutral-text">
               {order.buyer?.displayName ?? '—'}
             </p>
           </div>
           {buyerExpanded
-            ? <ChevronDown className="h-4 w-4 text-slate-400" />
-            : <ChevronRight className="h-4 w-4 text-slate-400" />}
+            ? <ChevronDown className="h-4 w-4 text-neutral-text-hint" />
+            : <ChevronRight className="h-4 w-4 text-neutral-text-hint" />}
         </button>
         {buyerExpanded && (
-          <div className="border-t border-slate-100 px-4 py-3 text-xs text-slate-500">
+          <div className="border-t border-line px-4 py-3 text-xs text-neutral-text-muted">
             <p>買家為交易對手方。鑑定真偽主要對賣家描述作判斷，買家資料一般唔影響鑑定結論。</p>
           </div>
         )}
@@ -604,7 +624,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
           sla.tone === 'red' ? 'border-red-200 bg-red-50 text-red-700'
           : sla.tone === 'amber' ? 'border-amber-200 bg-amber-50 text-amber-800'
           : sla.tone === 'green' ? 'border-emerald-200 bg-emerald-50 text-emerald-800'
-          : 'border-slate-200 bg-slate-50 text-slate-600'
+          : 'border-line bg-surface-2 text-neutral-text-muted'
         }`}>
           <Clock className="h-4 w-4 shrink-0" />
           <span className="font-medium">{sla.label}</span>
@@ -681,7 +701,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
                     </div>
                   )}
                   {lastRejected?.rejectionComment && (
-                    <p className="mt-2 whitespace-pre-line rounded bg-rose-50 p-2 text-xs italic text-slate-700">
+                    <p className="mt-2 whitespace-pre-line rounded bg-rose-50 p-2 text-xs italic text-neutral-text">
                       賣家補充：「{lastRejected.rejectionComment}」
                     </p>
                   )}
@@ -716,7 +736,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
       {order.status === 'SELLER_ACK_PENDING' && (
         <Card>
           <CardContent className="space-y-3 p-4">
-            <p className="font-medium text-slate-700">
+            <p className="font-medium text-neutral-text">
               ✓ 第 {order.rePhotoCount + 1} 次相片已上載。等待賣家 view 後確認交付。
             </p>
             <HandoverHistoryTimeline
@@ -724,7 +744,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
               maxRePhoto={MAX_REPHOTO}
               collapseSingleRound
             />
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-neutral-text-muted">
               如賣家逾 7 日唔 ack，訂單會自動取消，買家會獲全額退款。
               {order.rePhotoCount >= MAX_REPHOTO && (
                 <span className="ml-1">
@@ -740,7 +760,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
       {order.status === 'AUTH_RECEIVED_PENDING_SELLER_ACK' && (
         <Card>
           <CardContent className="p-4">
-            <p className="font-medium text-slate-700">✓ 收件 + 影相完成。等賣家 view 相確認 condition match。</p>
+            <p className="font-medium text-neutral-text">✓ 收件 + 影相完成。等賣家 view 相確認 condition match。</p>
             {order.authReceiptPhotos?.length > 0 && (
               <div className="mt-2 flex gap-2 overflow-x-auto">
                 {order.authReceiptPhotos.map((src: string, i: number) => (
@@ -749,7 +769,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
                 ))}
               </div>
             )}
-            <p className="mt-2 text-xs text-slate-500">
+            <p className="mt-2 text-xs text-neutral-text-muted">
               賣家 ack 後自動進入鑑定階段。
             </p>
           </CardContent>
@@ -811,7 +831,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
       )}
       {order.status === 'REFUNDED' && order.returnPhotosUploadedAt && !order.returnSellerAckAt && (
         <Card>
-          <CardContent className="p-4 text-sm text-slate-600">
+          <CardContent className="p-4 text-sm text-neutral-text-muted">
             ✓ 退貨相已上載。等賣家嚟取回。
             {order.returnPhotos?.length > 0 && (
               <div className="mt-2 flex gap-2 overflow-x-auto">
@@ -869,7 +889,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
       {/* SHIP: Waiting for seller */}
       {order.status === 'PAID' && !isMeetup && (
         <Card>
-          <CardContent className="p-4 text-sm text-slate-500">
+          <CardContent className="p-4 text-sm text-neutral-text-muted">
             等待賣家寄出貨品…
           </CardContent>
         </Card>
@@ -881,7 +901,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
           <Card>
             <CardHeader>
               <CardTitle>1. 鑑定證據（影片 / 圖片）</CardTitle>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-neutral-text-muted">
                 請上載鑑定過程嘅錄影同 / 或關鍵特寫圖片。最少 1 個檔案。每個檔案最大 50MB。
               </p>
             </CardHeader>
@@ -899,7 +919,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex h-32 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-slate-300 text-sm text-slate-500 transition hover:border-brand-400 hover:bg-slate-50 hover:text-brand-600"
+                className="flex h-32 w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-line-2 text-sm text-neutral-text-muted transition hover:border-authBrand-500 hover:bg-surface-2 hover:text-authBrand-500"
               >
                 {isMeetup ? (
                   <>
@@ -917,17 +937,17 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
               {/* Selected files list */}
               {evidence.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-[10px] font-medium uppercase tracking-wider text-slate-400">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-neutral-text-hint">
                     已揀檔案（{evidence.length}）· 已上載 {evidenceCommittedCount} 個
                   </p>
                   <div className="space-y-1.5">
                     {evidence.map((ev) => (
                       <div
                         key={ev.id}
-                        className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white p-2"
+                        className="flex items-center gap-3 rounded-lg border border-line bg-white p-2"
                       >
                         {ev.isVideo ? (
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface-2 text-neutral-text-muted">
                             <FileVideo className="h-5 w-5" />
                           </div>
                         ) : ev.previewUrl ? (
@@ -938,17 +958,17 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
                             className="h-10 w-10 shrink-0 rounded-md object-cover"
                           />
                         ) : (
-                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-slate-100 text-slate-500">
+                          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface-2 text-neutral-text-muted">
                             <FileImage className="h-5 w-5" />
                           </div>
                         )}
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-xs font-medium text-slate-800">{ev.file.name}</p>
-                          <p className="text-[10px] text-slate-400">
+                          <p className="truncate text-xs font-medium text-neutral-text">{ev.file.name}</p>
+                          <p className="text-[10px] text-neutral-text-hint">
                             {ev.isVideo ? '影片' : '圖片'} · {(ev.file.size / (1024 * 1024)).toFixed(1)} MB
                           </p>
                           {ev.status === 'uploading' && (
-                            <p className="text-[10px] text-brand-600">上載中…</p>
+                            <p className="text-[10px] text-authBrand-500">上載中…</p>
                           )}
                           {ev.status === 'done' && (
                             <p className="flex items-center gap-1 text-[10px] text-emerald-600">
@@ -964,7 +984,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
                             type="button"
                             onClick={() => removeEvidence(ev.id)}
                             disabled={ev.status === 'uploading'}
-                            className="shrink-0 rounded p-1 text-slate-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                            className="shrink-0 rounded p-1 text-neutral-text-hint hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
                             aria-label="移除"
                           >
                             <X className="h-4 w-4" />
@@ -977,7 +997,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
               )}
 
               {/* Disclosure: backend storage backlog */}
-              <p className="rounded bg-slate-50 px-2 py-1.5 text-[10px] leading-relaxed text-slate-500">
+              <p className="rounded bg-surface-2 px-2 py-1.5 text-[10px] leading-relaxed text-neutral-text-muted">
                 ⓘ 證據檔案目前只儲存喺你嘅瀏覽器，<strong>提交鑑定前唔好離開呢頁</strong>。上傳到平台儲存（永久存檔／爭議仲裁）係 backlog feature。
               </p>
 
@@ -992,7 +1012,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
           <Card>
             <CardHeader>
               <CardTitle>2. 鑑定 Checklist</CardTitle>
-              <p className="mt-1 text-xs text-slate-500">
+              <p className="mt-1 text-xs text-neutral-text-muted">
                 逐項對比實物與賣家描述。FAILED / INCONCLUSIVE 時可以喺右邊 flag 「與描述不符」嘅項目。
               </p>
             </CardHeader>
@@ -1001,13 +1021,13 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
                 <div
                   key={item}
                   className={`flex items-center justify-between gap-3 rounded-lg border p-2 ${
-                    mismatchFlags[item] ? 'border-red-200 bg-red-50/50' : 'border-slate-100'
+                    mismatchFlags[item] ? 'border-red-200 bg-red-50/50' : 'border-line'
                   }`}
                 >
                   <label className="flex flex-1 items-center gap-2 cursor-pointer">
                     <input
                       type="checkbox"
-                      className="rounded border-slate-300"
+                      className="rounded border-line-2"
                       checked={!!checked[item]}
                       onChange={(e) => onCheckChange(item, e.target.checked)}
                     />
@@ -1020,7 +1040,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
                       className={`flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition ${
                         mismatchFlags[item]
                           ? 'bg-red-600 text-white hover:bg-red-700'
-                          : 'bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-700'
+                          : 'bg-surface-2 text-neutral-text-muted hover:bg-red-100 hover:text-red-700'
                       }`}
                       title="標記此項與賣家描述不符"
                     >
@@ -1102,13 +1122,28 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
                   rows={4}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                  className="mt-1 w-full rounded-lg border border-line-2 px-3 py-2 text-sm"
                   placeholder="任何需向買家披露的細節…"
                 />
-                <p className="mt-1 text-[10px] text-slate-400">
+                <p className="mt-1 text-[10px] text-neutral-text-hint">
                   FAILED / INCONCLUSIVE 時，標記咗「不符」嘅 checklist 項目會自動寫入呢度。可自由 edit 補充說明。
                 </p>
               </div>
+
+              {/* Ack v2 (D): 3WAY PASSED = 即場完成 + 放款 — 交收確認 checkbox */}
+              {order.deliveryMethod === 'MEETUP_3WAY' && verdict === 'PASSED' && (
+                <label className="flex cursor-pointer items-start gap-2 rounded-lg border border-authBrand-200 bg-authBrand-50 px-3 py-2.5">
+                  <input
+                    type="checkbox"
+                    checked={handedOver}
+                    onChange={(e) => setHandedOver(e.target.checked)}
+                    className="mt-0.5 h-4 w-4 accent-authBrand-500"
+                  />
+                  <span className="text-xs leading-relaxed text-ink">
+                    <b>貨物已當面交予買家</b> — 三方同場，提交 PASSED 後訂單即完成並放款（買家唔使再確認）
+                  </span>
+                </label>
+              )}
 
               <div>
                 <Label htmlFor="sign">電子簽名（輸入你的全名以確認）</Label>
@@ -1119,7 +1154,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
                   placeholder="鑑定師全名"
                   className="mt-1"
                 />
-                <p className="mt-1 text-xs text-slate-500">
+                <p className="mt-1 text-xs text-neutral-text-muted">
                   簽名提交後，本鑑定結果將具法律效力。鑑定錯誤將按你的合約 + E&O 保險條款追償。
                 </p>
               </div>
@@ -1154,9 +1189,9 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
                         ? <>提交後買家將獲<strong className="text-red-700">全額退款</strong>，貨品退回賣家。</>
                         : <>提交後訂單轉入爭議流程，平台會介入處理。</>}
                     </p>
-                    <p className="text-xs text-slate-500">
-                      訂單貨價：<span className="font-medium text-slate-700">{formatHKD(order.salePriceHKD ?? 0)}</span>
-                      ｜ 鑑定費：<span className="font-medium text-slate-700">{formatHKD(order.authFeeHKD)}</span>
+                    <p className="text-xs text-neutral-text-muted">
+                      訂單貨價：<span className="font-medium text-neutral-text">{formatHKD(order.salePriceHKD ?? 0)}</span>
+                      ｜ 鑑定費：<span className="font-medium text-neutral-text">{formatHKD(order.authFeeHKD)}</span>
                     </p>
                     <p className="rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
                       ⚠️ 鑑定結果提交後<strong>不可撤回</strong>。鑑定錯誤將按合約 + E&O 保險條款追償。
@@ -1200,23 +1235,59 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
     </div>
   );
 
+  const statusPillCls = isCompleted
+    ? order.authVerdict === 'PASSED'
+      ? 'bg-verdict-pass-soft text-verdict-pass'
+      : order.authVerdict === 'FAILED'
+      ? 'bg-verdict-fail-soft text-verdict-fail'
+      : 'bg-verdict-incon-soft text-verdict-incon'
+    : 'bg-authBrand-soft text-authBrand-600';
+
   return (
-    <div className="mx-auto max-w-6xl px-6 py-8">
-      {/* Top bar */}
-      <div className="mb-4 flex items-center justify-between">
-        <button
-          onClick={() => router.back()}
-          className="flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
-        >
-          <ArrowLeft className="h-4 w-4" /> 返回 Inbox
-        </button>
-        <button
-          onClick={() => setChatOpen(true)}
-          className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-        >
-          <MessageCircle className="h-4 w-4" />
-          訊息買賣雙方
-        </button>
+    <>
+      <AuthTopline
+        title="鑑定工作台"
+        subtitle={
+          <span>
+            <Link href="/inbox" className="font-semibold text-authBrand-500 hover:text-authBrand-600">
+              收件匣
+            </Link>
+            {' / 訂單 '}
+            <span className="font-mono">#{order.id.slice(0, 8).toUpperCase()}</span>
+          </span>
+        }
+        action={
+          <div className="flex items-center gap-2.5">
+            <span className={`rounded-full px-3 py-1 text-[12px] font-semibold ${statusPillCls}`}>
+              {STATUS_LABEL[order.status] ?? order.status}
+            </span>
+            <button
+              onClick={() => setChatOpen(true)}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-line-2 bg-white px-3 py-2 text-[13px] font-semibold text-neutral-text shadow-auth-sh1 transition hover:border-authBrand-500 hover:text-authBrand-500"
+            >
+              <MessageCircle className="h-3.5 w-3.5" />
+              訊息買賣雙方
+            </button>
+          </div>
+        }
+      />
+      <AuthContent>
+      {/* Delivery / location meta strip */}
+      <div className="mb-5 flex flex-wrap items-center gap-2">
+        {order.deliveryMethod && (
+          <span className="flex items-center gap-1 rounded-full bg-surface-2 px-3 py-1 text-[12px] text-neutral-text-muted">
+            {isMeetup ? <Handshake className="h-3 w-3" /> : <Package className="h-3 w-3" />}
+            {DELIVERY_LABEL[order.deliveryMethod] ?? order.deliveryMethod}
+          </span>
+        )}
+        {order.meetupLocation && (
+          <span className="flex items-center gap-1 rounded-full bg-surface-2 px-3 py-1 text-[12px] text-neutral-text-muted">
+            <MapPin className="h-3 w-3" /> {order.meetupLocation}
+          </span>
+        )}
+        <span className="ml-auto text-[13px] text-neutral-text-muted">
+          鑑定費：<span className="font-bold text-verdict-pass">{formatHKD(order.authFeeHKD)}</span>
+        </span>
       </div>
 
       {chatOpen && me && order && (
@@ -1242,37 +1313,12 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
         />
       )}
 
-      {/* Header info bar */}
-      <div className="mb-3 flex flex-wrap items-center gap-2">
-        <Badge>{`#${order.id.slice(0, 8)}`}</Badge>
-        <Badge variant={isCompleted ? (order.authVerdict === 'PASSED' ? 'success' : 'danger') : 'warning'}>
-          {STATUS_LABEL[order.status] ?? order.status}
-        </Badge>
-        {order.deliveryMethod && (
-          <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-            {isMeetup ? <Handshake className="h-3 w-3" /> : <Package className="h-3 w-3" />}
-            {DELIVERY_LABEL[order.deliveryMethod] ?? order.deliveryMethod}
-          </span>
-        )}
-        {order.meetupLocation && (
-          <span className="flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-600">
-            <MapPin className="h-3 w-3" /> {order.meetupLocation}
-          </span>
-        )}
-      </div>
-
-      <h1 className="font-display text-2xl font-bold">鑑定工作台</h1>
-      <p className="mt-1 text-sm text-slate-500">
-        鑑定費：<span className="font-medium text-emerald-600">{formatHKD(order.authFeeHKD)}</span>
-        <span className="mx-2 text-slate-300">·</span>
-        對比左側賣家描述同實物，作出真偽判斷
-      </p>
-
       {/* Two-column layout: context (Zone A) | working (Zone B) */}
-      <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[20rem_1fr]">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[20rem_1fr]">
         <div className="w-full">{contextPanel}</div>
         <div className="w-full">{workingPanel}</div>
       </div>
-    </div>
+      </AuthContent>
+    </>
   );
 }

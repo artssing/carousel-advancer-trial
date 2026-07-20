@@ -15,10 +15,11 @@
  */
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, CardContent, Label, Input } from '@authentik/ui';
+import { Button, Card, CardContent, Label, Input, ConfirmDialog } from '@authentik/ui';
 import { MapPin, Plus, Pencil, Trash2, Star, EyeOff, Eye } from 'lucide-react';
 import { api, hasToken, ApiError } from '@/lib/api';
 import { allDistricts, districtLabel } from '@authentik/utils';
+import { AuthTopline, AuthContent } from '@/components/auth-topline';
 
 type Branch = Awaited<ReturnType<typeof api.branches.list>>[number];
 
@@ -155,16 +156,20 @@ export default function BranchesPage() {
   const activeCount = branches.filter((b) => b.isActive).length;
 
   return (
-    <div className="mx-auto max-w-3xl px-6 py-8">
-      <div className="flex items-baseline justify-between">
-        <h1 className="font-display text-2xl font-bold">分店地址管理</h1>
-        <Button size="sm" onClick={openCreate}>
-          <Plus className="mr-1 h-4 w-4" /> 新增分店
-        </Button>
-      </div>
-      <p className="mt-1 text-xs text-slate-500">
-        買家落單揀「鑑定師面交」/「三方面交」時，會由呢度顯示嘅 active 分店揀一個交收。
-      </p>
+    <>
+      <AuthTopline
+        title="分店地址管理"
+        subtitle="買家落單揀「鑑定師面交」/「三方面交」時，會由呢度顯示嘅 active 分店揀一個交收。"
+        action={
+          <button
+            onClick={openCreate}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-authBrand-500 px-4 py-2 text-[13px] font-bold text-white shadow-auth-btn transition hover:bg-authBrand-600"
+          >
+            <Plus className="h-3.5 w-3.5" /> 新增分店
+          </button>
+        }
+      />
+      <AuthContent>
 
       {activeCount === 0 && !loading && (
         <div className="mt-4 rounded-lg border border-rose-300 bg-rose-50 p-3 text-xs text-rose-800">
@@ -180,9 +185,9 @@ export default function BranchesPage() {
 
       {/* Editor (inline create / edit) */}
       {editor && (
-        <Card className="mt-4 border-brand-300 bg-brand-50/40">
+        <Card className="mt-4 border-authBrand-border bg-authBrand-soft/40">
           <CardContent className="space-y-3 p-4">
-            <p className="text-sm font-semibold text-brand-900">
+            <p className="text-sm font-semibold text-authBrand-900">
               {editor.mode === 'create' ? '新增分店' : '編輯分店'}
             </p>
             <div className="grid gap-3 md:grid-cols-2">
@@ -202,7 +207,7 @@ export default function BranchesPage() {
                   id="b-district"
                   value={editor.districtKey}
                   onChange={(e) => setEditor({ ...editor, districtKey: e.target.value })}
-                  className="mt-1 h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm"
+                  className="mt-1 h-10 w-full rounded-lg border border-line-2 bg-white px-3 text-sm"
                 >
                   {allDistricts().map((d) => (
                     <option key={d.key} value={d.key}>{d.label}</option>
@@ -300,16 +305,15 @@ export default function BranchesPage() {
 
       {/* Branch list */}
       <div className="mt-6 space-y-3">
-        {loading && <p className="text-sm text-slate-500">載入中…</p>}
+        {loading && <p className="text-sm text-neutral-text-muted">載入中…</p>}
         {!loading && branches.length === 0 && !editor && (
           <Card>
-            <CardContent className="p-6 text-center text-sm text-slate-500">
+            <CardContent className="p-6 text-center text-sm text-neutral-text-muted">
               仲未有分店。撳右上「新增分店」開始。
             </CardContent>
           </Card>
         )}
         {branches.map((b) => {
-          const isConfirming = deleteConfirmId === b.id;
           const district = districtLabel(b.districtKey);
           return (
             <Card key={b.id} className={!b.isActive ? 'opacity-60' : ''}>
@@ -317,31 +321,31 @@ export default function BranchesPage() {
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-1.5 text-sm font-semibold">
-                      <MapPin className="h-4 w-4 shrink-0 text-brand-600" />
+                      <MapPin className="h-4 w-4 shrink-0 text-authBrand-500" />
                       {b.name}
                       {b.isPrimary && (
-                        <span className="inline-flex items-center gap-0.5 rounded bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700">
+                        <span className="inline-flex items-center gap-0.5 rounded bg-authBrand-soft px-1.5 py-0.5 text-[10px] font-semibold text-authBrand-600">
                           <Star className="h-2.5 w-2.5" /> 主要
                         </span>
                       )}
                       {district && (
-                        <span className="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] text-slate-600">
+                        <span className="rounded bg-surface-2 px-1.5 py-0.5 text-[10px] text-neutral-text-muted">
                           {district}
                         </span>
                       )}
-                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600'}`}>
+                      <span className={`rounded px-1.5 py-0.5 text-[10px] font-medium ${b.isActive ? 'bg-emerald-100 text-emerald-700' : 'bg-surface-2 text-neutral-text-muted'}`}>
                         {b.isActive ? '使用中' : '已暫停'}
                       </span>
                     </p>
-                    <p className="mt-1 text-xs text-slate-700">{b.fullAddress}</p>
+                    <p className="mt-1 text-xs text-neutral-text">{b.fullAddress}</p>
                     {b.businessHours && (
-                      <p className="mt-0.5 text-[11px] text-slate-500">營業：{b.businessHours}</p>
+                      <p className="mt-0.5 text-[11px] text-neutral-text-muted">營業：{b.businessHours}</p>
                     )}
                     {b.notes && (
                       <p className="mt-0.5 text-[11px] text-amber-700">⚠ {b.notes}</p>
                     )}
                     {(b.contactPhone || b.contactWhatsapp) && (
-                      <p className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-slate-600">
+                      <p className="mt-1 flex flex-wrap items-center gap-3 text-[11px] text-neutral-text-muted">
                         {b.contactPhone && <span>📞 {b.contactPhone}</span>}
                         {b.contactWhatsapp && <span>💬 WA: {b.contactWhatsapp}</span>}
                       </p>
@@ -350,7 +354,7 @@ export default function BranchesPage() {
                 </div>
 
                 {/* Actions */}
-                <div className="flex flex-wrap gap-1.5 border-t border-slate-100 pt-2">
+                <div className="flex flex-wrap gap-1.5 border-t border-line pt-2">
                   {!b.isPrimary && b.isActive && (
                     <Button
                       variant="outline"
@@ -376,7 +380,7 @@ export default function BranchesPage() {
                   <Button variant="outline" size="sm" onClick={() => openEdit(b)} disabled={savingId === b.id}>
                     <Pencil className="mr-1 h-3 w-3" /> 編輯
                   </Button>
-                  {!isConfirming ? (
+                  {(
                     <Button
                       variant="outline"
                       size="sm"
@@ -386,25 +390,6 @@ export default function BranchesPage() {
                     >
                       <Trash2 className="mr-1 h-3 w-3" /> 刪除
                     </Button>
-                  ) : (
-                    <div className="flex items-center gap-1.5 rounded-md border border-rose-300 bg-rose-50 px-2 py-1 text-[11px]">
-                      <span className="text-rose-800">確定刪除？</span>
-                      <Button
-                        variant="danger"
-                        size="sm"
-                        onClick={() => onConfirmDelete(b)}
-                        disabled={savingId === b.id}
-                      >
-                        確認
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setDeleteConfirmId(null)}
-                      >
-                        取消
-                      </Button>
-                    </div>
                   )}
                 </div>
               </CardContent>
@@ -413,9 +398,27 @@ export default function BranchesPage() {
         })}
       </div>
 
-      <p className="mt-6 text-[10px] text-slate-400">
+      <p className="mt-6 text-[10px] text-neutral-text-hint">
         刪除限制：如分店有進行中訂單，必須完成或取消後先可以刪除。可以暫停接單作過渡。
       </p>
-    </div>
+
+      {/* ConfirmDialog v2（founder 2026-07-12，portal=authenticator） */}
+      <ConfirmDialog
+        open={!!deleteConfirmId}
+        portal="authenticator"
+        severity="danger"
+        title="刪除呢間分店？"
+        description={branches.find((x) => x.id === deleteConfirmId)?.name}
+        consequence="呢個動作會將分店由你嘅公開檔案移除，買家將無法揀佢做面交點。有進行中訂單嘅分店 server 會擋。"
+        confirmLabel="確認刪除"
+        busy={savingId === deleteConfirmId}
+        onConfirm={() => {
+          const b = branches.find((x) => x.id === deleteConfirmId);
+          if (b) onConfirmDelete(b);
+        }}
+        onCancel={() => setDeleteConfirmId(null)}
+      />
+      </AuthContent>
+    </>
   );
 }

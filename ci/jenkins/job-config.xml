@@ -1,0 +1,130 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<flow-definition plugin="workflow-job">
+  <description>Authentik CI/CD pipeline (thin shell → ci/ci-run.sh)</description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>ENVIRONMENT</name>
+          <description>deploy target env</description>
+          <choices class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>uat</string>
+              <string>prod</string>
+            </a>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
+        <hudson.model.BooleanParameterDefinition>
+          <name>DEPLOY</name><description>auto deploy after build</description><defaultValue>true</defaultValue>
+        </hudson.model.BooleanParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <definition class="org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition" plugin="workflow-cps">
+    <script><![CDATA[// ─────────────────────────────────────────────────────────────────────────
+// Authentik CI/CD pipeline —— 薄殼版（2026-07-19）
+//
+// 設計：Jenkinsfile 只負責「隔離 source + 分 stage 叫 repo 入面嘅 ci/ci-run.sh」。
+// 真正 build 邏輯喺 `ci/ci-run.sh`（喺 repo，會被 copy 入 BUILD_DIR）→
+// 改邏輯唔使 reseed Jenkins job，run `./ci.sh build` 即生效。
+// 只有改「stage 結構本身」先需要 `./ci.sh fresh` 重種。
+//
+// 唔喺 bind-mount /repo build（會污染 user Mac node_modules）：Stage 1 copy 去
+// Jenkins workspace 隔離。詳見 CLAUDE.md「CI/CD pipeline 已知陷阱」。
+// ─────────────────────────────────────────────────────────────────────────
+pipeline {
+  agent any
+
+  parameters {
+    choice(name: 'ENVIRONMENT', choices: ['uat', 'prod'], description: '部署目標環境')
+    booleanParam(name: 'DEPLOY', defaultValue: true, description: 'build 完自動 deploy')
+  }
+
+  environment {
+    SRC       = '/repo'
+    BUILD_DIR = "${WORKSPACE}/build"
+  }
+
+  options { disableConcurrentBuilds() }
+
+  stages {
+    stage('1 · Isolate source') {
+      steps {
+        sh '''
+          set -e
+          echo "node $(node -v) · docker $(docker version --format '{{.Server.Version}}') · $(docker compose version)"
+          rm -rf "$BUILD_DIR"; mkdir -p "$BUILD_DIR"
+          tar -C "$SRC" \
+            --exclude=./node_modules --exclude=./.git --exclude=./.turbo \
+            --exclude='*/node_modules' --exclude='*/.next' --exclude='*/dist' \
+            --exclude=./.backups --exclude=./.dev-logs \
+            -cf - . | tar -C "$BUILD_DIR" -xf -
+          cp "$SRC"/.env.compose.* "$BUILD_DIR"/ 2>/dev/null || true
+          cp "$SRC"/apps/api/.env.prod "$SRC"/apps/api/.env.uat "$BUILD_DIR"/apps/api/ 2>/dev/null || true
+        '''
+      }
+    }
+
+    stage('2 · Install + prisma generate') {
+      steps { dir(env.BUILD_DIR) { sh "bash ci/ci-run.sh install ${params.ENVIRONMENT}" } }
+    }
+
+    stage('3 · Type-check GATE') {
+      steps { dir(env.BUILD_DIR) { sh "bash ci/ci-run.sh typecheck ${params.ENVIRONMENT}" } }
+    }
+
+    stage('4 · Ensure Postgres') {
+      steps { dir(env.BUILD_DIR) { sh "bash ci/ci-run.sh postgres ${params.ENVIRONMENT}" } }
+    }
+
+    stage('5 · Docker build images') {
+      steps { dir(env.BUILD_DIR) { sh "bash ci/ci-run.sh dockerbuild ${params.ENVIRONMENT}" } }
+    }
+
+    stage('6 · Approve (PROD only)') {
+      when { expression { return params.ENVIRONMENT == 'prod' && params.DEPLOY } }
+      steps { input message: '確認 deploy 上 PROD？', ok: 'Deploy PROD' }
+    }
+
+    stage('7 · Deploy') {
+      when { expression { return params.DEPLOY } }
+      steps { dir(env.BUILD_DIR) { sh "bash ci/ci-run.sh deploy ${params.ENVIRONMENT}" } }
+    }
+
+    stage('8 · Smoke test') {
+      when { expression { return params.DEPLOY } }
+      steps { dir(env.BUILD_DIR) { sh "bash ci/ci-run.sh smoke ${params.ENVIRONMENT}" } }
+    }
+  }
+
+  post {
+    success {
+      echo "✅ ${params.ENVIRONMENT} deploy 成功"
+      withEnv(["NOTIFY_STATUS=success", "NOTIFY_ENV=${params.ENVIRONMENT}"]) { notifyN8n() }
+    }
+    failure {
+      echo "❌ ${params.ENVIRONMENT} pipeline 失敗"
+      withEnv(["NOTIFY_STATUS=failure", "NOTIFY_ENV=${params.ENVIRONMENT}"]) { notifyN8n() }
+    }
+  }
+}
+
+void notifyN8n() {
+  sh '''
+    if [ -n "$N8N_NOTIFY_URL" ]; then
+      curl -fsS -X POST "$N8N_NOTIFY_URL" \
+        -H 'Content-Type: application/json' \
+        -d "{\\"status\\":\\"$NOTIFY_STATUS\\",\\"env\\":\\"$NOTIFY_ENV\\",\\"job\\":\\"$JOB_NAME\\",\\"build\\":\\"$BUILD_NUMBER\\",\\"url\\":\\"$BUILD_URL\\"}" \
+        || echo "n8n notify 失敗（唔阻 pipeline）"
+    else
+      echo "N8N_NOTIFY_URL 未設 → 跳過通知"
+    fi
+  '''
+}
+]]></script>
+    <sandbox>true</sandbox>
+  </definition>
+  <triggers/>
+  <disabled>false</disabled>
+</flow-definition>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>檔案 · 鑑定師 Portal</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .cols{display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .preview{position:sticky;top:82px}
+  .pv-head{display:flex;gap:12px;align-items:center;margin-bottom:12px}
+  .rating-note{font-size:12px;color:var(--text-3);line-height:1.6}
+</style>
+</head>
+<body>
+<div class="portal">
+  <aside class="sidebar">
+    <div class="brand">AUTHEN<span>·</span>TIK</div>
+    <div class="role">鑑定師 Portal</div>
+    <nav class="snav">
+      <a href="dashboard.html">工作台</a>
+      <a href="inbox.html">收件匣 <span class="badge">5</span></a>
+      <a href="messages.html">訊息 <span class="badge">2</span></a>
+      <a href="earnings.html">收入</a>
+      <a class="on" href="profile.html">檔案</a>
+    </nav>
+    <div class="me"><div class="av">米</div><div><div class="nm">Milan Leung</div><div class="st">★★★★★ · 在職</div></div></div>
+  </aside>
+
+  <div class="main">
+    <div class="topline"><div><h1 class="display">鑑定師檔案</h1><div class="pt">公開資料會顯示於你的鑑定師頁面</div></div>
+      <button class="btn btn-primary btn-sm">儲存變更</button></div>
+
+    <div class="content">
+      <div class="cols">
+        <div>
+          <div class="tabs"><a class="on">基本資料</a><a>收費</a><a>專長</a><a>合約與保險</a></div>
+
+          <div class="card card-pad" style="margin-bottom:16px">
+            <div class="section-label">店舖資料</div>
+            <div class="field"><label>店舖名稱 <span class="hint">公開</span></label><input class="input" value="Milan 名牌鑑定工作室"></div>
+            <div class="two">
+              <div class="field"><label>地區</label><select class="select"><option>尖沙咀</option><option>中環</option><option>旺角</option></select></div>
+              <div class="field"><label>從業年資</label><input class="input" value="8 年"></div>
+            </div>
+            <div class="field"><label>店舖地址 <span class="hint">面交時顯示予買賣雙方</span></label><input class="input" value="尖沙咀漢口道 28 號 12 樓 1203 室"></div>
+            <div class="field" style="margin:0"><label>專業簡介 <span class="hint">公開</span></label>
+              <textarea class="textarea">前拍賣行手袋部門鑑定師，八年經驗，專攻 Chanel 及 Hermès，熟悉五金年份碼與皮革工藝。</textarea></div>
+          </div>
+
+          <div class="card card-pad" style="margin-bottom:16px">
+            <div class="section-label">收費設定</div>
+            <div class="two">
+              <div class="field"><label>費率 <span class="hint">% of 貨價</span></label><input class="input" value="2.0%"></div>
+              <div class="field" style="margin:0"><label>最低收費</label><input class="input" value="HK$600"></div>
+            </div>
+            <div class="note-brand" style="margin-top:6px">平台會以 AI 監控費率是否偏離同品類基準；異常會提示，但你可自訂。</div>
+          </div>
+
+          <!-- E&O 警示 -->
+          <div class="card card-pad" style="border-color:var(--incon-border)">
+            <div class="section-label" style="color:var(--incon)">合約與 E&amp;O 保險</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--line)">
+              <div><b style="font-size:14px">E&amp;O 專業責任保險</b><div class="mono">保單 #EO-2024-8871 · 承保額 HK$2,000,000</div></div>
+              <span class="pill pill-pass">有效至 2026-12</span></div>
+            <div class="note-incon" style="margin-top:12px">⚠ 保險到期前 30 日系統會提醒續保。<b>保險失效期間你將無法接單</b>，因為所有鑑定判定必須有 E&amp;O 承保。</div>
+          </div>
+        </div>
+
+        <!-- 公開預覽 -->
+        <div>
+          <div class="card card-pad preview">
+            <div class="section-label">公開頁面預覽</div>
+            <div class="pv-head">
+              <div class="avatar" style="width:52px;height:52px">米</div>
+              <div><div style="font-weight:700">Milan Leung <span class="stars">★★★★★</span></div>
+                <div class="mono">名牌手袋 · 尖沙咀</div></div>
+            </div>
+            <div style="display:flex;gap:18px;padding:12px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:12px">
+              <div><div style="font-weight:800;color:var(--primary)">1,240</div><div class="mono">鑑定單</div></div>
+              <div><div style="font-weight:800;color:var(--pass)">0.3%</div><div class="mono">爭議率</div></div>
+              <div><div style="font-weight:800;color:var(--primary)">4.9</div><div class="mono">評分</div></div>
+            </div>
+            <p class="rating-note">★ 星級與爭議率由平台按實際完成單數演算派生，<b>不可手動修改</b>。此為演算法信任指標，非平台背書。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

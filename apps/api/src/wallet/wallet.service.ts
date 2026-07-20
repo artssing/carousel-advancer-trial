@@ -16,7 +16,8 @@ import {
   PayoutMethodTypeKey,
   validatePayoutAccount,
 } from '@authentik/utils';
-import { PayoutMethodType, PayoutStatus } from '@prisma/client';
+import { PayoutIntentKind, PayoutMethodType, PayoutStatus } from '@prisma/client';
+import { AuthService } from '../auth/auth.service';
 
 /**
  * Wallet / Cashout service. ALL MOCK — no real FPS / bank / Stripe Connect.
@@ -51,7 +52,10 @@ export class WalletService implements OnModuleInit {
     'DISPUTED',
   ];
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly auth: AuthService,
+  ) {}
 
   async onModuleInit() {
     // Rehydrate timers for any PENDING / PROCESSING PayoutRequest left after restart.
@@ -187,7 +191,13 @@ export class WalletService implements OnModuleInit {
     });
   }
 
-  async createMethod(userId: string, dto: {
+  /**
+   * Internal executor — payout-method row creation. NOT exposed directly:
+   * adding a payout method is the classic account-takeover step 1 (add own
+   * account, then drain), so it's gated behind 2FA（founder 2026-07-13）.
+   * Reach it via initiateAddMethod() → confirmAddMethod().
+   */
+  private async createMethod(userId: string, dto: {
     type: PayoutMethodTypeKey;
     accountIdentifier: string;
     bankCode?: string;
@@ -278,7 +288,12 @@ export class WalletService implements OnModuleInit {
     return r;
   }
 
-  async createRequest(userId: string, dto: { payoutMethodId: string; amountHKD: number }) {
+  /**
+   * Shared validation for a payout request (used by BOTH initiate — so the
+   * user learns about problems BEFORE burning an OTP — and the final create).
+   * Returns the validated method + integer amount.
+   */
+  private async validatePayoutRequest(userId: string, dto: { payoutMethodId: string; amountHKD: number }) {
     const method = await this.prisma.payoutMethod.findUnique({ where: { id: dto.payoutMethodId } });
     if (!method || method.userId !== userId || method.deletedAt) {
       throw new NotFoundException('Payout method not found');
@@ -290,6 +305,20 @@ export class WalletService implements OnModuleInit {
     if (amount > PAYOUT_MAX_HKD) {
       throw new BadRequestException(`單次提款上限 HKD ${PAYOUT_MAX_HKD.toLocaleString()}`);
     }
+    return { method, amount };
+  }
+
+  /**
+   * Internal executor — payout-request row creation. NOT exposed directly:
+   * withdrawals require 2FA（founder 2026-07-13）. Reach it via
+   * initiatePayout() → confirmPayout(), which passes the verified channel.
+   */
+  private async createRequest(
+    userId: string,
+    dto: { payoutMethodId: string; amountHKD: number },
+    verified: { via: string; at: Date },
+  ) {
+    const { method, amount } = await this.validatePayoutRequest(userId, dto);
 
     const fee = await this.getPayoutFeeHKD();
 
@@ -319,12 +348,184 @@ export class WalletService implements OnModuleInit {
           netHKD: amount - fee,
           status: PayoutStatus.PENDING,
           reference: generatePayoutReference(),
+          verifiedVia: verified.via,
+          verifiedAt: verified.at,
         },
       });
     });
 
     this.scheduleMockTransitions(created.id, 0);
     return created;
+  }
+
+  // ── 2FA step-up（founder 2026-07-13 拍板 — docs/proposals/payout-2fa-proposal.md）──
+  //
+  // 「提款 + 新增收款戶口」兩個閘都要 2FA（Q1）。MVP channel = Email OTP（Q4；
+  // SMS 待真 provider 後升做首選）。冇 verified email → 擋 + 引導驗證（Q2）。
+  // 全額都驗，唔設細額豁免（Q3）。兩 portal 同一套（Q5）。
+  //
+  // 防 replay 核心：OTP bind 落一個 PayoutIntent（凍結 payload、10 分鐘 TTL、
+  // 一次性）。金額/戶口改咗 = 新 intent = 新 OTP。
+
+  private static readonly INTENT_TTL_MS = 10 * 60_000;
+
+  /** "peanut@x.com" → "p*****@x.com" — show enough to recognise, not enumerate. */
+  private maskEmail(email: string): string {
+    const [local, domain] = email.split('@');
+    if (!domain) return '***';
+    const head = local.slice(0, 1);
+    return `${head}${'*'.repeat(Math.max(local.length - 1, 2))}@${domain}`;
+  }
+
+  /**
+   * Gate: user must have a verified contact channel before any payout action.
+   * Founder Q2: 擋住 + 引導先驗證 — no exemption for legacy users (exempted
+   * accounts are exactly the ones attackers hunt for).
+   * MVP = email only; phone/SMS joins in Phase 2.
+   */
+  private async requireVerifiedChannel(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { email: true, emailVerified: true },
+    });
+    if (!user) throw new NotFoundException('User not found');
+    if (!user.emailVerified) {
+      throw new ForbiddenException(
+        '為保障你嘅資金安全，提款相關操作需要先驗證電郵。請到「帳戶設定」完成電郵驗證。',
+      );
+    }
+    return user;
+  }
+
+  private async createIntent(
+    userId: string,
+    kind: PayoutIntentKind,
+    payload: Record<string, unknown>,
+    email: string,
+    ipAddress: string | undefined,
+  ) {
+    const intent = await this.prisma.payoutIntent.create({
+      data: {
+        userId,
+        kind,
+        payload: payload as any,
+        channel: 'EMAIL',
+        expiresAt: new Date(Date.now() + WalletService.INTENT_TTL_MS),
+      },
+    });
+    const { expiresInSeconds } = await this.auth.sendEmailOtp(email, 'PAYOUT_CONFIRM', ipAddress, userId);
+    return {
+      intentId: intent.id,
+      channel: 'EMAIL' as const,
+      maskedTarget: this.maskEmail(email),
+      otpExpiresInSeconds: expiresInSeconds,
+    };
+  }
+
+  /**
+   * Load + single-use-consume an intent, then verify the OTP code.
+   * Consumption is a guarded update（consumedAt: null）— a second confirm on
+   * the same intent (double-submit / second device) hits count=0 → 409.
+   * NOTE: intent is consumed BEFORE the executor runs; if the executor then
+   * fails (e.g. balance changed), the user re-initiates with a fresh OTP —
+   * a used code must never become retryable.
+   */
+  private async consumeIntent(userId: string, intentId: string, kind: PayoutIntentKind, code: string, email: string) {
+    const intent = await this.prisma.payoutIntent.findUnique({ where: { id: intentId } });
+    if (!intent || intent.userId !== userId || intent.kind !== kind) {
+      throw new NotFoundException('驗證請求不存在，請重新發起');
+    }
+    if (intent.consumedAt) {
+      throw new ConflictException('呢個請求已經處理咗');
+    }
+    if (intent.expiresAt < new Date()) {
+      throw new BadRequestException('驗證請求已過期，請重新發起提款');
+    }
+    // Verify OTP first (attempt-counting lives in consumeEmailOtp) — wrong
+    // code must NOT consume the intent, so the user can retry within limits.
+    await this.auth.consumeEmailOtp(email, code, 'PAYOUT_CONFIRM');
+    const consumed = await this.prisma.payoutIntent.updateMany({
+      where: { id: intentId, consumedAt: null },
+      data: { consumedAt: new Date() },
+    });
+    if (consumed.count === 0) {
+      throw new ConflictException('呢個請求已經處理咗');
+    }
+    return intent;
+  }
+
+  /** Step 1 of 提款: validate everything, freeze intent, send OTP. */
+  async initiatePayout(
+    userId: string,
+    dto: { payoutMethodId: string; amountHKD: number },
+    ipAddress: string | undefined,
+  ) {
+    const user = await this.requireVerifiedChannel(userId);
+    const { amount } = await this.validatePayoutRequest(userId, dto);
+    // Pre-check balance so the user learns BEFORE burning an OTP; the
+    // authoritative atomic re-check stays inside createRequest's transaction.
+    const balance = await this.getBalance(userId);
+    if (amount > balance.availableHKD) {
+      throw new ConflictException(`可提取餘額不足（HKD ${balance.availableHKD}）`);
+    }
+    return this.createIntent(
+      userId,
+      PayoutIntentKind.PAYOUT_REQUEST,
+      { payoutMethodId: dto.payoutMethodId, amountHKD: amount },
+      user.email,
+      ipAddress,
+    );
+  }
+
+  /** Step 2 of 提款: verify code, execute the frozen intent. */
+  async confirmPayout(userId: string, intentId: string, code: string) {
+    const user = await this.requireVerifiedChannel(userId);
+    const intent = await this.consumeIntent(
+      userId, intentId, PayoutIntentKind.PAYOUT_REQUEST, code, user.email,
+    );
+    const payload = intent.payload as { payoutMethodId: string; amountHKD: number };
+    return this.createRequest(userId, payload, { via: intent.channel, at: new Date() });
+  }
+
+  /** Step 1 of 新增收款戶口: validate account format, freeze intent, send OTP. */
+  async initiateAddMethod(
+    userId: string,
+    dto: {
+      type: PayoutMethodTypeKey;
+      accountIdentifier: string;
+      bankCode?: string;
+      accountName: string;
+      isDefault?: boolean;
+    },
+    ipAddress: string | undefined,
+  ) {
+    const user = await this.requireVerifiedChannel(userId);
+    // Validate format upfront — same "fail before OTP" principle.
+    const v = validatePayoutAccount(dto.type, dto.accountIdentifier, dto.bankCode);
+    if (!v.ok) throw new BadRequestException(v.reason ?? 'Invalid account data');
+    return this.createIntent(
+      userId,
+      PayoutIntentKind.ADD_METHOD,
+      { ...dto },
+      user.email,
+      ipAddress,
+    );
+  }
+
+  /** Step 2 of 新增收款戶口: verify code, create the method. */
+  async confirmAddMethod(userId: string, intentId: string, code: string) {
+    const user = await this.requireVerifiedChannel(userId);
+    const intent = await this.consumeIntent(
+      userId, intentId, PayoutIntentKind.ADD_METHOD, code, user.email,
+    );
+    const payload = intent.payload as {
+      type: PayoutMethodTypeKey;
+      accountIdentifier: string;
+      bankCode?: string;
+      accountName: string;
+      isDefault?: boolean;
+    };
+    return this.createMethod(userId, payload);
   }
 
   // ── Mock state machine ──────────────────────────────────────────────────

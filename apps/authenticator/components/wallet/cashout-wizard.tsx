@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, CardContent } from '@authentik/ui';
+import { Button, Card, CardContent, OtpInput } from '@authentik/ui';
 import { formatHKD, payoutMethodDisplayLabel, PAYOUT_METHOD_TYPES, PAYOUT_MIN_HKD, type PayoutMethodTypeKey } from '@authentik/utils';
 import { api, ApiError } from '@/lib/api';
-import { AlertTriangle, Check, ChevronRight, Loader2, X } from 'lucide-react';
+import { AlertTriangle, Check, ChevronRight, Loader2, ShieldCheck, X } from 'lucide-react';
 
 type Method = {
   id: string; type: PayoutMethodTypeKey;
@@ -35,7 +35,10 @@ interface Props {
   historyHref?: string;
 }
 
-type Step = 'method' | 'amount' | 'preview' | 'confirm' | 'submitting' | 'done';
+// 2FA（founder 2026-07-13）: 'otp' step — parity with consumer wizard is
+// BEHAVIOURAL（同一 initiate/confirm contract）；visual tokens 有意 diverge
+//（authBrand 靛藍，ruling #18）。
+type Step = 'method' | 'amount' | 'preview' | 'confirm' | 'otp' | 'submitting' | 'done';
 
 export function CashoutWizard({
   availableHKD,
@@ -55,6 +58,20 @@ export function CashoutWizard({
   const [error, setError] = useState<string | null>(null);
   const [successRef, setSuccessRef] = useState<string | null>(null);
 
+  // ── 2FA state ──
+  const [intentId, setIntentId] = useState<string | null>(null);
+  const [maskedTarget, setMaskedTarget] = useState<string>('');
+  const [otpError, setOtpError] = useState<string | null>(null);
+  const [otpResetKey, setOtpResetKey] = useState(0);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [otpBusy, setOtpBusy] = useState(false);
+
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const t = setInterval(() => setResendCooldown((s) => s - 1), 1000);
+    return () => clearInterval(t);
+  }, [resendCooldown]);
+
   const selectedMethod = methods.find((m) => m.id === selectedMethodId) ?? null;
   const amount = parseInt(amountStr, 10) || 0;
   const net = Math.max(0, amount - feeHKD);
@@ -66,25 +83,66 @@ export function CashoutWizard({
     return null;
   }, [amount, minHKD, maxHKD, availableHKD]);
 
-  async function submit() {
+  /** Step confirm → otp: server validates + freezes intent + sends email OTP. */
+  async function initiate() {
     if (!selectedMethod) return;
     setStep('submitting');
     setError(null);
+    setOtpError(null);
     try {
-      const res = await api.wallet.createRequest({
+      const res = await api.wallet.initiatePayout({
         payoutMethodId: selectedMethod.id,
         amountHKD: amount,
       });
-      setSuccessRef(res.reference);
-      setStep('done');
+      setIntentId(res.intentId);
+      setMaskedTarget(res.maskedTarget);
+      setResendCooldown(60);
+      setStep('otp');
     } catch (e) {
       setError(e instanceof ApiError ? e.message : '提款失敗，請稍後再試');
       setStep('preview');
     }
   }
 
+  async function resendOtp() {
+    if (resendCooldown > 0 || !selectedMethod) return;
+    setOtpError(null);
+    setOtpResetKey((k) => k + 1);
+    try {
+      const res = await api.wallet.initiatePayout({
+        payoutMethodId: selectedMethod.id,
+        amountHKD: amount,
+      });
+      setIntentId(res.intentId);
+      setMaskedTarget(res.maskedTarget);
+      setResendCooldown(60);
+    } catch (e) {
+      setOtpError(e instanceof ApiError ? e.message : '重新發送失敗，請稍後再試');
+    }
+  }
+
+  async function submitCode(code: string) {
+    if (!intentId || otpBusy) return;
+    setOtpBusy(true);
+    setOtpError(null);
+    try {
+      const res = await api.wallet.confirmPayout({ intentId, code });
+      setSuccessRef(res.reference);
+      setStep('done');
+    } catch (e) {
+      setOtpError(e instanceof ApiError ? e.message : '驗證失敗，請稍後再試');
+      setOtpResetKey((k) => k + 1);
+    } finally {
+      setOtpBusy(false);
+    }
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center" onClick={onCancel}>
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 sm:items-center"
+      // T1 郁錢（ruling #16）：OTP step 唔准 backdrop dismiss
+      onClick={step === 'otp' ? undefined : onCancel}
+    >
       <div
         className="w-full max-w-md rounded-t-2xl bg-white p-5 shadow-xl sm:rounded-2xl"
         onClick={(e) => e.stopPropagation()}
@@ -239,8 +297,8 @@ export function CashoutWizard({
                 </p>
                 <div className="flex gap-2 pt-1">
                   <Button variant="secondary" onClick={() => setStep('preview')} className="flex-1">取消</Button>
-                  <Button onClick={submit} className="flex-1 bg-red-600 hover:bg-red-700">
-                    我明白，確認提款
+                  <Button onClick={initiate} className="flex-1 bg-red-600 hover:bg-red-700">
+                    我明白，發送驗證碼
                   </Button>
                 </div>
               </div>
@@ -251,6 +309,62 @@ export function CashoutWizard({
                 <Loader2 className="h-4 w-4 animate-spin" /> 處理中…
               </div>
             )}
+          </div>
+        )}
+
+        {/* Step: OTP 2FA（founder 2026-07-13）— authBrand 靛藍（ruling #18） */}
+        {step === 'otp' && selectedMethod && (
+          <div className="space-y-4">
+            <div className="space-y-1 text-center">
+              <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-authBrand-500/10">
+                <ShieldCheck className="h-5 w-5 text-authBrand-500" />
+              </div>
+              <p className="text-sm font-semibold text-slate-900">輸入驗證碼</p>
+              <p className="text-xs text-slate-500">
+                驗證碼已發送至 <span className="font-medium text-slate-700">{maskedTarget}</span>
+              </p>
+              <p className="text-xs text-slate-500">
+                提款 <span className="font-semibold">{formatHKD(amount)}</span> 至{' '}
+                {payoutMethodDisplayLabel(selectedMethod.type, selectedMethod.accountIdentifier, selectedMethod.bankCode)}
+              </p>
+            </div>
+
+            <OtpInput
+              portal="authenticator"
+              onComplete={submitCode}
+              disabled={otpBusy}
+              error={!!otpError}
+              resetKey={otpResetKey}
+            />
+
+            {otpBusy && (
+              <div className="flex items-center justify-center gap-2 text-xs text-slate-500">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" /> 驗證中…
+              </div>
+            )}
+            {otpError && (
+              <p className="rounded-md border border-red-200 bg-red-50 p-2 text-center text-xs text-red-700">
+                {otpError}
+              </p>
+            )}
+
+            <div className="flex items-center justify-between text-xs">
+              <button
+                type="button"
+                onClick={() => { setStep('preview'); setIntentId(null); setOtpError(null); }}
+                className="text-slate-500 hover:text-slate-700 hover:underline"
+              >
+                ← 返回修改
+              </button>
+              <button
+                type="button"
+                onClick={resendOtp}
+                disabled={resendCooldown > 0}
+                className="text-authBrand-500 hover:underline disabled:cursor-not-allowed disabled:text-slate-400 disabled:no-underline"
+              >
+                {resendCooldown > 0 ? `重新發送 (${resendCooldown}s)` : '重新發送驗證碼'}
+              </button>
+            </div>
           </div>
         )}
 

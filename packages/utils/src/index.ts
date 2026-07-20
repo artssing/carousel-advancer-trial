@@ -10,3 +10,6 @@ export * from './chat-time';
 export * from './phone';
 export * from './prices';
 export * from './conditions';
+export * from './mtr';
+export * from './shipping';
+export * from './analytics-events';

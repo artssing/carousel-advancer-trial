@@ -4,15 +4,46 @@
 
 :root {
   color-scheme: light;
+  /* Sticky chrome vars (see components/chrome-height-observer.tsx).
+     --banner-h: current banner block height (drives nav's sticky top).
+     --chrome-h: CURRENTLY-VISIBLE chrome height — shrinks when nav hides,
+                 expands when nav returns. Sticky sub-rails on inner pages
+                 read this via top-[calc(var(--chrome-h)+16px)] so they
+                 slide up smoothly when the nav retracts.
+     Fallbacks below are used before JS hydrates. */
+  --banner-h: 0px;
+  --chrome-h: 66px;
+}
+
+/* Smooth follow-animation for sticky sub-rails as --chrome-h changes.
+   Applied to inner-page sticky asides (browse / sell / checkout / account
+   sidebars). Matches ChromeHeightObserver's nav transition timing so the
+   whole chrome slides together. Add class `chrome-follow` to any sticky
+   element whose top uses var(--chrome-h). */
+.chrome-follow {
+  transition: top 300ms ease-out;
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
-  font-family: 'Inter', system-ui, sans-serif;
+  @apply bg-white text-slate-900 antialiased;
+  font-family: 'Inter', 'PingFang HK', 'Noto Sans HK', 'Microsoft JhengHei', system-ui, sans-serif;
 }
 
 /* IM: sending tick sweep animation (left→right shimmer) */
 @keyframes msgTickSweep {
   0%   { background-position: 100% 50%; }
   100% { background-position:   0% 50%; }
+}
+
+/* L3 realtime auth ticker — continuous horizontal marquee.
+ * Duplicated content in the component makes -50% translate seamless. */
+@keyframes marquee {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+.animate-marquee {
+  animation: marquee 40s linear infinite;
+}
+.animate-marquee:hover {
+  animation-play-state: paused;
 }

@@ -14,5 +14,6 @@
     "build": "tsc -p tsconfig.build.json",
     "type-check": "tsc --noEmit"
   },
+  "dependencies": { "@authentik/utils": "*" },
   "devDependencies": { "typescript": "^5.4.0" }
 }

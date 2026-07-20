@@ -27,3 +27,4 @@ coverage
 .backups/
 # Local-disk storage driver output (apps/api/src/storage) — dev only, swap to S3/R2 in prod
 apps/api/uploads/
+.ci-logs/

@@ -1,0 +1,41 @@
+{
+  "name": "Authentik CI Notify",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "build-status",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-in",
+      "name": "Jenkins Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [260, 300],
+      "webhookId": "build-status"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.telegram.org/bot<<<TELEGRAM_BOT_TOKEN>>>/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"<<<TELEGRAM_CHAT_ID>>>\",\n  \"text\": \"{{ $json.body.status === 'success' ? '✅' : '❌' }} Authentik {{ $json.body.env }} build #{{ $json.body.build }} — {{ $json.body.status }}\\n{{ $json.body.url }}\"\n}",
+        "options": {}
+      },
+      "id": "send-telegram",
+      "name": "Send Telegram",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [520, 300]
+    }
+  ],
+  "connections": {
+    "Jenkins Webhook": {
+      "main": [[{ "node": "Send Telegram", "type": "main", "index": 0 }]]
+    }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" }
+}

@@ -12,9 +12,10 @@
  * Migration to real Stripe = (a) `npm install stripe` (b) set STRIPE_MODE=test
  * (c) set STRIPE_SECRET_KEY + STRIPE_WEBHOOK_SECRET in .env (d) restart.
  *
- * See docs/stripe-setup.md for the full production checklist.
+ * See docs/setup/stripe-setup.md for the full production checklist.
  */
 import { randomBytes } from 'crypto';
+import Stripe from 'stripe';
 
 export type PaymentIntentStatus =
   | 'requires_payment_method'
@@ -125,49 +126,102 @@ async function mockRefundIntent(intentId: string): Promise<{ id: string; status:
   return { id: `mock_re_${randomBytes(8).toString('hex')}`, status: 'succeeded' };
 }
 
-// ── Real Stripe stub (TODO: wire when STRIPE_MODE !== 'mock') ────────────
-async function realStripeUnsupported(): Promise<never> {
-  throw new Error(
-    `STRIPE_MODE=${STRIPE_MODE} but the real SDK adapter is not wired yet. ` +
-    `Install \`stripe\` package and implement the real-mode branches in stripe-adapter.ts. ` +
-    `See docs/stripe-setup.md.`,
-  );
+// ── Real SDK (test / live) ──────────────────────────────────────────────
+// STRIPE_API_BASE (e.g. http://localhost:4252) points the SDK at the local
+// mock gateway (apps/mock-stripe). Unset = real Stripe servers. Everything
+// else — request encoding, webhook signatures — is identical either way.
+let stripeClient: Stripe | null = null;
+function realStripe(): Stripe {
+  if (stripeClient) return stripeClient;
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) {
+    throw new Error(`STRIPE_MODE=${STRIPE_MODE} requires STRIPE_SECRET_KEY in env. See docs/setup/stripe-setup.md.`);
+  }
+  let opts: Stripe.StripeConfig = {};
+  const base = process.env.STRIPE_API_BASE;
+  if (base) {
+    const u = new URL(base);
+    opts = {
+      host: u.hostname,
+      port: Number(u.port || (u.protocol === 'https:' ? 443 : 80)),
+      protocol: u.protocol.replace(':', '') as 'http' | 'https',
+      maxNetworkRetries: 1,
+    };
+  }
+  stripeClient = new Stripe(key, opts);
+  return stripeClient;
+}
+
+function fromStripeIntent(pi: Stripe.PaymentIntent): PaymentIntent {
+  return {
+    id: pi.id,
+    status: pi.status as PaymentIntentStatus,
+    amount: pi.amount,
+    currency: pi.currency,
+    captureMethod: pi.capture_method as 'automatic' | 'manual',
+    clientSecret: pi.client_secret ?? '',
+    failureCode: pi.last_payment_error?.code ?? undefined,
+    failureMessage: pi.last_payment_error?.message ?? undefined,
+    metadata: (pi.metadata ?? {}) as Record<string, string>,
+  };
 }
 
 // ── Public adapter API ──────────────────────────────────────────────────
 export const stripeAdapter = {
   mode: STRIPE_MODE,
 
+  /** Public base URL of the gateway the BROWSER should confirm against.
+   *  Only meaningful when running against the local mock gateway — real
+   *  Stripe confirms via stripe.js, not a URL we hand out. */
+  gatewayPublicUrl(): string | null {
+    if (STRIPE_MODE === 'mock') return null;
+    return process.env.STRIPE_API_BASE ?? null;
+  },
+
   async createIntent(args: CreateIntentArgs): Promise<PaymentIntent> {
     if (STRIPE_MODE === 'mock') return mockCreateIntent(args);
-    return realStripeUnsupported();
+    const pi = await realStripe().paymentIntents.create({
+      amount: args.amountHKD * 100,
+      currency: 'hkd',
+      capture_method: args.captureMethod,
+      metadata: args.metadata,
+    });
+    return fromStripeIntent(pi);
   },
 
   async confirmIntent(args: ConfirmIntentArgs): Promise<PaymentIntent> {
     if (STRIPE_MODE === 'mock') return mockConfirmIntent(args);
-    return realStripeUnsupported();
+    // Real mode: confirm happens client-side (stripe.js / mock gateway
+    // /confirm) and state lands via webhook — the server never confirms.
+    throw new Error('confirmIntent is mock-mode only; real mode confirms client-side + webhook');
   },
 
   async captureIntent(intentId: string): Promise<PaymentIntent> {
     if (STRIPE_MODE === 'mock') return mockCaptureIntent(intentId);
-    return realStripeUnsupported();
+    return fromStripeIntent(await realStripe().paymentIntents.capture(intentId));
   },
 
   async cancelIntent(intentId: string): Promise<PaymentIntent> {
     if (STRIPE_MODE === 'mock') return mockCancelIntent(intentId);
-    return realStripeUnsupported();
+    return fromStripeIntent(await realStripe().paymentIntents.cancel(intentId));
   },
 
   async refundIntent(intentId: string): Promise<{ id: string; status: string }> {
     if (STRIPE_MODE === 'mock') return mockRefundIntent(intentId);
-    return realStripeUnsupported();
+    const re = await realStripe().refunds.create({ payment_intent: intentId });
+    return { id: re.id, status: re.status ?? 'unknown' };
   },
 
-  /** Verify webhook signature; mock mode always passes. */
-  verifyWebhookSignature(payload: string, signature: string | undefined): boolean {
-    if (STRIPE_MODE === 'mock') return true;
-    if (!signature || !process.env.STRIPE_WEBHOOK_SECRET) return false;
-    // TODO: stripe.webhooks.constructEvent(payload, signature, secret) — throws on bad sig
-    return false;
+  /** Verify webhook signature and return the parsed event; mock mode is a
+   *  trusting JSON.parse (in-process mock never receives webhooks anyway).
+   *  Throws on bad signature — caller maps to 400. */
+  constructWebhookEvent(payload: Buffer | string, signature: string | undefined): { type: string; data: { object: any } } {
+    if (STRIPE_MODE === 'mock') {
+      return JSON.parse(payload.toString());
+    }
+    const secret = process.env.STRIPE_WEBHOOK_SECRET;
+    if (!secret) throw new Error('STRIPE_WEBHOOK_SECRET not configured');
+    if (!signature) throw new Error('Missing stripe-signature header');
+    return realStripe().webhooks.constructEvent(payload, signature, secret) as any;
   },
 };

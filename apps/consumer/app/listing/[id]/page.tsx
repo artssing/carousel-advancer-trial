@@ -3,18 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Button, Card, CardContent, TierPill, StarRating, Badge } from '@authentik/ui';
+import { Button, Card, CardContent, TierPill, StarRating, Badge, Pill } from '@authentik/ui';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   formatHKD, tierForPrice, calculateOrderFees, quoteAuthFee, formatSavings,
   categoryByApiEnum, brandLabel, brandFieldLabel,
   needsMyAction, sellerActionCta, getStatusLabel,
-  districtLabel, conditionLabel,
+  districtLabel, conditionLabel, stationDisplayLabel,
 } from '@authentik/utils';
 import { ShieldCheck, MapPin, Truck, Users, UserCheck, Wallet, Lock, AlertTriangle } from 'lucide-react';
 import { api, hasToken, ApiError } from '@/lib/api';
+import { track, flushAnalytics } from '@/lib/analytics';
 import { ConversationDrawer } from '@/components/conversation-drawer';
-import { MessageCircle } from 'lucide-react';
+import { MessageCircle, Share2 } from 'lucide-react';
+import { ShareIgModal } from '@/components/share-ig-modal';
 
 type DeliveryMethod = 'SHIP' | 'MEETUP_AUTH' | 'MEETUP_3WAY' | 'MEETUP_DIRECT';
 type PaymentMethod = 'ONLINE_ESCROW' | 'OFFLINE_CASH';
@@ -69,6 +71,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
   const [busy, setBusy] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
   const [chatOpen, setChatOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   // Active order on this listing — drives Seller Action Card (owner view) and
   // Buyer track-order strip (buyer view). Single fetch covers both roles.
   const [activeOrder, setActiveOrder] = useState<any | null>(null);
@@ -111,6 +114,21 @@ export default function ListingPage({ params }: { params: { id: string } }) {
       .then((l) => {
         setListing(l);
         if (l) {
+          // Analytics（spec §2.2）：listing_viewed，source 由上一頁寫低嘅
+          // sessionStorage flag derive（search/browse），冇 = direct_link
+          let source: 'browse' | 'search' | 'seller_profile' | 'direct_link' = 'direct_link';
+          try {
+            const s = sessionStorage.getItem('analytics_listing_source');
+            if (s === 'search' || s === 'browse' || s === 'seller_profile') source = s;
+            sessionStorage.removeItem('analytics_listing_source');
+          } catch {}
+          track('listing_viewed', {
+            listing_id: l.id,
+            tier: tierForPrice(l.priceHKD),
+            price_hkd: l.priceHKD,
+            category_id: l.category,
+            source,
+          });
           if (l.category) {
             api.listings.list(l.category, 8, 0, undefined, { excludeId: l.id })
               .then(({ items }) => setRelatedListings(items))
@@ -120,6 +138,24 @@ export default function ListingPage({ params }: { params: { id: string } }) {
         }
       })
       .catch((e) => setError(e.message));
+  }, [id]);
+
+  // Analytics（founder 2026-07-14 enhancement）：停留時間。SPA nav（cleanup）
+  // 同 hard close（pagehide）都截；clamp 30 分鐘防掛機 tab 污染平均數。
+  useEffect(() => {
+    const startedAt = Date.now();
+    let reported = false;
+    const report = () => {
+      if (reported) return;
+      reported = true;
+      const dwell = Math.min(Math.round((Date.now() - startedAt) / 1000), 30 * 60);
+      if (dwell >= 1) {
+        track('listing_view_ended', { listing_id: id, dwell_seconds: dwell });
+        flushAnalytics(true); // pagehide：lib 嘅 flush 已行完，補一槍 beacon
+      }
+    };
+    window.addEventListener('pagehide', report);
+    return () => { report(); window.removeEventListener('pagehide', report); };
   }, [id]);
 
   // Fetch the accepted Offer when ?offerId= is present
@@ -223,6 +259,12 @@ export default function ListingPage({ params }: { params: { id: string } }) {
   const isOwner = !!me && !!listing && me.id === listing.seller?.id;
   const listingTier = listing ? tierForPrice(listing.priceHKD) : 1;
 
+  // Sell-success entry: /listing/:id?share=1 auto-opens the IG share wizard
+  // for the owner right after 刊登 (highest-intent moment).
+  useEffect(() => {
+    if (isOwner && searchParams.get('share') === '1') setShareOpen(true);
+  }, [isOwner, searchParams]);
+
   const selectedAuthObj = authenticators.find((a) => a.id === selectedAuth) ?? null;
   const deliveryMeta = deliveryMethod ? DELIVERY_META[deliveryMethod] : null;
   const isMeetup = !!deliveryMeta?.meetup;
@@ -249,6 +291,10 @@ export default function ListingPage({ params }: { params: { id: string } }) {
       setPaymentMethod(null);
     }
     if (paymentMethod === 'ONLINE_ESCROW' && isShipNoAuth) {
+      setPaymentMethod(null);
+    }
+    // Ack v2 (E, founder 2026-07-10): MEETUP_DIRECT 零佣金零託管 — 唔准 escrow
+    if (paymentMethod === 'ONLINE_ESCROW' && deliveryMethod === 'MEETUP_DIRECT') {
       setPaymentMethod(null);
     }
   }, [deliveryMethod, selectedAuth]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -353,10 +399,39 @@ export default function ListingPage({ params }: { params: { id: string } }) {
   const fees = calculateOrderFees(effectivePrice, authQuote);
 
   return (
-    <div className="mx-auto max-w-[1400px] px-4 py-8 md:px-8">
-      <div className="grid gap-8 md:grid-cols-2">
-        {/* Media gallery — interleaved images + optional video.
-            Founder OQ-1=B: videoIsCover → video renders FIRST (slide 0). */}
+    <div className="mx-auto max-w-container-l3 px-4 pb-16 pt-2 sm:px-6">
+      {/* ═══ Breadcrumb ═══════════════════════════════════════════════════════ */}
+      <nav className="py-5 text-[12px] text-neutral-text-hint">
+        <Link href="/" className="transition hover:text-ink">首頁</Link>
+        <span className="mx-1.5">/</span>
+        {(() => {
+          const cat = categoryByApiEnum(listing.category);
+          if (!cat) return <span className="text-neutral-text-muted">{listing.title}</span>;
+          return (
+            <>
+              <Link href={`/browse?cat=${cat.id}` as any} className="transition hover:text-ink">
+                {cat.labelZh}
+              </Link>
+              <span className="mx-1.5">/</span>
+              {listing.brand && (() => {
+                const bl = brandLabel(cat.id as any, listing.brand);
+                return bl ? (
+                  <>
+                    <Link href={`/browse?cat=${cat.id}&brand=${listing.brand}` as any} className="transition hover:text-ink">
+                      {bl}
+                    </Link>
+                    <span className="mx-1.5">/</span>
+                  </>
+                ) : null;
+              })()}
+              <span className="truncate text-neutral-text-muted">{listing.title}</span>
+            </>
+          );
+        })()}
+      </nav>
+
+      <div className="grid items-start gap-11 md:grid-cols-[1.05fr_0.95fr]">
+        {/* ═══ Media gallery ═══════════════════════════════════════════════ */}
         {(() => {
           const imgs: string[] = listing.images ?? [];
           const slides: Array<{ kind: 'image' | 'video'; src: string; poster?: string }> =
@@ -366,9 +441,12 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                 : [...imgs.map((s) => ({ kind: 'image' as const, src: s })), { kind: 'video', src: listing.videoUrl, poster: listing.videoPosterUrl }]
               : imgs.map((s) => ({ kind: 'image' as const, src: s }));
           const active = slides[activeImg] ?? slides[0];
+          const brandWatermark = listing.brand
+            ? brandLabel(categoryByApiEnum(listing.category)?.id as any, listing.brand) ?? listing.brand
+            : (categoryByApiEnum(listing.category)?.shortLabel ?? '');
           return (
             <div>
-              <div className="relative aspect-square overflow-hidden rounded-xl bg-slate-100">
+              <div className="relative aspect-square overflow-hidden rounded-[14px] border border-line bg-gradient-to-br from-[#eef1f5] to-[#dfe4ee] shadow-sh2">
                 {active ? (
                   active.kind === 'video' ? (
                     <video
@@ -384,28 +462,32 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                     <img src={active.src} alt={listing.title} className="h-full w-full object-cover" />
                   )
                 ) : (
-                  <div className="flex h-full items-center justify-center text-slate-400 text-sm">暫無圖片</div>
+                  <div className="flex h-full items-center justify-center font-display-serif text-[16px] font-bold uppercase tracking-[0.18em] text-[#9aa3b5]">
+                    {brandWatermark}
+                  </div>
                 )}
                 {slides.length > 1 && (
                   <>
                     <button
                       onClick={() => setActiveImg((i) => (i - 1 + slides.length) % slides.length)}
-                      className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1 text-white hover:bg-black/60"
+                      className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white transition hover:bg-black/60"
                     ><ChevronLeft className="h-5 w-5" /></button>
                     <button
                       onClick={() => setActiveImg((i) => (i + 1) % slides.length)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1 text-white hover:bg-black/60"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white transition hover:bg-black/60"
                     ><ChevronRight className="h-5 w-5" /></button>
                   </>
                 )}
               </div>
               {slides.length > 1 && (
-                <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+                <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1">
                   {slides.map((s, i) => (
                     <button
                       key={i}
                       onClick={() => setActiveImg(i)}
-                      className={`relative h-16 w-16 shrink-0 overflow-hidden rounded-lg border-2 ${activeImg === i ? 'border-brand-500' : 'border-transparent'}`}
+                      className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[10px] border-2 bg-gradient-to-br from-[#eef1f5] to-[#dfe4ee] shadow-sh1 transition ${
+                        activeImg === i ? 'border-verify' : 'border-line'
+                      }`}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={s.kind === 'video' ? (s.poster ?? '') : s.src} alt="" className="h-full w-full object-cover" />
@@ -420,12 +502,27 @@ export default function ListingPage({ params }: { params: { id: string } }) {
           );
         })()}
         <div>
-          <Badge variant="brand">Listing #{listing.id.slice(0, 6)}</Badge>
+          {/* ── Pill row (Tier + Verify + Share) ── */}
+          <div className="flex flex-wrap items-center gap-2">
+            <TierPill tier={tier} showDescription className="!py-1 text-[11px]" />
+            {tier === 3 && (
+              <Pill variant="verify" size="md">◆ 強制鑑定</Pill>
+            )}
+            {/* Share — 人人可見（founder 2026-07-12），唔止 owner */}
+            {(listing.images?.length ?? 0) > 0 && (
+              <button
+                type="button"
+                onClick={() => setShareOpen(true)}
+                className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-1.5 text-[12px] font-semibold text-ink shadow-sh1 transition hover:border-brand-600 hover:text-brand-700"
+              >
+                <Share2 className="h-3.5 w-3.5" /> 分享
+              </button>
+            )}
+          </div>
 
-          {/* ── Prominent state banner — placed BEFORE title so users
-                immediately know the listing's status at a glance ─────── */}
+          {/* ── State banner — RIGHT below pill so status is clear before title ── */}
           {isOwner && (
-            <div className="mt-2 flex items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3 py-2 text-xs">
+            <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-brand-200 bg-verify-soft px-3 py-2 text-xs">
               <UserCheck className="h-4 w-4 shrink-0 text-brand-600" />
               <span className="font-medium text-brand-800">這是你上架嘅商品</span>
               <span className="text-brand-600">·</span>
@@ -433,7 +530,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             </div>
           )}
           {!isOwner && listing.status === 'RESERVED' && (
-            <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs">
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
               <div>
                 <p className="font-medium text-amber-900">此商品交易進行中</p>
@@ -442,53 +539,46 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             </div>
           )}
           {!isOwner && listing.status === 'SOLD' && (
-            <div className="mt-2 flex items-start gap-2 rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-xs">
-              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
+            <div className="mt-3 flex items-start gap-2 rounded-lg border border-line-2 bg-surface-2 px-3 py-2 text-xs">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-neutral-text-hint" />
               <div>
-                <p className="font-medium text-slate-800">此商品已售出</p>
-                <p className="mt-0.5 text-slate-600">
+                <p className="font-medium text-neutral-text">此商品已售出</p>
+                <p className="mt-0.5 text-neutral-text-muted">
                   交易已完成，呢件商品唔可以再買入。可以睇下面類似商品 ↓
                 </p>
               </div>
             </div>
           )}
 
-          <h1 className="mt-3 font-display text-2xl font-bold">{listing.title}</h1>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <TierPill tier={tier} showDescription />
-            {listing.brand && (() => {
-              const cat = categoryByApiEnum(listing.category);
-              const label = cat ? brandLabel(cat.id as any, listing.brand) : listing.brand;
-              const fieldName = cat ? brandFieldLabel(cat.id as any) : '品牌';
-              return label ? (
-                <span
-                  className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs text-slate-700"
-                  title={fieldName}
-                >
-                  <span className="font-medium">{label}</span>
-                </span>
-              ) : null;
-            })()}
-            {listing.condition && (
-              <span
-                className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs text-emerald-700 ring-1 ring-emerald-200"
-                title="成色由賣家自行申報，Authentik 不驗證"
-              >
-                <span className="text-emerald-500">●</span>
-                <span className="font-medium">賣方申報：{conditionLabel(listing.condition)}</span>
-              </span>
-            )}
-          </div>
-          {listing.condition && (
-            <p className="mt-1 text-[10px] text-slate-400">
-              成色由賣家自行申報，Authentik 不驗證。Tier 2/3 商品如選擇鑑定，成色以鑑定師為準。
-            </p>
+          {/* ── L3 Serif big title ── */}
+          <h1 className="mt-4 font-display-serif text-[28px] font-bold leading-[1.2] tracking-[-0.01em] text-ink">
+            {listing.title}
+          </h1>
+
+          {/* ── Mono subtitle — brand + condition compressed ── */}
+          {(listing.brand || listing.condition) && (
+            <div className="mt-2 text-[12px] tracking-[0.04em] text-neutral-text-hint">
+              {[
+                listing.brand
+                  ? (() => {
+                      const cat = categoryByApiEnum(listing.category);
+                      return cat ? brandLabel(cat.id as any, listing.brand) : listing.brand;
+                    })()
+                  : null,
+                listing.condition ? `賣方申報：${conditionLabel(listing.condition)}` : null,
+              ].filter(Boolean).join(' · ')}
+            </div>
           )}
+
+          {/* Small listing id line */}
+          <p className="mt-1 font-mono text-[11px] text-neutral-text-hint">
+            Listing #{listing.id.slice(0, 8)}
+          </p>
 
           {/* Price — show negotiated price if locked */}
           {lockedOffer && lockedOffer.status === 'ACCEPTED' ? (
             <div className="mt-4">
-              <p className="text-3xl font-semibold text-brand-700">{formatHKD(lockedOffer.priceHKD)}</p>
+              <p className="text-[32px] font-extrabold leading-none text-brand-700">{formatHKD(lockedOffer.priceHKD)}</p>
               <p className="mt-0.5 text-xs text-slate-400">
                 <span className="line-through">原價 {formatHKD(listing.priceHKD)}</span>
                 <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-medium text-brand-700">
@@ -514,7 +604,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             // 2026-06-19 Q6=A: SOLD with original-price anchor — show full
             // strikethrough so buyers see the deal context.
             <div className="mt-4">
-              <p className="text-3xl font-semibold text-slate-700">{formatHKD(listing.actualSalePriceHKD)}</p>
+              <p className="text-[32px] font-extrabold leading-none text-neutral-text">{formatHKD(listing.actualSalePriceHKD)}</p>
               <p className="mt-0.5 text-xs text-slate-500">
                 成交價
                 {listing.originalPriceHKD && listing.originalPriceHKD > listing.actualSalePriceHKD && (
@@ -531,7 +621,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             const savings = formatSavings(listing.originalPriceHKD, listing.priceHKD);
             return savings ? (
               <div className="mt-4">
-                <p className="text-3xl font-semibold text-rose-600">{formatHKD(listing.priceHKD)}</p>
+                <p className="text-[32px] font-extrabold leading-none text-danger">{formatHKD(listing.priceHKD)}</p>
                 <p className="mt-1 text-sm">
                   <span className="text-slate-400 line-through">原價 {formatHKD(listing.originalPriceHKD)}</span>
                   <span className="ml-2 inline-flex items-center rounded bg-rose-100 px-2 py-0.5 text-xs font-medium text-rose-700">
@@ -540,11 +630,58 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                 </p>
               </div>
             ) : (
-              <p className="mt-4 text-3xl font-semibold">{formatHKD(listing.priceHKD)}</p>
+              <p className="mt-4 text-[32px] font-extrabold leading-none text-ink">{formatHKD(listing.priceHKD)}</p>
             );
           })()}
 
-          <p className="mt-3 text-sm text-slate-600 whitespace-pre-wrap">{listing.description}</p>
+          {/* ═══ L3 Spec 2×2 grid ═══ Seller-declared attributes.
+              Uses only structured fields we have; other rows fall back to "—". */}
+          {(() => {
+            const cat = categoryByApiEnum(listing.category);
+            const districtLabelStr = stationDisplayLabel(listing.sellerDistrict) ?? '—';
+            const spec = [
+              { k: '狀況', v: listing.condition ? conditionLabel(listing.condition) : '—' },
+              { k: '品類', v: cat?.labelZh ?? '—' },
+              { k: '品牌', v: listing.brand ? (cat ? brandLabel(cat.id as any, listing.brand) : listing.brand) : '—' },
+              { k: '地區', v: districtLabelStr },
+            ];
+            return (
+              <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-xl border border-line bg-white shadow-sh1">
+                {spec.map((s, i) => (
+                  <div
+                    key={s.k}
+                    className={`px-4 py-3.5 ${i % 2 === 0 ? 'border-r border-line' : ''} ${i < 2 ? 'border-b border-line' : ''}`}
+                  >
+                    <div className="text-[10px] font-bold uppercase tracking-[0.08em] text-neutral-text-hint">
+                      {s.k}
+                    </div>
+                    <div className="mt-1 text-sm font-semibold text-neutral-text">{s.v}</div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
+          {/* ═══ L3 card-glow — Tier authentication trust panel ═══ */}
+          <div className={`mt-5 rounded-xl border p-5 shadow-[0_12px_30px_-16px_rgba(0,135,102,0.4)] ${
+            tier === 3 ? 'border-verify-border bg-verify-soft/40' : 'border-line bg-white'
+          }`}>
+            <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-600">
+              {tier === 3 ? '強制鑑定 · Tier 3' : tier === 2 ? '可選鑑定 · Tier 2' : '純撮合 · Tier 1'}
+            </div>
+            <p className="mt-2 text-[14px] leading-relaxed text-neutral-text">
+              {tier === 3
+                ? '此商品成交價 ≥ HKD 10,000，落單時必須由具名鑑定師鑑定通過方可完成交易。真偽責任由該鑑定師按合約及 E&O 保險承擔。'
+                : tier === 2
+                  ? '此商品可選鑑定。買家可於落單時揀鑑定師增加信心，鑑定費由買家承擔。'
+                  : '此商品屬純撮合，成交前建議自行核實真偽及成色。平台不承擔真偽責任。'}
+            </p>
+            <p className="mt-3 text-[11px] leading-relaxed text-neutral-text-hint">
+              平台為資訊中介，真偽由具名鑑定師負責，Authentik 不作真偽保證。
+            </p>
+          </div>
+
+          <p className="mt-6 text-sm text-neutral-text-muted whitespace-pre-wrap">{listing.description}</p>
 
           {/* 上架時間 — 分鐘/小時/日 granularity */}
           {listing.createdAt && (
@@ -749,7 +886,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   {listing.sellerDistrict && (
                     <Badge variant="default">
                       <MapPin className="mr-0.5 inline h-3 w-3" />
-                      {listing.sellerDistrict}
+                      {stationDisplayLabel(listing.sellerDistrict)}
                     </Badge>
                   )}
                 </div>
@@ -1108,6 +1245,8 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                         {(['ONLINE_ESCROW', 'OFFLINE_CASH'] as PaymentMethod[]).map((p) => {
                           if (p === 'OFFLINE_CASH' && !isMeetup && !isShipNoAuth) return null;
                           if (p === 'ONLINE_ESCROW' && isShipNoAuth) return null;
+                          // Ack v2 (E): 買賣雙方面交 — 平台唔 hold 錢，只准賣家直收
+                          if (p === 'ONLINE_ESCROW' && deliveryMethod === 'MEETUP_DIRECT') return null;
                           const meta = PAYMENT_META[p];
                           const Icon = meta.icon;
                           return (
@@ -1256,6 +1395,10 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             : undefined
           }
         />
+      )}
+
+      {shareOpen && listing && (
+        <ShareIgModal listing={listing} onClose={() => setShareOpen(false)} />
       )}
     </div>
   );

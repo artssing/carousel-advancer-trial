@@ -7,10 +7,14 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        primary: 'bg-brand-600 text-white hover:bg-brand-700',
+        primary: 'bg-brand-600 text-white hover:bg-brand-700 shadow-[0_8px_20px_-10px_rgba(0,135,102,0.5)]',
         secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200',
         outline: 'border border-slate-300 bg-white hover:bg-slate-50 text-slate-900',
-        ghost: 'hover:bg-slate-100 text-slate-900',
+        // L3 ghost — white card-like button with subtle shadow (distinct from `outline`
+        // which is a flat white/slate). Matches design-samples/final-L3/theme.css .btn-ghost.
+        ghost: 'border border-line-2 bg-white text-neutral-text hover:border-brand-600 hover:text-brand-600 shadow-sh1',
+        // L3 navy — ink primary for secondary hero CTA and admin-adjacent flows.
+        navy: 'bg-ink text-white hover:bg-ink-700 shadow-[0_8px_20px_-10px_rgba(10,37,64,0.5)]',
         danger: 'bg-trust-red text-white hover:bg-red-700',
       },
       size: {

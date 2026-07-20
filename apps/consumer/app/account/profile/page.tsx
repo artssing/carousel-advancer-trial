@@ -10,6 +10,7 @@ import {
   Check, AlertTriangle, Loader2, Mail, Eye, EyeOff, Phone,
 } from 'lucide-react';
 import { formatHKPhoneDisplay } from '@authentik/utils';
+import { AccountSidebar } from '@/components/account/account-sidebar';
 
 const AUTHENTICATOR_URL = process.env.NEXT_PUBLIC_AUTHENTICATOR_URL ?? 'http://localhost:3001';
 
@@ -47,47 +48,51 @@ export default function ProfilePage() {
   ];
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
-      <header className="mb-5">
-        <h1 className="text-2xl font-bold">我的帳號</h1>
-        <p className="mt-1 text-xs text-slate-500">
-          管理你嘅個人資料、密碼同帳號設定。
-          {isSeller && (
-            <>
-              其他人喺賣家頁見到嘅資料：
-              <Link href={`/seller/${me.id}`} className="ml-1 text-brand-600 hover:underline">查看公開頁面 →</Link>
-            </>
-          )}
-        </p>
-      </header>
+    <div className="mx-auto max-w-container-l3 px-4 pb-16 pt-8 sm:px-6">
+      <div className="grid items-start gap-8 lg:grid-cols-[220px_1fr]">
+        <AccountSidebar />
 
-      <div className="grid gap-4 md:grid-cols-[200px_1fr]">
-        {/* Sidebar (desktop) / Tab strip (mobile) */}
-        <aside className="md:sticky md:top-20 md:self-start">
-          <nav className="flex gap-2 overflow-x-auto md:flex-col md:gap-1">
-            {sections.filter((s) => s.show).map((s) => (
-              <button
-                key={s.key}
-                onClick={() => setSection(s.key)}
-                className={`flex shrink-0 items-center gap-2 whitespace-nowrap rounded-lg px-3 py-2 text-sm transition ${
-                  section === s.key
-                    ? 'bg-brand-50 text-brand-700 ring-1 ring-brand-200'
-                    : 'text-slate-700 hover:bg-slate-100'
-                }`}
-              >
-                {s.icon} {s.label}
-              </button>
-            ))}
-          </nav>
-        </aside>
+        <section>
+          <header className="mb-5">
+            <h1 className="font-display-serif text-[26px] font-bold leading-tight tracking-[-0.01em] text-ink">
+              個人檔案
+            </h1>
+            <p className="mt-1.5 text-[13px] text-neutral-text-hint">
+              管理你嘅個人資料、密碼同帳號設定。
+              {isSeller && (
+                <>
+                  {' '}其他人喺賣家頁見到嘅資料：
+                  <Link href={`/seller/${me.id}`} className="ml-1 font-semibold text-brand-600 hover:underline">查看公開頁面 →</Link>
+                </>
+              )}
+            </p>
+          </header>
 
-        {/* Content */}
-        <div className="space-y-4">
-          {section === 'personal' && <PersonalSection me={me} onChange={setMe} />}
-          {section === 'security' && <SecuritySection me={me} />}
-          {section === 'shop' && isSeller && <ShopSection me={me} />}
-          {section === 'authenticator' && isAuth && <AuthenticatorSection me={me} />}
-        </div>
+          {/* L3 underline sub-section tabs (matches payouts pattern) */}
+          <div className="mb-5 flex gap-1 overflow-x-auto scrollbar-hide touch-pan-x overscroll-x-contain border-b border-line">
+            {sections.filter((s) => s.show).map((s) => {
+              const active = section === s.key;
+              return (
+                <button
+                  key={s.key}
+                  onClick={() => setSection(s.key)}
+                  className={`flex shrink-0 -mb-px items-center gap-1.5 whitespace-nowrap border-b-2 px-4 py-3 text-[14px] font-semibold transition ${
+                    active ? 'border-brand-600 text-ink' : 'border-transparent text-neutral-text-hint hover:text-neutral-text-muted'
+                  }`}
+                >
+                  {s.icon} {s.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="space-y-4">
+            {section === 'personal' && <PersonalSection me={me} onChange={setMe} />}
+            {section === 'security' && <SecuritySection me={me} />}
+            {section === 'shop' && isSeller && <ShopSection me={me} />}
+            {section === 'authenticator' && isAuth && <AuthenticatorSection me={me} />}
+          </div>
+        </section>
       </div>
     </div>
   );
@@ -178,19 +183,42 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
     img.src = avatarOriginalUrl;
   }
 
+  /**
+   * Max |tx|/|ty| so the image always covers the whole 200px viewport.
+   * Cover-fit + zoom ≥ 1 guarantees w,h ≥ size, so bounds are ≥ 0.
+   */
+  function cropBounds(img: HTMLImageElement, z: number) {
+    const size = 200;
+    const baseRatio = Math.max(size / img.width, size / img.height);
+    const ratio = baseRatio * z;
+    return {
+      maxTx: (img.width * ratio - size) / 2,
+      maxTy: (img.height * ratio - size) / 2,
+    };
+  }
+
+  const clamp = (v: number, max: number) => Math.min(max, Math.max(-max, v));
+
   function applyCrop() {
     if (!cropImg) return;
     const size = 200;
     const c = document.createElement('canvas');
     c.width = size; c.height = size;
     const ctx = c.getContext('2d')!;
+    // Canvas 透明 pixel 喺 JPEG export 會變黑 — 白底 fill 做保險。
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
     // Cover-fit base ratio so the smaller side fills the viewport (no letterbox).
     const baseRatio = Math.max(size / cropImg.width, size / cropImg.height);
     const ratio = baseRatio * zoom;
     const w = cropImg.width * ratio;
     const h = cropImg.height * ratio;
-    // tx/ty are in viewport pixels — translate the image by that amount.
-    ctx.drawImage(cropImg, (size - w) / 2 + tx, (size - h) / 2 + ty, w, h);
+    // tx/ty are in viewport pixels — clamp so the crop never exposes an
+    // uncovered edge (the「黑邊」bug), then translate.
+    const { maxTx, maxTy } = cropBounds(cropImg, zoom);
+    const ctx2 = clamp(tx, maxTx);
+    const cty = clamp(ty, maxTy);
+    ctx.drawImage(cropImg, (size - w) / 2 + ctx2, (size - h) / 2 + cty, w, h);
     const data = c.toDataURL('image/jpeg', 0.85);
     if (data.length > 256 * 1024) {
       setErr('Avatar 仍然太大，請揀細啲嘅圖');
@@ -198,11 +226,12 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
     }
     setAvatarUrl(data);
     // Persist the compressed source + crop params so the customer can
-    // re-open the cropper later without re-uploading.
+    // re-open the cropper later without re-uploading. Store the CLAMPED
+    // offsets so re-crop reopens exactly where the export landed.
     setAvatarOriginalUrl(cropSrc);
     setAvatarCropZoom(zoom);
-    setAvatarCropX(tx);
-    setAvatarCropY(ty);
+    setAvatarCropX(ctx2);
+    setAvatarCropY(cty);
     setCropSrc(null);
     setCropImg(null);
   }
@@ -218,9 +247,21 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
   }
 
   function onCropPointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (!dragRef.current) return;
-    setTx(dragRef.current.startTx + (e.clientX - dragRef.current.startX));
-    setTy(dragRef.current.startTy + (e.clientY - dragRef.current.startY));
+    if (!dragRef.current || !cropImg) return;
+    // Clamp live so the viewport can never show an uncovered edge — what the
+    // customer sees while dragging = exactly what the export produces.
+    const { maxTx, maxTy } = cropBounds(cropImg, zoom);
+    setTx(clamp(dragRef.current.startTx + (e.clientX - dragRef.current.startX), maxTx));
+    setTy(clamp(dragRef.current.startTy + (e.clientY - dragRef.current.startY), maxTy));
+  }
+
+  /** Zoom-out shrinks the image — re-clamp offsets so edges stay covered. */
+  function onZoomChange(z: number) {
+    setZoom(z);
+    if (!cropImg) return;
+    const { maxTx, maxTy } = cropBounds(cropImg, z);
+    setTx((v) => clamp(v, maxTx));
+    setTy((v) => clamp(v, maxTy));
   }
 
   function onCropPointerUp(e: React.PointerEvent<HTMLDivElement>) {
@@ -353,7 +394,7 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
                     max={3}
                     step={0.01}
                     value={zoom}
-                    onChange={(e) => setZoom(parseFloat(e.target.value))}
+                    onChange={(e) => onZoomChange(parseFloat(e.target.value))}
                     className="mt-1 w-full"
                   />
                   <span className="mt-0.5 block text-[10px] text-slate-400">拖拉頭像可微調位置</span>

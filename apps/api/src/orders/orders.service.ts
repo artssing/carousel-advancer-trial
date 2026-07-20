@@ -6,17 +6,19 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { randomBytes } from 'crypto';
 import {
   DeliveryMethod,
   ListingStatus,
   OrderStatus,
   PaymentMethod,
 } from '@prisma/client';
-import { calculateOrderFees, tierForPrice, needsMyAction } from '@authentik/utils';
+import { calculateOrderFees, tierForPrice, needsMyAction, normalizeHKPhone } from '@authentik/utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessagesService } from '../messages/messages.service';
 import { MessagesGateway } from '../messages/messages.gateway';
 import { PaymentsService } from '../payments/payments.service';
+import { stripeAdapter } from '../payments/stripe-adapter';
 import type { AddEvidenceDto, CreateOrderDto, ReviewDto, VerdictDto } from './dto';
 
 // 面交類交收（鑑定師面交 / 三方 / 買賣雙方）。SHIP 唔屬於呢類。
@@ -39,6 +41,11 @@ export type HandoverRound = {
 
 /** Max re-photo requests per order. After this seller can only confirm or cancel. */
 export const MAX_REPHOTO = 2;
+
+/** Ack v2 (founder 2026-07-10): SHIPPED_TO_BUYER auto-completes T+N days after
+ *  ship-out — buyer never acks, only disputes within the window. Merged clock:
+ *  auto-complete = 即時 cashout eligible（取代舊 72hr cashoutEligibleAt 疊加）。 */
+export const AUTO_COMPLETE_DAYS = 3;
 
 @Injectable()
 export class OrdersService {
@@ -165,6 +172,13 @@ export class OrdersService {
         '物流寄送（無鑑定師）唔可以揀線上託管 — 平台冇方法協助處理糾紛，請揀「賣家直收」。',
       );
     }
+    // Ack v2 (E, founder 2026-07-10): MEETUP_DIRECT 零佣金零 ack — 平台唔 hold
+    // 錢（冇人會 ack 放款），強制 OFFLINE_CASH。
+    if (dto.deliveryMethod === DeliveryMethod.MEETUP_DIRECT && dto.paymentMethod === PaymentMethod.ONLINE_ESCROW) {
+      throw new BadRequestException(
+        '買賣雙方面交唔支援線上託管 — 平台唔收佣金亦唔託管款項，請用面交現金/FPS。',
+      );
+    }
     // 線下現金：允許 meetup OR SHIP-no-auth；其餘禁
     if (dto.paymentMethod === PaymentMethod.OFFLINE_CASH && !isMeetup && !isShipNoAuth) {
       throw new BadRequestException(
@@ -223,14 +237,11 @@ export class OrdersService {
     // 鑑定費用用所揀鑑定師嘅自訂 rate；無鑑定師則 authFee = 0
     const fees = calculateOrderFees(salePriceHKD, authQuote);
 
+    // Draft order（founder 2026-07-20 ruling）：落單一刻 **唔 lock 件貨** —
+    // listing 保持 ACTIVE，買家可以隨時上返一頁 edit / 放棄。RESERVED 只喺
+    // confirmReview（double confirm）一刻先搶，30 分鐘倒數同時開始。
+    // Offer path 例外：accept offer 嗰刻已 RESERVED（議價預留係刻意設計）。
     return this.prisma.$transaction(async (tx) => {
-      // If listing already RESERVED via accepted offer, skip the update
-      if (!acceptedOffer) {
-        await tx.listing.update({
-          where: { id: listing.id },
-          data: { status: ListingStatus.RESERVED },
-        });
-      }
       return tx.order.create({
         data: {
           listingId: listing.id,
@@ -258,7 +269,17 @@ export class OrdersService {
   // Do NOT call this for auth-role users; WHERE clause intentionally excludes authenticatorId (Lesson #6).
   async listForUser(userId: string) {
     const orders = await this.prisma.order.findMany({
-      where: { OR: [{ buyerId: userId }, { sellerId: userId }] },
+      // 賣家唔見 draft（買家未 double-confirm 嘅 AWAITING_PAYMENT，貨未 lock）—
+      // 嗰啲只係人哋個購物車，唔係真單（founder 2026-07-20）。買家自己就見到。
+      where: {
+        OR: [
+          { buyerId: userId },
+          {
+            sellerId: userId,
+            NOT: { status: OrderStatus.AWAITING_PAYMENT, paymentDeadlineAt: null },
+          },
+        ],
+      },
       orderBy: { createdAt: 'desc' },
       include: {
         listing: { select: { id: true, title: true, category: true, images: true } },
@@ -409,6 +430,10 @@ export class OrdersService {
     if (order.status !== OrderStatus.AWAITING_PAYMENT) {
       throw new BadRequestException(`Order is ${order.status}, cannot accept payment`);
     }
+    // Draft 未 double-confirm 唔准過 PAID（listing 未 lock — founder 2026-07-20）
+    if (order.paymentMethod === PaymentMethod.ONLINE_ESCROW && !order.paymentDeadlineAt) {
+      throw new BadRequestException('請先確認訂單（review）先可以付款');
+    }
     return this.prisma.order.update({
       where: { id: orderId },
       data: { status: OrderStatus.PAID, paidAt: new Date() },
@@ -417,8 +442,12 @@ export class OrdersService {
 
   // ── SHIP flow transitions ─────────────────────────────────────────────────
 
-  // Seller confirms they shipped to authenticator
-  async shipToAuthenticator(orderId: string, sellerId: string) {
+  // Seller confirms they shipped to authenticator.
+  // Ack v2 (A2): this is PROGRESS not an acknowledgement — SF tracking number
+  // is mandatory so the shipment is traceable, not a bare button click.
+  async shipToAuthenticator(orderId: string, sellerId: string, trackingNo?: string) {
+    const tracking = (trackingNo ?? '').trim();
+    if (!tracking) throw new BadRequestException('請提供 SF 運單編號');
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order) throw new NotFoundException('Order not found');
     if (order.sellerId !== sellerId) throw new ForbiddenException('Only seller can do this');
@@ -433,12 +462,20 @@ export class OrdersService {
     }
     return this.prisma.order.update({
       where: { id: orderId },
-      data: { status: OrderStatus.SHIPPED_TO_AUTHENTICATOR, shippedToAuthAt: new Date() },
+      data: {
+        status: OrderStatus.SHIPPED_TO_AUTHENTICATOR,
+        shippedToAuthAt: new Date(),
+        sellerShipTrackingNo: tracking,
+      },
     });
   }
 
-  // Seller ships directly to buyer (no authenticator path, SHIP only)
-  async shipToBuyerDirect(orderId: string, sellerId: string) {
+  // Seller ships directly to buyer (no authenticator path, SHIP only).
+  // Ack v2 (B): tracking mandatory; T+3 auto-complete clock starts here —
+  // buyer never acks, only disputes within the window.
+  async shipToBuyerDirect(orderId: string, sellerId: string, trackingNo?: string) {
+    const tracking = (trackingNo ?? '').trim();
+    if (!tracking) throw new BadRequestException('請提供 SF 運單編號');
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order) throw new NotFoundException('Order not found');
     if (order.sellerId !== sellerId) throw new ForbiddenException('Only seller can do this');
@@ -450,13 +487,20 @@ export class OrdersService {
     }
     return this.prisma.order.update({
       where: { id: orderId },
-      data: { status: OrderStatus.SHIPPED_TO_BUYER, shippedToBuyerAt: new Date() },
+      data: {
+        status: OrderStatus.SHIPPED_TO_BUYER,
+        shippedToBuyerAt: new Date(),
+        sellerShipTrackingNo: tracking,
+        autoCompleteAt: new Date(Date.now() + AUTO_COMPLETE_DAYS * 24 * 60 * 60 * 1000),
+      },
     });
   }
 
   // Authenticator marks item received (SHIP flow).
-  // v4 dual-ack: requires ≥3 unboxing photos. Transitions to AUTH_RECEIVED_PENDING_SELLER_ACK
-  // (not AUTHENTICATING directly). Seller must view photos + ack within 7 days.
+  // Ack v2 (A3, founder 2026-07-10): SINGLE ack — straight to AUTHENTICATING.
+  // Seller ack removed: SF tracking + authenticator's ≥3 photos are the
+  // evidence trail. Legacy AUTH_RECEIVED_PENDING_SELLER_ACK retained for
+  // in-flight orders only.
   async markAuthenticatorReceived(orderId: string, userId: string, photos: string[]) {
     if (!Array.isArray(photos) || photos.length < 3) {
       throw new BadRequestException('請至少上載 3 張收件 unboxing 相片');
@@ -473,7 +517,7 @@ export class OrdersService {
     return this.prisma.order.update({
       where: { id: orderId },
       data: {
-        status: OrderStatus.AUTH_RECEIVED_PENDING_SELLER_ACK,
+        status: OrderStatus.AUTHENTICATING,
         authReceiptPhotos: photos,
         authReceiveAckAt: new Date(),
         receivedByAuthAt: new Date(),
@@ -496,12 +540,67 @@ export class OrdersService {
     if (!MEETUP_METHODS.includes(order.deliveryMethod)) {
       throw new BadRequestException('This is not a meetup order — use mark-received for SHIP');
     }
+    // Custody gate（founder 2026-07-14 拍板）：MEETUP_AUTH 有 custody transfer，
+    // 必須經 QR drop-off scan（或電話號碼 fallback）留低證據鏈 — 鑑定師唔可以
+    // 自己一鍵 override 直入鑑定（E&O / 爭議仲裁靠 custody 紀錄企得穩）。
+    // 呢個 endpoint 而家只服務 MEETUP_3WAY（三方同場，冇 custody transfer）。
+    if (order.deliveryMethod === DeliveryMethod.MEETUP_AUTH) {
+      throw new BadRequestException(
+        'MEETUP_AUTH 必須經 QR 交收（或賣家電話號碼核實）先可以開始鑑定，唔可以直接開始',
+      );
+    }
     if (order.status !== OrderStatus.PAID) {
       throw new BadRequestException(`Expected PAID, got ${order.status}`);
     }
     return this.prisma.order.update({
       where: { id: orderId },
       data: { status: OrderStatus.AUTHENTICATING, receivedByAuthAt: new Date() },
+    });
+  }
+
+  /**
+   * Custody fallback（founder 2026-07-14）：賣家部電冇電/用唔到 QR 時，
+   * 以「賣家登記電話號碼」核實身分代替 QR scan。要求同 QR 路一樣嚴：
+   *  • 鑑定師輸入賣家口頭提供嘅電話 → 必須 exact match 登記 + 已驗證嘅號碼
+   *  • ≥3 張接收相
+   *  • custodyVia="PHONE_FALLBACK" audit（QR 路 = "QR"），爭議時查得返邊條路入 custody
+   */
+  async custodyPhoneFallback(orderId: string, authUserId: string, sellerPhoneInput: string, photos: string[]) {
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { authenticator: true, seller: { select: { phone: true, phoneVerified: true } } },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.authenticator?.userId !== authUserId) {
+      throw new ForbiddenException('Only the assigned authenticator can confirm custody');
+    }
+    if (order.deliveryMethod !== DeliveryMethod.MEETUP_AUTH) {
+      throw new BadRequestException('電話 fallback 只適用於 MEETUP_AUTH 交收');
+    }
+    if (order.status !== OrderStatus.PAID) {
+      throw new BadRequestException(`Expected PAID, got ${order.status}`);
+    }
+    if (!Array.isArray(photos) || photos.length < 3) {
+      throw new BadRequestException('請至少影 3 張接收相片先可以確認交收');
+    }
+    if (!order.seller.phone || !order.seller.phoneVerified) {
+      throw new BadRequestException('賣家冇已驗證嘅電話號碼 — 呢張單用唔到電話 fallback，請聯絡客服');
+    }
+    const input = normalizeHKPhone(sellerPhoneInput);
+    if (!input || input !== order.seller.phone) {
+      throw new BadRequestException('電話號碼同賣家登記唔符 — 請向賣家再確認');
+    }
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: OrderStatus.CUSTODY,
+        custodyHeld: true,
+        custodyVia: 'PHONE_FALLBACK',
+        handoverPhotos: photos,
+        authReceiveAckAt: new Date(),
+        receivedByAuthAt: new Date(),
+        sellerHandoverAckAt: new Date(),
+      },
     });
   }
 
@@ -981,6 +1080,376 @@ export class OrdersService {
     return { swept: stale.length };
   }
 
+  /**
+   * Ack v2 (A4/B, founder 2026-07-10): sweep SHIPPED_TO_BUYER orders whose
+   * autoCompleteAt has elapsed → COMPLETED + escrow release + listing SOLD.
+   * Merged clock: cashoutEligibleAt = now（唔再疊加 72hr）。
+   * Guards:
+   *  - status filter inside the per-row update tx (idempotent — a dispute
+   *    filed in the same tick flips status to DISPUTED and the guarded update
+   *    silently no-ops, so auto-complete can never race a fresh dispute).
+   *  - no-auth orders capture at this moment (mirror confirmDelivered).
+   */
+  async sweepShipAutoComplete() {
+    const due = await this.prisma.order.findMany({
+      where: {
+        status: OrderStatus.SHIPPED_TO_BUYER,
+        autoCompleteAt: { not: null, lte: new Date() },
+      },
+      select: { id: true, listingId: true, authenticatorId: true },
+      take: 100,
+    });
+    let swept = 0;
+    for (const o of due) {
+      await this.tryCapturePayment(o.id, 'AUTO_COMPLETE_T3');
+      const result = await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.order.updateMany({
+          // Guarded: only if STILL SHIPPED_TO_BUYER (dispute race protection)
+          where: { id: o.id, status: OrderStatus.SHIPPED_TO_BUYER },
+          data: {
+            status: OrderStatus.COMPLETED,
+            deliveredAt: new Date(),
+            completedAt: new Date(),
+            cashoutEligibleAt: new Date(),
+            escrowHeld: false,
+          },
+        });
+        if (updated.count === 0) return false;
+        await tx.listing.update({
+          where: { id: o.listingId },
+          data: { status: ListingStatus.SOLD },
+        });
+        if (o.authenticatorId) {
+          await tx.authenticator.update({
+            where: { id: o.authenticatorId },
+            data: { completedCount: { increment: 1 } },
+          });
+        }
+        return true;
+      });
+      if (result) swept += 1;
+    }
+    return { swept };
+  }
+
+  // ═══ Checkout review + 付款時限（founder 2026-07-20）══════════════════
+
+  /** 買家喺 review step 撳「確認訂單，前往付款」（double confirm）→
+   *  呢一刻先 lock 件貨（listing ACTIVE→RESERVED，鬥快先得）+ server 設
+   *  30 分鐘 paymentDeadlineAt。Review 階段（未 confirm）完全唔鎖 —
+   *  買家有權上返上一頁 edit（founder 2026-07-20）。Idempotent —
+   *  重複 call 唔會 reset 個鐘。 */
+  async confirmReview(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.buyerId !== userId) throw new ForbiddenException('Not your order');
+    if (order.status !== OrderStatus.AWAITING_PAYMENT) {
+      throw new BadRequestException(`Order status is ${order.status}, not AWAITING_PAYMENT`);
+    }
+    if (order.paymentDeadlineAt) {
+      return { paymentDeadlineAt: order.paymentDeadlineAt }; // 已確認過 — 接續原 deadline
+    }
+
+    const deadline = new Date(Date.now() + 30 * 60 * 1000);
+    return this.prisma.$transaction(async (tx) => {
+      // Guarded reservation：ACTIVE→RESERVED 一擊即中先算贏
+      const grabbed = await tx.listing.updateMany({
+        where: { id: order.listingId, status: ListingStatus.ACTIVE },
+        data: { status: ListingStatus.RESERVED },
+      });
+      if (grabbed.count === 0) {
+        // 唔係 ACTIVE：可能係 (a) 第二個買家搶先 confirm 咗（有另一張
+        // 未過期已確認/已付款 order）→ 擋；(b) offer accept 已預留俾呢個
+        // 買家 → 照行。
+        const conflict = await tx.order.findFirst({
+          where: {
+            listingId: order.listingId,
+            id: { not: orderId },
+            OR: [
+              { status: OrderStatus.AWAITING_PAYMENT, paymentDeadlineAt: { gt: new Date() } },
+              { status: { notIn: [OrderStatus.AWAITING_PAYMENT, OrderStatus.PAYMENT_EXPIRED, OrderStatus.REFUNDED] } },
+            ],
+          },
+          select: { id: true },
+        });
+        if (conflict) {
+          throw new BadRequestException('呢件貨啱啱俾另一位買家確認咗 — 如佢 30 分鐘內未付款會重新開放');
+        }
+      }
+      await tx.order.update({
+        where: { id: orderId },
+        data: { paymentDeadlineAt: deadline },
+      });
+      return { paymentDeadlineAt: deadline };
+    });
+  }
+
+  /** 5 分鐘 cron：確認後 30 分鐘未付款 → PAYMENT_EXPIRED + listing 釋放。
+   *  Guards：
+   *   - 有 AUTHORIZED/CAPTURED payment（webhook 遲到）→ 跳過，等 webhook 轉 PAID
+   *   - 先 void gateway intents 再寫 DB — void 咗之後 gateway confirm 會被拒，
+   *     杜絕「過期後先俾錢」race
+   *   - server-side analytics event `checkout_payment_expired`（eventId 綁
+   *     orderId，unique 保 idempotent） */
+  async sweepPaymentExpired() {
+    // 未 confirm 嘅 draft（從無 lock 過貨）24 小時後靜靜清走 —
+    // 冇 analytics event（唔算「付款過期」）、冇 listing 釋放（本來就冇鎖）。
+    await this.prisma.order.updateMany({
+      where: {
+        status: OrderStatus.AWAITING_PAYMENT,
+        paymentDeadlineAt: null,
+        createdAt: { lt: new Date(Date.now() - 24 * 3600 * 1000) },
+      },
+      data: { status: OrderStatus.PAYMENT_EXPIRED },
+    });
+
+    const due = await this.prisma.order.findMany({
+      where: {
+        status: OrderStatus.AWAITING_PAYMENT,
+        paymentDeadlineAt: { not: null, lte: new Date() },
+      },
+      include: { payments: true, listing: { select: { id: true, title: true } } },
+      take: 100,
+    });
+    let swept = 0;
+    for (const o of due) {
+      const settled = o.payments.some((p) => p.status === 'AUTHORIZED' || p.status === 'CAPTURED');
+      if (settled) continue; // 錢已 hold/扣 — webhook 好快轉 PAID，唔好搶
+      // Void every open intent at the gateway FIRST（唔准過期後先 confirm）
+      for (const p of o.payments) {
+        if (p.status === 'PENDING_AUTH' && p.gatewayRef) {
+          try { await stripeAdapter.cancelIntent(p.gatewayRef); } catch { /* mock restart 冇 intent — 冇所謂 */ }
+        }
+      }
+      const result = await this.prisma.$transaction(async (tx) => {
+        const updated = await tx.order.updateMany({
+          // Guarded：期間 webhook 轉咗 PAID 就 no-op
+          where: { id: o.id, status: OrderStatus.AWAITING_PAYMENT },
+          data: { status: OrderStatus.PAYMENT_EXPIRED, escrowHeld: false },
+        });
+        if (updated.count === 0) return false;
+        await tx.listing.update({
+          where: { id: o.listingId },
+          data: { status: ListingStatus.ACTIVE },
+        });
+        await tx.payment.updateMany({
+          where: { orderId: o.id, status: 'PENDING_AUTH' },
+          data: { status: 'CANCELLED', cancelledAt: new Date() },
+        });
+        return true;
+      });
+      if (!result) continue;
+      swept += 1;
+      // Server-side analytics（registry: checkout_payment_expired；spec 2026-07-20）
+      const totalHKD = o.salePriceHKD + o.authFeeHKD + o.platformFeeHKD;
+      await this.prisma.analyticsEvent
+        .create({
+          data: {
+            eventName: 'checkout_payment_expired',
+            eventId: `srv_expired_${o.id}`, // unique → 重跑唔會重複入賬
+            occurredAt: new Date(),
+            env: (process.env.DATABASE_URL ?? '').includes('authentik_uat') ? 'UAT' : 'PROD',
+            portal: 'CONSUMER',
+            anonymousId: 'server',
+            userId: o.buyerId,
+            role: 'BUYER',
+            sessionId: 'server',
+            pagePath: 'server:cron',
+            device: 'SERVER',
+            properties: {
+              order_id: o.id,
+              listing_id: o.listingId,
+              tier: tierForPrice(o.salePriceHKD),
+              total_hkd: totalHKD,
+              buyer_user_id: o.buyerId,
+            },
+          },
+        })
+        .catch(() => {}); // eventId unique 撞 = 已記過
+      await this.systemMessage(
+        o.id,
+        `⏰ 訂單因超過 30 分鐘未完成付款已自動取消，貨品已重新上架。如仍想購買請重新落單。`,
+      );
+    }
+    return { swept };
+  }
+
+  // ═══ Ack v2 — QR 交收 token（founder 2026-07-10）═══════════════════════
+  // Server-issued 短命 nonce：60 秒過期、一次性、綁 order+user+role。
+  // 冇 fallback — 買家冇電 = 交收唔到（founder 拍板）。
+  // BUYER_PICKUP:   MEETUP_AUTH AWAITING_BUYER_PICKUP，scan+confirm → COMPLETED
+  // SELLER_DROPOFF: MEETUP_AUTH PAID，scan+confirm(≥3相) → CUSTODY
+
+  /**
+   * Ack v2: buyer disputes a SHIP order inside the T+3 auto-complete window.
+   * SHIPPED_TO_BUYER → DISPUTED — halts the auto-complete sweep (guarded
+   * update no-ops non-SHIPPED_TO_BUYER rows). Admin resolves via disputes queue.
+   */
+  async disputeShip(orderId: string, buyerId: string, reason: string) {
+    const text = (reason ?? '').trim();
+    if (!text) throw new BadRequestException('請講低爭議原因');
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.buyerId !== buyerId) throw new ForbiddenException('Only buyer can dispute');
+    if (order.status !== OrderStatus.SHIPPED_TO_BUYER) {
+      throw new BadRequestException(`只可以喺寄出後、自動完成前提出爭議（而家係 ${order.status}）`);
+    }
+    return this.prisma.order.update({
+      where: { id: orderId },
+      data: {
+        status: OrderStatus.DISPUTED,
+        // Same storage convention as disputeMeetup — append into authNotes.
+        authNotes: order.authNotes ? `${order.authNotes}\n\n[爭議] ${text}` : `[爭議] ${text}`,
+      },
+    });
+  }
+
+  /** Buyer/seller fetches a fresh rotating token (client polls every 60s). */
+  async issueHandoverToken(orderId: string, userId: string) {
+    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+
+    let role: 'BUYER_PICKUP' | 'SELLER_DROPOFF';
+    if (order.buyerId === userId && order.status === OrderStatus.AWAITING_BUYER_PICKUP) {
+      role = 'BUYER_PICKUP';
+    } else if (
+      order.sellerId === userId &&
+      order.deliveryMethod === DeliveryMethod.MEETUP_AUTH &&
+      order.status === OrderStatus.PAID
+    ) {
+      role = 'SELLER_DROPOFF';
+    } else {
+      throw new BadRequestException('呢張訂單而家唔喺可交收狀態');
+    }
+
+    const token = randomBytes(24).toString('base64url');
+    const expiresAt = new Date(Date.now() + 60 * 1000);
+    await this.prisma.$transaction([
+      // Rotating: invalidate previous unconsumed tokens for this order+user
+      this.prisma.qrToken.updateMany({
+        where: { orderId, userId, consumedAt: null },
+        data: { expiresAt: new Date() },
+      }),
+      this.prisma.qrToken.create({
+        data: { orderId, userId, role, token, expiresAt },
+      }),
+    ]);
+    return { token, expiresAt, role };
+  }
+
+  /** Authenticator scans a QR — validates + returns the order card. Does NOT
+   *  consume the token; consumption happens on confirm. */
+  async scanQrToken(rawToken: string, authUserId: string) {
+    const qr = await this.validateQrToken(rawToken, authUserId);
+    const order = await this.prisma.order.findUnique({
+      where: { id: qr.orderId },
+      include: {
+        listing: { select: { id: true, title: true, images: true } },
+        buyer: { select: { id: true, displayName: true } },
+        seller: { select: { id: true, displayName: true } },
+      },
+    });
+    return {
+      role: qr.role,
+      order: {
+        id: order!.id,
+        status: order!.status,
+        salePriceHKD: order!.salePriceHKD,
+        listingTitle: order!.listing?.title,
+        listingImage: order!.listing?.images?.[0] ?? null,
+        counterpartyName: qr.role === 'BUYER_PICKUP' ? order!.buyer?.displayName : order!.seller?.displayName,
+      },
+    };
+  }
+
+  /** Authenticator confirms handover — consumes token + performs transition. */
+  async confirmQrHandover(rawToken: string, authUserId: string, photos?: string[]) {
+    const qr = await this.validateQrToken(rawToken, authUserId);
+    const order = await this.prisma.order.findUnique({ where: { id: qr.orderId } });
+    if (!order) throw new NotFoundException('Order not found');
+
+    if (qr.role === 'SELLER_DROPOFF') {
+      if (!Array.isArray(photos) || photos.length < 3) {
+        throw new BadRequestException('請至少影 3 張接收相片先可以確認交收');
+      }
+      if (order.status !== OrderStatus.PAID) {
+        throw new BadRequestException(`Expected PAID, got ${order.status}`);
+      }
+      return this.prisma.$transaction(async (tx) => {
+        await tx.qrToken.update({
+          where: { id: qr.id },
+          data: { consumedAt: new Date(), consumedBy: authUserId },
+        });
+        return tx.order.update({
+          where: { id: order.id },
+          data: {
+            status: OrderStatus.CUSTODY,
+            custodyHeld: true,
+            custodyVia: 'QR',
+            handoverPhotos: photos,
+            authReceiveAckAt: new Date(),
+            receivedByAuthAt: new Date(),
+            // QR scan = seller identity verified in person — records the ack
+            sellerHandoverAckAt: new Date(),
+          },
+        });
+      });
+    }
+
+    // BUYER_PICKUP → COMPLETED + escrow release（同 buyerReceiveAck 語義）
+    if (order.status !== OrderStatus.AWAITING_BUYER_PICKUP) {
+      throw new BadRequestException(`Expected AWAITING_BUYER_PICKUP, got ${order.status}`);
+    }
+    return this.prisma.$transaction(async (tx) => {
+      await tx.qrToken.update({
+        where: { id: qr.id },
+        data: { consumedAt: new Date(), consumedBy: authUserId },
+      });
+      await tx.listing.update({
+        where: { id: order.listingId },
+        data: { status: ListingStatus.SOLD },
+      });
+      if (order.authenticatorId) {
+        await tx.authenticator.update({
+          where: { id: order.authenticatorId },
+          data: { completedCount: { increment: 1 } },
+        });
+      }
+      return tx.order.update({
+        where: { id: order.id },
+        data: {
+          status: OrderStatus.COMPLETED,
+          buyerReceiveAckAt: new Date(),
+          completedAt: new Date(),
+          cashoutEligibleAt: new Date(),
+          escrowHeld: false,
+          custodyHeld: false,
+        },
+      });
+    });
+  }
+
+  /** Shared validation: token exists, unexpired, unconsumed, scanner is the
+   *  assigned authenticator of the token's order. */
+  private async validateQrToken(rawToken: string, authUserId: string) {
+    const token = (rawToken ?? '').trim();
+    if (!token) throw new BadRequestException('請提供 QR token');
+    const qr = await this.prisma.qrToken.findUnique({ where: { token } });
+    if (!qr) throw new BadRequestException('QR 碼無效');
+    if (qr.consumedAt) throw new BadRequestException('呢個 QR 碼已經用過');
+    if (qr.expiresAt < new Date()) {
+      throw new BadRequestException('此碼已過期，請對方刷新 App 再出示');
+    }
+    const order = await this.prisma.order.findUnique({
+      where: { id: qr.orderId },
+      include: { authenticator: true },
+    });
+    if (!order || order.authenticator?.userId !== authUserId) {
+      throw new ForbiddenException('只有此訂單嘅指定鑑定師可以 scan');
+    }
+    return qr;
+  }
+
 // Authenticator-uploaded verdict-time evidence (video/photo) — separate from the
   // buyer/seller handover photo columns. Stored via StorageService; this just
   // commits the metadata row once the client has already uploaded the file.
@@ -1037,6 +1506,40 @@ export class OrdersService {
     await this.requireEvidence(orderId);
     const newStatus =
       dto.verdict === 'PASSED' ? OrderStatus.AUTH_PASSED : OrderStatus.AUTH_FAILED;
+
+    // Ack v2 (D, founder 2026-07-10): MEETUP_3WAY — 三方同場，verdict PASSED
+    // 即當場交收，直接 COMPLETED + 放款，買家唔使再 ack（有咩當面傾）。
+    // 鑑定師 UI 有「貨物已當面交予買家」checkbox（handedOver）分開記錄
+    // 「真」同「交咗貨」兩件事。
+    if (order.deliveryMethod === DeliveryMethod.MEETUP_3WAY && newStatus === OrderStatus.AUTH_PASSED) {
+      await this.tryCapturePayment(orderId, 'MEETUP_3WAY_PASSED');
+      return this.prisma.$transaction(async (tx) => {
+        await tx.listing.update({
+          where: { id: order.listingId },
+          data: { status: ListingStatus.SOLD },
+        });
+        if (order.authenticatorId) {
+          await tx.authenticator.update({
+            where: { id: order.authenticatorId },
+            data: { completedCount: { increment: 1 } },
+          });
+        }
+        return tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: OrderStatus.COMPLETED,
+            authVerdict: dto.verdict,
+            authNotes: dto.notes ?? null,
+            authCompletedAt: new Date(),
+            buyerReceiveAckAt: new Date(),
+            completedAt: new Date(),
+            cashoutEligibleAt: new Date(),
+            escrowHeld: false,
+          },
+        });
+      });
+    }
+
     const updated = await this.prisma.order.update({
       where: { id: orderId },
       data: {
@@ -1054,17 +1557,32 @@ export class OrdersService {
     return updated;
   }
 
-  // Seller confirms shipped to buyer (after AUTH_PASSED)
-  async shipToBuyer(orderId: string, sellerId: string) {
-    const order = await this.prisma.order.findUnique({ where: { id: orderId } });
+  // Ship to buyer after AUTH_PASSED. Ack v2 (A4): goods are physically at the
+  // authenticator, so the AUTHENTICATOR (or seller, transitional) records the
+  // ship-out with a mandatory tracking number. From this moment the item is
+  // considered SOLD; T+3 auto-complete clock starts — buyer never acks.
+  async shipToBuyer(orderId: string, userId: string, trackingNo?: string) {
+    const tracking = (trackingNo ?? '').trim();
+    if (!tracking) throw new BadRequestException('請提供 SF 運單編號');
+    const order = await this.prisma.order.findUnique({
+      where: { id: orderId },
+      include: { authenticator: true },
+    });
     if (!order) throw new NotFoundException('Order not found');
-    if (order.sellerId !== sellerId) throw new ForbiddenException('Only seller can do this');
+    const isSeller = order.sellerId === userId;
+    const isAuth = order.authenticator?.userId === userId;
+    if (!isSeller && !isAuth) throw new ForbiddenException('Only seller or assigned authenticator can do this');
     if (order.status !== OrderStatus.AUTH_PASSED) {
       throw new BadRequestException(`Expected AUTH_PASSED, got ${order.status}`);
     }
     return this.prisma.order.update({
       where: { id: orderId },
-      data: { status: OrderStatus.SHIPPED_TO_BUYER, shippedToBuyerAt: new Date() },
+      data: {
+        status: OrderStatus.SHIPPED_TO_BUYER,
+        shippedToBuyerAt: new Date(),
+        ...(isAuth ? { authShipTrackingNo: tracking } : { sellerShipTrackingNo: tracking }),
+        autoCompleteAt: new Date(Date.now() + AUTO_COMPLETE_DAYS * 24 * 60 * 60 * 1000),
+      },
     });
   }
 

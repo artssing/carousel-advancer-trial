@@ -21,6 +21,19 @@ const OTP_TTL_MS = 5 * 60 * 1000;
 const OTP_MAX_ATTEMPTS = 5;
 const OTP_PHONE_RATE_LIMIT = { count: 3, windowMs: 10 * 60 * 1000 };  // 3 sends per 10 min per phone
 const OTP_IP_RATE_LIMIT    = { count: 10, windowMs: 60 * 60 * 1000 };  // 10 sends per 1 hr per IP
+const OTP_EMAIL_RATE_LIMIT = { count: 3, windowMs: 10 * 60 * 1000 };  // email OTP — same envelope
+
+/** Reserved handles that must never be assignable as `username` (route collisions). */
+const RESERVED_USERNAMES = new Set([
+  'admin', 'administrator', 'root', 'system', 'authentik', 'support',
+  'about', 'terms', 'privacy', 'login', 'register', 'signup', 'signout',
+  'account', 'me', 'settings', 'browse', 'sell', 'orders', 'messages',
+  'listing', 'seller', 'buyer', 'authenticator', 'inbox', 'earnings',
+  'api', 'www', 'help', 'legal', 'contact', 'blog',
+]);
+
+/** username validation regex — lowercase letters, digits, underscore; 3-24 chars, must start with letter. */
+const USERNAME_REGEX = /^[a-z][a-z0-9_]{2,23}$/;
 
 /**
  * SSO state tokens — short-lived JWTs that thread state across the OAuth
@@ -61,18 +74,193 @@ export class AuthService {
   ) {}
 
   // ── Email + password ──────────────────────────────────────────────────
+  /**
+   * Register v2 (2026-07-05): accepts optional `emailOtp` / `username` / `interests`.
+   *
+   * - If `emailOtp` provided, atomically consume matching REGISTER_EMAIL OTP
+   *   and set `emailVerified=true` on the new user (rejects if OTP invalid).
+   *   Backwards-compat: if no OTP provided, user is still created with
+   *   `emailVerified=false` (legacy path — safe for admin-seeded accounts).
+   * - If `username` provided, validate + reject if taken/reserved. If omitted,
+   *   auto-generate `<base><4-digit-random>` iterating until unique.
+   * - `interests` array of Category enum values (validated by Prisma at write).
+   */
   async register(dto: RegisterDto) {
-    const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    const email = dto.email.trim().toLowerCase();
+
+    const exists = await this.prisma.user.findUnique({ where: { email } });
     if (exists) throw new ConflictException('Email already registered');
+
+    // Verify email OTP up-front (before any writes) so the failure surface is clean.
+    let emailVerified = false;
+    if (dto.emailOtp) {
+      await this.consumeEmailOtp(email, dto.emailOtp, 'REGISTER_EMAIL');
+      emailVerified = true;
+    }
+
+    // Resolve username: user-chosen (validate) OR auto-generate (iterate).
+    let username: string;
+    if (dto.username) {
+      const clean = dto.username.trim().toLowerCase();
+      const err = this.validateUsername(clean);
+      if (err) throw new BadRequestException(err);
+      const taken = await this.prisma.user.findUnique({ where: { username: clean } });
+      if (taken) throw new ConflictException('用戶名已被使用');
+      username = clean;
+    } else {
+      username = await this.generateUsername(email, dto.displayName);
+    }
+
+    // Interests — validate Category enum values (Prisma throws on invalid).
+    const interests = Array.isArray(dto.interests)
+      ? Array.from(new Set(dto.interests)).slice(0, 20)
+      : [];
+
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email,
+        email,
         displayName: dto.displayName,
         passwordHash,
+        emailVerified,
+        username,
+        interests: interests as any,
       },
     });
     return this.issueToken(user.id, user.email);
+  }
+
+  // ── Username helpers ──────────────────────────────────────────────────
+  /** Returns null if valid, or Chinese error message describing the problem. */
+  validateUsername(username: string): string | null {
+    if (!username) return '用戶名不可為空';
+    if (username.length < 3 || username.length > 24) return '用戶名須介乎 3–24 字元';
+    if (!USERNAME_REGEX.test(username)) return '用戶名只可用小寫字母、數字、底線，開頭必須係字母';
+    if (RESERVED_USERNAMES.has(username)) return '此用戶名為系統保留字，請試其他';
+    return null;
+  }
+
+  /** Public availability check — used by register/profile page while typing. */
+  async checkUsername(username: string): Promise<{ available: boolean; reason?: string }> {
+    const clean = username.trim().toLowerCase();
+    const err = this.validateUsername(clean);
+    if (err) return { available: false, reason: err };
+    const taken = await this.prisma.user.findUnique({ where: { username: clean } });
+    if (taken) return { available: false, reason: '用戶名已被使用' };
+    return { available: true };
+  }
+
+  /** Auto-generate a unique username from email local-part or displayName. */
+  private async generateUsername(email: string, displayName: string): Promise<string> {
+    // Prefer email local-part (usually latin), fall back to sanitised displayName.
+    const rawBase =
+      email.split('@')[0]?.replace(/[^a-z0-9_]/g, '') ||
+      displayName.toLowerCase().replace(/[^a-z0-9_]/g, '') ||
+      'user';
+    // Base must start with a letter — regex requires it. Prepend `u` if it doesn't.
+    let base = /^[a-z]/.test(rawBase) ? rawBase : `u${rawBase}`;
+    if (base.length < 3) base = `${base}user`.slice(0, 20);
+    if (base.length > 20) base = base.slice(0, 20);
+    // Try up to 10 times; extremely unlikely to collide.
+    for (let i = 0; i < 10; i++) {
+      const suffix = Math.floor(1000 + Math.random() * 9000);
+      const candidate = `${base}${suffix}`;
+      const taken = await this.prisma.user.findUnique({ where: { username: candidate } });
+      if (!taken && !RESERVED_USERNAMES.has(candidate)) return candidate;
+    }
+    // Extreme fallback — use cuid tail.
+    return `user${randomString(8).toLowerCase()}`;
+  }
+
+  // ── Email OTP ─────────────────────────────────────────────────────────
+  /**
+   * Register v2 (2026-07-05, mirrors phone OTP pattern): fixed dev code 888888,
+   * console.log instead of real email send. Real provider (SendGrid / SES) = backlog.
+   *
+   * Account-enumeration safe: always returns 200 whether email is taken.
+   */
+  async sendEmailOtp(
+    emailInput: string,
+    purpose: 'REGISTER_EMAIL' | 'VERIFY_EMAIL' | 'PAYOUT_CONFIRM',
+    ipAddress: string | undefined,
+    userId: string | undefined,
+  ) {
+    const email = emailInput.trim().toLowerCase();
+    // Rate limit per email
+    const emailCount = await this.prisma.emailOtpRequest.count({
+      where: { email, createdAt: { gte: new Date(Date.now() - OTP_EMAIL_RATE_LIMIT.windowMs) } },
+    });
+    if (emailCount >= OTP_EMAIL_RATE_LIMIT.count) {
+      throw new BadRequestException('傳送次數已達上限，請喺 10 分鐘後再試');
+    }
+    // Rate limit per IP (shared with phone OTP envelope)
+    if (ipAddress) {
+      const ipCount = await this.prisma.emailOtpRequest.count({
+        where: { ipAddress, createdAt: { gte: new Date(Date.now() - OTP_IP_RATE_LIMIT.windowMs) } },
+      });
+      if (ipCount >= OTP_IP_RATE_LIMIT.count) {
+        throw new BadRequestException('傳送次數已達上限，請稍後再試');
+      }
+    }
+
+    const code = MOCK_OTP_CODE;
+    const codeHash = await bcrypt.hash(code, 8);
+    await this.prisma.emailOtpRequest.create({
+      data: {
+        email,
+        codeHash,
+        purpose,
+        userId: userId ?? null,
+        expiresAt: new Date(Date.now() + OTP_TTL_MS),
+        attemptsLeft: OTP_MAX_ATTEMPTS,
+        ipAddress: ipAddress ?? null,
+      },
+    });
+    // eslint-disable-next-line no-console
+    console.log(`[MOCK EMAIL] email=${email} purpose=${purpose} code=${code} (dev mode)`);
+    return { expiresInSeconds: Math.floor(OTP_TTL_MS / 1000) };
+  }
+
+  /** VERIFY_EMAIL flow — existing authenticated user attesting their email. */
+  async verifyEmailOtp(emailInput: string, code: string, userId: string) {
+    const email = emailInput.trim().toLowerCase();
+    await this.consumeEmailOtp(email, code, 'VERIFY_EMAIL');
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { emailVerified: true },
+    });
+    return { emailVerified: true };
+  }
+
+  /**
+   * Atomically consume an email OTP or throw. Used by register()
+   * (REGISTER_EMAIL), verifyEmailOtp() (VERIFY_EMAIL), and WalletService
+   * payout 2FA (PAYOUT_CONFIRM — founder 2026-07-13). Mirrors phone
+   * verifyOtp() attempt-counting + single-use consumption.
+   */
+  async consumeEmailOtp(
+    email: string,
+    code: string,
+    purpose: 'REGISTER_EMAIL' | 'VERIFY_EMAIL' | 'PAYOUT_CONFIRM',
+  ): Promise<void> {
+    const otp = await this.prisma.emailOtpRequest.findFirst({
+      where: { email, purpose, consumedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+    });
+    if (!otp) throw new BadRequestException('驗証碼已過期，請重新發送');
+    if (otp.attemptsLeft <= 0) throw new BadRequestException('嘗試次數已用盡，請重新發送驗証碼');
+    const ok = await bcrypt.compare(code, otp.codeHash);
+    if (!ok) {
+      await this.prisma.emailOtpRequest.update({
+        where: { id: otp.id },
+        data: { attemptsLeft: { decrement: 1 } },
+      });
+      throw new BadRequestException('驗証碼錯誤');
+    }
+    await this.prisma.emailOtpRequest.update({
+      where: { id: otp.id },
+      data: { consumedAt: new Date() },
+    });
   }
 
   async login(dto: LoginDto) {

@@ -37,6 +37,17 @@ export class PaymentsController {
     return this.payments.confirmFromMock(body.paymentId, user.userId, body.testCard, body.method);
   }
 
+  /** Audit the chosen payment channel (gateway-confirm path only). */
+  @Post(':orderId/log-method')
+  logMethod(
+    @CurrentUser() user: CurrentUserData,
+    @Param('orderId') orderId: string,
+    @Body() body: { method: 'CARD' | 'ALIPAY_HK' | 'WECHAT_HK' | 'FPS' | 'APPLE_PAY' },
+  ) {
+    if (!body?.method) throw new BadRequestException('method required');
+    return this.payments.logMethod(orderId, user.userId, body.method);
+  }
+
   /** Cancel an active hold (buyer-initiated). */
   @Post(':orderId/cancel-hold')
   cancelHold(

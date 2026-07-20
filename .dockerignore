@@ -1,0 +1,22 @@
+# Build context 排除 — 保持 image 細 + 唔漏 secret
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+.turbo
+.git
+.gitignore
+.backups
+.dev-logs
+.public-state
+.agents
+agent
+design-samples
+docs
+*.md
+!apps/api/prisma/**
+
+# 永遠唔好將真 secret 入 image layer（runtime 由 compose env_file 注入）
+**/.env
+**/.env.*
+!**/.env.*.example

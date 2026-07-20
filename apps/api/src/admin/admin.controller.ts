@@ -9,6 +9,7 @@ import * as bcrypt from 'bcryptjs';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import { stripeAdapter } from '../payments/stripe-adapter';
 
 const ADMIN_ROLES = ['OPS_AGENT', 'OPS_ADMIN', 'SUPER_ADMIN'];
 const OPS_ADMIN_ROLES = ['OPS_ADMIN', 'SUPER_ADMIN']; // Q3=A — suspend gated to this tier
@@ -790,6 +791,588 @@ export class AdminController {
       offset,
       hasMore: offset + rows.length < total,
     };
+  }
+
+  // ═══ P0 — Orders admin (search / detail / escrow overrides) ═══════════
+  // Red lines (docs/proposals/admin-portal-gap-audit.md §C): money actions
+  // are STATE TRANSITIONS computed from existing order data — never a
+  // free-amount editor. Every override requires a reason → AdminAction.
+
+  @Get('orders')
+  async adminOrders(
+    @CurrentUser() user: CurrentUserData,
+    @Query('status') status?: string,
+    @Query('q') q?: string,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string,
+  ) {
+    await this.requireAdmin(user.userId);
+    const limit = Math.min(parseInt(limitStr ?? '50', 10) || 50, 200);
+    const offset = parseInt(offsetStr ?? '0', 10) || 0;
+    const where: any = {};
+    if (status) where.status = status;
+    if (q?.trim()) {
+      const t = q.trim();
+      where.OR = [
+        { id: { contains: t } },
+        { buyer: { is: { email: { contains: t, mode: 'insensitive' } } } },
+        { seller: { is: { email: { contains: t, mode: 'insensitive' } } } },
+        { listing: { is: { title: { contains: t, mode: 'insensitive' } } } },
+      ];
+    }
+    const [items, total] = await Promise.all([
+      this.prisma.order.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+        include: {
+          listing: { select: { id: true, title: true } },
+          buyer: { select: { id: true, displayName: true, email: true } },
+          seller: { select: { id: true, displayName: true, email: true } },
+          authenticator: { select: { id: true, displayName: true } },
+        },
+      }),
+      this.prisma.order.count({ where }),
+    ]);
+    return { items, total, hasMore: offset + items.length < total };
+  }
+
+  @Get('orders/:id')
+  async adminOrderDetail(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
+    await this.requireAdmin(user.userId);
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: {
+        listing: { select: { id: true, title: true, status: true, images: true, category: true } },
+        buyer: { select: { id: true, displayName: true, email: true } },
+        seller: { select: { id: true, displayName: true, email: true } },
+        authenticator: { select: { id: true, displayName: true, storeName: true } },
+        payments: { orderBy: { createdAt: 'asc' } },
+        evidenceFiles: {
+          orderBy: { createdAt: 'asc' },
+          select: { id: true, kind: true, mimeType: true, mediaUrl: true, uploaderUserId: true, createdAt: true },
+        },
+      },
+    });
+    if (!order) throw new NotFoundException('Order not found');
+    const actions = await this.prisma.adminAction.findMany({
+      where: { targetOrderId: id },
+      orderBy: { createdAt: 'desc' },
+      take: 20,
+    });
+    return { ...order, adminActions: actions };
+  }
+
+  /**
+   * Force-refund a stuck / disputed order — OPS_ADMIN+.
+   * Order → REFUNDED, escrow released, listing back to ACTIVE.
+   * Payment: AUTHORIZED hold → CANCELLED; CAPTURED → REFUNDED.
+   */
+  @Patch('orders/:id/force-refund')
+  async forceRefund(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+    @Body() body: { reason: string },
+  ) {
+    await this.requireOpsAdmin(user.userId);
+    const reason = (body?.reason ?? '').trim();
+    if (!reason) throw new BadRequestException('請輸入原因');
+    const order = await this.prisma.order.findUnique({ where: { id }, include: { payments: true } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (['COMPLETED', 'REFUNDED'].includes(order.status)) {
+      throw new BadRequestException(`訂單已係終態 ${order.status}，唔可以 force-refund`);
+    }
+    const fromStatus = order.status;
+    // Gateway FIRST, DB after — otherwise DB can claim REFUNDED while the
+    // buyer never got money back. Mock mode tolerates gateway failure (its
+    // in-memory store forgets intents on API restart).
+    for (const p of order.payments) {
+      if (!p.gatewayRef) continue;
+      try {
+        if (p.status === 'AUTHORIZED') await stripeAdapter.cancelIntent(p.gatewayRef);
+        else if (p.status === 'CAPTURED') await stripeAdapter.refundIntent(p.gatewayRef);
+      } catch (e: any) {
+        if (stripeAdapter.mode !== 'mock') {
+          throw new BadRequestException(`Gateway ${p.status === 'CAPTURED' ? 'refund' : 'cancel'} 失敗：${e?.message} — 未改訂單狀態，請重試`);
+        }
+      }
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id },
+        data: { status: 'REFUNDED', escrowHeld: false },
+      });
+      await tx.listing.update({ where: { id: order.listingId }, data: { status: 'ACTIVE' } });
+      for (const p of order.payments) {
+        if (p.status === 'AUTHORIZED') {
+          await tx.payment.update({ where: { id: p.id }, data: { status: 'CANCELLED', cancelledAt: new Date() } });
+        } else if (p.status === 'CAPTURED') {
+          await tx.payment.update({ where: { id: p.id }, data: { status: 'REFUNDED', refundedAt: new Date() } });
+        }
+      }
+      await tx.adminAction.create({
+        data: {
+          actorId: user.userId,
+          targetOrderId: id,
+          targetUserId: order.buyerId,
+          action: 'order.forceRefund',
+          payload: { reason, fromStatus },
+        },
+      });
+    });
+    return { id, status: 'REFUNDED', fromStatus };
+  }
+
+  /**
+   * Force-release escrow to seller — OPS_ADMIN+ (e.g. buyer unresponsive
+   * past SLA after goods delivered). Order → COMPLETED, payment captured.
+   */
+  @Patch('orders/:id/release-escrow')
+  async releaseEscrow(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+    @Body() body: { reason: string },
+  ) {
+    await this.requireOpsAdmin(user.userId);
+    const reason = (body?.reason ?? '').trim();
+    if (!reason) throw new BadRequestException('請輸入原因');
+    const order = await this.prisma.order.findUnique({ where: { id }, include: { payments: true } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (['COMPLETED', 'REFUNDED'].includes(order.status)) {
+      throw new BadRequestException(`訂單已係終態 ${order.status}，唔可以 release`);
+    }
+    const fromStatus = order.status;
+    const now = new Date();
+    // Capture the held funds at the gateway before recording CAPTURED.
+    for (const p of order.payments) {
+      if (p.status !== 'AUTHORIZED' || !p.gatewayRef) continue;
+      try {
+        await stripeAdapter.captureIntent(p.gatewayRef);
+      } catch (e: any) {
+        if (stripeAdapter.mode !== 'mock') {
+          throw new BadRequestException(`Gateway capture 失敗：${e?.message} — 未改訂單狀態，請重試`);
+        }
+      }
+    }
+    await this.prisma.$transaction(async (tx) => {
+      await tx.order.update({
+        where: { id },
+        data: { status: 'COMPLETED', completedAt: now, escrowHeld: false },
+      });
+      await tx.listing.update({ where: { id: order.listingId }, data: { status: 'SOLD' } });
+      for (const p of order.payments) {
+        if (p.status === 'AUTHORIZED') {
+          await tx.payment.update({ where: { id: p.id }, data: { status: 'CAPTURED', capturedAt: now } });
+        }
+      }
+      await tx.adminAction.create({
+        data: {
+          actorId: user.userId,
+          targetOrderId: id,
+          targetUserId: order.sellerId,
+          action: 'order.releaseEscrow',
+          payload: { reason, fromStatus },
+        },
+      });
+    });
+    return { id, status: 'COMPLETED', fromStatus };
+  }
+
+  /**
+   * Resolve a DISPUTED order — OPS_ADMIN+. resolution = REFUND_BUYER |
+   * RELEASE_SELLER. Note is mandatory and must speak to the named
+   * authenticator's verdict, never a platform authenticity judgement
+   * (L'Oréal v eBay posture — enforced by copy in admin UI).
+   */
+  @Patch('disputes/:id/resolve')
+  async resolveDispute(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+    @Body() body: { resolution: 'REFUND_BUYER' | 'RELEASE_SELLER'; note: string },
+  ) {
+    await this.requireOpsAdmin(user.userId);
+    const note = (body?.note ?? '').trim();
+    if (!note) throw new BadRequestException('請輸入處理備註');
+    if (!['REFUND_BUYER', 'RELEASE_SELLER'].includes(body?.resolution)) {
+      throw new BadRequestException('Invalid resolution');
+    }
+    const order = await this.prisma.order.findUnique({ where: { id }, select: { status: true } });
+    if (!order) throw new NotFoundException('Order not found');
+    if (order.status !== 'DISPUTED') {
+      throw new BadRequestException(`只可以處理 DISPUTED 訂單（而家係 ${order.status}）`);
+    }
+    const result = body.resolution === 'REFUND_BUYER'
+      ? await this.forceRefund(user, id, { reason: `爭議裁決：${note}` })
+      : await this.releaseEscrow(user, id, { reason: `爭議裁決：${note}` });
+    await this.logAdminAction({
+      actorId: user.userId,
+      targetOrderId: id,
+      action: 'dispute.resolve',
+      payload: { resolution: body.resolution, note },
+    });
+    return result;
+  }
+
+  // ═══ P0 — Payout queue ═════════════════════════════════════════════════
+
+  @Get('finance/payouts')
+  async payoutQueue(
+    @CurrentUser() user: CurrentUserData,
+    @Query('status') status?: string,
+  ) {
+    await this.requireAdmin(user.userId);
+    const where: any = {};
+    if (status) where.status = status;
+    return this.prisma.payoutRequest.findMany({
+      where,
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+      include: { user: { select: { id: true, displayName: true, email: true } } },
+    });
+  }
+
+  /**
+   * Advance a payout through its state machine — OPS_ADMIN+.
+   * PENDING → PROCESSING | FAILED；PROCESSING → SUCCEEDED | FAILED | REVERSED.
+   * The bank transfer itself happens outside the platform; this records it.
+   */
+  @Patch('finance/payouts/:id')
+  async setPayoutStatus(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+    @Body() body: { status: string; failureReason?: string },
+  ) {
+    await this.requireOpsAdmin(user.userId);
+    const po = await this.prisma.payoutRequest.findUnique({ where: { id } });
+    if (!po) throw new NotFoundException('Payout not found');
+    const allowed: Record<string, string[]> = {
+      PENDING: ['PROCESSING', 'FAILED'],
+      PROCESSING: ['SUCCEEDED', 'FAILED', 'REVERSED'],
+    };
+    const next = body?.status;
+    if (!allowed[po.status]?.includes(next)) {
+      throw new BadRequestException(`唔可以由 ${po.status} 轉去 ${next}`);
+    }
+    const failureReason = (body?.failureReason ?? '').trim();
+    if ((next === 'FAILED' || next === 'REVERSED') && !failureReason) {
+      throw new BadRequestException('FAILED / REVERSED 需要原因');
+    }
+    const terminal = ['SUCCEEDED', 'FAILED', 'REVERSED'].includes(next);
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.payoutRequest.update({
+        where: { id },
+        data: {
+          status: next as any,
+          failureReason: failureReason || null,
+          ...(terminal ? { processedAt: new Date() } : {}),
+        },
+      }),
+      this.prisma.adminAction.create({
+        data: {
+          actorId: user.userId,
+          targetUserId: po.userId,
+          action: 'payout.statusChange',
+          payload: { payoutId: id, reference: po.reference, from: po.status, to: next, failureReason: failureReason || null },
+        },
+      }),
+    ]);
+    return updated;
+  }
+
+  // ═══ P0 — Listing moderation ═══════════════════════════════════════════
+
+  @Get('listings')
+  async adminListings(
+    @CurrentUser() user: CurrentUserData,
+    @Query('status') status?: string,
+    @Query('q') q?: string,
+    @Query('limit') limitStr?: string,
+    @Query('offset') offsetStr?: string,
+  ) {
+    await this.requireAdmin(user.userId);
+    const limit = Math.min(parseInt(limitStr ?? '50', 10) || 50, 200);
+    const offset = parseInt(offsetStr ?? '0', 10) || 0;
+    const where: any = {};
+    if (status) where.status = status;
+    if (q?.trim()) {
+      const t = q.trim();
+      where.OR = [
+        { id: { contains: t } },
+        { title: { contains: t, mode: 'insensitive' } },
+        { brand: { contains: t, mode: 'insensitive' } },
+        { seller: { is: { email: { contains: t, mode: 'insensitive' } } } },
+      ];
+    }
+    const [items, total] = await Promise.all([
+      this.prisma.listing.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        skip: offset,
+        select: {
+          id: true, title: true, priceHKD: true, category: true, brand: true,
+          status: true, createdAt: true, images: true,
+          removedAt: true, removedByRole: true, removedReason: true,
+          seller: { select: { id: true, displayName: true, email: true } },
+          _count: { select: { orders: true } },
+        },
+      }),
+      this.prisma.listing.count({ where }),
+    ]);
+    return { items, total, hasMore: offset + items.length < total };
+  }
+
+  /** Take down a listing (counterfeit report / legal takedown) — OPS_ADMIN+. */
+  @Patch('listings/:id/remove')
+  async removeListing(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+    @Body() body: { reason: string },
+  ) {
+    await this.requireOpsAdmin(user.userId);
+    const reason = (body?.reason ?? '').trim();
+    if (!reason) throw new BadRequestException('請輸入下架原因');
+    const listing = await this.prisma.listing.findUnique({ where: { id }, select: { status: true, sellerId: true } });
+    if (!listing) throw new NotFoundException('Listing not found');
+    if (listing.status === 'REMOVED') throw new BadRequestException('已經係 REMOVED');
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.listing.update({
+        where: { id },
+        data: { status: 'REMOVED', removedAt: new Date(), removedByRole: 'ADMIN', removedReason: reason },
+        select: { id: true, status: true },
+      }),
+      this.prisma.adminAction.create({
+        data: {
+          actorId: user.userId,
+          targetUserId: listing.sellerId,
+          action: 'listing.remove',
+          payload: { listingId: id, reason, fromStatus: listing.status },
+        },
+      }),
+    ]);
+    return updated;
+  }
+
+  /** Restore an admin-removed listing back to ACTIVE — OPS_ADMIN+. */
+  @Patch('listings/:id/restore')
+  async restoreListing(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+    @Body() body: { reason: string },
+  ) {
+    await this.requireOpsAdmin(user.userId);
+    const reason = (body?.reason ?? '').trim();
+    if (!reason) throw new BadRequestException('請輸入原因');
+    const listing = await this.prisma.listing.findUnique({ where: { id }, select: { status: true, sellerId: true } });
+    if (!listing) throw new NotFoundException('Listing not found');
+    if (listing.status !== 'REMOVED') throw new BadRequestException(`只可以還原 REMOVED（而家係 ${listing.status}）`);
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.listing.update({
+        where: { id },
+        data: { status: 'ACTIVE', removedAt: null, removedByRole: null, removedReason: null },
+        select: { id: true, status: true },
+      }),
+      this.prisma.adminAction.create({
+        data: {
+          actorId: user.userId,
+          targetUserId: listing.sellerId,
+          action: 'listing.restore',
+          payload: { listingId: id, reason },
+        },
+      }),
+    ]);
+    return updated;
+  }
+
+  // ═══ Authenticator lifecycle（founder 2026-07-13 MVP）══════════════════
+  // 申請審批 queue + 鑑定師名單 suspend/remove。審批 = 准入 marketplace，
+  // 唔代表平台為鑑定結果背書（L'Oréal v eBay — copy 由 admin UI enforce）。
+  // 星級 / completedCount / disputeRate 演算法派生，永不喺呢度手改。
+
+  /** 申請 queue（default 只列 in-flight）。 */
+  @Get('authenticator-applications')
+  async authenticatorApplications(
+    @CurrentUser() user: CurrentUserData,
+    @Query('status') status?: string,
+  ) {
+    await this.requireAdmin(user.userId);
+    const where: any = status
+      ? { status }
+      : { status: { in: ['SUBMITTED', 'NEEDS_MORE_INFO'] } };
+    const apps = await this.prisma.authenticatorApplication.findMany({
+      where,
+      orderBy: { createdAt: 'asc' },
+      take: 200,
+      include: { user: { select: { id: true, displayName: true, email: true } } },
+    });
+    return apps;
+  }
+
+  /** 批核 → 建立 Authenticator（ACTIVE）+ 加 AUTHENTICATOR role。OPS_ADMIN+。 */
+  @Patch('authenticator-applications/:id/approve')
+  async approveAuthenticator(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+  ) {
+    await this.requireOpsAdmin(user.userId);
+    const app = await this.prisma.authenticatorApplication.findUnique({ where: { id } });
+    if (!app) throw new NotFoundException('Application not found');
+    if (app.status === 'APPROVED') throw new BadRequestException('已經批核咗');
+    const existing = await this.prisma.authenticator.findUnique({ where: { userId: app.userId } });
+    if (existing) throw new BadRequestException('此用戶已經係鑑定師');
+    const target = await this.prisma.user.findUnique({ where: { id: app.userId }, select: { roles: true } });
+    if (!target) throw new NotFoundException('申請人帳戶不存在');
+
+    const [authRow] = await this.prisma.$transaction([
+      this.prisma.authenticator.create({
+        data: {
+          userId: app.userId,
+          displayName: app.displayName,
+          storeName: app.storeName,
+          categories: app.categories,
+          feeRatePct: app.feeRatePct,
+          feeMinHKD: app.feeMinHKD,
+          bio: app.bio,
+          yearsExperience: app.yearsExperience,
+          locationAddress: app.locationAddress,
+          district: app.district,
+          eAndOInsuranceExpiresAt: app.eAndOExpiresAt,
+          status: 'ACTIVE',
+        },
+        select: { id: true, displayName: true, status: true },
+      }),
+      this.prisma.authenticatorApplication.update({
+        where: { id },
+        data: { status: 'APPROVED', reviewedById: user.userId, reviewedAt: new Date(), reviewNote: null },
+      }),
+      this.prisma.user.update({
+        where: { id: app.userId },
+        data: { roles: Array.from(new Set([...target.roles, 'AUTHENTICATOR'])) as any },
+      }),
+      this.prisma.adminAction.create({
+        data: {
+          actorId: user.userId,
+          targetUserId: app.userId,
+          action: 'authenticator.approve',
+          payload: { applicationId: id, displayName: app.displayName },
+        },
+      }),
+    ]);
+    return authRow;
+  }
+
+  /** 拒絕（終態）/ 要求補交（可再交）。OPS_ADMIN+，兩者都要 reason。 */
+  @Patch('authenticator-applications/:id/reject')
+  async rejectAuthenticator(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+    @Body() body: { reason: string; needsMoreInfo?: boolean },
+  ) {
+    await this.requireOpsAdmin(user.userId);
+    const reason = (body?.reason ?? '').trim();
+    if (!reason) throw new BadRequestException('請輸入原因');
+    const app = await this.prisma.authenticatorApplication.findUnique({ where: { id } });
+    if (!app) throw new NotFoundException('Application not found');
+    if (['APPROVED', 'REJECTED', 'WITHDRAWN'].includes(app.status)) {
+      throw new BadRequestException(`申請已係終態 ${app.status}`);
+    }
+    const newStatus = body?.needsMoreInfo ? 'NEEDS_MORE_INFO' : 'REJECTED';
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.authenticatorApplication.update({
+        where: { id },
+        data: { status: newStatus, reviewNote: reason, reviewedById: user.userId, reviewedAt: new Date() },
+      }),
+      this.prisma.adminAction.create({
+        data: {
+          actorId: user.userId,
+          targetUserId: app.userId,
+          action: newStatus === 'NEEDS_MORE_INFO' ? 'authenticator.needsMoreInfo' : 'authenticator.reject',
+          payload: { applicationId: id, reason },
+        },
+      }),
+    ]);
+    return updated;
+  }
+
+  /** 鑑定師名單（可 filter status / 搜尋）。 */
+  @Get('authenticators')
+  async adminAuthenticators(
+    @CurrentUser() user: CurrentUserData,
+    @Query('status') status?: string,
+    @Query('q') q?: string,
+  ) {
+    await this.requireAdmin(user.userId);
+    const where: any = {};
+    if (status) where.status = status;
+    if (q?.trim()) {
+      const t = q.trim();
+      where.OR = [
+        { displayName: { contains: t, mode: 'insensitive' } },
+        { storeName: { contains: t, mode: 'insensitive' } },
+        { user: { is: { email: { contains: t, mode: 'insensitive' } } } },
+      ];
+    }
+    return this.prisma.authenticator.findMany({
+      where,
+      orderBy: { createdAt: 'desc' },
+      take: 200,
+      select: {
+        id: true, displayName: true, storeName: true, status: true, categories: true,
+        starRating: true, completedCount: true, disputeRate: true,
+        eAndOInsuranceExpiresAt: true, createdAt: true,
+        user: { select: { id: true, email: true } },
+      },
+    });
+  }
+
+  /**
+   * Suspend / Unsuspend / Remove 鑑定師 — OPS_ADMIN+。
+   * In-flight 訂單保護：suspend/remove 唔會自動影響已 IN_PROGRESS 嘅單
+   * （escrow 已 hold）；新單 server 只揀 ACTIVE。有進行中單時 remove 要
+   * admin 先手動 reassign / force-refund（呢度只擋 remove）。
+   */
+  @Patch('authenticators/:id/status')
+  async setAuthenticatorStatus(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+    @Body() body: { status: 'ACTIVE' | 'SUSPENDED' | 'REMOVED'; reason?: string },
+  ) {
+    await this.requireOpsAdmin(user.userId);
+    const next = body?.status;
+    if (!['ACTIVE', 'SUSPENDED', 'REMOVED'].includes(next)) {
+      throw new BadRequestException('Invalid status');
+    }
+    const reason = (body?.reason ?? '').trim();
+    if (next !== 'ACTIVE' && !reason) throw new BadRequestException('SUSPEND / REMOVE 需要原因');
+    const auth = await this.prisma.authenticator.findUnique({ where: { id }, select: { status: true, userId: true } });
+    if (!auth) throw new NotFoundException('Authenticator not found');
+    if (auth.status === next) throw new BadRequestException(`狀態已經係 ${next}`);
+
+    // Remove 前擋 in-flight 單（有單就要 admin 先處理）
+    if (next === 'REMOVED') {
+      const TERMINAL = ['COMPLETED', 'REFUNDED', 'DISPUTED', 'AUTH_FAILED'];
+      const inflight = await this.prisma.order.count({
+        where: { authenticatorId: id, status: { notIn: TERMINAL as any } },
+      });
+      if (inflight > 0) {
+        throw new BadRequestException(`有 ${inflight} 張進行中訂單，請先 reassign 或退款再移除`);
+      }
+    }
+    const [updated] = await this.prisma.$transaction([
+      this.prisma.authenticator.update({
+        where: { id }, data: { status: next as any }, select: { id: true, status: true },
+      }),
+      this.prisma.adminAction.create({
+        data: {
+          actorId: user.userId,
+          targetUserId: auth.userId,
+          action: `authenticator.${next.toLowerCase()}`,
+          payload: { authenticatorId: id, from: auth.status, to: next, reason: reason || null },
+        },
+      }),
+    ]);
+    return updated;
   }
 }
 

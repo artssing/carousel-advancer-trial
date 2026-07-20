@@ -45,19 +45,25 @@ export class OrdersController {
     return this.orders.get(id, user.userId);
   }
 
+  /** Review step 確認 → 開始 30 分鐘付款時限（founder 2026-07-20） */
+  @Patch(':id/confirm-review')
+  confirmReview(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
+    return this.orders.confirmReview(id, user.userId);
+  }
+
   @Patch(':id/pay')
   pay(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.orders.markPaid(id, user.userId);
   }
 
   @Patch(':id/ship-to-authenticator')
-  shipToAuthenticator(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
-    return this.orders.shipToAuthenticator(id, user.userId);
+  shipToAuthenticator(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() body: { trackingNo?: string }) {
+    return this.orders.shipToAuthenticator(id, user.userId, body?.trackingNo);
   }
 
   @Patch(':id/ship-to-buyer-direct')
-  shipToBuyerDirect(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
-    return this.orders.shipToBuyerDirect(id, user.userId);
+  shipToBuyerDirect(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() body: { trackingNo?: string }) {
+    return this.orders.shipToBuyerDirect(id, user.userId, body?.trackingNo);
   }
 
   @Patch(':id/mark-received')
@@ -93,9 +99,30 @@ export class OrdersController {
     return this.orders.getEvidence(id, user.userId);
   }
 
+  @Post(':id/dispute-ship')
+  disputeShip(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() body: { reason: string }) {
+    return this.orders.disputeShip(id, user.userId, body?.reason);
+  }
+
+  // ═══ Ack v2 — QR 交收 ═══════════════════════════════════════════════
+  @Get(':id/handover-token')
+  issueHandoverToken(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
+    return this.orders.issueHandoverToken(id, user.userId);
+  }
+
+  @Post('qr/scan')
+  scanQr(@CurrentUser() user: CurrentUserData, @Body() body: { token: string }) {
+    return this.orders.scanQrToken(body?.token, user.userId);
+  }
+
+  @Post('qr/confirm')
+  confirmQr(@CurrentUser() user: CurrentUserData, @Body() body: { token: string; photos?: string[] }) {
+    return this.orders.confirmQrHandover(body?.token, user.userId, body?.photos);
+  }
+
   @Patch(':id/ship-to-buyer')
-  shipToBuyer(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
-    return this.orders.shipToBuyer(id, user.userId);
+  shipToBuyer(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() body: { trackingNo?: string }) {
+    return this.orders.shipToBuyer(id, user.userId, body?.trackingNo);
   }
 
   @Patch(':id/confirm-delivered')
@@ -114,9 +141,21 @@ export class OrdersController {
 
   // ── Meetup-specific transitions ──────────────────────────────────────────
 
+  // ⚠️ MEETUP_3WAY only（三方同場，冇 custody transfer）。MEETUP_AUTH 一律經
+  // QR scan 或 custody-phone-fallback — service 層有 guard 擋（founder 2026-07-14）。
   @Patch(':id/start-meetup-auth')
   startMeetupAuth(@CurrentUser() user: CurrentUserData, @Param('id') id: string) {
     return this.orders.startMeetupAuth(id, user.userId);
+  }
+
+  /** Custody fallback：賣家用唔到 QR → 登記電話號碼核實 + ≥3 相（founder 2026-07-14） */
+  @Patch(':id/custody-phone-fallback')
+  custodyPhoneFallback(
+    @CurrentUser() user: CurrentUserData,
+    @Param('id') id: string,
+    @Body() dto: { sellerPhone: string; photos: string[] },
+  ) {
+    return this.orders.custodyPhoneFallback(id, user.userId, dto.sellerPhone, dto.photos ?? []);
   }
 
   @Patch(':id/complete-meetup')

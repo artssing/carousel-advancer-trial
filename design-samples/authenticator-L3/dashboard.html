@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>工作台 · 鑑定師 Portal</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .statrow{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px}
+  .cols{display:grid;grid-template-columns:1.4fr 1fr;gap:20px;align-items:start}
+  .qitem{display:flex;gap:13px;align-items:center;padding:14px 0;border-bottom:1px solid var(--line)}
+  .qitem:last-child{border-bottom:0}
+  .qthumb{width:52px;height:52px;border-radius:9px;flex-shrink:0;position:relative;background:linear-gradient(135deg,#eef1fc,#dfe4f6)}
+  .qthumb .wm{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:9px;letter-spacing:.1em;color:#95a0c8}
+  .qitem .mid{flex:1;min-width:0}
+  .qitem .t{font-weight:600;font-size:14px}
+  .qitem .s{font-size:12px;color:var(--text-3);margin-top:2px}
+  .qitem .price{font-weight:800;color:var(--primary);white-space:nowrap}
+  .toggle{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--pass)}
+  .toggle .sw{width:36px;height:20px;border-radius:999px;background:var(--pass);position:relative}
+  .toggle .sw::after{content:"";position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:#fff}
+  .meetup{display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+  .meetup:last-child{border-bottom:0}
+  .meetup .time{font-weight:800;color:var(--action);font-size:15px;width:52px;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="portal">
+  <aside class="sidebar">
+    <div class="brand">AUTHEN<span>·</span>TIK</div>
+    <div class="role">鑑定師 Portal</div>
+    <nav class="snav">
+      <a class="on" href="dashboard.html">工作台</a>
+      <a href="inbox.html">收件匣 <span class="badge">5</span></a>
+      <a href="messages.html">訊息 <span class="badge">2</span></a>
+      <a href="earnings.html">收入</a>
+      <a href="profile.html">檔案</a>
+    </nav>
+    <div class="me"><div class="av">米</div><div><div class="nm">Milan Leung</div><div class="st">★★★★★ · 在職</div></div></div>
+  </aside>
+
+  <div class="main">
+    <div class="topline">
+      <div><h1 class="display">工作台</h1><div class="pt">2026 年 7 月 5 日 · 星期日</div></div>
+      <span class="toggle"><span class="sw"></span>接單中</span>
+    </div>
+
+    <div class="content">
+      <div class="statrow">
+        <div class="card card-pad stat"><div class="n brand">5</div><div class="l">待鑑定</div></div>
+        <div class="card card-pad stat"><div class="n">HK$18,240</div><div class="l">本月收入</div></div>
+        <div class="card card-pad stat"><div class="n pass">0.3%</div><div class="l">爭議率</div></div>
+        <div class="card card-pad stat"><div class="n">4.9 <span class="stars">★</span></div><div class="l">平均評分</div></div>
+      </div>
+
+      <div class="cols">
+        <div class="card card-pad">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+            <div class="section-label" style="margin:0">待鑑定佇列</div>
+            <a href="inbox.html" style="font-size:13px;font-weight:600;color:var(--action)">前往收件匣 →</a>
+          </div>
+          <div class="qitem">
+            <div class="qthumb"><div class="wm">CHANEL</div></div>
+            <div class="mid"><div class="t">Chanel Classic Flap Medium · Caviar 金扣</div>
+              <div class="s">訂單 #AZ-10482 · 順豐到件 · 買家 Alice C.</div></div>
+            <span class="pill pill-brand">待開始</span>
+            <a class="btn btn-primary btn-sm" href="authenticate.html">鑑定</a>
+          </div>
+          <div class="qitem">
+            <div class="qthumb"><div class="wm">HERMÈS</div></div>
+            <div class="mid"><div class="t">Hermès Birkin 25 Togo Gold 金扣</div>
+              <div class="s">訂單 #AZ-10478 · 三方面交 · 今日 15:00</div></div>
+            <span class="pill pill-incon">進行中</span>
+            <a class="btn btn-primary btn-sm" href="authenticate.html">鑑定</a>
+          </div>
+          <div class="qitem">
+            <div class="qthumb"><div class="wm">DIOR</div></div>
+            <div class="mid"><div class="t">Dior Lady Dior Medium 藤格紋</div>
+              <div class="s">訂單 #AZ-10471 · 順豐到件 · 買家 Bob L.</div></div>
+            <span class="pill pill-brand">待開始</span>
+            <a class="btn btn-primary btn-sm" href="authenticate.html">鑑定</a>
+          </div>
+          <div class="qitem">
+            <div class="qthumb"><div class="wm">LV</div></div>
+            <div class="mid"><div class="t">Louis Vuitton Capucines BB</div>
+              <div class="s">訂單 #AZ-10466 · 鑑定師處面交 · 明日 11:00</div></div>
+            <span class="pill pill-brand">待開始</span>
+            <a class="btn btn-primary btn-sm" href="authenticate.html">鑑定</a>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:20px">
+          <div class="card card-pad">
+            <div class="section-label">今日面交</div>
+            <div class="meetup"><span class="time">15:00</span>
+              <div style="flex:1"><div style="font-weight:600;font-size:14px">Hermès Birkin 25 · 三方面交</div>
+                <div class="s" style="font-size:12px;color:var(--text-3)">尖沙咀工作室 · 買 Alice / 賣 Jenny</div></div></div>
+            <div class="meetup"><span class="time">17:30</span>
+              <div style="flex:1"><div style="font-weight:600;font-size:14px">Rolex Submariner · 鑑定師處面交</div>
+                <div class="s" style="font-size:12px;color:var(--text-3)">尖沙咀工作室 · 買 David / 賣 Tom</div></div></div>
+          </div>
+
+          <div class="card card-pad">
+            <div class="section-label">最近結果</div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0"><span style="font-size:13px">Chanel WOC Caviar</span><span class="pill pill-pass">✓ 通過</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0"><span style="font-size:13px">Rolex Datejust 41</span><span class="pill pill-pass">✓ 通過</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0"><span style="font-size:13px">「Chanel」Boy Bag</span><span class="pill pill-fail">✕ 不通過</span></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0"><span style="font-size:13px">Omega Speedmaster</span><span class="pill pill-incon">？ 未能確定</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

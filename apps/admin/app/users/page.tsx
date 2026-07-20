@@ -172,7 +172,6 @@ function UserDrawer({ userId, onClose, onChanged }: { userId: string; onClose: (
 
   // Suspend inline confirm state (Lesson #16)
   const [suspendOpen, setSuspendOpen] = useState(false);
-  const [suspendReason, setSuspendReason] = useState('');
   const [busy, setBusy] = useState(false);
   // Unsuspend confirm dialog — retires window.confirm so the UX is consistent
   // with the styled suspend panel sitting next to it (founder ruling 2026-06-24).
@@ -187,12 +186,12 @@ function UserDrawer({ userId, onClose, onChanged }: { userId: string; onClose: (
   }
   useEffect(load, [userId]);
 
-  async function doSuspend() {
+  async function doSuspend(dialogReason?: string) {
+    if (!dialogReason?.trim()) return;
     setBusy(true); setErr(null);
     try {
-      await api.admin.suspendUser(userId, suspendReason.trim());
+      await api.admin.suspendUser(userId, dialogReason.trim());
       setSuspendOpen(false);
-      setSuspendReason('');
       load();
       onChanged();
     } catch (e: any) {
@@ -387,40 +386,29 @@ function UserDrawer({ userId, onClose, onChanged }: { userId: string; onClose: (
               </section>
             ) : (
               <section>
-                {!suspendOpen ? (
-                  <button
-                    onClick={() => setSuspendOpen(true)}
-                    disabled={busy}
-                    className="w-full rounded-md border border-red-500/50 px-3 py-2 text-sm text-red-300 hover:bg-red-500/10"
-                  >
-                    暫停帳戶
-                  </button>
-                ) : (
-                  <div className="space-y-2 rounded-md border border-red-500/40 bg-red-500/5 p-3">
-                    <p className="text-xs font-semibold text-red-300">⚠ 暫停後該用戶將無法登入或落單</p>
-                    <textarea
-                      value={suspendReason}
-                      onChange={(e) => setSuspendReason(e.target.value)}
-                      placeholder="請輸入暫停原因（fraud / 違反條款 / KYC 文件偽造 ...）"
-                      rows={3}
-                      className="w-full rounded border border-slate-700 bg-slate-900 p-2 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-red-500"
-                    />
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => { setSuspendOpen(false); setSuspendReason(''); }}
-                        disabled={busy}
-                        className="flex-1 rounded-md bg-slate-800 px-3 py-2 text-sm hover:bg-slate-700"
-                      >取消</button>
-                      <button
-                        onClick={doSuspend}
-                        disabled={busy || !suspendReason.trim()}
-                        className="flex-1 rounded-md bg-red-700 px-3 py-2 text-sm font-medium hover:bg-red-600 disabled:opacity-50"
-                      >
-                        {busy ? '處理中…' : '確認暫停'}
-                      </button>
-                    </div>
-                  </div>
-                )}
+                <button
+                  onClick={() => setSuspendOpen(true)}
+                  disabled={busy}
+                  className="w-full rounded-md border border-red-500/50 px-3 py-2 text-sm text-red-300 hover:bg-red-500/10"
+                >
+                  暫停帳戶
+                </button>
+                {/* ConfirmDialog v2（founder 2026-07-12） */}
+                <ConfirmDialog
+                  open={suspendOpen}
+                  portal="admin"
+                  severity="danger"
+                  title="暫停帳戶？"
+                  description={data ? `${data.displayName}（${data.email}）` : undefined}
+                  consequence="呢個動作會令該用戶即時無法登入或落單；in-flight escrow 訂單會自然凍結。可以隨時恢復。"
+                  confirmLabel="確認暫停"
+                  requireReason
+                  reasonLabel="暫停原因（必填，寫入 audit log）"
+                  reasonPlaceholder="fraud / 違反條款 / KYC 文件偽造 …"
+                  busy={busy}
+                  onConfirm={(r) => doSuspend(r)}
+                  onCancel={() => setSuspendOpen(false)}
+                />
               </section>
             )}
 

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AlertOctagon, AlertTriangle, Info, X } from 'lucide-react';
+import { ConfirmDialog } from '@authentik/ui';
 import { api } from '@/lib/api';
 
 type Severity = 'INFO' | 'WARNING' | 'CRITICAL';
@@ -168,28 +169,29 @@ function BannerRow({ banner, onEdit, onChanged }: { banner: Banner; onEdit: () =
           >
             編輯
           </button>
-          {!confirmDelete ? (
-            <button
-              onClick={() => setConfirmDelete(true)}
-              className="rounded border border-red-500/30 px-2 py-1 text-xs text-red-300 hover:bg-red-500/10"
-            >
-              刪除
-            </button>
-          ) : (
-            <>
-              <button onClick={del} disabled={busy}
-                className="rounded bg-red-500 px-2 py-1 text-xs font-semibold text-white hover:bg-red-400 disabled:opacity-40">
-                確認
-              </button>
-              <button onClick={() => setConfirmDelete(false)}
-                className="rounded border border-slate-700 px-2 py-1 text-xs text-slate-400 hover:bg-slate-800">
-                取消
-              </button>
-            </>
-          )}
+          <button
+            onClick={() => setConfirmDelete(true)}
+            className="rounded border border-red-500/30 px-2 py-1 text-xs text-red-300 hover:bg-red-500/10"
+          >
+            刪除
+          </button>
         </div>
       </div>
       {err && <p className="mt-2 text-xs text-red-300">{err}</p>}
+
+      {/* ConfirmDialog v2（founder 2026-07-12，portal=admin，T3 light） */}
+      <ConfirmDialog
+        open={confirmDelete}
+        portal="admin"
+        severity="warning"
+        title="刪除呢條 banner？"
+        description={banner.message}
+        consequence="Banner 會即時由所有 portal 消失。"
+        confirmLabel="確認刪除"
+        busy={busy}
+        onConfirm={del}
+        onCancel={() => setConfirmDelete(false)}
+      />
     </div>
   );
 }

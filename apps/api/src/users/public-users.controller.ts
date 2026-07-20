@@ -128,13 +128,33 @@ export class PublicUsersController {
     @Param('id') id: string,
     @Query('limit') limit = '12',
     @Query('offset') offset = '0',
+    @Query('q') q?: string,
   ) {
     const take = Math.min(parseInt(limit, 10) || 12, 48);
     const skip = parseInt(offset, 10) || 0;
 
+    // Same tokenized AND-match semantics as listings.list() browse search —
+    // each whitespace-separated term must hit title|description|brand.
+    const terms = (q ?? '').split(/\s+/).map((t) => t.trim()).filter(Boolean);
+    const where = {
+      sellerId: id,
+      status: 'ACTIVE' as const,
+      ...(terms.length
+        ? {
+            AND: terms.map((t) => ({
+              OR: [
+                { title: { contains: t, mode: 'insensitive' as const } },
+                { description: { contains: t, mode: 'insensitive' as const } },
+                { brand: { contains: t, mode: 'insensitive' as const } },
+              ],
+            })),
+          }
+        : {}),
+    };
+
     const [items, total] = await Promise.all([
       this.prisma.listing.findMany({
-        where: { sellerId: id, status: 'ACTIVE' },
+        where,
         select: {
           id: true,
           title: true,
@@ -147,7 +167,7 @@ export class PublicUsersController {
         take,
         skip,
       }),
-      this.prisma.listing.count({ where: { sellerId: id, status: 'ACTIVE' } }),
+      this.prisma.listing.count({ where }),
     ]);
 
     return { items, total, hasMore: skip + items.length < total };

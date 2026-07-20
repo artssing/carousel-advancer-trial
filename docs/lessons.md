@@ -1,0 +1,40 @@
+# UX / 工程教訓全文（SSOT）
+
+> 由 CLAUDE.md 搬出嚟（2026-07-14 token 瘦身）。CLAUDE.md 只保留一句式規則 index；
+> **改 UI / 寫 component 前，或者踩到似曾相識嘅坑，讀返呢度全文。**
+> 新教訓：加落呢度 + CLAUDE.md index 加一行。
+
+## 已建立 platform-neutral UI patterns（重用！）
+
+| Pattern | 例子 | 教訓 |
+|---------|------|------|
+| Grid card 高度對齊 | `browse/page.tsx`、`seller/[id]/page.tsx` | 用 `flex flex-col` + `min-h-[2.5rem]` title + `mt-auto` price，唔好淨係靠 line-clamp |
+| Algorithm-derived 信任指標 | `tier-pill.tsx` | 唔可以 platform-issued badge（「Top Seller」/「Trusted」）—— L'Oréal v eBay |
+| 中立 disclaimer copy | `seller/[id]/page.tsx` 底 | 公開 profile 一定要寫平台中立、不擔保 |
+| IM drawer mini-card | `conversation-drawer.tsx` | Drawer/modal 顯示資料就必須提供 navigation；唔好留 dead-end（IM Phase 2 教訓）|
+| Seed detect | `start-all.sh` | 用 `docker compose exec psql` 查，`prisma db execute` 唔 return data |
+| Single source of truth for catalogs | `packages/utils/src/categories.ts` | 加新 field 入 `CategoryConfig` 唔好喺 page 自己定義 list；用 `browseCategories()` / `sellCategories()` / `categoryById()` 等 helper |
+| Mobile horizontal scroll strip | `app/page.tsx` 嘅 category / 最新上架 strip | 標準 class set：`flex overflow-x-auto scrollbar-hide touch-pan-x overscroll-x-contain`。`touch-pan-x` 畀 mobile browser 知呢個係 horizontal carousel；`overscroll-x-contain` 防 swipe 到盡頭 chain 去 body 觸發 iOS edge-swipe back nav |
+
+## 已知 UX bugs 教訓（絕對唔可以再犯）
+
+1. **Dead-end drawer**：IM drawer 顯示 listing title/seller name 但唔 clickable → 用戶撞牆。Fix：永遠提供 navigation link。
+2. **Card height 不對齊**：listing grid 因為 title 長短不一令 price 高低唔同 → 觀感似 bug。Fix：上面 grid pattern。
+3. **重 seed**：start script 用錯誤 query 偵測 user count → 每次 restart 覆蓋資料。Fix：上面 seed detect pattern。
+4. **Cross-app links**：authenticator portal 用 `next/link` 去 consumer 路由 → 404。Fix：用 `<a target="_blank">` + `NEXT_PUBLIC_CONSUMER_URL`。
+5. **JWT_SECRET module-load 次序**：~~已修~~ — 改用 `registerAsync` + `ConfigService`，`.env` 由 ConfigModule 先 load，唔再需要 workaround。
+6. **Authorisation WHERE clause 漏 role**：`listConversations` / `getUnreadCount` 只 check buyer/seller，唔包 authenticator → 鑑定師永遠睇唔到自己 mediate 嘅對話。Fix：寫每個 multi-role query 都要 cover 晒 buyer/seller/authenticator 三方。Lesson：每加一個 user role 入 conversation/order，所有相關 query 都要 review WHERE clause。
+7. **Flex item 唔 horizontal stretch**：`flex-row` parent 入面個 flex child 默認只 cross-axis (vertical) stretch，唔會自動 horizontal fill。即使 child 內部 `items-center justify-center`，盒子本身唔夠闊就會貼住左邊望落只 vertical center。Fix：empty state / full-pane child 要加 `w-full` 或 `flex-1`。
+8. **Catalog 重複定義（SSOT 違反）**：category list 喺 5 個地方各自 hardcode（sell / browse / home / top-nav / utils package），label 同 enabled flag 唔同→ 上架揀唔到首頁見到嘅 category。Fix：`packages/utils/src/categories.ts` 加齊 `emoji`/`shortLabel`/`apiEnum`/`enabledInBrowse`/`enabledInSell` 各 field，每頁用 `browseCategories()` / `sellCategories()` derive。Lesson：任何「畀 user 揀」嘅 enum-like data（category / district / verdict / status），SSOT 必須在 `packages/utils`，加新 derived property 入 config，唔好 page 自己定義 parallel list。
+9. **`useState(() => URL)` 唔 reactive**：Next.js client-side Link nav 唔 unmount page → initializer 只跑一次 → URL 變但 state 唔變 → UI 唔更新。Fix：用 `useSearchParams()` hook 由 URL 直接 derive `category` / `searchQuery` 等 reactive value。Lesson：任何用 URL state 嘅 page，永遠用 `useSearchParams()`，唔可以 `useState(() => readUrl())`。
+10. **`packages/*` refactor 後唔 rebuild dist**：consumer/authenticator 用 `dist/` compile output，唔係直接 read src。改完 `packages/utils/src/categories.ts` 加新 export 之後唔 rebuild → `is not a function` runtime error。Fix：改完 packages 後 run `npx tsc -p tsconfig.build.json` 喺 package 入面，或者 `turbo run build --filter=@authentik/utils`。注意：`@authentik/ui` 係 src-consumed（package.json main 指 `./src/index.ts`），加 export 唔使 rebuild —— 呢條 lesson 只適用於 `@authentik/utils`。
+11. **Visual-only placeholder button 冇 wire onClick**：「上傳鑑定影片」button 全程冇 `onClick` / `onChange`，純粹 hover effect 模樣。仲用 Camera (image) icon 配「影片」copy → 用戶撳唔到 + icon 唔對。Fix：必須有 hidden `<input type="file">` + button trigger fileInput.click() + 真實 onChange handler。Lesson：UI 入面任何 button 都要 spot-check 有冇真實 handler，唔可以「先 mock 之後再 wire」當完成。Mock placeholder 必須加明顯 disabled 樣或者寫住「(coming soon)」，唔可以扮 work。
+12. **Direct DB write 冇 WebSocket broadcast**：offers.service 用 `tx.message.create` 直接寫 sentinel message，但 connected clients 透過 `socket.on('message')` 接收，所以 server 必須主動 emit 先見到。同類問題：`insertSystemMessage` 由 service 寫 DB 但唔行 gateway。Fix：加 `gateway.broadcastToConversation(conversationId, msg)` helper，每個 server-side message insert 完之後 call 一次。Lesson：任何「server 寫 message」嘅 path 都要諗埋 push 去 connected clients，唔係 client `send` 為唯一 entrypoint。
+13. **Param 名 vs 實際語義唔對齊**：`MessagesService.insertSystemMessage(orderId, body)` 接受嘅其實係 conversationId（callers 全部傳 conversation.id），但 `findUnique({ where: { orderId } })` 用呢個值 → null → silent fail。**整個 SYSTEM message feature 從來冇 work 過**直到呢次 fix。Lesson：param 改用途之後一定要 rename + 改 query 邏輯，唔好留錯名容易 silent fail；同時所有 server-side 「write-then-fetch-nothing」path 都要加 visibility（log / test）。
+14. **Buyer-centric framing 套到 seller 行為錯**：OfferCard 「節省」只 make sense for buyer-proposed lower price；seller 自己提議低價時顯示「節省」邏輯衝突。Fix：UI framing 同 role 綁定（`offer.proposedByRole === 'BUYER'` 先 show 節省）。Lesson：寫雙向 feature（buyer ↔ seller）必須先諗各自 user model，唔可以只 lens 其中一邊。
+15. **Counter-chain depth ≠ overall round number**：用 `parent.roundNumber + 1` 只 reflect counter chain depth，但用戶 mental model 係「呢場議價我講到第幾輪」（包括 withdrawn/rejected 嘅重 propose）。Fix：`roundNumber = totalOffersInConversation + 1`。Lesson：display number 必須對應 user 嘅 mental model，唔可以淨係 reflect data structure linkage。
+16. **「Destructive action 冇 confirm」**（2026-07-12 機制升級）：任何 status 轉 terminal 嘅 action（withdraw / reject / refund / dispute / delete），即便係 actor 自己嘅 data，都要二次確認 — 呢個原則不變。**機制：一律用 `packages/ui` 嘅 `<ConfirmDialog>` modal**（founder 拍板 — 冇 inline 例外，唔准 inline strip / `window.confirm` / 自製 modal）。用法：severity 分層（T1 郁錢 = danger + `requireReason` + `dismissOnBackdrop={false}`，force actions 加 `typedConfirmation="確認"`；T3 可還原 = 輕量）、`portal` prop 揀 portal 色（consumer 綠 / authenticator 靛藍 / admin dark slate）、`consequence` prop 必寫「呢個動作會…」。詳見 docs/proposals/confirm-dialog-proposal.md。
+17. **Mobile horizontal scroll strip 唔郁**：`overflow-x-auto` 加 `scrollbar-hide` 喺 desktop OK，但 mobile swipe 唔郁 —— 因為 browser 收到 swipe 時唔知呢個 element 想 claim horizontal pan，default 行 vertical scroll 優先。Fix：加 `touch-pan-x overscroll-x-contain`。Lesson：所有 mobile horizontal strip 必須齊呢 4 個 class：`flex overflow-x-auto scrollbar-hide touch-pan-x overscroll-x-contain`。
+18. **跨 portal 換皮複製錯 brand token**：Authenticator `/messages` L3 revamp 時複製咗 consumer 綠色 tokens（`bg-verify-soft` / `bg-brand-600`），但 sample `authenticator-L3/theme.css` 明確用**靛藍 `--action: #6366f1`** 分開兩個 portal identity。Root cause：假設「之前 pattern 岩用」→ 忽略 sample token change。Fix：consumer 用 `brand-*` scale (綠)、authenticator 用 `authBrand-*` scale (靛藍) — SSOT 喺 `packages/config/tailwind-preset.ts`。**IM portal parity clarification**：parity rule = **functional behavior 一致**（同一份 socket contract、同一 grouping / search / read-receipt logic），**唔 = visual token 一致**。Lesson：跨 portal 任何 UI 改動前，必先睇緊 sample 個 `--action` / brand token 有冇 diverge；parity = behavior，唔 = 色。
+19. **List row 只有 title 可 click（2026-07-13）**：my-listings row 成個框有 hover shadow（暗示 clickable）但只有 title/縮圖/查看 三個細 target 有 Link → 用戶撳空白位冇反應。Fix：**stretched-link pattern** — row `relative cursor-pointer`，title Link 加 `after:absolute after:inset-0 after:content-['']` 蓋全行，內部 action buttons 個 container 加 `relative` 升上 overlay 層（positioned + DOM 較後 = paint 上層），唔使巢 anchor。Lesson：任何 list row / card 有 hover effect 或代表單一 entity，就必須成個框 clickable。新 design 一律照呢個 pattern。（已套用：my-listings、authenticator inbox ActionCard）
+20. **視覺 affordance 一致性規則（2026-07-13 coordinator 確立）**：`hover:shadow-*` / `hover:border-*` / `cursor-pointer` 呢類「睇落郁得」class **只可以加喺實際有 click handler 嘅嗰層**。Row/card 代表單一 entity → 成個框 stretched-link/button；如果 card 內有多個獨立 interactive 元素（buttons、star rating、textarea）→ **唔好**勉強整 stretched-link，改為刪走 outer hover、hover 淨係落真正 clickable 嘅 inner 層。每寫完 card/row 自問：「hover 蓋到嘅範圍 = click target 範圍？」（Audit backlog 三項已於 2026-07-14 全部修復：inbox ActionCard / consumer orders card / admin KPI tiles）

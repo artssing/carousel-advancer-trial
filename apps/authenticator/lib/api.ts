@@ -223,11 +223,15 @@ export const api = {
       nameMatchesKyc: boolean; isDefault: boolean; isVerified: boolean;
       createdAt: string;
     }>>('/wallet/methods'),
-    addMethod: (data: {
+    // 2FA（founder 2026-07-13）: initiate（發 email OTP）→ confirm（帶 code）
+    initiateAddMethod: (data: {
       type: 'FPS_PHONE' | 'FPS_EMAIL' | 'FPS_ID' | 'BANK_LOCAL';
       accountIdentifier: string; bankCode?: string; accountName: string;
       isDefault?: boolean;
-    }) => req<any>('/wallet/methods', { method: 'POST', body: JSON.stringify(data) }),
+    }) => req<{ intentId: string; channel: 'EMAIL'; maskedTarget: string; otpExpiresInSeconds: number }>(
+      '/wallet/methods/initiate', { method: 'POST', body: JSON.stringify(data) }),
+    confirmAddMethod: (data: { intentId: string; code: string }) =>
+      req<any>('/wallet/methods/confirm', { method: 'POST', body: JSON.stringify(data) }),
     setDefault: (id: string) =>
       req<{ ok: boolean }>(`/wallet/methods/${id}/default`, { method: 'PATCH' }),
     deleteMethod: (id: string) =>
@@ -239,8 +243,11 @@ export const api = {
       methodSnapshot: { type: string; displayLabel: string; accountName: string };
       processedAt: string | null; createdAt: string;
     }>>('/wallet/requests'),
-    createRequest: (data: { payoutMethodId: string; amountHKD: number }) =>
-      req<any>('/wallet/requests', { method: 'POST', body: JSON.stringify(data) }),
+    initiatePayout: (data: { payoutMethodId: string; amountHKD: number }) =>
+      req<{ intentId: string; channel: 'EMAIL'; maskedTarget: string; otpExpiresInSeconds: number }>(
+        '/wallet/requests/initiate', { method: 'POST', body: JSON.stringify(data) }),
+    confirmPayout: (data: { intentId: string; code: string }) =>
+      req<any>('/wallet/requests/confirm', { method: 'POST', body: JSON.stringify(data) }),
   },
 
   // Read-only — authenticator may view offer history but typically can't act
@@ -257,6 +264,17 @@ export const api = {
       req<any[]>(`/offers/conversation/${conversationId}`),
   },
 
+  // 鑑定師申請（founder 2026-07-13 MVP）
+  application: {
+    submit: (data: {
+      displayName: string; storeName?: string; categories: string[];
+      yearsExperience?: number; bio?: string; feeRatePct?: number; feeMinHKD?: number;
+      district?: string; eAndOExpiresAt?: string; credentialDocs?: string[];
+    }) => req<any>('/authenticators/applications', { method: 'POST', body: JSON.stringify(data) }),
+    mine: () => req<{ authenticator: any | null; application: any | null }>('/authenticators/applications/me'),
+    withdraw: () => req<any>('/authenticators/applications/me/withdraw', { method: 'PATCH' }),
+  },
+
   orders: {
     inbox: () => req<InboxOrder[]>('/orders/authenticator-inbox'),
     /** Authenticator-scoped fast search; matches title / id-prefix / brand / party names */
@@ -267,6 +285,15 @@ export const api = {
       req<any>(`/orders/${orderId}/mark-received`, {
         method: 'PATCH', body: JSON.stringify({ photos }),
       }),
+    // Ack v2: QR 交收 scan / confirm（買家取貨 + 賣家到店交貨）
+    qrScan: (token: string) =>
+      req<{ role: 'BUYER_PICKUP' | 'SELLER_DROPOFF'; order: { id: string; status: string; salePriceHKD: number; listingTitle: string; listingImage: string | null; counterpartyName: string } }>(
+        '/orders/qr/scan', { method: 'POST', body: JSON.stringify({ token }) }),
+    qrConfirm: (token: string, photos?: string[]) =>
+      req<any>('/orders/qr/confirm', { method: 'POST', body: JSON.stringify({ token, photos }) }),
+    // Ack v2: 鑑定師 PASSED 後寄出畀買家（貨喺鑑定師手，SF 單號必填）
+    shipToBuyer: (orderId: string, trackingNo: string) =>
+      req<any>(`/orders/${orderId}/ship-to-buyer`, { method: 'PATCH', body: JSON.stringify({ trackingNo }) }),
     submitVerdict: (orderId: string, verdict: 'PASSED' | 'FAILED' | 'INCONCLUSIVE', notes: string) =>
       req<any>(`/orders/${orderId}/verdict`, {
         method: 'PATCH',
@@ -286,8 +313,14 @@ export const api = {
       });
     },
     listEvidence: (orderId: string) => req<any[]>(`/orders/${orderId}/evidence`),
+    // ⚠️ MEETUP_3WAY only — MEETUP_AUTH 必須經 QR scan / 電話 fallback（server 有 guard）
     startMeetupAuth: (orderId: string) =>
       req<any>(`/orders/${orderId}/start-meetup-auth`, { method: 'PATCH' }),
+    /** 賣家用唔到 QR：登記電話號碼核實 + ≥3 相 → CUSTODY（founder 2026-07-14） */
+    custodyPhoneFallback: (orderId: string, sellerPhone: string, photos: string[]) =>
+      req<any>(`/orders/${orderId}/custody-phone-fallback`, {
+        method: 'PATCH', body: JSON.stringify({ sellerPhone, photos }),
+      }),
     // ── Dual-ack flow ──
     startMeetupHandover: (orderId: string) =>
       req<any>(`/orders/${orderId}/start-meetup-handover`, { method: 'PATCH' }),

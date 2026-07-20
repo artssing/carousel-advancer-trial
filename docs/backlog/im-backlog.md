@@ -4,7 +4,7 @@
 
 ## Low Priority
 
-- **Push notifications**: offline users should receive push (FCM/APNs) when a new message arrives. Prerequisite: device token registration endpoint. See also `docs/push-notifications.md`.
+- **Push notifications**: offline users should receive push (FCM/APNs) when a new message arrives. Prerequisite: device token registration endpoint. See also `docs/proposals/push-notifications.md`.
 - **Message reactions**: emoji reactions à la WhatsApp. Requires new DB table `MessageReaction(messageId, userId, emoji)`.
 - **Image/file attachments**: upload to R2 / object storage, display inline in bubble. See lesson #11 (placeholder button anti-pattern — do not add until truly wired).
 - **Voice messages**: record audio, upload, playback inline.

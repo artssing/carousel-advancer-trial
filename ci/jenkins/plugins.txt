@@ -1,0 +1,4 @@
+# 開機自動安裝嘅 plugin（build image 時裝好，唔使 wizard）
+workflow-aggregator
+git
+configuration-as-code

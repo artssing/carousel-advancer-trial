@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>收入 · 鑑定師 Portal</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  .balcard{background:linear-gradient(135deg,#242c63,#3f43a8);color:#fff;border-radius:14px;padding:26px;box-shadow:var(--sh-3);position:relative;overflow:hidden;margin-bottom:16px}
+  .balcard .l{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:#c3b3e6}
+  .balcard .amt{font-size:36px;font-weight:800;margin:8px 0 4px}
+  .balcard .sub{font-size:13px;color:#c3b3e6}
+  .balcard .acts{display:flex;gap:10px;margin-top:18px}
+  .balcard .wm{position:absolute;right:20px;bottom:14px;font-weight:800;letter-spacing:.16em;opacity:.3;font-size:14px}
+  .subrow{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+  .txn{display:flex;align-items:center;gap:14px;padding:13px 0;border-bottom:1px solid var(--line)}
+  .txn:last-child{border-bottom:0}
+  .txn .ic{width:38px;height:38px;border-radius:10px;background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-weight:800;flex-shrink:0;color:var(--action)}
+  .txn .d{flex:1}.txn .t{font-weight:600;font-size:14px}.txn .s{font-size:12px;color:var(--text-3);margin-top:2px}
+  .txn .amt{font-weight:700;color:var(--pass)}
+</style>
+</head>
+<body>
+<div class="portal">
+  <aside class="sidebar">
+    <div class="brand">AUTHEN<span>·</span>TIK</div>
+    <div class="role">鑑定師 Portal</div>
+    <nav class="snav">
+      <a href="dashboard.html">工作台</a>
+      <a href="inbox.html">收件匣 <span class="badge">5</span></a>
+      <a href="messages.html">訊息 <span class="badge">2</span></a>
+      <a class="on" href="earnings.html">收入</a>
+      <a href="profile.html">檔案</a>
+    </nav>
+    <div class="me"><div class="av">米</div><div><div class="nm">Milan Leung</div><div class="st">★★★★★ · 在職</div></div></div>
+  </aside>
+
+  <div class="main">
+    <div class="topline"><div><h1 class="display">收入</h1><div class="pt">款項於鑑定通過並完成交收後入賬</div></div></div>
+
+    <div class="content">
+      <div class="balcard">
+        <div class="l">可提現餘額</div>
+        <div class="amt">HK$14,820</div>
+        <div class="sub">另有 HK$3,420 待入賬（3 宗鑑定進行中）</div>
+        <div class="acts"><button class="btn btn-primary">提現</button><button class="btn btn-ghost" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.25);color:#fff;box-shadow:none">交易紀錄</button></div>
+        <span class="wm">AUTHENTICATOR</span>
+      </div>
+
+      <div class="subrow">
+        <div class="card card-pad stat"><div class="n">HK$18,240</div><div class="l">本月收入</div></div>
+        <div class="card card-pad stat"><div class="n">142</div><div class="l">本月鑑定單</div></div>
+        <div class="card card-pad stat"><div class="n">HK$1.96M</div><div class="l">累計收入</div></div>
+      </div>
+
+      <div class="card card-pad">
+        <div class="tabs" style="margin-bottom:14px"><a class="on">全部</a><a>已入賬</a><a>待入賬</a><a>提現</a></div>
+        <div class="txn"><div class="ic">✓</div><div class="d"><div class="t">Chanel WOC Caviar · 鑑定費</div><div class="s">訂單 #AZ-10440 · 已通過 · 已入賬 · 2026-07-03</div></div><div class="amt">+HK$560</div></div>
+        <div class="txn"><div class="ic">✓</div><div class="d"><div class="t">Rolex Datejust 41 · 鑑定費</div><div class="s">訂單 #AZ-10431 · 已通過 · 已入賬 · 2026-07-02</div></div><div class="amt">+HK$1,880</div></div>
+        <div class="txn"><div class="ic" style="color:var(--incon)">◷</div><div class="d"><div class="t">Hermès Birkin 25 · 鑑定費</div><div class="s">訂單 #AZ-10478 · 鑑定中 · 待入賬</div></div><div class="amt" style="color:var(--text-3)">HK$3,360</div></div>
+        <div class="txn"><div class="ic" style="color:var(--text-2)">↑</div><div class="d"><div class="t">提現至 FPS 尾號 4567</div><div class="s">已完成 · 2026-06-28</div></div><div class="amt" style="color:var(--text-2)">−HK$12,000</div></div>
+      </div>
+      <p class="disclaimer" style="margin-top:14px">「不通過」及「未能確定」不影響鑑定費收取。金額以 server 記錄為準。</p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
