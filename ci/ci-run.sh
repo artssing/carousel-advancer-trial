@@ -67,7 +67,7 @@ case "$STEP" in
   deploy)
     # 只 recreate 目標 env 嘅 app services（另一 env / tunnel / postgres 唔郁）。
     # tunnel 用 service 名 route，容器 recreate 完自動接返 — deploy 唔使掂 tunnel。
-    # ⚠️ 絕對唔好加 --remove-orphans：jenkins / n8n / postgres-public 同一個
+    # ⚠️ 絕對唔好加 --remove-orphans：jenkins / n8n 同一個
     #    project 名下，會被當 orphan 剷走（= CI 剷自己）。
     docker compose $COMPOSE -p "$PROJECT" up -d --force-recreate postgres $DEPLOY_SVCS
     ;;
