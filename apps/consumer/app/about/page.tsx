@@ -1,13 +1,13 @@
 import Link from 'next/link';
 import { ShieldCheck, Users, Gavel, Coins, Layers } from 'lucide-react';
 
-export const metadata = { title: '關於我們 · Authentik HK' };
+export const metadata = { title: '關於我們 · Certifine' };
 
 export default function AboutPage() {
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 text-slate-700 sm:px-6">
       <header className="mb-8">
-        <h1 className="font-display text-3xl font-bold text-slate-900">關於 Authentik HK</h1>
+        <h1 className="font-display text-3xl font-bold text-slate-900">關於 Certifine</h1>
         <p className="mt-2 text-sm text-slate-500">最後更新：2026 年 6 月 30 日</p>
       </header>
 
@@ -16,7 +16,7 @@ export default function AboutPage() {
           <ShieldCheck className="h-5 w-5 text-brand-600" /> 我哋係咩平台
         </h2>
         <p className="text-sm leading-relaxed">
-          Authentik HK 係一個喺香港運作嘅 C2C（個人對個人）二手精品交易平台。
+          Certifine 係一個喺香港運作嘅 C2C（個人對個人）二手精品交易平台。
           我哋撮合買家、賣家、同獨立鑑定師三方，並按品類強制／可選第三方鑑定 —
           凡單價 ≥ HKD 10,000 嘅貨品必須經獨立鑑定師驗證後先可以完成交易。
         </p>
@@ -72,7 +72,7 @@ export default function AboutPage() {
         </ul>
         <p className="text-sm leading-relaxed">
           鑑定結論為鑑定師之專業意見，責任歸屬該位具名鑑定師。
-          平台從未亦不會以「我哋保證」或「by Authentik」嘅形式發出真偽聲明。
+          平台從未亦不會以「我哋保證」或「by Certifine」嘅形式發出真偽聲明。
         </p>
       </section>
 
@@ -112,9 +112,9 @@ export default function AboutPage() {
       <section className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-6">
         <h2 className="text-lg font-semibold text-slate-900">聯絡我哋</h2>
         <p className="mt-2 text-sm leading-relaxed">
-          一般查詢：<a href="mailto:hello@authentik.hk" className="text-brand-600 hover:underline">hello@authentik.hk</a><br />
-          投訴 / 爭議：<a href="mailto:disputes@authentik.hk" className="text-brand-600 hover:underline">disputes@authentik.hk</a><br />
-          私隱事務主任：<a href="mailto:privacy@authentik.hk" className="text-brand-600 hover:underline">privacy@authentik.hk</a>
+          一般查詢：<a href="mailto:hello@certifine.hk" className="text-brand-600 hover:underline">hello@certifine.hk</a><br />
+          投訴 / 爭議：<a href="mailto:disputes@certifine.hk" className="text-brand-600 hover:underline">disputes@certifine.hk</a><br />
+          私隱事務主任：<a href="mailto:privacy@certifine.hk" className="text-brand-600 hover:underline">privacy@certifine.hk</a>
         </p>
       </section>
     </main>

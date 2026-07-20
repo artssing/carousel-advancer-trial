@@ -17,7 +17,7 @@ const notoSerifHK = Noto_Serif_HK({
 });
 
 export const metadata: Metadata = {
-  title: 'Authentik HK — 認證二手交易平台',
+  title: 'Certifine — 認證二手交易平台',
   description: '香港首個按品類認證的 C2C 二手平台。每件 HKD 10,000 以上商品強制經第三方鑑定。',
 };
 

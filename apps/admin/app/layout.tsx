@@ -4,7 +4,7 @@ import { AdminAuthGuard } from '@/components/auth-guard';
 import { LayoutShell } from '@/components/layout-shell';
 
 export const metadata: Metadata = {
-  title: 'Authentik HK · Admin Console',
+  title: 'Certifine · Admin Console',
   robots: 'noindex,nofollow',
 };
 

@@ -618,7 +618,7 @@ export default function OrderDetailPage() {
               </div>
             )}
             <p className="text-[11px] text-red-700">
-              ⚠ 如逾期未取，鑑定師可能會收取寄存費（屬於你同鑑定師之間嘅安排，唔屬於 Authentik HK 平台責任）。
+              ⚠ 如逾期未取，鑑定師可能會收取寄存費（屬於你同鑑定師之間嘅安排，唔屬於 Certifine 平台責任）。
             </p>
             <Button disabled={busy} onClick={() => doAction('確認取回', () => api.orders.sellerReturnAck(order.id))}>
               已取回商品
@@ -633,7 +633,7 @@ export default function OrderDetailPage() {
           <CardContent className="p-4 text-sm">
             <p className="font-medium text-red-900">⚠ 交易已凍結（DISPUTED）</p>
             <p className="mt-1 text-red-700">
-              Authentik HK 為資訊中介，唔裁決爭議。請拎相片 + 對話作為證據自行解決（包括法律途徑）。
+              Certifine 為資訊中介，唔裁決爭議。請拎相片 + 對話作為證據自行解決（包括法律途徑）。
             </p>
           </CardContent>
         </Card>

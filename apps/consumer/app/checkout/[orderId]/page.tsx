@@ -560,7 +560,7 @@ export default function CheckoutPage() {
                 {busy ? '處理中…' : isHold ? `授權 ${formatHKD(total)}` : `確認並付款 ${formatHKD(total)}`}
               </Button>
               <p className="hidden text-center text-[10px] text-neutral-text-hint md:block">
-                撳「{isHold ? '授權' : '確認並付款'}」即表示你同意 Authentik 服務條款 + 鑑定流程
+                撳「{isHold ? '授權' : '確認並付款'}」即表示你同意 Certifine 服務條款 + 鑑定流程
               </p>
 
               {/* Mobile sticky submit */}

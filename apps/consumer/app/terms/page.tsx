@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-export const metadata = { title: '服務條款 · Authentik HK' };
+export const metadata = { title: '服務條款 · Certifine' };
 
 export default function TermsPage() {
   return (
@@ -11,7 +11,7 @@ export default function TermsPage() {
       </header>
 
       <p className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-relaxed">
-        本條款係你（「<strong>用戶</strong>」）與 Authentik HK Ltd.（「<strong>本平台</strong>」、「我哋」）
+        本條款係你（「<strong>用戶</strong>」）與 Certifine Ltd.（「<strong>本平台</strong>」、「我哋」）
         之間具法律約束力嘅協議。使用本平台即表示你接受本條款。如未滿 18 歲或不接受任何條款，請即停止使用。
       </p>
 
@@ -111,7 +111,7 @@ export default function TermsPage() {
         <h2 className="text-lg font-semibold text-slate-900">9. 爭議處理</h2>
         <p className="mt-2 text-sm leading-relaxed">
           買家、賣家及鑑定師如有爭議，請優先透過平台內訊息溝通。
-          如未能達成共識，可向 <a href="mailto:disputes@authentik.hk" className="text-brand-600 hover:underline">disputes@authentik.hk</a>
+          如未能達成共識，可向 <a href="mailto:disputes@certifine.hk" className="text-brand-600 hover:underline">disputes@certifine.hk</a>
           {' '}遞交申訴；本平台將協助保存對話紀錄、付款憑證及鑑定報告以助釐清事實，
           但不作最終裁定。如有需要，雙方可循民事訴訟、消費者委員會調解或仲裁途徑處理。
         </p>
@@ -150,8 +150,8 @@ export default function TermsPage() {
       <section className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
         <h2 className="text-lg font-semibold text-slate-900">聯絡</h2>
         <p className="mt-2 text-sm leading-relaxed">
-          一般查詢：<a href="mailto:hello@authentik.hk" className="text-brand-600 hover:underline">hello@authentik.hk</a><br />
-          爭議：<a href="mailto:disputes@authentik.hk" className="text-brand-600 hover:underline">disputes@authentik.hk</a><br />
+          一般查詢：<a href="mailto:hello@certifine.hk" className="text-brand-600 hover:underline">hello@certifine.hk</a><br />
+          爭議：<a href="mailto:disputes@certifine.hk" className="text-brand-600 hover:underline">disputes@certifine.hk</a><br />
           相關政策：<Link href="/privacy" className="text-brand-600 hover:underline">私隱政策</Link>
           ／<Link href="/about" className="text-brand-600 hover:underline">關於我們</Link>
         </p>

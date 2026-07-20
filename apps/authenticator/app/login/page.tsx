@@ -109,10 +109,10 @@ export default function LoginPage() {
             {status !== 'CHECKING' && !showLocalForm && (
               <div className="space-y-3">
                 <p className="text-xs text-slate-500">
-                  鑑定師同消費者共用登入系統。撳下面按鈕跳轉到 Authentik HK 登入頁（支援電郵、手機號碼、Google）。
+                  鑑定師同消費者共用登入系統。撳下面按鈕跳轉到 Certifine 登入頁（支援電郵、手機號碼、Google）。
                 </p>
                 <Button onClick={onSsoLogin} className="w-full">
-                  繼續至 Authentik HK 登入
+                  繼續至 Certifine 登入
                 </Button>
                 {error && (
                   <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>

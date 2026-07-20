@@ -15,7 +15,7 @@
  *  - Desktop / unsupported: download PNG + copy caption buttons.
  *
  * Platform-neutrality (CLAUDE.md core legal posture): the asset carries a
- * small "via AUTHEN·TIK" corner mark — attribution, never a guarantee. No
+ * small "via CERTI·FINE" corner mark — attribution, never a guarantee. No
  * "平台保證/認證" wording anywhere; condition is labelled 賣家申報.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -48,7 +48,7 @@ function buildCaption(l: ShareListing, link: string): string {
   if (cond) lines.push(`成色：${cond}（賣家申報）`);
   lines.push(`睇多啲：${link}`);
   const brandTag = l.brand ? ` #${l.brand.replace(/\s+/g, '')}` : '';
-  lines.push(`#AuthentikHK #香港二手${brandTag}`);
+  lines.push(`#Certifine #香港二手${brandTag}`);
   return lines.join('\n');
 }
 
@@ -183,7 +183,7 @@ async function composite(l: ShareListing, photos: string[], format: Format, temp
     ctx.font = '600 30px Georgia, serif';
     ctx.fillStyle = 'rgba(255,255,255,.65)';
     ctx.textAlign = 'right';
-    ctx.fillText('via AUTHEN·TIK', w - 60, h - barH + 70);
+    ctx.fillText('via CERTI·FINE', w - 60, h - barH + 70);
     ctx.textAlign = 'left';
   } else {
     // 簡約白底
@@ -207,7 +207,7 @@ async function composite(l: ShareListing, photos: string[], format: Format, temp
     ctx.font = '600 30px Georgia, serif';
     ctx.fillStyle = '#98a2b3';
     ctx.textAlign = 'right';
-    ctx.fillText('via AUTHEN·TIK', w - margin, h - 70);
+    ctx.fillText('via CERTI·FINE', w - margin, h - 70);
     ctx.textAlign = 'left';
   }
   return canvas;

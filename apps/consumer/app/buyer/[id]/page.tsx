@@ -108,7 +108,7 @@ export default function BuyerPage() {
 
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-[11px] leading-relaxed text-slate-500">
             ⓘ 本檔案資料受限：僅顯示用戶選擇公開嘅基本資訊，唔包括聯絡方式、購買品項、評分等。
-            Authentik HK 為資訊中介，以上資料由用戶提供，平台不擔保其準確性。
+            Certifine 為資訊中介，以上資料由用戶提供，平台不擔保其準確性。
           </div>
         </CardContent>
       </Card>

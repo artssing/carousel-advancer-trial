@@ -63,7 +63,7 @@ export default function LinkConfirmPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm">
-            <p>我哋發現你已經有 Authentik HK 帳戶用緊電郵：</p>
+            <p>我哋發現你已經有 Certifine 帳戶用緊電郵：</p>
             <p className="mt-2 font-mono text-xs text-slate-700">{email}</p>
             <p className="mt-1 text-slate-600">顯示名稱：<span className="font-medium">{existingDisplayName}</span></p>
           </div>
@@ -75,7 +75,7 @@ export default function LinkConfirmPage() {
           <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
             <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
             <span>
-              如果呢個 Google 帳戶唔係你嘅 — 請即刻撳「取消」並通知我哋。連接後 Google 帳戶都可以登入你嘅 Authentik HK 帳戶。
+              如果呢個 Google 帳戶唔係你嘅 — 請即刻撳「取消」並通知我哋。連接後 Google 帳戶都可以登入你嘅 Certifine 帳戶。
             </span>
           </div>
 

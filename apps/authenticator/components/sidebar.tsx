@@ -83,7 +83,7 @@ export function Sidebar({ authProfile }: SidebarProps) {
     >
       {/* Brand — matches .sidebar .brand */}
       <Link href="/" className="block px-2 pb-1 text-[18px] font-extrabold tracking-[0.18em]">
-        AUTHEN<span className="text-authBrand-300">·</span>TIK
+        CERTI<span className="text-authBrand-300">·</span>FINE
       </Link>
       <p className="px-2 pb-5 text-[11px] uppercase tracking-[0.1em] text-authBrand-200/70">
         鑑定師 Portal

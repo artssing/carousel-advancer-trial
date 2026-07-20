@@ -1,6 +1,6 @@
 'use client';
 
-/** Three-icon trust strip. Platform-neutral copy: no "Authentik 保證" /
+/** Three-icon trust strip. Platform-neutral copy: no "Certifine 保證" /
  *  "我哋認證" — rephrase to facts user can verify. */
 import { Lock, ShieldCheck, Clock } from 'lucide-react';
 

@@ -52,7 +52,7 @@ export function AuthHeroPanel() {
 
       {/* Corner brand wordmark */}
       <p className="relative z-10 mb-auto text-[18px] font-extrabold tracking-[0.22em]">
-        AUTHEN<span className="text-brand-400">·</span>TIK
+        CERTI<span className="text-brand-400">·</span>FINE
       </p>
 
       {/* Main content — mid-vertical */}
@@ -61,7 +61,7 @@ export function AuthHeroPanel() {
           Authenticated Resale · Hong Kong
         </p>
         <h1 className="mt-3.5 max-w-[440px] font-display-serif text-[38px] font-bold leading-[1.18] tracking-[-0.01em] text-white">
-          加入 Authentik，<br />
+          加入 Certifine，<br />
           只買賣被驗證過的正品。
         </h1>
         <p className="mt-4 max-w-[400px] text-[15px] leading-relaxed text-[#a8c0d4]">

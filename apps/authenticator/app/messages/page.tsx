@@ -445,7 +445,7 @@ function ContextPane({ conv }: { conv: ConvSummary }) {
               <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
             ) : (
               <span className="text-[12px] font-bold tracking-[0.12em] text-neutral-text-hint">
-                {(listing as any).brand?.toUpperCase() ?? 'AUTHENTIK'}
+                {(listing as any).brand?.toUpperCase() ?? 'CERTIFINE'}
               </span>
             )}
             {order?.authenticatorId && (

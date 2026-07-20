@@ -677,7 +677,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   : '此商品屬純撮合，成交前建議自行核實真偽及成色。平台不承擔真偽責任。'}
             </p>
             <p className="mt-3 text-[11px] leading-relaxed text-neutral-text-hint">
-              平台為資訊中介，真偽由具名鑑定師負責，Authentik 不作真偽保證。
+              平台為資訊中介，真偽由具名鑑定師負責，Certifine 不作真偽保證。
             </p>
           </div>
 

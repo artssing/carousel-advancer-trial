@@ -134,7 +134,7 @@ export function TopNav() {
         {/* ── Left: wordmark ────────────────────────────────────────────── */}
         <div className="flex items-center gap-6">
           <Link href="/" className="flex items-center text-[20px] font-extrabold tracking-[0.2em] text-ink">
-            AUTHEN<span className="text-brand-600">·</span>TIK
+            CERTI<span className="text-brand-600">·</span>FINE
           </Link>
 
           {/* ── Center: verbal nav (desktop) ────────────────────────── */}
@@ -310,7 +310,7 @@ export function TopNav() {
           <aside className="absolute right-0 top-0 flex h-full w-72 max-w-[85vw] flex-col bg-white shadow-sh3">
             <div className="flex h-[66px] items-center justify-between border-b border-line px-4">
               <span className="text-[16px] font-extrabold tracking-[0.2em] text-ink">
-                AUTHEN<span className="text-brand-600">·</span>TIK
+                CERTI<span className="text-brand-600">·</span>FINE
               </span>
               <button
                 type="button"

@@ -27,7 +27,7 @@ const METHOD_COPY: Record<string, { name: string; instruction: string; brandColo
   },
   FPS: {
     name: 'FPS 轉數快',
-    instruction: '請開啟你嘅銀行 app → 轉數快 → 掃描 QR code（收款人：Authentik HK Escrow）',
+    instruction: '請開啟你嘅銀行 app → 轉數快 → 掃描 QR code（收款人：Certifine Escrow）',
     brandColor: 'bg-amber-50 border-amber-300 text-amber-900',
   },
 };

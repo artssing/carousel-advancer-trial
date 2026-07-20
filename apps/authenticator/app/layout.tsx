@@ -5,7 +5,7 @@ import { BannerBar } from '@/components/banner-bar';
 import { AnalyticsProvider } from '@/components/analytics-provider';
 
 export const metadata: Metadata = {
-  title: 'Authentik HK · Authenticator Portal',
+  title: 'Certifine · Authenticator Portal',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

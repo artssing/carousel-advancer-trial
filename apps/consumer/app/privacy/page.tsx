@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-export const metadata = { title: '私隱政策 · Authentik HK' };
+export const metadata = { title: '私隱政策 · Certifine' };
 
 export default function PrivacyPage() {
   return (
@@ -11,7 +11,7 @@ export default function PrivacyPage() {
       </header>
 
       <p className="mb-6 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-relaxed">
-        本政策說明 Authentik HK Ltd.（「<strong>本平台</strong>」、「我哋」）
+        本政策說明 Certifine Ltd.（「<strong>本平台</strong>」、「我哋」）
         如何收集、使用、儲存、披露及保護你嘅個人資料。我哋遵從香港《個人資料（私隱）條例》
         （Cap. 486，下稱「<strong>條例</strong>」）所訂明嘅六項保障資料原則
         （Data Protection Principles, DPP1 – DPP6）。
@@ -114,7 +114,7 @@ export default function PrivacyPage() {
         </ul>
         <p className="mt-2 text-sm leading-relaxed">
           請將查閱或更正要求以書面發送至
-          <a href="mailto:privacy@authentik.hk" className="ml-1 text-brand-600 hover:underline">privacy@authentik.hk</a>。
+          <a href="mailto:privacy@certifine.hk" className="ml-1 text-brand-600 hover:underline">privacy@certifine.hk</a>。
           我哋將於 40 日內回覆。
         </p>
       </section>
@@ -150,7 +150,7 @@ export default function PrivacyPage() {
           如對本平台處理你之個人資料有任何疑問或投訴，請聯絡：
         </p>
         <p className="mt-2 text-sm leading-relaxed">
-          私隱事務主任：<a href="mailto:privacy@authentik.hk" className="text-brand-600 hover:underline">privacy@authentik.hk</a>
+          私隱事務主任：<a href="mailto:privacy@certifine.hk" className="text-brand-600 hover:underline">privacy@certifine.hk</a>
         </p>
         <p className="mt-2 text-sm leading-relaxed">
           如未獲滿意答覆，可直接向香港個人資料私隱專員公署（PCPD）投訴：<br />

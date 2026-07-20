@@ -950,7 +950,7 @@ export default function SellPage() {
                 ))}
               </div>
               <p className="mt-1 text-[10px] text-neutral-text-hint">
-                成色由你申報，Authentik 不驗證。Tier 2/3 商品鑑定時以鑑定師意見為準。
+                成色由你申報，Certifine 不驗證。Tier 2/3 商品鑑定時以鑑定師意見為準。
               </p>
             </div>
 

@@ -102,7 +102,7 @@ export default function OnboardingPage() {
       <header className="sticky top-0 z-10 border-b border-line bg-white">
         <div className="mx-auto flex h-[64px] max-w-[900px] items-center justify-between px-6">
           <Link href="/" className="text-[19px] font-extrabold tracking-[0.18em] text-authBrand-900">
-            AUTHEN<span className="text-authBrand-500">·</span>TIK
+            CERTI<span className="text-authBrand-500">·</span>FINE
           </Link>
           <span className="font-mono text-[12px] text-neutral-text-hint">鑑定師申請</span>
         </div>

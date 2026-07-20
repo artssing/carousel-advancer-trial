@@ -880,7 +880,7 @@ export default function AuthenticatePage({ params }: { params: { orderId: string
           <CardContent className="p-4 text-sm">
             <p className="font-medium text-red-900">⚠ 交易已凍結（DISPUTED）</p>
             <p className="mt-1 text-red-700">
-              Authentik HK 為資訊中介，唔裁決爭議。請拎相片 + IM 對話作為證據，自行同對方解決（包括法律途徑）。
+              Certifine 為資訊中介，唔裁決爭議。請拎相片 + IM 對話作為證據，自行同對方解決（包括法律途徑）。
             </p>
           </CardContent>
         </Card>

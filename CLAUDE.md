@@ -1,4 +1,4 @@
-# CLAUDE.md — Authentik HK Project State
+# CLAUDE.md — Certifine HK Project State（前名 Authentik）
 
 > Last updated: 2026-07-14（token 瘦身：細節搬咗去 docs/，本檔只留規則 + pointer）
 
@@ -11,7 +11,7 @@
 
 ## Project 一句話 + 法律姿態（最重要）
 
-香港 C2C 二手平台，按品類強制/可選第三方鑑定，平台**中立做撮合 + escrow**。**平台 = information intermediary**（L'Oréal v eBay）：所有 authenticity claim 歸具名鑑定師（合約 + E&O 保險承擔），UI/copy 唔可以講「我哋保證」；星級純演算法派生（完成單數 + 爭議率），不可手改。
+**Product 名：Certifine**（2026-07-20 拍板；**面向國際，唔好加「HK」落 brand**）。User-facing 全用 Certifine；內部仲有 `@authentik/*` scope / DB 名 / demo email — founder 已表明**之後要大執清晒**（唔想再見 authentik 字眼），計劃見 `docs/backlog/purge-authentik-internals.md`，未執之前唔好散裝改。香港 C2C 二手平台，按品類強制/可選第三方鑑定，平台**中立做撮合 + escrow**。**平台 = information intermediary**（L'Oréal v eBay）：所有 authenticity claim 歸具名鑑定師（合約 + E&O 保險承擔），UI/copy 唔可以講「我哋保證」；星級純演算法派生（完成單數 + 爭議率），不可手改。
 
 **收費**：鑑定師自訂 fee rate（% of 貨價）+ 最低收費（`Authenticator.feeRatePct`/`feeMinHKD`；無鑑定師 authFee=0）。平台費 1.5%。
 **Tier**（`packages/utils/src/tier.ts`）：T1 <$1k 純撮合 · T2 $1k–9,999 可選鑑定 · T3 ≥$10k 強制鑑定（server 拒無鑑定師落單）。
@@ -110,4 +110,4 @@ password 全部 `password123`。買家 alice/bob/carol(有 PENDING offer)/dave(K
 
 ## 未做 / Backlog
 
-Stripe 真 key（code path 已 production-shape；差 KYB + `<PaymentElement>` + hold-7-日策略）、Sumsub KYC（auto-VERIFIED）、SF Express、真 escrow、AI 收費監控、admin custody override、analytics Phase 2（offer/im/auth_portal domains + `order_status_changed` server-side — 要 orders.service central transition helper 重構）、release pipeline（見 backlog doc）、iOS/Android。
+Stripe 真 key（code path 已 production-shape；差 KYB + `<PaymentElement>` + hold-7-日策略）、Sumsub KYC（auto-VERIFIED）、SF Express、真 escrow、AI 收費監控、admin custody override、analytics Phase 2（offer/im/auth_portal domains + `order_status_changed` server-side — 要 orders.service central transition helper 重構）、release pipeline（見 backlog doc）、**purge authentik 內部字眼**（`docs/backlog/purge-authentik-internals.md`）、iOS/Android。

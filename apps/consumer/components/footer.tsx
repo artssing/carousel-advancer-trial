@@ -19,11 +19,11 @@ export function Footer() {
         {/* Col 1 — brand + disclaimer */}
         <div className="max-w-[280px]">
           <div className="text-[18px] font-extrabold tracking-[0.2em] text-ink">
-            AUTHEN<span className="text-brand-600">·</span>TIK
+            CERTI<span className="text-brand-600">·</span>FINE
           </div>
           <p className="mt-3 text-xs leading-relaxed text-neutral-text-hint">
             資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。
-            © {new Date().getFullYear()} Authentik HK Ltd.
+            © {new Date().getFullYear()} Certifine Ltd.
           </p>
         </div>
 
@@ -76,7 +76,7 @@ export function Footer() {
               私隱政策
             </Link>
             <a
-              href="mailto:hello@authentik.hk"
+              href="mailto:hello@certifine.hk"
               className="block text-neutral-text-muted transition hover:text-ink"
             >
               聯絡

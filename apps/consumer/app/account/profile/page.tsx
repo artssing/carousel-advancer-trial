@@ -461,7 +461,7 @@ function SecuritySection({ me }: { me: Me }) {
             <Lock className="h-3.5 w-3.5 text-slate-400" />
           </div>
           <p className="text-xs text-slate-500">
-            Email 唔可以更改。如需更換，請聯絡 <a className="text-brand-600 hover:underline" href="mailto:support@authentik.hk">support@authentik.hk</a>。
+            Email 唔可以更改。如需更換，請聯絡 <a className="text-brand-600 hover:underline" href="mailto:support@certifine.hk">support@certifine.hk</a>。
           </p>
         </CardContent>
       </Card>
@@ -480,7 +480,7 @@ function SecuritySection({ me }: { me: Me }) {
                 <Lock className="h-3.5 w-3.5 text-slate-400" />
               </div>
               <p className="text-xs text-slate-500">
-                手機號碼唔可以喺呢度更改。如需更換，請聯絡 <a className="text-brand-600 hover:underline" href="mailto:support@authentik.hk">support@authentik.hk</a>。
+                手機號碼唔可以喺呢度更改。如需更換，請聯絡 <a className="text-brand-600 hover:underline" href="mailto:support@certifine.hk">support@certifine.hk</a>。
               </p>
             </>
           ) : (

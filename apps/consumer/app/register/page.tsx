@@ -245,7 +245,7 @@ export default function RegisterPage() {
                 建立你的帳戶
               </h1>
               <p className="mt-1.5 text-[14px] text-neutral-text-muted">
-                加入 Authentik，即刻探索經鑑定的正品。
+                加入 Certifine，即刻探索經鑑定的正品。
               </p>
 
               <div className="mt-5 flex flex-col gap-2.5">

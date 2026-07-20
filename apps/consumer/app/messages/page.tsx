@@ -531,7 +531,7 @@ function ContextPane({ conv }: { conv: ConvSummary }) {
               <img src={listing.images[0]} alt={listing.title} className="h-full w-full object-cover" />
             ) : (
               <span className="text-[12px] font-bold tracking-[0.12em] text-neutral-text-hint">
-                {(listingBrand ?? listingFull?.brand ?? 'AUTHENTIK').toUpperCase()}
+                {(listingBrand ?? listingFull?.brand ?? 'CERTIFINE').toUpperCase()}
               </span>
             )}
             {/* Only Order-convo w/ confirmed authenticator gets the 已鑑定 pill —
