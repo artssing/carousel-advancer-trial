@@ -51,3 +51,15 @@ env_ports() {
   env_config "$1" || return 1
   printf '%s %s %s %s %s' "$API_PORT" "$CONSUMER_PORT" "$AUTH_PORT" "$ADMIN_PORT" "$STRIPE_GW_PORT"
 }
+
+# ── Docker deploy 模式共用（start.sh / stop.sh docker mode 用）──────────
+# Compose project 釘死做 repo 資料夾名 — 確保 CI（喺 BUILD_DIR 行）同手動
+# （喺 repo root 行）操作同一個 stack，唔會各開一套。
+DEPLOY_PROJECT="carousel-advancer-trial"
+DEPLOY_COMPOSE="-f docker-compose.yml -f docker-compose.deploy.yml"
+deploy_services() {  # $1 = prod|uat → 該 env 嘅 app services（唔包 tunnel/postgres）
+  case "$1" in
+    prod) printf 'api-prod consumer-prod authenticator-prod admin-prod' ;;
+    uat)  printf 'api-uat consumer-uat authenticator-uat admin-uat' ;;
+  esac
+}

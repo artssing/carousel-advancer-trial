@@ -1,3 +1,6 @@
+# ⛔ DEPRECATED（2026-07-20）— 已被 docker-compose.deploy.yml 取代。
+# CI（ci/ci-run.sh）同 ./start.sh docker 而家都行 deploy.yml（certifinehk.com
+# tunnel 拓撲、冇 host port）。呢份檔留底參考，唔好再用嚟 deploy。
 # ─────────────────────────────────────────────────────────────────────────
 # Authentik APP stack (production-artifact 模式：next build/start + node dist)
 #

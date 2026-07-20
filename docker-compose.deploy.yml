@@ -1,0 +1,175 @@
+# ─────────────────────────────────────────────────────────────────────────
+# Full-Docker 部署 stack（PROD + UAT 一齊），俾 certifinehk.com 上線用。
+#
+# 用法（跟 base compose 一齊行）：
+#   docker compose -f docker-compose.yml -f docker-compose.deploy.yml build
+#   docker compose -f docker-compose.yml -f docker-compose.deploy.yml up -d
+#
+# 設計（founder 2026-07-20 拍板「全部 Docker」）：
+#  • 每個 app 一個 container；container 之間隔離，內部 port 唔使 +10 offset。
+#  • cloudflared 用 compose service DNS 名連（api-prod:4000…），唔用
+#    host.docker.internal（嗰個係「app 喺 host 行」先需要）。
+#  • Secret（JWT_SECRET / GOOGLE_CLIENT_SECRET / DB pw）留喺 gitignored
+#    apps/api/.env.prod / .env.uat，由 env_file 讀入；container 專屬值
+#    （DATABASE_URL 指 postgres service、公網 CORS / URL）喺下面 environment
+#    override（compose：environment 蓋過 env_file）。
+#  • PROD + UAT 都 STRIPE_MODE=mock（in-process）→ 唔使 gateway container，
+#    亦避開「遠端瀏覽器連唔到 localhost:4252」問題。真 Stripe-shape gateway
+#    日後開 pay subdomain 再加。
+#  • NEXT_PUBLIC_* 喺 next build inline → prod / uat 各 build 一個 image
+#    （build args 唔同）。改公網域名 = 要重 build。
+#
+# 冇 host port map（founder 2026-07-20）：容器隔離，每個 app 用返自己標準
+# 內部 port（consumer 3008 / auth 3001 / admin 3003 / api 4000），tunnel 用
+# service 名連。外部入口 = domain。要本機 debug 個別容器 → docker exec，或
+# 臨時加 override port map。冇咗 +10 offset 混亂。
+# ─────────────────────────────────────────────────────────────────────────
+
+services:
+  # ═══ PROD ═══════════════════════════════════════════════════════════════
+  api-prod:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    image: certifine-api:latest
+    container_name: certifine-api-prod
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - apps/api/.env.prod          # secrets: JWT_SECRET / GOOGLE_CLIENT_SECRET
+    environment:
+      RUN_DB_PUSH: "1"              # entrypoint schema sync（唔 seed）
+      API_PORT: "4000"
+      DATABASE_URL: "postgresql://authentik:authentik_dev@postgres:5432/authentik?schema=public"
+      CORS_ORIGIN: "https://certifinehk.com,https://auth.certifinehk.com,https://admin.certifinehk.com"
+      NEXT_PUBLIC_CONSUMER_URL: "https://certifinehk.com"
+      GOOGLE_REDIRECT_URI: "https://api.certifinehk.com/api/auth/google/callback"
+      STRIPE_MODE: "mock"
+      STRIPE_API_BASE: ""
+
+  consumer-prod:
+    build:
+      context: .
+      dockerfile: apps/consumer/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "https://api.certifinehk.com/api"
+        NEXT_PUBLIC_CONSUMER_URL: "https://certifinehk.com"
+        NEXT_PUBLIC_AUTHENTICATOR_URL: "https://auth.certifinehk.com"
+        NEXT_PUBLIC_ADMIN_URL: "https://admin.certifinehk.com"
+    image: certifine-consumer:prod
+    container_name: certifine-consumer-prod
+    restart: unless-stopped
+    depends_on: [api-prod]
+
+  authenticator-prod:
+    build:
+      context: .
+      dockerfile: apps/authenticator/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "https://api.certifinehk.com/api"
+        NEXT_PUBLIC_CONSUMER_URL: "https://certifinehk.com"
+        NEXT_PUBLIC_AUTHENTICATOR_URL: "https://auth.certifinehk.com"
+        NEXT_PUBLIC_ADMIN_URL: "https://admin.certifinehk.com"
+    image: certifine-authenticator:prod
+    container_name: certifine-authenticator-prod
+    restart: unless-stopped
+    depends_on: [api-prod]
+
+  admin-prod:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "https://api.certifinehk.com/api"
+        NEXT_PUBLIC_CONSUMER_URL: "https://certifinehk.com"
+        NEXT_PUBLIC_AUTHENTICATOR_URL: "https://auth.certifinehk.com"
+        NEXT_PUBLIC_ADMIN_URL: "https://admin.certifinehk.com"
+    image: certifine-admin:prod
+    container_name: certifine-admin-prod
+    restart: unless-stopped
+    depends_on: [api-prod]
+
+  # ═══ UAT ════════════════════════════════════════════════════════════════
+  api-uat:
+    image: certifine-api:latest      # 同 prod 同一個 API image（差在 env）
+    container_name: certifine-api-uat
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      api-prod:
+        condition: service_started    # 借 prod build 好個 image
+    env_file:
+      - apps/api/.env.uat
+    environment:
+      RUN_DB_PUSH: "1"
+      API_PORT: "4000"
+      DATABASE_URL: "postgresql://authentik:authentik_dev@postgres:5432/authentik_uat?schema=public"
+      CORS_ORIGIN: "https://uat.certifinehk.com,https://uat-auth.certifinehk.com,https://uat-admin.certifinehk.com"
+      NEXT_PUBLIC_CONSUMER_URL: "https://uat.certifinehk.com"
+      GOOGLE_REDIRECT_URI: "https://uat-api.certifinehk.com/api/auth/google/callback"
+      STRIPE_MODE: "mock"
+      STRIPE_API_BASE: ""
+
+  consumer-uat:
+    build:
+      context: .
+      dockerfile: apps/consumer/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "https://uat-api.certifinehk.com/api"
+        NEXT_PUBLIC_CONSUMER_URL: "https://uat.certifinehk.com"
+        NEXT_PUBLIC_AUTHENTICATOR_URL: "https://uat-auth.certifinehk.com"
+        NEXT_PUBLIC_ADMIN_URL: "https://uat-admin.certifinehk.com"
+    image: certifine-consumer:uat
+    container_name: certifine-consumer-uat
+    restart: unless-stopped
+    depends_on: [api-uat]
+
+  authenticator-uat:
+    build:
+      context: .
+      dockerfile: apps/authenticator/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "https://uat-api.certifinehk.com/api"
+        NEXT_PUBLIC_CONSUMER_URL: "https://uat.certifinehk.com"
+        NEXT_PUBLIC_AUTHENTICATOR_URL: "https://uat-auth.certifinehk.com"
+        NEXT_PUBLIC_ADMIN_URL: "https://uat-admin.certifinehk.com"
+    image: certifine-authenticator:uat
+    container_name: certifine-authenticator-uat
+    restart: unless-stopped
+    depends_on: [api-uat]
+
+  admin-uat:
+    build:
+      context: .
+      dockerfile: apps/admin/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: "https://uat-api.certifinehk.com/api"
+        NEXT_PUBLIC_CONSUMER_URL: "https://uat.certifinehk.com"
+        NEXT_PUBLIC_AUTHENTICATOR_URL: "https://uat-auth.certifinehk.com"
+        NEXT_PUBLIC_ADMIN_URL: "https://uat-admin.certifinehk.com"
+    image: certifine-admin:uat
+    container_name: certifine-admin-uat
+    restart: unless-stopped
+    depends_on: [api-uat]
+
+  # ═══ Cloudflare Tunnel（Dashboard token 模式）══════════════════════════
+  # 公網入口。用 dashboard-managed named tunnel「certifine」：ingress /
+  # public hostname 喺 Cloudflare Zero Trust dashboard 設（uat.certifinehk.com
+  # → consumer-uat:3008 …），DNS 由 dashboard 自動起。cloudflared 喺 compose
+  # 網內 → 可以用 service 名解析。
+  # TUNNEL_TOKEN 係 secret，放 gitignored .env.tunnel（見 .env.tunnel.example）。
+  # 詳見 docs/setup/cloudflare-tunnel-setup.md。
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: certifine-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    env_file:
+      # TUNNEL_TOKEN=eyJ…（唔好 commit）。required:false → CI BUILD_DIR 冇呢個
+      # 檔都唔會炸（CI 只 deploy app services，tunnel 唔喺 CI 手上）。
+      - path: .env.tunnel
+        required: false
+    depends_on: [consumer-uat, api-uat]

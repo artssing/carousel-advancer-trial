@@ -14,16 +14,23 @@ set -eo pipefail
 STEP="${1:?需要 step}"
 ENVIRONMENT="${2:-uat}"
 
-# ── env topology（對齊 .env.compose.*：CI 部署用 dev+100 host port）──
+# ── Deploy topology（2026-07-20 收斂：改用 docker-compose.deploy.yml —
+#    同 tunnel/certifinehk.com 部署同一套，取代舊 docker-compose.app.yml。
+#    PROJECT 釘死 = repo 資料夾名，令 CI（BUILD_DIR）同手動（repo root /
+#    ./start.sh docker）操作同一個 compose stack，唔會各開一套容器。──
+COMPOSE="-f docker-compose.yml -f docker-compose.deploy.yml"
+PROJECT="carousel-advancer-trial"
+NETWORK="${PROJECT}_default"
 if [ "$ENVIRONMENT" = "prod" ]; then
-  ENV_FILE=".env.compose.prod"; PROJECT="authentik"
-  API_PORT=4100; CONS_PORT=3108; AUTH_PORT=3101; ADM_PORT=3103
+  # api-prod = shared API image 嘅 builder service
+  BUILD_SVCS="api-prod consumer-prod authenticator-prod admin-prod"
+  DEPLOY_SVCS="api-prod consumer-prod authenticator-prod admin-prod"
+  SMOKE_API="api-prod:4000"; SMOKE_FRONTS="consumer-prod:3008 authenticator-prod:3001 admin-prod:3003"
 else
-  ENV_FILE=".env.compose.uat";  PROJECT="authentik_uat"
-  API_PORT=4110; CONS_PORT=3118; AUTH_PORT=3111; ADM_PORT=3113
+  BUILD_SVCS="api-prod consumer-uat authenticator-uat admin-uat"
+  DEPLOY_SVCS="api-uat consumer-uat authenticator-uat admin-uat"
+  SMOKE_API="api-uat:4000"; SMOKE_FRONTS="consumer-uat:3008 authenticator-uat:3001 admin-uat:3003"
 fi
-HOST="host.docker.internal"
-APP_COMPOSE="docker-compose.app.yml"
 
 echo "▶ step=$STEP env=$ENVIRONMENT project=$PROJECT"
 
@@ -54,34 +61,27 @@ case "$STEP" in
     ;;
 
   dockerbuild)
-    docker compose -f "$APP_COMPOSE" --env-file "$ENV_FILE" -p "$PROJECT" build
+    docker compose $COMPOSE -p "$PROJECT" build $BUILD_SVCS
     ;;
 
   deploy)
-    # 先清走上次 pipeline 部署（避免半 created 容器殘留）
-    docker compose -f "$APP_COMPOSE" -p "$PROJECT" down --remove-orphans 2>/dev/null || true
-    set +e
-    docker compose -f "$APP_COMPOSE" --env-file "$ENV_FILE" -p "$PROJECT" up -d 2>&1 | tee /tmp/deploy.out
-    rc=${PIPESTATUS[0]}
-    set -e
-    if [ "$rc" != "0" ]; then
-      if grep -q "address already in use" /tmp/deploy.out 2>/dev/null; then
-        echo ""
-        echo "✗ Deploy 失敗：port 被佔用。"
-        echo "  多數係你本地 ./start.sh $ENVIRONMENT（next dev / nest）行緊，佔住 $API_PORT/$CONS_PORT/$AUTH_PORT/$ADM_PORT。"
-        echo "  CI 部署同本地 dev stack 唔可以同時用同一 port。"
-        echo "  → 喺 Mac 行：./stop.sh $ENVIRONMENT   然後再 ./ci.sh rebuild $ENVIRONMENT"
-      fi
-      exit 1
-    fi
+    # 只 recreate 目標 env 嘅 app services（另一 env / tunnel / postgres 唔郁）。
+    # tunnel 用 service 名 route，容器 recreate 完自動接返 — deploy 唔使掂 tunnel。
+    # ⚠️ 絕對唔好加 --remove-orphans：jenkins / n8n / postgres-public 同一個
+    #    project 名下，會被當 orphan 剷走（= CI 剷自己）。
+    docker compose $COMPOSE -p "$PROJECT" up -d --force-recreate postgres $DEPLOY_SVCS
     ;;
 
   smoke)
+    # 冇 host port（founder 2026-07-20）→ 喺 compose network 內用 service 名測，
+    # 即 cloudflared 實際行嘅同一條路徑。
     echo '等 service 起身…'; sleep 15
-    curl -fsS "http://$HOST:$API_PORT/api/listings" >/dev/null && echo 'API ok'
-    curl -fsS "http://$HOST:$CONS_PORT"             >/dev/null && echo 'consumer ok'
-    curl -fsS "http://$HOST:$AUTH_PORT"             >/dev/null && echo 'authenticator ok'
-    curl -fsS "http://$HOST:$ADM_PORT"              >/dev/null && echo 'admin ok'
+    docker run --rm --network "$NETWORK" curlimages/curl:latest \
+      -fsS --max-time 10 "http://$SMOKE_API/api/listings?limit=1" >/dev/null && echo 'API ok'
+    for f in $SMOKE_FRONTS; do
+      docker run --rm --network "$NETWORK" curlimages/curl:latest \
+        -fsS --max-time 10 "http://$f/" >/dev/null && echo "${f%%:*} ok"
+    done
     ;;
 
   *)

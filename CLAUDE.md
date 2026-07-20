@@ -110,4 +110,4 @@ password 全部 `password123`。買家 alice/bob/carol(有 PENDING offer)/dave(K
 
 ## 未做 / Backlog
 
-Stripe 真 key（code path 已 production-shape；差 KYB + `<PaymentElement>` + hold-7-日策略）、Sumsub KYC（auto-VERIFIED）、SF Express、真 escrow、AI 收費監控、admin custody override、analytics Phase 2（offer/im/auth_portal domains + `order_status_changed` server-side — 要 orders.service central transition helper 重構）、release pipeline（見 backlog doc）、**purge authentik 內部字眼**（`docs/backlog/purge-authentik-internals.md`）、iOS/Android。
+Stripe 真 key（code path 已 production-shape；差 KYB + `<PaymentElement>` + hold-7-日策略）、Sumsub KYC（auto-VERIFIED）、SF Express、真 escrow、AI 收費監控、admin custody override、analytics Phase 2（offer/im/auth_portal domains + `order_status_changed` server-side — 要 orders.service central transition helper 重構）、release pipeline（見 backlog doc）、**purge authentik 內部字眼**（`docs/backlog/purge-authentik-internals.md`）、iOS/Android、**自家 Mac 做 PROD 風險**（`docs/backlog/self-host-prod-risk-backlog.md` — 每次講到上線/多用戶/scaling 必提）、email 升級去 Zoho（`docs/backlog/email-hosting-upgrade-backlog.md`）。

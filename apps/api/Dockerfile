@@ -39,4 +39,4 @@ RUN chmod +x /usr/local/bin/api-entrypoint.sh
 WORKDIR /repo/apps/api
 EXPOSE 4000
 ENTRYPOINT ["api-entrypoint.sh"]
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]

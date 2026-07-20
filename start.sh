@@ -16,7 +16,8 @@ cd "$ROOT"
 source "$ROOT/scripts/env-config.sh"
 
 ENV_ARG="${1:-prod}"
-env_config "$ENV_ARG" || { echo "用法：./start.sh [prod|uat]"; exit 1; }
+MODE="${2:-dev}"     # dev = 本機 hot-reload（localhost）｜docker = 部署 stack（certifinehk.com）
+env_config "$ENV_ARG" || { echo "用法：./start.sh [prod|uat] [dev|docker]"; exit 1; }
 
 LOG_DIR="$ROOT/.dev-logs"
 mkdir -p "$LOG_DIR"
@@ -25,6 +26,29 @@ G="\033[32m"; B="\033[34m"; Y="\033[33m"; D="\033[2m"; R="\033[0m"
 say() { printf "${B}▸${R} [%s] %s\n" "$ENV_NAME" "$*"; }
 ok()  { printf "${G}✓${R} [%s] %s\n" "$ENV_NAME" "$*"; }
 warn(){ printf "${Y}!${R} [%s] %s\n" "$ENV_NAME" "$*"; }
+
+# ═══ Docker 部署模式（founder 2026-07-20：呢部機 = server，公網經 tunnel）═══
+if [[ "$MODE" == "docker" ]]; then
+  SVCS="$(deploy_services "$ENV_NAME")"
+  say "起 Docker 部署 stack（$SVCS + tunnel）…"
+  docker compose $DEPLOY_COMPOSE -p "$DEPLOY_PROJECT" up -d postgres $SVCS cloudflared
+  say "等 API ready…"
+  API_OK=0
+  for _ in {1..45}; do
+    docker compose $DEPLOY_COMPOSE -p "$DEPLOY_PROJECT" exec -T "api-$ENV_NAME" \
+      node -e "fetch('http://localhost:4000/api/listings?limit=1').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))" \
+      2>/dev/null && { API_OK=1; break; }
+    sleep 2
+  done
+  [[ "$API_OK" == "1" ]] && ok "API ready" || warn "API 90 秒未 ready — docker logs certifine-api-$ENV_NAME 睇下"
+  if [[ "$ENV_NAME" == "uat" ]]; then
+    printf "\n  ${G}公網 UAT${R}   https://uat.certifinehk.com\n  ${D}auth / admin / api → uat-auth. / uat-admin. / uat-api.certifinehk.com${R}\n"
+  else
+    printf "\n  ${G}公網 PROD${R}  https://certifinehk.com\n  ${D}auth / admin / api → auth. / admin. / api.certifinehk.com${R}\n"
+  fi
+  printf "  ${D}停：./stop.sh $ENV_NAME docker${R}\n\n"
+  exit 0
+fi
 
 # ── 0a. Docker daemon — auto-start Docker Desktop if needed ──────────────
 if ! command -v docker >/dev/null 2>&1; then
