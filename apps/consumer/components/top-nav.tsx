@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
@@ -300,8 +301,11 @@ export function TopNav() {
         </div>
       </div>
 
-      {/* ── Mobile drawer ─────────────────────────────────────────────── */}
-      {drawerOpen && (
+      {/* ── Mobile drawer ─────────────────────────────────────────────────
+           Portal 去 <body>：<header> 有 backdrop-blur，會令入面嘅 `fixed`
+           drawer 對住 header（66px）而唔係 viewport → 之前 drawer 被切到剩返
+           頂條、下面透晒（founder 2026-07-20 mobile bug #6）。 */}
+      {drawerOpen && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-50 md:hidden" role="dialog" aria-modal="true">
           <div
             className="absolute inset-0 bg-ink/40 backdrop-blur-sm"
@@ -353,7 +357,8 @@ export function TopNav() {
               </div>
             </nav>
           </aside>
-        </div>
+        </div>,
+        document.body,
       )}
     </header>
   );

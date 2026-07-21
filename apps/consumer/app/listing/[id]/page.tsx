@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button, Card, CardContent, TierPill, StarRating, Badge, Pill } from '@authentik/ui';
@@ -44,6 +44,41 @@ const STATUS_LABEL: Record<string, string> = {
   REMOVED: '已下架',
 };
 
+/** Layout-matched skeleton（founder 2026-07-20 mobile #3）：撳入商品即刻見到
+ *  大圖 + 標題 + 價錢 + CTA 嘅骨架（唔再係一句「載入中…」），減少「壞咗」感 +
+ *  避免內容到位時 layout jump。用共用 `.skeleton` shimmer class。 */
+function ListingDetailSkeleton() {
+  return (
+    <div className="mx-auto max-w-container-l3 px-4 pb-16 pt-2 sm:px-6">
+      <div className="skeleton my-5 h-3 w-48" />
+      <div className="grid items-start gap-11 md:grid-cols-[1.05fr_0.95fr]">
+        <div>
+          <div className="skeleton aspect-square w-full !rounded-[14px]" />
+          <div className="mt-3 flex gap-2.5">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="skeleton h-[72px] w-[72px] shrink-0 !rounded-[10px]" />
+            ))}
+          </div>
+        </div>
+        <div className="space-y-4">
+          <div className="skeleton h-6 w-28 !rounded-full" />
+          <div className="space-y-2">
+            <div className="skeleton h-6 w-full" />
+            <div className="skeleton h-6 w-2/3" />
+          </div>
+          <div className="skeleton h-10 w-40" />
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            {[0, 1, 2, 3].map((i) => (
+              <div key={i} className="skeleton h-14 w-full !rounded-xl" />
+            ))}
+          </div>
+          <div className="skeleton h-12 w-full !rounded-xl" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ListingPage({ params }: { params: { id: string } }) {
   const { id } = params;
   const router = useRouter();
@@ -70,6 +105,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
+  const touchStartX = useRef<number | null>(null);   // mobile swipe gallery (#4)
   const [chatOpen, setChatOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   // Active order on this listing — drives Seller Action Card (owner view) and
@@ -385,7 +421,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
     return <div className="mx-auto max-w-2xl px-4 py-12 text-sm text-red-600">{error}</div>;
   }
   if (!listing) {
-    return <div className="mx-auto max-w-2xl px-4 py-12 text-sm text-slate-500">載入中…</div>;
+    return <ListingDetailSkeleton />;
   }
 
   // Effective price = locked offer (if buyer is checking out from accepted negotiation) or listing's original
@@ -446,7 +482,19 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             : (categoryByApiEnum(listing.category)?.shortLabel ?? '');
           return (
             <div>
-              <div className="relative aspect-square overflow-hidden rounded-[14px] border border-line bg-gradient-to-br from-[#eef1f5] to-[#dfe4ee] shadow-sh2">
+              <div
+                className="relative aspect-square touch-pan-y select-none overflow-hidden rounded-[14px] border border-line bg-gradient-to-br from-[#eef1f5] to-[#dfe4ee] shadow-sh2"
+                onTouchStart={(e) => { touchStartX.current = e.touches[0]?.clientX ?? null; }}
+                onTouchEnd={(e) => {
+                  // mobile swipe 揭相（#4）：橫掃 > 40px 先當有效，避免誤觸
+                  if (touchStartX.current === null || slides.length < 2) return;
+                  const dx = (e.changedTouches[0]?.clientX ?? 0) - touchStartX.current;
+                  if (Math.abs(dx) > 40) {
+                    setActiveImg((i) => dx < 0 ? (i + 1) % slides.length : (i - 1 + slides.length) % slides.length);
+                  }
+                  touchStartX.current = null;
+                }}
+              >
                 {active ? (
                   active.kind === 'video' ? (
                     <video
@@ -468,24 +516,36 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                 )}
                 {slides.length > 1 && (
                   <>
+                    {/* 箭咀 desktop 先顯示；mobile 靠 swipe（#4），免箭咀擋相/打交叉 */}
                     <button
                       onClick={() => setActiveImg((i) => (i - 1 + slides.length) % slides.length)}
-                      className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white transition hover:bg-black/60"
+                      className="absolute left-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white transition hover:bg-black/60 md:block"
                     ><ChevronLeft className="h-5 w-5" /></button>
                     <button
                       onClick={() => setActiveImg((i) => (i + 1) % slides.length)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white transition hover:bg-black/60"
+                      className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-full bg-black/40 p-1.5 text-white transition hover:bg-black/60 md:block"
                     ><ChevronRight className="h-5 w-5" /></button>
+                    {/* Dot indicator — mobile 標準揭相提示（IG/Carousell muscle memory） */}
+                    <div className="absolute inset-x-0 bottom-3 flex justify-center gap-1.5">
+                      {slides.map((_, i) => (
+                        <span
+                          key={i}
+                          className={`h-1.5 rounded-full transition-all ${
+                            activeImg === i ? 'w-4 bg-white' : 'w-1.5 bg-white/55'
+                          }`}
+                        />
+                      ))}
+                    </div>
                   </>
                 )}
               </div>
               {slides.length > 1 && (
-                <div className="mt-3 flex gap-2.5 overflow-x-auto pb-1">
+                <div className="scrollbar-hide mt-3 flex touch-pan-x snap-x snap-mandatory gap-2.5 overflow-x-auto overscroll-x-contain pb-1">
                   {slides.map((s, i) => (
                     <button
                       key={i}
                       onClick={() => setActiveImg(i)}
-                      className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-[10px] border-2 bg-gradient-to-br from-[#eef1f5] to-[#dfe4ee] shadow-sh1 transition ${
+                      className={`relative h-[72px] w-[72px] shrink-0 snap-center overflow-hidden rounded-[10px] border-2 bg-gradient-to-br from-[#eef1f5] to-[#dfe4ee] shadow-sh1 transition ${
                         activeImg === i ? 'border-verify' : 'border-line'
                       }`}
                     >

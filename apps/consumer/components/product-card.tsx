@@ -66,9 +66,12 @@ export function ProductCard({ listing: l, meta }: ProductCardProps) {
         <p className="text-xs text-neutral-text-hint">
           {meta ?? cat?.shortLabel ?? ''}
         </p>
-        <div className="mt-auto flex items-center justify-between pt-2.5">
+        {/* 價錢 + tier 直度 stack：窄卡（mobile 2-col）一行放唔到會撞，
+            stack 之後任何闊度都唔撞（founder 2026-07-20 mobile bug #2）。
+            闊卡（≥ sm）先並排返一行。 */}
+        <div className="mt-auto flex flex-col items-start gap-1 pt-2.5 sm:flex-row sm:items-center sm:justify-between sm:gap-2">
           <span className="text-base font-extrabold text-ink">{formatHKD(l.priceHKD)}</span>
-          <TierPill tier={tier} className="text-[10px] !py-0.5" />
+          <TierPill tier={tier} className="max-w-full shrink-0 text-[10px] !py-0.5" />
         </div>
       </div>
     </Link>
@@ -78,11 +81,11 @@ export function ProductCard({ listing: l, meta }: ProductCardProps) {
 export function ProductCardSkeleton() {
   return (
     <div className="overflow-hidden rounded-xl border border-line bg-white shadow-sh1">
-      <div className="aspect-square animate-pulse bg-surface-2" />
+      <div className="skeleton aspect-square !rounded-none" />
       <div className="space-y-2 p-4">
-        <div className="h-3 w-full animate-pulse rounded bg-surface-2" />
-        <div className="h-3 w-2/3 animate-pulse rounded bg-surface-2" />
-        <div className="h-5 w-1/3 animate-pulse rounded bg-surface-2" />
+        <div className="skeleton h-3 w-full" />
+        <div className="skeleton h-3 w-2/3" />
+        <div className="skeleton h-5 w-1/3" />
       </div>
     </div>
   );

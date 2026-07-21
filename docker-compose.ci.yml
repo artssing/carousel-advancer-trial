@@ -45,14 +45,28 @@ services:
       N8N_PORT: "5678"
       N8N_SECURE_COOKIE: "false"        # localhost http 用，免 cookie 阻登入
       N8N_RUNNERS_ENABLED: "true"
-      # 如果日後要畀 GitHub webhook 打入嚟，set 成你 tunnel 個 public URL：
-      # WEBHOOK_URL: "https://xxxx.trycloudflare.com/"
+      # 2026-07-21：n8n 內置 tunnel 已經俾官方停用（v2 已刪除），改用低下 cloudflared
+      # quick tunnel sidecar。攞到 https://xxxx.trycloudflare.com 個 URL 之後填喺呢度：
+      WEBHOOK_URL: "${N8N_WEBHOOK_URL:-}"
     ports:
       - "5678:5678"
     volumes:
       - n8n_data:/home/node/.n8n
     extra_hosts:
       - "host.docker.internal:host-gateway"
+
+  # 2026-07-21：暫時加嚟畀 n8n webhook 測試用嘅 Cloudflare quick tunnel（唔使 token/login，
+  # 同 certifine 嗰個正式 tunnel 完全獨立）。個 https URL 每次重起都會變，喺 log 度睇：
+  #   docker logs authentik-n8n-tunnel --tail 20
+  # 攞到 URL 之後 export N8N_WEBHOOK_URL=https://xxxx.trycloudflare.com/ 再重起 n8n。
+  # 唔再需要就可以刪走成個 n8n-tunnel service。
+  n8n-tunnel:
+    image: cloudflare/cloudflared:latest
+    container_name: authentik-n8n-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://n8n:5678
+    depends_on:
+      - n8n
 
 volumes:
   jenkins_home:

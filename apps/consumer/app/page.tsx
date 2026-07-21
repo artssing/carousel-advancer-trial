@@ -132,20 +132,20 @@ export default function HomePage() {
           onSubmit={onSearch}
           className="mx-auto mt-8 flex max-w-[680px] items-stretch overflow-hidden rounded-[14px] border border-line bg-white shadow-sh3"
         >
-          <div className="relative flex flex-1 items-center pl-5">
-            <Search className="h-4 w-4 text-neutral-text-hint" />
+          <div className="relative flex min-w-0 flex-1 items-center gap-2 pl-4 pr-2 sm:pl-5">
+            <Search className="h-4 w-4 shrink-0 text-neutral-text-hint" />
             <input
               ref={inputRef}
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="搜尋品牌、型號，例如 Rolex Submariner、Chanel Classic Flap"
-              className="w-full border-0 px-4 py-[17px] text-[15px] text-neutral-text outline-none placeholder:text-neutral-text-hint"
+              placeholder="搜尋品牌、型號…"
+              className="w-full min-w-0 border-0 py-[15px] text-[15px] text-neutral-text outline-none placeholder:text-neutral-text-hint sm:py-[17px]"
             />
           </div>
           <button
             type="submit"
-            className="shrink-0 bg-brand-600 px-8 text-[15px] font-bold text-white transition hover:bg-brand-400"
+            className="shrink-0 bg-brand-600 px-5 text-[15px] font-bold text-white transition hover:bg-brand-400 sm:px-8"
           >
             搜尋
           </button>

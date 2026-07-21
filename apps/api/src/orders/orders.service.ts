@@ -282,7 +282,8 @@ export class OrdersService {
       },
       orderBy: { createdAt: 'desc' },
       include: {
-        listing: { select: { id: true, title: true, category: true, images: true } },
+        // list card 只需 cover 一張 —— 用 coverUrl，唔好 select images[]（全部相）
+        listing: { select: { id: true, title: true, category: true, coverUrl: true } },
         authenticator: { select: { id: true, displayName: true, starRating: true } },
         buyer: { select: { id: true, displayName: true } },
         seller: { select: { id: true, displayName: true } },
@@ -295,7 +296,15 @@ export class OrdersService {
       select: { orderId: true, rating: true, comment: true },
     });
     const reviewMap = new Map(reviews.map((r) => [r.orderId, r]));
-    return orders.map((o) => ({ ...o, review: reviewMap.get(o.id) ?? null }));
+    // ⚠️ Strip base64 相陣列（founder 2026-07-20 perf #5）：呢啲欄位 list card
+    // 唔 render，但 base64 落 JSON 令 payload 由 ~55KB 谷到 ~1MB（32 單實測
+    // handoverPhotos 一個就 969KB）。相只喺訂單詳情 `get()` 先返。
+    return orders.map(
+      ({ handoverPhotos, authReceiptPhotos, deliveryReceiptPhotos, returnPhotos, ...o }) => ({
+        ...o,
+        review: reviewMap.get(o.id) ?? null,
+      }),
+    );
   }
 
   /**

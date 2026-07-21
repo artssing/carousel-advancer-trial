@@ -35,6 +35,31 @@ body {
   100% { background-position:   0% 50%; }
 }
 
+/* ── Shimmer skeleton（全 app 共用 loading pattern，founder 2026-07-20）──
+   暗影由左至右掃過灰底。任何 loading placeholder 用 `.skeleton`（一個 class
+   搞掂），唔好再各自砌 animate-pulse。 */
+@keyframes skeletonSweep {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+.skeleton {
+  border-radius: 0.375rem;
+  background-color: theme('colors.slate.200');
+  background-image: linear-gradient(
+    90deg,
+    theme('colors.slate.200') 0%,
+    theme('colors.slate.100') 45%,
+    rgba(10, 37, 64, 0.05) 50%,   /* ink-tinted 暗影，配 L3 質感 */
+    theme('colors.slate.100') 55%,
+    theme('colors.slate.200') 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonSweep 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton { animation: none; background-image: none; }
+}
+
 /* L3 realtime auth ticker — continuous horizontal marquee.
  * Duplicated content in the component makes -50% translate seamless. */
 @keyframes marquee {

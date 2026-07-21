@@ -182,13 +182,13 @@ function ProgressBar({ status, deliveryMethod, hasAuth }: {
 function SkeletonOrder() {
   return (
     <div className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-sm">
-      <div className="h-1 w-full animate-pulse bg-slate-200" />
+      <div className="skeleton h-1 w-full !rounded-none" />
       <div className="flex gap-4 p-4">
-        <div className="h-20 w-20 shrink-0 animate-pulse rounded-xl bg-slate-200" />
+        <div className="skeleton h-20 w-20 shrink-0 !rounded-xl" />
         <div className="flex-1 space-y-2">
-          <div className="h-4 w-3/4 animate-pulse rounded bg-slate-200" />
-          <div className="h-4 w-1/3 animate-pulse rounded bg-slate-200" />
-          <div className="h-5 w-28 animate-pulse rounded-full bg-slate-200" />
+          <div className="skeleton h-4 w-3/4" />
+          <div className="skeleton h-4 w-1/3" />
+          <div className="skeleton h-5 w-28 !rounded-full" />
         </div>
       </div>
     </div>
@@ -717,7 +717,7 @@ export default function OrdersPage() {
         <div className="space-y-4">
           {visibleOrders.map((o) => {
             const hasAuth = !!o.authenticatorId;
-            const img     = o.listing?.images?.[0];
+            const img     = o.listing?.coverUrl ?? o.listing?.images?.[0];
             const isAction = needsMyAction(o, currentUserId ?? '', activeTab);
             const cp = counterpartyNodes(o);
 
@@ -957,7 +957,7 @@ export default function OrdersPage() {
             counterpartyName={cpName}
             listingTitle={o.listing?.title ?? ''}
             listingLinkId={o.listing?.id}
-            listingImage={o.listing?.images?.[0]}
+            listingImage={o.listing?.coverUrl ?? o.listing?.images?.[0]}
             counterpartySellerId={activeTab === 'buyer' ? o.seller?.id : undefined}
             counterpartyBuyerId={activeTab === 'seller' ? o.buyer?.id : undefined}
             orderStatus={o.status}
