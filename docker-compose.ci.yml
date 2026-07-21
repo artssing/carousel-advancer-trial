@@ -45,9 +45,12 @@ services:
       N8N_PORT: "5678"
       N8N_SECURE_COOKIE: "false"        # localhost http 用，免 cookie 阻登入
       N8N_RUNNERS_ENABLED: "true"
-      # 2026-07-21：n8n 內置 tunnel 已經俾官方停用（v2 已刪除），改用低下 cloudflared
-      # quick tunnel sidecar。攞到 https://xxxx.trycloudflare.com 個 URL 之後填喺呢度：
-      WEBHOOK_URL: "${N8N_WEBHOOK_URL:-}"
+      # 2026-07-21：出公網 = certifinehk.com 個 named tunnel 加 hostname
+      # n8n.certifinehk.com → authentik-n8n:5678（同 cloudflared 同一 docker
+      # 網，唔使 host port）。WEBHOOK_URL 設公網值令 n8n 產生正確外部 webhook
+      # 網址；Jenkins 內部照用 http://n8n:5678/webhook/... 唔受影響。
+      # ⚠️ 呢個 subdomain 一定要喺 Cloudflare Access 後面（ops 台有 secret）。
+      WEBHOOK_URL: "${N8N_WEBHOOK_URL:-https://n8n.certifinehk.com/}"
     ports:
       - "5678:5678"
     volumes:
