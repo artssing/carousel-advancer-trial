@@ -2,6 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body {
+  /* Kill horizontal overscroll bounce (iOS rubber-band white gap at L/R edge). */
+  overscroll-behavior-x: none;
+}
+
 body {
   @apply bg-slate-100 text-slate-900 antialiased;
   font-family: 'Inter', system-ui, sans-serif;

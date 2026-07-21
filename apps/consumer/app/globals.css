@@ -24,6 +24,13 @@
   transition: top 300ms ease-out;
 }
 
+html, body {
+  /* Kill horizontal overscroll bounce (iOS rubber-band white gap at L/R edge).
+     `none` stop bounce + scroll-chaining. Vertical scroll unaffected.
+     No overflow-x:hidden — would break position:sticky sub-rails. */
+  overscroll-behavior-x: none;
+}
+
 body {
   @apply bg-white text-slate-900 antialiased;
   font-family: 'Inter', 'PingFang HK', 'Noto Sans HK', 'Microsoft JhengHei', system-ui, sans-serif;
