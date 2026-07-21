@@ -51,6 +51,10 @@ services:
       # 網址；Jenkins 內部照用 http://n8n:5678/webhook/... 唔受影響。
       # ⚠️ 呢個 subdomain 一定要喺 Cloudflare Access 後面（ops 台有 secret）。
       WEBHOOK_URL: "${N8N_WEBHOOK_URL:-https://n8n.certifinehk.com/}"
+      # behind HTTPS reverse proxy（Cloudflare tunnel）：令 n8n 產生 https/wss
+      # 正確網址，唔會因 http/https 唔對令 editor push 連唔到 → 白畫面。
+      N8N_HOST: "n8n.certifinehk.com"
+      N8N_PROTOCOL: "https"
     ports:
       - "5678:5678"
     volumes:
