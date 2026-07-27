@@ -33,6 +33,9 @@ export interface CategoryConfig {
   labelEn: string;
   /** Emoji for category strips / sell dropdown icons */
   emoji: string;
+  /** Optional hero image for home 熱門品類 tile (served from consumer /public).
+   *  When set, tile shows the photo instead of the emoji watermark. */
+  bgImage?: string;
   /** Show as chip / section on browse page + home page */
   enabledInBrowse: boolean;
   /** Allow seller to list a product in this category */
@@ -55,6 +58,7 @@ export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
     shortLabel: '手袋',
     labelEn: 'Luxury Bags',
     emoji: '👜',
+    bgImage: '/categories/handbag.jpg',
     enabledInBrowse: true,
     enabledInSell: true,
     authFeeRate: 0.07,
@@ -68,6 +72,7 @@ export const CATEGORIES: Record<CategoryId, CategoryConfig> = {
     shortLabel: 'iPhone',
     labelEn: 'Apple Electronics',
     emoji: '📱',
+    bgImage: '/categories/iphone.jpg',
     enabledInBrowse: true,
     enabledInSell: true,
     authFeeRate: 0.035,

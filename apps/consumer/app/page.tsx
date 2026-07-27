@@ -47,22 +47,43 @@ function SectionHead({ title, href, linkLabel }: { title: string; href?: string;
 
 function CategoryTile({ cat, count }: { cat: CategoryConfig; count: number | null }) {
   const disabled = !cat.enabledInSell;
+  const hasImg = !!cat.bgImage;
   return (
     <Link
       href={`/browse?cat=${cat.id}` as any}
       className="group relative flex aspect-[1/0.78] items-end overflow-hidden rounded-[14px] border border-line bg-gradient-to-br from-[#eef1f5] to-[#e2e8f0] p-4 shadow-sh2 transition duration-200 hover:-translate-y-0.5 hover:shadow-sh3"
     >
-      {/* Watermark emoji (bottom-right) — big, subtle */}
-      <span className="pointer-events-none absolute -bottom-3 right-2 select-none text-[80px] leading-none opacity-30 transition duration-200 group-hover:scale-105">
-        {cat.emoji}
-      </span>
+      {hasImg ? (
+        <>
+          {/* Hero photo — covers tile, subtle zoom on hover */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={cat.bgImage as string}
+            alt=""
+            className="pointer-events-none absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.04]"
+          />
+          {/* Bottom gradient for text legibility */}
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/65 via-black/10 to-transparent" />
+        </>
+      ) : (
+        /* Watermark emoji (bottom-right) — big, subtle */
+        <span className="pointer-events-none absolute -bottom-3 right-2 select-none text-[80px] leading-none opacity-30 transition duration-200 group-hover:scale-105">
+          {cat.emoji}
+        </span>
+      )}
       {/* Item count top-right */}
-      <span className="absolute right-4 top-3 text-[11px] font-semibold text-neutral-text-hint">
+      <span
+        className={`absolute right-4 top-3 text-[11px] font-semibold ${
+          hasImg ? 'rounded-full bg-black/35 px-2 py-0.5 text-white backdrop-blur-sm' : 'text-neutral-text-hint'
+        }`}
+      >
         {count === null ? '' : `${count} 件`}
       </span>
       {/* Category name bottom-left */}
       <div className="relative">
-        <div className="text-base font-extrabold text-ink">{cat.labelZh}</div>
+        <div className={`text-base font-extrabold ${hasImg ? 'text-white drop-shadow-sm' : 'text-ink'}`}>
+          {cat.labelZh}
+        </div>
         {disabled && (
           <div className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
             即將推出
