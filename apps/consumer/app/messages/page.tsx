@@ -67,6 +67,40 @@ const STATUS_LABEL: Record<string, string> = {
   DISPUTED: '爭議處理中',
 };
 
+/** Thread pane loading skeleton（founder 2026-07-21）：頂 bar + 交錯左右氣泡，
+ *  用共用 `.skeleton` shimmer。desktop 主要見到（mobile 未揀對話時見列表）。 */
+function ThreadSkeleton() {
+  // [自己右 / 對方左, 氣泡闊度]
+  const bubbles: Array<[boolean, string]> = [
+    [false, 'w-40'], [true, 'w-32'], [false, 'w-52'], [false, 'w-28'],
+    [true, 'w-44'], [false, 'w-36'], [true, 'w-24'],
+  ];
+  return (
+    <div className="flex h-full w-full flex-col bg-surface-1">
+      {/* 頂部對方資料 bar */}
+      <div className="flex items-center gap-3 border-b border-line px-4 py-3">
+        <div className="skeleton h-9 w-9 shrink-0 !rounded-full" />
+        <div className="space-y-2">
+          <div className="skeleton h-3.5 w-28" />
+          <div className="skeleton h-2.5 w-20" />
+        </div>
+      </div>
+      {/* 氣泡 */}
+      <div className="flex flex-1 flex-col gap-3 overflow-hidden p-4">
+        {bubbles.map(([mine, w], i) => (
+          <div key={i} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+            <div className={`skeleton h-10 ${w} max-w-[75%] !rounded-2xl`} />
+          </div>
+        ))}
+      </div>
+      {/* 輸入列 */}
+      <div className="border-t border-line p-3">
+        <div className="skeleton h-10 w-full !rounded-full" />
+      </div>
+    </div>
+  );
+}
+
 function MessagesPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -252,9 +286,18 @@ function MessagesPageInner() {
       {/* Conversation list — messages.html .convs */}
       <div className="flex-1 overflow-y-auto">
         {loading && (
-          <div className="space-y-2 p-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="h-14 animate-pulse rounded-lg bg-surface-2" />
+          <div className="space-y-1 p-3">
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="flex items-center gap-3 rounded-lg p-2.5">
+                <div className="skeleton h-11 w-11 shrink-0 !rounded-full" />
+                <div className="min-w-0 flex-1 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="skeleton h-3.5 w-24" />
+                    <div className="skeleton h-2.5 w-8" />
+                  </div>
+                  <div className="skeleton h-3 w-40 max-w-full" />
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -427,7 +470,7 @@ function MessagesPageInner() {
       onClose={backToList}
       showBackButton
     />
-  ) : emptyState;
+  ) : loading ? <ThreadSkeleton /> : emptyState;
 
   // ── 3-pane layout: sidebar (310px) | chat (1fr) | context (292px) ──────
   return (
