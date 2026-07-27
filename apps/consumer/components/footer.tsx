@@ -1,4 +1,6 @@
 import Link from 'next/link';
+import { cookies } from 'next/headers';
+import { createT } from '@authentik/utils';
 
 // Cross-app link to authenticator portal — env-driven so production / public-test
 // deployment can override (Lesson #4: never hardcode cross-app URLs).
@@ -13,6 +15,8 @@ const AUTHENTICATOR_URL =
  * v eBay + CLAUDE.md information intermediary stance) and MUST NOT be trimmed.
  */
 export function Footer() {
+  const locale = cookies().get('lang')?.value === 'en' ? 'en' : 'zh';
+  const _t = createT(locale);
   return (
     <footer className="mt-16 border-t border-line bg-surface-2 text-sm">
       <div className="mx-auto flex max-w-container-l3 flex-wrap justify-between gap-10 px-4 py-11 sm:px-6">
@@ -22,25 +26,25 @@ export function Footer() {
             CERTI<span className="text-brand-600">·</span>FINE
           </div>
           <p className="mt-3 text-xs leading-relaxed text-neutral-text-hint">
-            資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。
-            © {new Date().getFullYear()} Certifine Ltd.
+            {_t('layout.footer.disclaimer')}
+            {' '}© {new Date().getFullYear()} Certifine Ltd.
           </p>
         </div>
 
         {/* Col 2 — 買賣 */}
         <div>
           <h4 className="mb-3 text-[11px] font-bold uppercase tracking-[0.1em] text-neutral-text-hint">
-            買賣
+            {_t('layout.footer.colBuySell')}
           </h4>
           <div className="space-y-2 text-[13px]">
             <Link href="/browse" className="block text-neutral-text-muted transition hover:text-ink">
-              瀏覽商品
+              {_t('layout.footer.browse')}
             </Link>
             <Link href="/sell" className="block text-neutral-text-muted transition hover:text-ink">
-              刊登出售
+              {_t('layout.footer.sell')}
             </Link>
             <Link href={'/about#authenticators' as any} className="block text-neutral-text-muted transition hover:text-ink">
-              鑑定師名冊
+              {_t('layout.footer.authRegistry')}
             </Link>
           </div>
         </div>
@@ -48,17 +52,17 @@ export function Footer() {
         {/* Col 3 — 信任 */}
         <div>
           <h4 className="mb-3 text-[11px] font-bold uppercase tracking-[0.1em] text-neutral-text-hint">
-            信任
+            {_t('layout.footer.colTrust')}
           </h4>
           <div className="space-y-2 text-[13px]">
             <Link href="/about" className="block text-neutral-text-muted transition hover:text-ink">
-              鑑定機制
+              {_t('layout.footer.authMechanism')}
             </Link>
             <Link href="/about" className="block text-neutral-text-muted transition hover:text-ink">
-              款項託管
+              {_t('layout.footer.escrow')}
             </Link>
             <Link href="/about" className="block text-neutral-text-muted transition hover:text-ink">
-              爭議處理
+              {_t('layout.footer.disputes')}
             </Link>
           </div>
         </div>
@@ -66,20 +70,20 @@ export function Footer() {
         {/* Col 4 — 關於 */}
         <div>
           <h4 className="mb-3 text-[11px] font-bold uppercase tracking-[0.1em] text-neutral-text-hint">
-            關於
+            {_t('layout.footer.colAbout')}
           </h4>
           <div className="space-y-2 text-[13px]">
             <Link href="/terms" className="block text-neutral-text-muted transition hover:text-ink">
-              服務條款
+              {_t('layout.footer.terms')}
             </Link>
             <Link href="/privacy" className="block text-neutral-text-muted transition hover:text-ink">
-              私隱政策
+              {_t('layout.footer.privacy')}
             </Link>
             <a
               href="mailto:hello@certifine.hk"
               className="block text-neutral-text-muted transition hover:text-ink"
             >
-              聯絡
+              {_t('layout.footer.contact')}
             </a>
             <a
               href={AUTHENTICATOR_URL}
@@ -87,7 +91,7 @@ export function Footer() {
               rel="noopener noreferrer"
               className="block text-neutral-text-muted transition hover:text-ink"
             >
-              鑑定家入口
+              {_t('layout.footer.authPortal')}
             </a>
           </div>
         </div>

@@ -2347,6 +2347,126 @@
     "meta.description": {
       "zh": "香港首個按品類認證的 C2C 二手平台。每件 HKD 10,000 以上商品強制經第三方鑑定。",
       "en": "Hong Kong's first category-certified C2C secondhand marketplace. Every item priced at HKD 10,000 or above requires mandatory third-party authentication."
+    },
+    "nav.browse": {
+      "zh": "瀏覽",
+      "en": "Browse"
+    },
+    "nav.sell": {
+      "zh": "出售",
+      "en": "Sell"
+    },
+    "nav.trust": {
+      "zh": "信任機制",
+      "en": "Trust & Safety"
+    },
+    "nav.ordersLabel": {
+      "zh": "訂單",
+      "en": "Orders"
+    },
+    "nav.login": {
+      "zh": "登入",
+      "en": "Log in"
+    },
+    "nav.sellCta": {
+      "zh": "刊登出售",
+      "en": "List an item"
+    },
+    "nav.searchAria": {
+      "zh": "搜尋",
+      "en": "Search"
+    },
+    "nav.messagesAria": {
+      "zh": "訊息",
+      "en": "Messages"
+    },
+    "nav.ordersAria": {
+      "zh": "訂單",
+      "en": "Orders"
+    },
+    "nav.openMenu": {
+      "zh": "開啟主目錄",
+      "en": "Open menu"
+    },
+    "nav.closeMenu": {
+      "zh": "關閉主目錄",
+      "en": "Close menu"
+    },
+    "account.myAccount": {
+      "zh": "我的帳號",
+      "en": "My account"
+    },
+    "account.myListings": {
+      "zh": "我的商品",
+      "en": "My listings"
+    },
+    "account.myOrders": {
+      "zh": "我的訂單",
+      "en": "My orders"
+    },
+    "account.myWallet": {
+      "zh": "我的錢包",
+      "en": "My wallet"
+    },
+    "account.logout": {
+      "zh": "登出",
+      "en": "Log out"
+    },
+    "footer.disclaimer": {
+      "zh": "資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。",
+      "en": "Information intermediary platform. Product authenticity is the responsibility of the named authenticator; the platform makes no authenticity guarantee."
+    },
+    "footer.colBuySell": {
+      "zh": "買賣",
+      "en": "Buy & Sell"
+    },
+    "footer.browse": {
+      "zh": "瀏覽商品",
+      "en": "Browse items"
+    },
+    "footer.sell": {
+      "zh": "刊登出售",
+      "en": "List an item"
+    },
+    "footer.authRegistry": {
+      "zh": "鑑定師名冊",
+      "en": "Authenticator registry"
+    },
+    "footer.colTrust": {
+      "zh": "信任",
+      "en": "Trust"
+    },
+    "footer.authMechanism": {
+      "zh": "鑑定機制",
+      "en": "Authentication"
+    },
+    "footer.escrow": {
+      "zh": "款項託管",
+      "en": "Escrow"
+    },
+    "footer.disputes": {
+      "zh": "爭議處理",
+      "en": "Dispute handling"
+    },
+    "footer.colAbout": {
+      "zh": "關於",
+      "en": "About"
+    },
+    "footer.terms": {
+      "zh": "服務條款",
+      "en": "Terms of Service"
+    },
+    "footer.privacy": {
+      "zh": "私隱政策",
+      "en": "Privacy Policy"
+    },
+    "footer.contact": {
+      "zh": "聯絡",
+      "en": "Contact"
+    },
+    "footer.authPortal": {
+      "zh": "鑑定家入口",
+      "en": "Authenticator portal"
     }
   },
   "messages": {

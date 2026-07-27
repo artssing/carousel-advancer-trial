@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@authentik/ui';
 import { LanguageSwitcher } from '@authentik/ui/language-switcher';
+import { getClientLocale, createT } from '@authentik/utils';
 import { api, hasToken, clearToken, AUTH_CHANGE_EVENT } from '@/lib/api';
 
 interface NavUser {
@@ -37,16 +38,16 @@ interface NavUser {
 
 interface NavLink {
   href: string;
-  label: string;
+  labelKey: string;
   matchPrefix?: string;
 }
 
 const NAV_LINKS: NavLink[] = [
-  { href: '/browse', label: '瀏覽', matchPrefix: '/browse' },
-  { href: '/sell', label: '出售', matchPrefix: '/sell' },
+  { href: '/browse', labelKey: 'layout.nav.browse', matchPrefix: '/browse' },
+  { href: '/sell', labelKey: 'layout.nav.sell', matchPrefix: '/sell' },
   // 鑑定師 nav removed 2026-07-05: authenticator directory 未 build，link 落 /about
   // anchor 對用戶嚟講太隱蔽 —— 想了解具名鑑定師制度可以喺「信任機制」入面睇。
-  { href: '/about', label: '信任機制' },
+  { href: '/about', labelKey: 'layout.nav.trust' },
 ];
 
 export function TopNav() {
@@ -58,6 +59,9 @@ export function TopNav() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [orderBadge, setOrderBadge] = useState(0);
   const menuRef = useRef<HTMLDivElement | null>(null);
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
 
   // ── Auth state ────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -153,7 +157,7 @@ export function TopNav() {
                       : 'transition hover:text-ink'
                   }
                 >
-                  {link.label}
+                  {_t(link.labelKey)}
                 </Link>
               );
             })}
@@ -168,7 +172,7 @@ export function TopNav() {
           <Link
             href="/browse"
             className="rounded-lg p-2 text-neutral-text-muted transition hover:bg-surface-2 hover:text-ink"
-            aria-label="搜尋"
+            aria-label={_t('layout.nav.searchAria')}
           >
             <Search className="h-4 w-4" />
           </Link>
@@ -178,7 +182,7 @@ export function TopNav() {
             <Link
               href="/messages"
               className="relative rounded-lg p-2 text-neutral-text-muted transition hover:bg-surface-2 hover:text-ink"
-              aria-label="訊息"
+              aria-label={_t('layout.nav.messagesAria')}
             >
               <MessageCircle className="h-4 w-4" />
               {unreadCount > 0 && (
@@ -194,9 +198,9 @@ export function TopNav() {
             <Link
               href="/orders"
               className="relative hidden items-center rounded-lg p-2 text-neutral-text-muted transition hover:bg-surface-2 hover:text-ink md:flex"
-              aria-label="訂單"
+              aria-label={_t('layout.nav.ordersAria')}
             >
-              <span className="text-sm">訂單</span>
+              <span className="text-sm">{_t('layout.nav.ordersLabel')}</span>
               {orderBadge > 0 && (
                 <span className="ml-1 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
                   {orderBadge > 9 ? '9+' : orderBadge}
@@ -208,7 +212,7 @@ export function TopNav() {
             <Link
               href="/orders"
               className="relative rounded-lg p-2 text-neutral-text-muted transition hover:bg-surface-2 hover:text-ink md:hidden"
-              aria-label="訂單"
+              aria-label={_t('layout.nav.ordersAria')}
             >
               <Package className="h-4 w-4" />
               {orderBadge > 0 && (
@@ -252,27 +256,27 @@ export function TopNav() {
                   <Link href={'/account/profile' as any} role="menuitem"
                     className="flex items-center gap-2 px-4 py-2.5 text-sm text-neutral-text-muted hover:bg-surface-2 hover:text-ink">
                     <UserCog className="h-4 w-4 text-neutral-text-hint" />
-                    我的帳號
+                    {_t('layout.account.myAccount')}
                   </Link>
                   <Link href="/my-listings" role="menuitem"
                     className="flex items-center gap-2 px-4 py-2.5 text-sm text-neutral-text-muted hover:bg-surface-2 hover:text-ink">
                     <Store className="h-4 w-4 text-neutral-text-hint" />
-                    我的商品
+                    {_t('layout.account.myListings')}
                   </Link>
                   <Link href="/orders" role="menuitem"
                     className="flex items-center gap-2 px-4 py-2.5 text-sm text-neutral-text-muted hover:bg-surface-2 hover:text-ink md:hidden">
                     <Package className="h-4 w-4 text-neutral-text-hint" />
-                    我的訂單
+                    {_t('layout.account.myOrders')}
                   </Link>
                   <Link href="/account/wallet" role="menuitem"
                     className="flex items-center gap-2 px-4 py-2.5 text-sm text-neutral-text-muted hover:bg-surface-2 hover:text-ink">
                     <Wallet className="h-4 w-4 text-neutral-text-hint" />
-                    我的錢包
+                    {_t('layout.account.myWallet')}
                   </Link>
                   <button type="button" role="menuitem" onClick={onLogout}
                     className="flex w-full items-center gap-2 border-t border-line px-4 py-2.5 text-left text-sm text-danger hover:bg-danger-soft">
                     <LogOut className="h-4 w-4" />
-                    登出
+                    {_t('layout.account.logout')}
                   </button>
                 </div>
               )}
@@ -283,13 +287,13 @@ export function TopNav() {
               className="flex items-center gap-1.5 rounded-lg px-2 py-2 text-sm text-neutral-text-muted transition hover:bg-surface-2 hover:text-ink"
             >
               <User className="h-4 w-4" />
-              <span className="hidden sm:inline">登入</span>
+              <span className="hidden sm:inline">{_t('layout.nav.login')}</span>
             </Link>
           )}
 
           {/* Primary CTA */}
           <Link href="/sell" className="hidden sm:block">
-            <Button size="sm">刊登出售</Button>
+            <Button size="sm">{_t('layout.nav.sellCta')}</Button>
           </Link>
 
           {/* Mobile hamburger */}
@@ -297,7 +301,7 @@ export function TopNav() {
             type="button"
             onClick={() => setDrawerOpen(true)}
             className="rounded-lg p-2 text-neutral-text-muted transition hover:bg-surface-2 hover:text-ink md:hidden"
-            aria-label="開啟主目錄"
+            aria-label={_t('layout.nav.openMenu')}
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -323,7 +327,7 @@ export function TopNav() {
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 className="rounded-lg p-2 text-neutral-text-muted hover:bg-surface-2"
-                aria-label="關閉主目錄"
+                aria-label={_t('layout.nav.closeMenu')}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -343,7 +347,7 @@ export function TopNav() {
                             : 'text-neutral-text-muted hover:bg-surface-2 hover:text-ink'
                         }`}
                       >
-                        {link.label}
+                        {_t(link.labelKey)}
                       </Link>
                     </li>
                   );
@@ -355,7 +359,7 @@ export function TopNav() {
                   onClick={() => setDrawerOpen(false)}
                   className="block"
                 >
-                  <Button className="w-full">刊登出售</Button>
+                  <Button className="w-full">{_t('layout.nav.sellCta')}</Button>
                 </Link>
               </div>
             </nav>
