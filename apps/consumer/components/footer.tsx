@@ -1,6 +1,8 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { cookies } from 'next/headers';
-import { createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@authentik/utils';
 
 // Cross-app link to authenticator portal — env-driven so production / public-test
 // deployment can override (Lesson #4: never hardcode cross-app URLs).
@@ -15,7 +17,8 @@ const AUTHENTICATOR_URL =
  * v eBay + CLAUDE.md information intermediary stance) and MUST NOT be trimmed.
  */
 export function Footer() {
-  const locale = cookies().get('lang')?.value === 'en' ? 'en' : 'zh';
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
   const _t = createT(locale);
   return (
     <footer className="mt-16 border-t border-line bg-surface-2 text-sm">
