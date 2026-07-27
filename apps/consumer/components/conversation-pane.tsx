@@ -209,6 +209,7 @@ export function ConversationPane({
   const activeConvIdRef = useRef<string | null>(convIdProp ?? null);
   useEffect(() => { activeConvIdRef.current = activeConvId; }, [activeConvId]);
   const [messages, setMessages] = useState<Message[]>([]);
+  const [msgLoading, setMsgLoading] = useState(true);   // 初次載入訊息 shimmer
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -399,6 +400,7 @@ export function ConversationPane({
         : orderId
           ? `${API_URL}/api/conversations/order/${orderId}`
           : `${API_URL}/api/conversations/listing/${listingId}`;
+      setMsgLoading(true);
       fetch(url, { headers: { Authorization: `Bearer ${token}` } })
         .then((r) => r.json())
         .then((d) => {
@@ -423,7 +425,8 @@ export function ConversationPane({
             if (d.conversationId) setPairConvIds((m) => ({ ...m, [d.kind]: d.conversationId }));
           }
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => setMsgLoading(false));
     });
 
     socket.on('message', (msg: Message & { conversationId?: string; tempId?: string }) => {
@@ -908,7 +911,17 @@ export function ConversationPane({
       </div>
 
       {/* ── Messages ──────────────────────────────────────────────────── */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto bg-surface-2 px-4 py-3">
+      {/* bg 由 surface-2（灰底，同 L3 白底風格唔 align）改 surface-1（近白） */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto bg-white px-4 py-3">
+        {msgLoading && messages.length === 0 && (
+          <div className="flex flex-col gap-3">
+            {([[false,'w-40'],[true,'w-28'],[false,'w-52'],[true,'w-36'],[false,'w-32'],[true,'w-24']] as Array<[boolean,string]>).map(([mine, w], i) => (
+              <div key={i} className={`flex ${mine ? 'justify-end' : 'justify-start'}`}>
+                <div className={`skeleton h-9 ${w} max-w-[75%] !rounded-2xl`} />
+              </div>
+            ))}
+          </div>
+        )}
         {messages.map((msg, idx) => {
           const isMe = msg.senderId === currentUserId;
           const isSystem = msg.senderRole === 'SYSTEM';

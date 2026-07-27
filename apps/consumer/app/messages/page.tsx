@@ -76,7 +76,7 @@ function ThreadSkeleton() {
     [true, 'w-44'], [false, 'w-36'], [true, 'w-24'],
   ];
   return (
-    <div className="flex h-full w-full flex-col bg-surface-1">
+    <div className="flex h-full w-full flex-col bg-white">
       {/* 頂部對方資料 bar */}
       <div className="flex items-center gap-3 border-b border-line px-4 py-3">
         <div className="skeleton h-9 w-9 shrink-0 !rounded-full" />
