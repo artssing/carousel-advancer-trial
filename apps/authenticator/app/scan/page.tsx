@@ -30,6 +30,12 @@ export default function ScanPage() {
   const [busy, setBusy] = useState(false);
   const [done, setDone] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement | null>(null);
+  // UAT/dev only：桌面冇 camera 都試到後面 flow — 貼 handover token 直接行 qrScan。
+  // 唔喺 prod 出現（gate by hostname）。
+  const isTestEnv =
+    typeof window !== 'undefined' &&
+    (window.location.hostname.startsWith('uat') || window.location.hostname === 'localhost');
+  const [manualToken, setManualToken] = useState('');
 
   // ── Camera + decode loop ──
   const cancelledRef = useRef(false);
@@ -148,7 +154,26 @@ export default function ScanPage() {
     setScanError(null);
     setPhotos([]);
     setDone(null);
+    setManualToken('');
     scanningRef.current = true;
+  }
+
+  // UAT/dev：貼 handover token 直接驗，跳過鏡頭 decode（桌面測後面 flow 用）。
+  async function submitToken(raw: string) {
+    const tok = raw.trim();
+    if (!tok || busy) return;
+    scanningRef.current = false;
+    setScanError(null);
+    setBusy(true);
+    try {
+      const result = await api.orders.qrScan(tok);
+      setScanned({ token: tok, result });
+    } catch (e: any) {
+      setScanError(e?.message ?? 'Token 無效或已過期');
+      scanningRef.current = true;
+    } finally {
+      setBusy(false);
+    }
   }
 
   function onPhotoPick(e: React.ChangeEvent<HTMLInputElement>) {
@@ -310,6 +335,31 @@ export default function ScanPage() {
           <p className="mt-3 text-center text-[12px] text-neutral-text-hint">
             對準對方 App 上嘅 QR 碼 · 碼每 60 秒更新，過期請對方刷新
           </p>
+
+          {/* ── UAT/dev-only：桌面貼 token 跳過鏡頭 ── */}
+          {isTestEnv && (
+            <div className="mt-5 rounded-xl border border-dashed border-amber-300 bg-amber-50 p-4">
+              <p className="text-[11px] font-bold uppercase tracking-wide text-amber-700">UAT / 測試專用</p>
+              <p className="mt-1 text-[12px] text-amber-800">
+                桌面冇相機都試到後面 flow：喺賣家「QR 交收卡」複製 handover token，貼落嚟直接驗。
+              </p>
+              <textarea
+                value={manualToken}
+                onChange={(e) => setManualToken(e.target.value)}
+                placeholder="貼上 handover token…"
+                rows={2}
+                className="mt-2 w-full rounded-lg border border-amber-300 bg-white px-3 py-2 font-mono text-[12px] text-ink outline-none focus:border-amber-500"
+              />
+              <button
+                type="button"
+                onClick={() => void submitToken(manualToken)}
+                disabled={busy || !manualToken.trim()}
+                className="mt-2 w-full rounded-lg bg-amber-500 py-2.5 text-sm font-semibold text-white hover:bg-amber-600 disabled:opacity-50"
+              >
+                {busy ? '驗證中…' : '跳過鏡頭 · 用 token 驗證'}
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

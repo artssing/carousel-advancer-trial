@@ -14,11 +14,17 @@ export function QrHandoverCard({ orderId, role }: { orderId: string; role: 'pick
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(60);
+  const [rawToken, setRawToken] = useState('');
+  // UAT/dev only：畀桌面測試 copy token 貼落鑑定師 /scan（prod 唔顯示）。
+  const isTestEnv =
+    typeof window !== 'undefined' &&
+    (window.location.hostname.startsWith('uat') || window.location.hostname === 'localhost');
 
   const refresh = useCallback(async () => {
     try {
       setError(null);
       const { token } = await api.orders.handoverToken(orderId);
+      setRawToken(token);
       const url = await QRCode.toDataURL(token, { width: 240, margin: 1 });
       setDataUrl(url);
       setSecondsLeft(60);
@@ -61,6 +67,23 @@ export function QrHandoverCard({ orderId, role }: { orderId: string; role: 'pick
         鑑定師 scan 完會核對訂單 + 商品，確認後
         {role === 'pickup' ? '交收即完成' : '正式接收件貨開始鑑定'}
       </p>
+
+      {/* ── UAT/dev-only：copy token 畀桌面 /scan 貼 ── */}
+      {isTestEnv && rawToken && (
+        <div className="mt-3 rounded-lg border border-dashed border-amber-300 bg-amber-50 p-2 text-left">
+          <p className="text-[10px] font-bold uppercase text-amber-700">UAT · handover token</p>
+          <div className="mt-1 flex items-center gap-2">
+            <code className="min-w-0 flex-1 truncate font-mono text-[11px] text-ink">{rawToken}</code>
+            <button
+              type="button"
+              onClick={() => void navigator.clipboard?.writeText(rawToken)}
+              className="shrink-0 rounded bg-amber-500 px-2 py-1 text-[11px] font-semibold text-white hover:bg-amber-600"
+            >
+              複製
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
