@@ -248,7 +248,8 @@ export default function ScanPage() {
                 >
                   <ImagePlus className="h-5 w-5" />
                 </button>
-                <input ref={fileRef} type="file" accept="image/*" multiple capture="environment" onChange={onPhotoPick} className="hidden" />
+                {/* No `capture` attr — let 鑑定師 pick from gallery (可能影十幾張先揀好) OR camera. */}
+                <input ref={fileRef} type="file" accept="image/*" multiple onChange={onPhotoPick} className="hidden" />
               </div>
             </div>
           )}
