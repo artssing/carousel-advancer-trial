@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { getClientLocale, createT } from '@authentik/utils';
+import { LanguageSwitcher } from '@authentik/ui/language-switcher';
 
 // Cross-app link to authenticator portal — env-driven so production / public-test
 // deployment can override (Lesson #4: never hardcode cross-app URLs).
@@ -32,6 +33,9 @@ export function Footer() {
             {_t('layout.footer.disclaimer')}
             {' '}© {new Date().getFullYear()} Certifine Ltd.
           </p>
+          <div className="mt-4">
+            <LanguageSwitcher />
+          </div>
         </div>
 
         {/* Col 2 — 買賣 */}
