@@ -13,3 +13,4 @@ export * from './conditions';
 export * from './mtr';
 export * from './shipping';
 export * from './analytics-events';
+export * from './locales';

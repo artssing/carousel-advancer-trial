@@ -12,6 +12,7 @@ import {
   browseCategories, categoryById,
   brandsForCategory, hasBrandPicker, brandFieldLabel, brandLabel, parseSearchQuery,
   CONDITION_GRADES, conditionLabel, stationDisplayLabel,
+  getClientLocale, createT,
 } from '@authentik/utils';
 import { api } from '@/lib/api';
 import { track } from '@/lib/analytics';
@@ -129,6 +130,48 @@ export default function BrowsePage() {
   const [total, setTotal]             = useState(0);
   const [isMobile, setIsMobile]       = useState(false);
   const [drawerOpen, setDrawerOpen]   = useState(false);
+  const [locale, setLocale]            = useState<'zh' | 'en'>('zh');
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      setLocale(getClientLocale());
+    }
+  }, []);
+
+  const _t = createT(locale);
+
+  // ── Mobile drawer: pending filter state ──────────────────────────────
+  const [pendingCat, setPendingCat] = useState<string | null>(null);
+  const [pendingBrands, setPendingBrands] = useState<string[]>([]);
+  const [pendingCond, setPendingCond] = useState<string | null>(null);
+  const [pendingMinP, setPendingMinP] = useState('');
+  const [pendingMaxP, setPendingMaxP] = useState('');
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    setPendingCat(category);
+    setPendingBrands(brands);
+    setPendingCond(conditionMin);
+    setPendingMinP(minPriceStr);
+    setPendingMaxP(maxPriceStr);
+    setMinInput(minPriceStr);
+    setMaxInput(maxPriceStr);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [drawerOpen]);
+
+  // Effective sidebar values: pending in drawer, URL-backed otherwise
+  const effCat = drawerOpen ? pendingCat : category;
+  const effBrands = drawerOpen ? pendingBrands : brands;
+  const effCond = drawerOpen ? pendingCond : conditionMin;
+  const effMin = drawerOpen ? pendingMinP : minPriceStr;
+  const effMax = drawerOpen ? pendingMaxP : maxPriceStr;
+
+  const effCurrentTier = useMemo<TierKey | null>(() => {
+    for (const p of TIER_PRESETS) {
+      if (effMin === p.min && effMax === p.max) return p.key;
+    }
+    return null;
+  }, [effMin, effMax]);
 
   const [sentinelNode, setSentinelNode] = useState<HTMLDivElement | null>(null);
   const sentinelRefCallback = useCallback((node: HTMLDivElement | null) => {
@@ -190,28 +233,57 @@ export default function BrowsePage() {
   }
 
   function handleCategoryChange(newCat: string | null) {
-    navigate(buildUrl(newCat, searchQuery, { brands: null }));
+    if (drawerOpen) {
+      setPendingCat(newCat);
+      setPendingBrands([]);
+    } else {
+      navigate(buildUrl(newCat, searchQuery, { brands: null }));
+    }
   }
   /** Toggle a brand in/out of the multi-select set. */
   function handleBrandToggle(brandId: string) {
-    const next = brands.includes(brandId)
-      ? brands.filter((b) => b !== brandId)
-      : [...brands, brandId];
-    navigate(buildUrl(category, searchQuery, { brands: next }));
+    if (drawerOpen) {
+      setPendingBrands((prev) =>
+        prev.includes(brandId) ? prev.filter((b) => b !== brandId) : [...prev, brandId],
+      );
+    } else {
+      const next = brands.includes(brandId)
+        ? brands.filter((b) => b !== brandId)
+        : [...brands, brandId];
+      navigate(buildUrl(category, searchQuery, { brands: next }));
+    }
   }
   function clearBrands() {
-    navigate(buildUrl(category, searchQuery, { brands: null }));
+    if (drawerOpen) {
+      setPendingBrands([]);
+    } else {
+      navigate(buildUrl(category, searchQuery, { brands: null }));
+    }
   }
   function handleConditionChange(newCond: string | null) {
-    navigate(buildUrl(category, searchQuery, { cond: newCond }));
+    if (drawerOpen) {
+      setPendingCond(newCond);
+    } else {
+      navigate(buildUrl(category, searchQuery, { cond: newCond }));
+    }
   }
   function handleTierChange(t: TierKey | null) {
     if (t === null) {
-      navigate(buildUrl(category, searchQuery, { min: '', max: '' }));
+      if (drawerOpen) {
+        setPendingMinP('');
+        setPendingMaxP('');
+      } else {
+        navigate(buildUrl(category, searchQuery, { min: '', max: '' }));
+      }
       return;
     }
     const preset = TIER_PRESETS.find((p) => p.key === t)!;
-    navigate(buildUrl(category, searchQuery, { min: preset.min, max: preset.max }));
+    if (drawerOpen) {
+      setPendingMinP(preset.min);
+      setPendingMaxP(preset.max);
+    } else {
+      navigate(buildUrl(category, searchQuery, { min: preset.min, max: preset.max }));
+    }
   }
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -232,7 +304,12 @@ export default function BrowsePage() {
     e.preventDefault();
     const cleanMin = minInput && Number(minInput) > 0 ? minInput : '';
     const cleanMax = maxInput && Number(maxInput) > 0 ? maxInput : '';
-    navigate(buildUrl(category, searchQuery, { min: cleanMin, max: cleanMax }));
+    if (drawerOpen) {
+      setPendingMinP(cleanMin);
+      setPendingMaxP(cleanMax);
+    } else {
+      navigate(buildUrl(category, searchQuery, { min: cleanMin, max: cleanMax }));
+    }
   }
   function setSort(s: 'newest' | 'priceAsc' | 'priceDesc' | 'relevance') {
     navigate(buildUrl(category, searchQuery, { sort: s }));
@@ -240,6 +317,15 @@ export default function BrowsePage() {
   function clearAllFilters() {
     setMinInput(''); setMaxInput('');
     navigate(buildUrl(null, '', { sort: 'newest', min: '', max: '', brands: null, cond: null }));
+  }
+  function applyDrawerFilters() {
+    navigate(buildUrl(pendingCat, searchQuery, {
+      brands: pendingBrands.length > 0 ? pendingBrands : null,
+      cond: pendingCond,
+      min: pendingMinP,
+      max: pendingMaxP,
+    }));
+    setDrawerOpen(false);
   }
 
   // Currently-selected tier preset (or null if no exact match).
@@ -344,35 +430,35 @@ export default function BrowsePage() {
   const sidebar = (
     <div>
       {/* 品類 */}
-      <FilterGroup title="品類">
+      <FilterGroup title={_t('browse.filter.group.category')}>
         <FilterItem
-          label="全部品類"
-          selected={!category}
+          label={_t('browse.filter.allCategories')}
+          selected={!effCat}
           onClick={() => handleCategoryChange(null)}
         />
         {BROWSE_CATEGORIES.map((c) => (
           <FilterItem
             key={c.id}
             label={c.labelZh}
-            selected={category === c.id}
+            selected={effCat === c.id}
             onClick={() => handleCategoryChange(c.id)}
-            suffix={!c.enabledInSell ? '即將' : undefined}
+            suffix={!c.enabledInSell ? _t('browse.filter.comingSoon') : undefined}
           />
         ))}
       </FilterGroup>
 
       {/* 價格層 */}
-      <FilterGroup title="價格層">
+      <FilterGroup title={_t('browse.filter.group.priceTier')}>
         <FilterItem
-          label="不限"
-          selected={currentTier === null && !minPriceStr && !maxPriceStr}
+          label={_t('browse.filter.unlimited')}
+          selected={effCurrentTier === null && !effMin && !effMax}
           onClick={() => handleTierChange(null)}
         />
         {TIER_PRESETS.map((p) => (
           <FilterItem
             key={p.key}
             label={p.label}
-            selected={currentTier === p.key}
+            selected={effCurrentTier === p.key}
             onClick={() => handleTierChange(p.key)}
           />
         ))}
@@ -382,38 +468,38 @@ export default function BrowsePage() {
           <input
             type="number" inputMode="numeric" min={0}
             value={minInput} onChange={(e) => setMinInput(e.target.value)}
-            placeholder="最低"
+            placeholder={_t('browse.filter.priceMin')}
             className="w-full max-w-[80px] rounded border border-line-2 px-2 py-1 text-[12px] outline-none focus:border-verify"
           />
           <span className="text-neutral-text-hint">–</span>
           <input
             type="number" inputMode="numeric" min={0}
             value={maxInput} onChange={(e) => setMaxInput(e.target.value)}
-            placeholder="最高"
+            placeholder={_t('browse.filter.priceMax')}
             className="w-full max-w-[80px] rounded border border-line-2 px-2 py-1 text-[12px] outline-none focus:border-verify"
           />
           <button
             type="submit"
             className="ml-auto rounded bg-neutral-text px-2 py-1 text-[11px] font-semibold text-white hover:bg-ink"
           >
-            套用
+            {_t('browse.filter.apply')}
           </button>
         </form>
       </FilterGroup>
 
       {/* 狀況 — "at-least" semantic, radio-style single selection */}
-      <FilterGroup title="狀況以上">
-        <p className="mb-2 text-[11px] text-neutral-text-hint">顯示所選或更好嘅成色</p>
+      <FilterGroup title={_t('browse.filter.group.condition')}>
+        <p className="mb-2 text-[11px] text-neutral-text-hint">{_t('browse.filter.conditionHint')}</p>
         <FilterItem
-          label="不限"
-          selected={!conditionMin}
+          label={_t('browse.filter.unlimited')}
+          selected={!effCond}
           onClick={() => handleConditionChange(null)}
         />
         {CONDITION_GRADES.map((g) => (
           <FilterItem
             key={g.id}
             label={g.label}
-            selected={conditionMin === g.id}
+            selected={effCond === g.id}
             onClick={() => handleConditionChange(g.id)}
           />
         ))}
@@ -421,20 +507,20 @@ export default function BrowsePage() {
 
       {/* 品牌 — only when a category with brands is selected. MULTI-select
           (checkbox affordance): picking several brands = OR match. */}
-      {category && hasBrandPicker(category as any) && (() => {
-        const catBrands = brandsForCategory(category as any);
-        const fieldLabel = brandFieldLabel(category as any);
+      {effCat && hasBrandPicker(effCat as any) && (() => {
+        const catBrands = brandsForCategory(effCat as any);
+        const fieldLabel = brandFieldLabel(effCat as any);
         // Brands in the URL that aren't in this category's curated list
         // (e.g. carried over from smart search / manual URL) — keep visible
         // + removable so the filter is never invisible.
-        const customBrands = brands.filter((id) => !catBrands.some((b) => b.id === id));
+        const customBrands = effBrands.filter((id) => !catBrands.some((b) => b.id === id));
         return (
           <FilterGroup title={fieldLabel}>
-            <p className="mb-2 text-[11px] text-neutral-text-hint">可選多個</p>
+            <p className="mb-2 text-[11px] text-neutral-text-hint">{_t('browse.filter.brandMulti')}</p>
             <FilterItem
               mode="checkbox"
-              label={`全部${fieldLabel}`}
-              selected={brands.length === 0}
+              label={_t('browse.filter.allBrands', { fieldLabel })}
+              selected={effBrands.length === 0}
               onClick={clearBrands}
             />
             {catBrands.slice(0, 12).map((b) => (
@@ -442,7 +528,7 @@ export default function BrowsePage() {
                 key={b.id}
                 mode="checkbox"
                 label={b.label}
-                selected={brands.includes(b.id)}
+                selected={effBrands.includes(b.id)}
                 onClick={() => handleBrandToggle(b.id)}
               />
             ))}
@@ -450,7 +536,7 @@ export default function BrowsePage() {
               <FilterItem
                 key={id}
                 mode="checkbox"
-                label={`${id}（自訂）`}
+                label={_t('browse.filter.customBrand', { id })}
                 selected={true}
                 onClick={() => handleBrandToggle(id)}
               />
@@ -472,7 +558,7 @@ export default function BrowsePage() {
               type="search"
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
-              placeholder="搜尋品牌、型號、關鍵字…"
+              placeholder={_t('browse.search.placeholder')}
               className="w-full border-0 py-[13px] pl-3 pr-4 text-[15px] text-neutral-text outline-none placeholder:text-neutral-text-hint"
             />
           </label>
@@ -480,7 +566,7 @@ export default function BrowsePage() {
             type="submit"
             className="shrink-0 bg-brand-600 px-6 text-[15px] font-bold text-white transition hover:bg-brand-400"
           >
-            搜尋
+            {_t('browse.search.button')}
           </button>
         </div>
       </form>
@@ -491,47 +577,48 @@ export default function BrowsePage() {
           {category && (
             <Chip
               onRemove={() => navigate(buildUrl(null, searchQuery, { brands: null }))}
-              removeLabel="移除品類"
+              removeLabel={_t('browse.chip.removeCategory')}
             >
-              品類：{categoryById(category)?.labelZh ?? category}
+              {_t('browse.chip.category', { labelZh: categoryById(category)?.labelZh ?? category })}
             </Chip>
           )}
           {/* One chip PER selected brand — each independently removable. */}
           {brands.map((id) => {
             const l = category ? brandLabel(category as any, id) : id;
+            const fieldLabel = category ? brandFieldLabel(category as any) : 'Brand';
             return (
               <Chip
                 key={id}
                 onRemove={() => handleBrandToggle(id)}
-                removeLabel={`移除品牌 ${l || id}`}
+                removeLabel={_t('browse.chip.removeBrand', { l: l || id })}
               >
-                {category ? brandFieldLabel(category as any) : '品牌'}：{l || id}
+                {_t('browse.chip.brand', { fieldLabel, l: l || id })}
               </Chip>
             );
           })}
           {conditionMin && (
-            <Chip onRemove={() => handleConditionChange(null)} removeLabel="移除狀況">
-              狀況：{conditionLabel(conditionMin as any)} 或以上
+            <Chip onRemove={() => handleConditionChange(null)} removeLabel={_t('browse.chip.removeCondition')}>
+              {_t('browse.chip.condition', { conditionLabel: conditionLabel(conditionMin as any) })}
             </Chip>
           )}
           {(minPriceStr || maxPriceStr) && (
             <Chip
               onRemove={() => navigate(buildUrl(category, searchQuery, { min: '', max: '' }))}
-              removeLabel="移除價錢"
+              removeLabel={_t('browse.chip.removePrice')}
             >
-              價錢：HK${minPriceStr || '0'}–{maxPriceStr ? `HK$${maxPriceStr}` : '不限'}
+              {_t('browse.chip.price', { min: minPriceStr || '0', max: maxPriceStr ? `HK$${maxPriceStr}` : _t('browse.filter.unlimited') })}
             </Chip>
           )}
           {searchQuery && (
-            <Chip onRemove={() => navigate(buildUrl(category, ''))} removeLabel="移除搜尋">
-              搜尋：{searchQuery}
+            <Chip onRemove={() => navigate(buildUrl(category, ''))} removeLabel={_t('browse.chip.removeSearch')}>
+              {_t('browse.chip.search', { searchQuery })}
             </Chip>
           )}
           <button
             onClick={clearAllFilters}
             className="text-xs text-neutral-text-hint hover:text-danger hover:underline"
           >
-            全部重設
+            {_t('browse.filter.clearAll')}
           </button>
         </div>
       )}
@@ -549,10 +636,10 @@ export default function BrowsePage() {
           <div className="mb-4 flex items-center justify-between gap-3">
             <div className="text-sm text-neutral-text-muted">
               {loading
-                ? '載入中…'
+                ? _t('browse.loading')
                 : (
                   <>
-                    找到 <b className="font-semibold text-neutral-text">{total}</b> 件符合結果
+                    {_t('browse.resultCount', { total })}
                   </>
                 )}
             </div>
@@ -564,17 +651,17 @@ export default function BrowsePage() {
                 className="flex items-center gap-1.5 rounded-lg border border-line-2 bg-white px-3 py-2 text-[13px] font-semibold text-neutral-text shadow-sh1 hover:border-verify md:hidden"
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" />
-                篩選
+                {_t('browse.filter.mobileDrawer')}
               </button>
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as any)}
                 className="rounded-lg border border-line-2 bg-white px-3 py-2 text-[13px] text-neutral-text shadow-sh1 outline-none transition hover:border-verify focus:border-verify"
               >
-                {searchQuery && <option value="relevance">相關度</option>}
-                <option value="newest">最新上架</option>
-                <option value="priceAsc">價格：低至高</option>
-                <option value="priceDesc">價格：高至低</option>
+                {searchQuery && <option value="relevance">{_t('browse.sort.relevance')}</option>}
+                <option value="newest">{_t('browse.sort.newest')}</option>
+                <option value="priceAsc">{_t('browse.sort.priceAsc')}</option>
+                <option value="priceDesc">{_t('browse.sort.priceDesc')}</option>
               </select>
             </div>
           </div>
@@ -624,22 +711,22 @@ export default function BrowsePage() {
                 {isComingSoon ? (
                   <>
                     <p className="font-display-serif text-lg font-bold text-ink">
-                      {activeCat.emoji} 「{activeCat.labelZh}」品類即將推出
+                      {_t('browse.empty.comingSoon', { emoji: activeCat.emoji, labelZh: activeCat.labelZh })}
                     </p>
                     <p className="mt-2 text-sm text-neutral-text-muted">
-                      我哋暫未開放此品類嘅交易，敬請期待。
+                      {_t('browse.empty.comingSoonDesc')}
                     </p>
                   </>
                 ) : (
                   <p className="text-sm text-neutral-text-muted">
-                    {searchQuery ? `找不到「${searchQuery}」嘅相關商品。` : '此篩選暫無商品。'}
+                    {searchQuery ? _t('browse.empty.noResult', { searchQuery }) : _t('browse.empty.noFilterResult')}
                   </p>
                 )}
                 <button
                   onClick={() => { setInputValue(''); router.replace('/browse'); }}
                   className="mt-4 text-sm font-semibold text-brand-600 hover:text-brand-700"
                 >
-                  查看全部 →
+                  {_t('browse.empty.viewAll')}
                 </button>
               </div>
             );
@@ -653,9 +740,9 @@ export default function BrowsePage() {
                 disabled={loadingMore}
                 className="rounded-lg border border-line-2 bg-white px-6 py-3 text-sm font-semibold text-neutral-text shadow-sh1 transition hover:border-verify hover:text-verify disabled:opacity-40"
               >
-                {loadingMore ? '載入中…' : '載入更多'}
+                {loadingMore ? _t('browse.loadMore.loading') : _t('browse.loadMore')}
               </button>
-              <p className="text-xs text-neutral-text-hint">已顯示 {listings.length} / {total} 件</p>
+              <p className="text-xs text-neutral-text-hint">{_t('browse.loadMore.shown', { 'listings.length': listings.length, total })}</p>
             </div>
           )}
 
@@ -665,7 +752,7 @@ export default function BrowsePage() {
           {/* End */}
           {!hasMore && !loading && listings.length > 0 && (
             <p className="mt-8 text-center text-xs text-neutral-text-hint">
-              — 已顯示全部 {total} 件商品 —
+              {_t('browse.endOfResults', { total })}
             </p>
           )}
         </div>
@@ -680,12 +767,12 @@ export default function BrowsePage() {
           />
           <aside className="absolute right-0 top-0 flex h-full w-80 max-w-[85vw] flex-col bg-white shadow-sh3">
             <div className="flex items-center justify-between border-b border-line px-5 py-4">
-              <h3 className="font-display-serif text-lg font-bold text-ink">篩選</h3>
+              <h3 className="font-display-serif text-lg font-bold text-ink">{_t('browse.filter.mobileDrawer')}</h3>
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
                 className="rounded-lg p-2 text-neutral-text-muted hover:bg-surface-2"
-                aria-label="關閉篩選"
+                aria-label={_t('browse.filter.closeAriaLabel')}
               >
                 <X className="h-5 w-5" />
               </button>
@@ -696,10 +783,10 @@ export default function BrowsePage() {
             <div className="border-t border-line bg-white p-4">
               <button
                 type="button"
-                onClick={() => setDrawerOpen(false)}
+                onClick={applyDrawerFilters}
                 className="w-full rounded-lg bg-brand-600 py-3 text-[15px] font-bold text-white transition hover:bg-brand-400"
               >
-                查看 {total} 件結果
+                {_t('browse.filter.drawerViewResults', { total })}
               </button>
             </div>
           </aside>

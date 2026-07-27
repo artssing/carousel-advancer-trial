@@ -8,6 +8,7 @@ import {
   Search, User, LogOut, Package, Store, MessageCircle, Wallet, UserCog, Menu, X,
 } from 'lucide-react';
 import { Button } from '@authentik/ui';
+import { LanguageSwitcher } from '@authentik/ui/language-switcher';
 import { api, hasToken, clearToken, AUTH_CHANGE_EVENT } from '@/lib/api';
 
 interface NavUser {
@@ -161,6 +162,8 @@ export function TopNav() {
 
         {/* ── Right: badges + account + CTA (desktop) ─────────────────── */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Language switcher — no login needed */}
+          <LanguageSwitcher />
           {/* Search — icon-only (mobile too, since search is core) */}
           <Link
             href="/browse"

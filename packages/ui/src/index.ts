@@ -27,3 +27,4 @@ export { ConfirmDialog } from './components/confirm-dialog';
 export type { ConfirmDialogProps } from './components/confirm-dialog';
 export { OtpInput } from './components/otp-input';
 export type { OtpInputProps } from './components/otp-input';
+export { LanguageSwitcher } from './components/language-switcher';
