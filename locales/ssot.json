@@ -4428,7 +4428,7 @@
     },
     "category.POKEMON_CARD": {
       "zh": "寶可夢卡",
-      "en": "Pokemon Card"
+      "en": "Pokémon Card"
     },
     "category.WATCH": {
       "zh": "手錶",
@@ -4452,7 +4452,7 @@
     },
     "delivery.MEETUP_AUTH": {
       "zh": "鑑定師面交",
-      "en": "Auth Meetup"
+      "en": "Meetup at Authenticator"
     },
     "delivery.MEETUP_3WAY": {
       "zh": "三方面交",
@@ -4528,7 +4528,7 @@
     },
     "fallback.title": {
       "zh": "賣家身分核實（QR 用唔到時先用）",
-      "en": "Seller Identity Verification (use when QR unavailable)"
+      "en": "Seller identity verification (only when QR unavailable)"
     },
     "fallback.instruction": {
       "zh": "請賣家講出佢登記嘅電話號碼 — 必須同帳戶登記完全一致；同時影至少 3 張接收相。",
@@ -4540,7 +4540,7 @@
     },
     "fallback.photoBtn": {
       "zh": "影相／上載（{count}/3+）",
-      "en": "Take photos / upload ({count}/3+)"
+      "en": "Photo / upload ({count}/3+)"
     },
     "fallback.cancelBtn": {
       "zh": "取消",
@@ -4561,6 +4561,86 @@
     "readonly.disputed": {
       "zh": "訂單爭議處理中，對話已鎖定。",
       "en": "Order disputed — conversation locked."
+    },
+    "error.action": {
+      "zh": "操作失敗",
+      "en": "Action failed"
+    },
+    "sla.shippedTimer": {
+      "zh": "⏱ 收件後計時 48h",
+      "en": "⏱ 48h timer starts on receipt"
+    },
+    "sla.paidTimer": {
+      "zh": "⏱ 寄到 / 面交後計時",
+      "en": "⏱ Timer starts after delivery / meetup"
+    },
+    "card.feeLabel": {
+      "zh": "鑑定費：",
+      "en": "Auth fee: "
+    },
+    "card.sellerPrefix": {
+      "zh": "賣家：",
+      "en": "Seller: "
+    },
+    "card.buyerPrefix": {
+      "zh": "買家：",
+      "en": "Buyer: "
+    },
+    "card.copyId.title": {
+      "zh": "點擊複製訂單 ID",
+      "en": "Click to copy order ID"
+    },
+    "btn.scanQr": {
+      "zh": "掃描賣家 QR 交收 →",
+      "en": "Scan seller QR →"
+    },
+    "btn.cannotQr": {
+      "zh": "賣家用唔到 QR？",
+      "en": "Seller can't use QR?"
+    },
+    "btn.startMeetup": {
+      "zh": "開始面交鑑定",
+      "en": "Start meetup authentication"
+    },
+    "btn.busy": {
+      "zh": "處理中…",
+      "en": "Processing..."
+    },
+    "btn.confirmReceipt": {
+      "zh": "確認收件 + 影相 →",
+      "en": "Confirm receipt + photos →"
+    },
+    "btn.enterWorkbench": {
+      "zh": "進入鑑定工作台",
+      "en": "Enter authentication workbench"
+    },
+    "btn.message": {
+      "zh": "訊息",
+      "en": "Message"
+    },
+    "fallback.hint": {
+      "zh": "請賣家講出佢登記嘅電話號碼 — 必須同帳戶登記完全一致；同時影至少 3 張接收相。",
+      "en": "Ask the seller for the phone number registered to their account — it must match exactly; also take at least 3 receipt photos."
+    },
+    "fallback.cancel": {
+      "zh": "取消",
+      "en": "Cancel"
+    },
+    "fallback.confirm": {
+      "zh": "核實電話 + 確認接收",
+      "en": "Verify phone + confirm receipt"
+    },
+    "chat.readonly.completed": {
+      "zh": "訂單已完成，對話存檔僅供查閱。",
+      "en": "Order completed; conversation archived for reference only."
+    },
+    "chat.readonly.refunded": {
+      "zh": "訂單已退款，對話存檔僅供查閱。",
+      "en": "Order refunded; conversation archived for reference only."
+    },
+    "chat.readonly.disputed": {
+      "zh": "訂單爭議處理中，對話已鎖定。",
+      "en": "Order under dispute; conversation locked."
     }
   },
   "authenticator.onboarding": {

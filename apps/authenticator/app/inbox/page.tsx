@@ -2,32 +2,15 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { formatHKD } from '@authentik/utils';
+import { formatHKD, getClientLocale, createT } from '@authentik/utils';
 import { Package, Handshake, MapPin, MessageCircle, Search, X } from 'lucide-react';
 import { api, type InboxOrder } from '@/lib/api';
 import { ConversationDrawer } from '@/components/conversation-drawer';
 import { XLink } from '@/components/x-link';
 import { AuthTopline, AuthContent } from '@/components/auth-topline';
 
-const STATUS_LABEL: Record<string, string> = {
-  AWAITING_PAYMENT: '等買家付款',
-  PAID: '等待收件',
-  SHIPPED_TO_AUTHENTICATOR: '待簽收',
-  AUTH_RECEIVED_PENDING_SELLER_ACK: '等賣家 ack 收件',
-  HANDOVER_TO_AUTH: '面交待影相',
-  SELLER_ACK_PENDING: '等賣家 ack 交付',
-  CUSTODY: '保管中（待鑑定）',
-  AUTHENTICATING: '鑑定中',
-  AUTH_PASSED: '通過',
-  AUTH_FAILED: '不通過',
-  AWAITING_BUYER_PICKUP: '等買家取貨',
-  SHIPPED_TO_BUYER: '已寄買家',
-  DELIVERED: '已送達',
-  DELIVERED_PENDING_AUTH_ACK: '等我 ack 買家收件',
-  COMPLETED: '已完成',
-  REFUNDED: '已退款',
-  DISPUTED: '爭議中',
-};
+// Translator type shared by sub-components (each page reads its own locale).
+type T = (key: string, params?: Record<string, string | number>) => string;
 
 const AUTH_ACTION_STATUSES = new Set([
   'SHIPPED_TO_AUTHENTICATOR',
@@ -39,15 +22,6 @@ const AUTH_ACTION_STATUSES = new Set([
 const TERMINAL_STATUSES = new Set([
   'AUTH_PASSED', 'AUTH_FAILED', 'COMPLETED', 'REFUNDED', 'DISPUTED',
 ]);
-
-const CATEGORY_LABEL: Record<string, string> = {
-  HANDBAG: '手袋', IPHONE: 'iPhone', POKEMON_CARD: '寶可夢卡',
-  WATCH: '手錶', SNEAKER: '波鞋', DESIGNER_TOY: '潮玩', OTHER: '其他',
-};
-
-const DELIVERY_LABEL: Record<string, string> = {
-  SHIP: '寄送', MEETUP_AUTH: '鑑定師面交', MEETUP_3WAY: '三方面交', MEETUP_DIRECT: '雙方面交',
-};
 
 const MEETUP_METHODS = ['MEETUP_AUTH', 'MEETUP_3WAY', 'MEETUP_DIRECT'];
 function isMeetup(o: InboxOrder) { return MEETUP_METHODS.includes(o.deliveryMethod ?? ''); }
@@ -66,24 +40,24 @@ function matchesQuery(o: InboxOrder, qLower: string): boolean {
   return false;
 }
 
-function slaLabel(order: InboxOrder): { text: string; cls: string } | null {
+function slaLabel(order: InboxOrder, t: T): { text: string; cls: string } | null {
   if (order.status === 'AUTHENTICATING' && order.receivedByAuthAt) {
     const received = new Date(order.receivedByAuthAt).getTime();
     const deadline = received + 48 * 60 * 60 * 1000;
     const msLeft = deadline - Date.now();
-    if (msLeft <= 0) return { text: '⚠ 已逾期', cls: 'bg-verdict-fail-soft text-verdict-fail' };
+    if (msLeft <= 0) return { text: t('authenticator.inbox.sla.overdue'), cls: 'bg-verdict-fail-soft text-verdict-fail' };
     const h = Math.floor(msLeft / 3_600_000);
     const m = Math.floor((msLeft % 3_600_000) / 60_000);
-    const text = `⏱ 剩 ${h}小時 ${m}分`;
+    const text = t('authenticator.inbox.sla.remaining', { h, m });
     if (h >= 24) return { text, cls: 'bg-verdict-pass-soft text-verdict-pass' };
     if (h >= 12) return { text, cls: 'bg-verdict-incon-soft text-verdict-incon' };
     return { text, cls: 'bg-verdict-fail-soft text-verdict-fail' };
   }
   if (order.status === 'SHIPPED_TO_AUTHENTICATOR') {
-    return { text: '⏱ 收件後計時 48h', cls: 'bg-surface-2 text-neutral-text-muted' };
+    return { text: t('authenticator.inbox.sla.shippedTimer'), cls: 'bg-surface-2 text-neutral-text-muted' };
   }
   if (order.status === 'PAID') {
-    return { text: '⏱ 寄到 / 面交後計時', cls: 'bg-surface-2 text-neutral-text-muted' };
+    return { text: t('authenticator.inbox.sla.paidTimer'), cls: 'bg-surface-2 text-neutral-text-muted' };
   }
   return null;
 }
@@ -104,6 +78,9 @@ export default function InboxPage() {
   const [me, setMe] = useState<{ id: string } | null>(null);
   const [query, setQuery] = useState('');
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
 
   useEffect(() => {
     api.me().then((m) => setMe({ id: m.id })).catch(() => {});
@@ -121,7 +98,7 @@ export default function InboxPage() {
   async function doAction(orderId: string, action: () => Promise<any>) {
     setActionBusy(orderId);
     try { await action(); fetchData(); }
-    catch (e: any) { setError(e.message ?? '操作失敗'); }
+    catch (e: any) { setError(e.message ?? _t('authenticator.inbox.error.action')); }
     finally { setActionBusy(null); }
   }
 
@@ -142,7 +119,7 @@ export default function InboxPage() {
   if (loading) {
     return (
       <>
-        <AuthTopline title="收件匣" subtitle="載入中…" />
+        <AuthTopline title={_t('authenticator.inbox.page.title')} subtitle={_t('authenticator.inbox.page.loading')} />
         <AuthContent><div className="h-40 animate-pulse rounded-xl bg-surface-2" /></AuthContent>
       </>
     );
@@ -150,7 +127,7 @@ export default function InboxPage() {
   if (error) {
     return (
       <>
-        <AuthTopline title="收件匣" />
+        <AuthTopline title={_t('authenticator.inbox.page.title')} />
         <AuthContent><p className="rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger">{error}</p></AuthContent>
       </>
     );
@@ -159,8 +136,8 @@ export default function InboxPage() {
   return (
     <>
       <AuthTopline
-        title="收件匣"
-        subtitle={`${actionRequired.length} 宗待處理 · ${todayMeetup} 宗今日面交`}
+        title={_t('authenticator.inbox.page.title')}
+        subtitle={_t('authenticator.inbox.page.subtitle', { actionRequired: actionRequired.length, todayMeetup })}
       />
       <AuthContent>
         {/* Search */}
@@ -170,16 +147,16 @@ export default function InboxPage() {
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="搜尋商品名稱、買賣家、品牌或訂單 ID（首 8 字）"
+            placeholder={_t('authenticator.inbox.search.placeholder')}
             className="h-11 w-full rounded-xl border border-line-2 bg-white pl-10 pr-10 text-[14px] shadow-[inset_0_1px_2px_rgba(38,48,94,0.03)] outline-none transition focus:border-authBrand-500"
-            aria-label="搜尋訂單"
+            aria-label={_t('authenticator.inbox.search.ariaLabel')}
           />
           {query.length > 0 && (
             <button
               type="button"
               onClick={() => setQuery('')}
               className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-neutral-text-hint hover:bg-surface-2"
-              aria-label="清除搜尋"
+              aria-label={_t('authenticator.inbox.search.clear.ariaLabel')}
             >
               <X className="h-4 w-4" />
             </button>
@@ -188,22 +165,22 @@ export default function InboxPage() {
 
         {qLower && (
           <p className="mb-4 text-[12px] text-authBrand-500">
-            過濾結果 · {actionRequired.length} 待處理 · {waiting.length} 進行中 · {done.length} 已完成
+            {_t('authenticator.inbox.search.resultsInfo', { actionRequired: actionRequired.length, waiting: waiting.length, done: done.length })}
           </p>
         )}
 
         {noResults && (
           <div className="rounded-xl border border-dashed border-line-2 bg-surface-2 p-6 text-center">
-            <p className="text-[14px] font-semibold text-neutral-text">揾唔到符合「{query.trim()}」嘅訂單</p>
+            <p className="text-[14px] font-semibold text-neutral-text">{_t('authenticator.inbox.search.noResults.title', { query: query.trim() })}</p>
             <p className="mt-1 text-[12px] text-neutral-text-hint">
-              試試輸入訂單 ID 首 8 個字、買賣家名稱、商品品牌或商品標題關鍵字。
+              {_t('authenticator.inbox.search.noResults.hint')}
             </p>
             <button
               type="button"
               onClick={() => setQuery('')}
               className="mt-3 rounded-lg border border-line-2 bg-white px-3 py-1 text-[12px] hover:bg-surface-2"
             >
-              清除搜尋
+              {_t('authenticator.inbox.search.noResults.clearBtn')}
             </button>
           </div>
         )}
@@ -212,11 +189,11 @@ export default function InboxPage() {
         {actionRequired.length > 0 && (
           <Group
             dot="verdict-incon"
-            title="需要你處理"
-            count={`${actionRequired.length} 宗`}
+            title={_t('authenticator.inbox.group.actionRequired.title')}
+            count={_t('authenticator.inbox.group.actionRequired.count', { count: actionRequired.length })}
           >
             {actionRequired.map((o) => {
-              const sla = slaLabel(o);
+              const sla = slaLabel(o, _t);
               const meetup = isMeetup(o);
               const busy = actionBusy === o.id;
               return (
@@ -228,6 +205,7 @@ export default function InboxPage() {
                   busy={busy}
                   copiedId={copiedId}
                   setCopiedId={setCopiedId}
+                  t={_t}
                   onStart={() => doAction(o.id, () => api.orders.startMeetupAuth(o.id))}
                   onFallbackConfirm={(phone, photos) =>
                     doAction(o.id, () => api.orders.custodyPhoneFallback(o.id, phone, photos))
@@ -241,7 +219,7 @@ export default function InboxPage() {
 
         {actionRequired.length === 0 && !noResults && !qLower && (
           <div className="rounded-xl border border-line bg-white p-8 text-center text-sm text-neutral-text-hint shadow-auth-sh1">
-            目前無需要你立即處理嘅訂單。
+            {_t('authenticator.inbox.empty.actionRequired')}
           </div>
         )}
 
@@ -249,11 +227,11 @@ export default function InboxPage() {
         {waiting.length > 0 && (
           <Group
             dot="authBrand"
-            title="等待中 / 進行中"
-            count={`${waiting.length} 宗`}
+            title={_t('authenticator.inbox.group.waiting.title')}
+            count={_t('authenticator.inbox.group.waiting.count', { count: waiting.length })}
           >
             {waiting.map((o) => (
-              <CompactRow key={o.id} order={o} statusLabel={STATUS_LABEL[o.status] ?? o.status} />
+              <CompactRow key={o.id} order={o} statusLabel={_t(`authenticator.inbox.status.${o.status}`)} t={_t} />
             ))}
           </Group>
         )}
@@ -262,20 +240,20 @@ export default function InboxPage() {
         {done.length > 0 && (
           <Group
             dot="pass"
-            title="已完成 / 終結"
-            count={`${done.length} 宗`}
+            title={_t('authenticator.inbox.group.done.title')}
+            count={_t('authenticator.inbox.group.done.count', { count: done.length })}
           >
             {done.map((o) => {
               const isPassed = o.status === 'COMPLETED' || o.authVerdict === 'PASSED';
               const isFailed = o.status === 'DISPUTED' || o.authVerdict === 'FAILED';
               const label =
-                o.status === 'COMPLETED' ? '✓ 已完成'
-                : o.status === 'REFUNDED' ? '已退款'
-                : o.status === 'DISPUTED' ? '⚠ 爭議中'
-                : o.authVerdict === 'PASSED' ? '✓ 真品'
-                : o.authVerdict === 'FAILED' ? '✕ 假貨'
-                : o.authVerdict === 'INCONCLUSIVE' ? '？ 無法判定'
-                : STATUS_LABEL[o.status] ?? o.status;
+                o.status === 'COMPLETED' ? _t('authenticator.inbox.terminal.COMPLETED')
+                : o.status === 'REFUNDED' ? _t('authenticator.inbox.terminal.REFUNDED')
+                : o.status === 'DISPUTED' ? _t('authenticator.inbox.terminal.DISPUTED')
+                : o.authVerdict === 'PASSED' ? _t('authenticator.inbox.terminal.AUTH_PASSED')
+                : o.authVerdict === 'FAILED' ? _t('authenticator.inbox.terminal.AUTH_FAILED')
+                : o.authVerdict === 'INCONCLUSIVE' ? _t('authenticator.inbox.terminal.AUTH_INCONCLUSIVE')
+                : _t(`authenticator.inbox.status.${o.status}`);
               const pillCls = isPassed
                 ? 'bg-verdict-pass-soft text-verdict-pass'
                 : isFailed
@@ -287,6 +265,7 @@ export default function InboxPage() {
                   order={o}
                   statusLabel={label}
                   statusPillCls={pillCls}
+                  t={_t}
                 />
               );
             })}
@@ -312,9 +291,9 @@ export default function InboxPage() {
             onClose={() => setChatOrderId(null)}
             readOnly={['COMPLETED', 'REFUNDED', 'DISPUTED'].includes(o.status)}
             readOnlyReason={
-              o.status === 'COMPLETED' ? '訂單已完成，對話存檔僅供查閱。'
-              : o.status === 'REFUNDED' ? '訂單已退款，對話存檔僅供查閱。'
-              : o.status === 'DISPUTED' ? '訂單爭議處理中，對話已鎖定。'
+              o.status === 'COMPLETED' ? _t('authenticator.inbox.chat.readonly.completed')
+              : o.status === 'REFUNDED' ? _t('authenticator.inbox.chat.readonly.refunded')
+              : o.status === 'DISPUTED' ? _t('authenticator.inbox.chat.readonly.disputed')
               : undefined
             }
           />
@@ -351,7 +330,7 @@ function Group({
 
 // ═══ Action-required card (rich) ═══
 function ActionCard({
-  order: o, sla, meetup, busy, copiedId, setCopiedId, onStart, onFallbackConfirm, onChat,
+  order: o, sla, meetup, busy, copiedId, setCopiedId, t, onStart, onFallbackConfirm, onChat,
 }: {
   order: InboxOrder;
   sla: { text: string; cls: string } | null;
@@ -359,6 +338,7 @@ function ActionCard({
   busy: boolean;
   copiedId: string | null;
   setCopiedId: (v: string | null) => void;
+  t: T;
   onStart: () => void;
   onFallbackConfirm: (sellerPhone: string, photos: string[]) => void;
   onChat: () => void;
@@ -407,26 +387,26 @@ function ActionCard({
             </span>
           </div>
           <p className="mt-0.5 text-[12px] text-neutral-text-hint">
-            {CATEGORY_LABEL[o.listing.category] ?? o.listing.category}
+            {t(`authenticator.inbox.category.${o.listing.category}`)}
             {' · '}
             <span className="inline-flex items-center gap-0.5">
               <DeliveryIcon method={o.deliveryMethod} />
-              {DELIVERY_LABEL[o.deliveryMethod ?? ''] ?? o.deliveryMethod}
+              {t(`authenticator.inbox.delivery.${o.deliveryMethod ?? ''}`)}
             </span>
             {o.meetupLocation && (
               <span className="inline-flex items-center gap-0.5 ml-1">
                 · <MapPin className="ml-0.5 h-3 w-3" /> {o.meetupLocation}
               </span>
             )}
-            {' · '}鑑定費：
+            {' · '}{t('authenticator.inbox.card.feeLabel')}
             <span className="font-semibold text-verdict-pass">{formatHKD(o.authFeeHKD)}</span>
           </p>
           <p className="relative mt-1 text-[11px] text-neutral-text-hint">
-            賣家：
+            {t('authenticator.inbox.card.sellerPrefix')}
             <XLink href={`/seller/${o.seller.id}`} className="text-neutral-text-muted hover:text-authBrand-500 hover:underline">
               {o.seller.displayName}
             </XLink>
-            {' · '}買家：
+            {' · '}{t('authenticator.inbox.card.buyerPrefix')}
             <XLink href={`/buyer/${o.buyer.id}`} className="text-neutral-text-muted hover:text-authBrand-500 hover:underline">
               {o.buyer.displayName}
             </XLink>
@@ -441,9 +421,9 @@ function ActionCard({
                 }).catch(() => {});
               }}
               className="rounded bg-surface-2 px-1 py-0.5 font-mono text-[10px] hover:bg-line"
-              title="點擊複製訂單 ID"
+              title={t('authenticator.inbox.card.copyId.title')}
             >
-              {copiedId === o.id ? '✓ 已複製' : `#${o.id.slice(0, 8).toUpperCase()} ⎘`}
+              {copiedId === o.id ? t('authenticator.inbox.card.copied') : `#${o.id.slice(0, 8).toUpperCase()} ⎘`}
             </button>
           </p>
           {sla && (
@@ -465,14 +445,14 @@ function ActionCard({
               href="/scan"
               className="rounded-lg bg-authBrand-500 px-4 py-2 text-[13px] font-bold text-white shadow-auth-btn transition hover:bg-authBrand-600"
             >
-              掃描賣家 QR 交收 →
+              {t('authenticator.inbox.btn.scanQr')}
             </Link>
             <button
               type="button"
               onClick={() => setFallbackOpen((v) => !v)}
               className="rounded-lg border border-line-2 bg-white px-3 py-2 text-[12px] text-neutral-text-muted transition hover:border-authBrand-500 hover:text-authBrand-500"
             >
-              賣家用唔到 QR？
+              {t('authenticator.inbox.btn.cannotQr')}
             </button>
           </>
         )}
@@ -483,7 +463,7 @@ function ActionCard({
             onClick={onStart}
             className="rounded-lg bg-authBrand-500 px-4 py-2 text-[13px] font-bold text-white shadow-auth-btn transition hover:bg-authBrand-600 disabled:opacity-40"
           >
-            {busy ? '處理中…' : '開始面交鑑定'}
+            {busy ? t('authenticator.inbox.btn.busy') : t('authenticator.inbox.btn.startMeetup')}
           </button>
         )}
         {o.status === 'SHIPPED_TO_AUTHENTICATOR' && (
@@ -491,7 +471,7 @@ function ActionCard({
             href={`/authenticate/${o.id}`}
             className="rounded-lg bg-authBrand-500 px-4 py-2 text-[13px] font-bold text-white shadow-auth-btn transition hover:bg-authBrand-600"
           >
-            確認收件 + 影相 →
+            {t('authenticator.inbox.btn.confirmReceipt')}
           </Link>
         )}
         {o.status === 'AUTHENTICATING' && (
@@ -499,7 +479,7 @@ function ActionCard({
             href={`/authenticate/${o.id}`}
             className="rounded-lg bg-authBrand-500 px-4 py-2 text-[13px] font-bold text-white shadow-auth-btn transition hover:bg-authBrand-600"
           >
-            進入鑑定工作台
+            {t('authenticator.inbox.btn.enterWorkbench')}
           </Link>
         )}
         <button
@@ -507,7 +487,7 @@ function ActionCard({
           className="inline-flex items-center gap-1.5 rounded-lg border border-line-2 bg-white px-4 py-2 text-[13px] font-semibold text-neutral-text shadow-auth-sh1 transition hover:border-authBrand-500 hover:text-authBrand-500"
         >
           <MessageCircle className="h-3.5 w-3.5" />
-          訊息
+          {t('authenticator.inbox.btn.message')}
         </button>
       </div>
 
@@ -515,9 +495,9 @@ function ActionCard({
           身分 + ≥3 相 → CUSTODY，custodyVia=PHONE_FALLBACK 留 audit */}
       {isMeetupAuth && o.status === 'PAID' && fallbackOpen && (
         <div className="relative mt-3 rounded-lg border border-amber-200 bg-amber-50/60 p-3.5">
-          <p className="text-[12px] font-semibold text-neutral-text">賣家身分核實（QR 用唔到時先用）</p>
+          <p className="text-[12px] font-semibold text-neutral-text">{t('authenticator.inbox.fallback.title')}</p>
           <p className="mt-0.5 text-[11px] text-neutral-text-hint">
-            請賣家講出佢登記嘅電話號碼 — 必須同帳戶登記完全一致；同時影至少 3 張接收相。
+            {t('authenticator.inbox.fallback.hint')}
           </p>
           <input
             type="tel"
@@ -533,7 +513,7 @@ function ActionCard({
               onClick={() => fbFileRef.current?.click()}
               className="rounded-lg border border-line-2 bg-white px-3 py-1.5 text-[12px] text-neutral-text transition hover:border-authBrand-500"
             >
-              影相／上載（{fbPhotos.length}/3+）
+              {t('authenticator.inbox.fallback.photoBtn', { count: fbPhotos.length })}
             </button>
             {fbPhotos.map((p, i) => (
               // eslint-disable-next-line @next/next/no-img-element
@@ -546,7 +526,7 @@ function ActionCard({
               onClick={() => { setFallbackOpen(false); setFbPhone(''); setFbPhotos([]); }}
               className="rounded-lg border border-line-2 bg-white px-3 py-1.5 text-[12px] text-neutral-text-muted"
             >
-              取消
+              {t('authenticator.inbox.fallback.cancel')}
             </button>
             <button
               type="button"
@@ -554,7 +534,7 @@ function ActionCard({
               onClick={() => onFallbackConfirm(fbPhone.trim(), fbPhotos)}
               className="rounded-lg bg-authBrand-500 px-4 py-1.5 text-[12px] font-bold text-white transition hover:bg-authBrand-600 disabled:opacity-40"
             >
-              {busy ? '處理中…' : '核實電話 + 確認接收'}
+              {busy ? t('authenticator.inbox.btn.busy') : t('authenticator.inbox.fallback.confirm')}
             </button>
           </div>
         </div>
@@ -565,11 +545,12 @@ function ActionCard({
 
 // ═══ Compact row (waiting / done tiers) ═══
 function CompactRow({
-  order: o, statusLabel, statusPillCls,
+  order: o, statusLabel, statusPillCls, t,
 }: {
   order: InboxOrder;
   statusLabel: string;
   statusPillCls?: string;
+  t: T;
 }) {
   return (
     <Link
@@ -589,13 +570,13 @@ function CompactRow({
       <div className="min-w-0 flex-1">
         <p className="truncate text-[13px] font-semibold text-neutral-text">{o.listing.title}</p>
         <p className="truncate text-[11px] text-neutral-text-hint">
-          {formatHKD(o.salePriceHKD)} · {CATEGORY_LABEL[o.listing.category] ?? o.listing.category}
+          {formatHKD(o.salePriceHKD)} · {t(`authenticator.inbox.category.${o.listing.category}`)}
           {' · '}
           <span className="inline-flex items-center gap-0.5">
             <DeliveryIcon method={o.deliveryMethod} />
-            {DELIVERY_LABEL[o.deliveryMethod ?? ''] ?? o.deliveryMethod}
+            {t(`authenticator.inbox.delivery.${o.deliveryMethod ?? ''}`)}
           </span>
-          {' · '}賣家 {o.seller.displayName}
+          {' · '}{t('authenticator.inbox.card.sellerPrefix')}{o.seller.displayName}
         </p>
       </div>
       <span

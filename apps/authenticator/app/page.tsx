@@ -2,33 +2,31 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { formatHKD } from '@authentik/utils';
+import { formatHKD, getClientLocale, createT } from '@authentik/utils';
 import { api, type InboxOrder, type Me } from '@/lib/api';
 import { AuthTopline, AuthContent } from '@/components/auth-topline';
 import { EAndOWarning } from '@/components/eando-warning';
 
-const DELIVERY_LABEL: Record<string, string> = {
-  SHIP: '順豐到件',
-  MEETUP_AUTH: '鑑定師處面交',
-  MEETUP_3WAY: '三方面交',
-  MEETUP_DIRECT: '雙方面交',
+// label via _t('authenticator.dashboard.delivery.<key>'); cls-only maps below.
+const STATUS_PILL_CLS: Record<string, string> = {
+  PAID: 'bg-authBrand-soft text-authBrand-600',
+  SHIPPED_TO_AUTHENTICATOR: 'bg-authBrand-soft text-authBrand-600',
+  AUTHENTICATING: 'bg-verdict-incon-soft text-verdict-incon',
 };
 
-const STATUS_PILL: Record<string, { label: string; cls: string }> = {
-  PAID: { label: '待開始', cls: 'bg-authBrand-soft text-authBrand-600' },
-  SHIPPED_TO_AUTHENTICATOR: { label: '已收貨', cls: 'bg-authBrand-soft text-authBrand-600' },
-  AUTHENTICATING: { label: '進行中', cls: 'bg-verdict-incon-soft text-verdict-incon' },
-};
-
-const VERDICT_PILL: Record<string, { label: string; cls: string }> = {
-  AUTH_PASSED: { label: '✓ 通過', cls: 'bg-verdict-pass-soft text-verdict-pass' },
-  AUTH_FAILED: { label: '✕ 不通過', cls: 'bg-verdict-fail-soft text-verdict-fail' },
-  AUTH_INCONCLUSIVE: { label: '？ 未能確定', cls: 'bg-verdict-incon-soft text-verdict-incon' },
+const VERDICT_PILL_CLS: Record<string, string> = {
+  AUTH_PASSED: 'bg-verdict-pass-soft text-verdict-pass',
+  AUTH_FAILED: 'bg-verdict-fail-soft text-verdict-fail',
+  AUTH_INCONCLUSIVE: 'bg-verdict-incon-soft text-verdict-incon',
 };
 
 export default function DashboardPage() {
   const [me, setMe] = useState<Me | null>(null);
   const [orders, setOrders] = useState<InboxOrder[]>([]);
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+  const deliveryLabel = (m: string) => _t(`authenticator.dashboard.delivery.${m}`);
 
   useEffect(() => {
     Promise.all([api.me(), api.orders.inbox()])
@@ -57,28 +55,28 @@ export default function DashboardPage() {
     ? `${(auth.disputeRate * 100).toFixed(1)}%`
     : '0%';
 
-  const todayLabel = new Date().toLocaleDateString('zh-HK', {
+  const todayLabel = new Date().toLocaleDateString(locale === 'en' ? 'en-US' : 'zh-HK', {
     year: 'numeric', month: 'long', day: 'numeric', weekday: 'long',
   });
 
   return (
     <>
-      <AuthTopline title="工作台" subtitle={todayLabel} />
+      <AuthTopline title={_t('authenticator.dashboard.page.title')} subtitle={todayLabel} />
       <AuthContent>
         <EAndOWarning eAndOInsuranceExpiresAt={auth?.eAndOInsuranceExpiresAt} />
 
         {/* ═══ 4-col stat row ═══ */}
         <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-          <StatCard value={String(actionNeeded.length)} label="待鑑定" tint="authBrand" />
-          <StatCard value={monthlyIncome > 0 ? formatHKD(monthlyIncome) : 'HK$0'} label="本月收入" tint="authBrand" />
-          <StatCard value={disputeRatePct} label="爭議率" tint="pass" />
+          <StatCard value={String(actionNeeded.length)} label={_t('authenticator.dashboard.stat.pending.label')} tint="authBrand" />
+          <StatCard value={monthlyIncome > 0 ? formatHKD(monthlyIncome) : 'HK$0'} label={_t('authenticator.dashboard.stat.monthlyIncome.label')} tint="authBrand" />
+          <StatCard value={disputeRatePct} label={_t('authenticator.dashboard.stat.disputeRate.label')} tint="pass" />
           <StatCard
             value={
               <>
                 {auth?.starRating ?? '—'} <span className="text-verdict-incon">★</span>
               </>
             }
-            label="平均評分"
+            label={_t('authenticator.dashboard.stat.starRating.label')}
             tint="authBrand"
           />
         </div>
@@ -89,18 +87,18 @@ export default function DashboardPage() {
           <div className="rounded-xl border border-line bg-white p-6 shadow-auth-sh1">
             <div className="mb-3 flex items-center justify-between">
               <div className="text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">
-                待鑑定佇列
+                {_t('authenticator.dashboard.queue.section.title')}
               </div>
               <Link href="/inbox" className="text-[13px] font-semibold text-authBrand-500 hover:text-authBrand-600">
-                前往收件匣 →
+                {_t('authenticator.dashboard.queue.link.inbox')}
               </Link>
             </div>
 
             {actionNeeded.length === 0 ? (
-              <p className="py-8 text-center text-sm text-neutral-text-hint">目前無需要你立即處理嘅訂單</p>
+              <p className="py-8 text-center text-sm text-neutral-text-hint">{_t('authenticator.dashboard.queue.empty')}</p>
             ) : (
               actionNeeded.slice(0, 4).map((o) => {
-                const pill = STATUS_PILL[o.status];
+                const pillCls = STATUS_PILL_CLS[o.status];
                 return (
                   <div key={o.id} className="flex items-center gap-3 border-b border-line py-3.5 last:border-b-0">
                     <div className="relative h-[52px] w-[52px] shrink-0 overflow-hidden rounded-[9px] bg-gradient-to-br from-authBrand-100 to-authBrand-200">
@@ -118,20 +116,20 @@ export default function DashboardPage() {
                         {o.listing.title}
                       </p>
                       <p className="mt-0.5 truncate text-[12px] text-neutral-text-hint">
-                        訂單 #{o.id.slice(0, 8).toUpperCase()} ·{' '}
-                        {DELIVERY_LABEL[(o as any).deliveryMethod ?? ''] ?? (o as any).deliveryMethod}
+                        {_t('authenticator.dashboard.order.id.prefix')}{o.id.slice(0, 8).toUpperCase()} ·{' '}
+                        {deliveryLabel((o as any).deliveryMethod ?? '') || (o as any).deliveryMethod}
                       </p>
                     </div>
-                    {pill && (
-                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${pill.cls}`}>
-                        {pill.label}
+                    {pillCls && (
+                      <span className={`shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${pillCls}`}>
+                        {_t(`authenticator.dashboard.status.${o.status}`)}
                       </span>
                     )}
                     <Link
                       href={`/authenticate/${o.id}`}
                       className="shrink-0 rounded-lg bg-authBrand-500 px-4 py-2 text-[13px] font-bold text-white shadow-auth-btn transition hover:bg-authBrand-600"
                     >
-                      {o.status === 'AUTHENTICATING' ? '繼續' : '鑑定'}
+                      {o.status === 'AUTHENTICATING' ? _t('authenticator.dashboard.order.btn.authenticating') : _t('authenticator.dashboard.order.btn.default')}
                     </Link>
                   </div>
                 );
@@ -145,7 +143,7 @@ export default function DashboardPage() {
             {todayMeetups.length > 0 && (
               <div className="rounded-xl border border-line bg-white p-6 shadow-auth-sh1">
                 <div className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">
-                  今日面交
+                  {_t('authenticator.dashboard.meetups.section.title')}
                 </div>
                 {todayMeetups.slice(0, 3).map((o) => (
                   <div key={o.id} className="flex items-start gap-3 border-b border-line py-3 last:border-b-0">
@@ -158,10 +156,10 @@ export default function DashboardPage() {
                     </span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-[14px] font-semibold text-neutral-text">
-                        {o.listing.title} · {DELIVERY_LABEL[(o as any).deliveryMethod ?? '']}
+                        {o.listing.title} · {deliveryLabel((o as any).deliveryMethod ?? '')}
                       </p>
                       <p className="mt-0.5 truncate text-[12px] text-neutral-text-hint">
-                        {(o as any).meetupBranch?.name ?? '面交'}
+                        {(o as any).meetupBranch?.name ?? (locale === 'en' ? 'Meetup' : '面交')}
                       </p>
                     </div>
                   </div>
@@ -173,15 +171,15 @@ export default function DashboardPage() {
             {completed.length > 0 && (
               <div className="rounded-xl border border-line bg-white p-6 shadow-auth-sh1">
                 <div className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">
-                  最近結果
+                  {_t('authenticator.dashboard.results.section.title')}
                 </div>
                 {completed.slice(0, 4).map((o) => {
-                  const verdict = VERDICT_PILL[o.status] ?? VERDICT_PILL.AUTH_PASSED!;
+                  const vKey = VERDICT_PILL_CLS[o.status] ? o.status : 'AUTH_PASSED';
                   return (
                     <div key={o.id} className="flex items-center justify-between border-b border-line py-2 last:border-b-0">
                       <span className="truncate text-[13px] text-neutral-text">{o.listing.title}</span>
-                      <span className={`ml-2 shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${verdict.cls}`}>
-                        {verdict.label}
+                      <span className={`ml-2 shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${VERDICT_PILL_CLS[vKey]}`}>
+                        {_t(`authenticator.dashboard.verdict.${vKey}`)}
                       </span>
                     </div>
                   );

@@ -11,6 +11,7 @@
 import { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
 import { Camera, CheckCircle2, ImagePlus, RefreshCw, X } from 'lucide-react';
+import { getClientLocale, createT } from '@authentik/utils';
 import { api } from '@/lib/api';
 
 type ScanResult = Awaited<ReturnType<typeof api.orders.qrScan>>;
@@ -36,6 +37,9 @@ export default function ScanPage() {
     typeof window !== 'undefined' &&
     (window.location.hostname.startsWith('uat') || window.location.hostname === 'localhost');
   const [manualToken, setManualToken] = useState('');
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
 
   // ── Camera + decode loop ──
   const cancelledRef = useRef(false);
@@ -52,7 +56,7 @@ export default function ScanPage() {
       // 唔 support（非 HTTPS/localhost、舊 browser）— getUserMedia 直頭唔存在
       if (!navigator.mediaDevices?.getUserMedia) {
         setCamState('need_prompt');
-        setCameraError('呢個 browser 環境唔支援相機（需要 HTTPS 或 localhost）');
+        setCameraError(_t('authenticator.scan.cameraError.unsupported'));
         return;
       }
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -91,7 +95,7 @@ export default function ScanPage() {
               const result = await api.orders.qrScan(code.data);
               setScanned({ token: code.data, result });
             } catch (e: any) {
-              setScanError(e?.message ?? 'QR 碼無效');
+              setScanError(e?.message ?? _t('authenticator.scan.scanError.invalid'));
               // resume scanning after brief pause
               setTimeout(() => { scanningRef.current = true; }, 1500);
             }
@@ -106,15 +110,13 @@ export default function ScanPage() {
       // 撳幾多次都冇用，必須明確教用戶去邊度解封。
       const name = e?.name ?? '';
       if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-        setCameraError(
-          '相機權限被封鎖咗，browser 唔會再彈詢問視窗。請撳網址列嘅 🔒（或相機 icon）→ 允許相機，然後再撳「啟動相機」。用緊 Mac 嘅話，都要檢查 系統設定 → 私隱與保安 → 相機 有冇畀呢個 browser。',
-        );
+        setCameraError(_t('authenticator.scan.cameraError.permissionDenied'));
       } else if (name === 'NotFoundError' || name === 'OverconstrainedError') {
-        setCameraError('搵唔到相機裝置 — 請確認部機有相機，或者外置鏡頭插好咗。');
+        setCameraError(_t('authenticator.scan.cameraError.notFound'));
       } else if (name === 'NotReadableError') {
-        setCameraError('相機被另一個 app 佔用緊 — 閂咗其他用緊相機嘅 app 再試。');
+        setCameraError(_t('authenticator.scan.cameraError.inUse'));
       } else {
-        setCameraError('開唔到鏡頭 — 請喺 browser 設定畀相機權限，然後再撳「啟動相機」');
+        setCameraError(_t('authenticator.scan.cameraError.generic'));
       }
     }
   }
@@ -194,9 +196,9 @@ export default function ScanPage() {
     setScanError(null);
     try {
       await api.orders.qrConfirm(scanned.token, isDropoff ? photos : undefined);
-      setDone(isDropoff ? '已接收件貨 — 可以開始鑑定' : '交收完成 — 訂單已放款');
+      setDone(isDropoff ? _t('authenticator.scan.done.dropoff') : _t('authenticator.scan.done.pickup'));
     } catch (e: any) {
-      setScanError(e?.message ?? '確認失敗');
+      setScanError(e?.message ?? _t('authenticator.scan.scanError.confirmFailed'));
     } finally {
       setBusy(false);
     }
@@ -207,9 +209,9 @@ export default function ScanPage() {
 
   return (
     <div className="mx-auto max-w-[560px] px-4 py-8">
-      <h1 className="font-display-serif text-[24px] font-bold text-ink">QR 交收</h1>
+      <h1 className="font-display-serif text-[24px] font-bold text-ink">{_t('authenticator.scan.page.title')}</h1>
       <p className="mt-1 text-sm text-neutral-text-muted">
-        Scan 買家（取貨）或賣家（到店交貨）App 上嘅 QR 碼
+        {_t('authenticator.scan.page.subtitle')}
       </p>
 
       {/* ── Done state ── */}
@@ -222,7 +224,7 @@ export default function ScanPage() {
             onClick={resetScan}
             className="mt-4 inline-flex items-center gap-2 rounded-lg bg-authBrand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-authBrand-600"
           >
-            <RefreshCw className="h-4 w-4" /> Scan 下一個
+            <RefreshCw className="h-4 w-4" /> {_t('authenticator.scan.scanNextBtn')}
           </button>
         </div>
       )}
@@ -232,9 +234,9 @@ export default function ScanPage() {
         <div className="mt-6 rounded-xl border border-authBrand-200 bg-white p-5 shadow-auth-sh1">
           <div className="flex items-center justify-between">
             <p className="text-sm font-bold text-authBrand-700">
-              {isDropoff ? '賣家到店交貨' : '買家到店取貨'} · 比對成功
+              {isDropoff ? _t('authenticator.scan.confirmCard.title.dropoff') : _t('authenticator.scan.confirmCard.title.pickup')}{_t('authenticator.scan.confirmCard.matchSuccess')}
             </p>
-            <button type="button" onClick={resetScan} aria-label="重新 scan" className="rounded-full p-1 text-neutral-text-hint hover:bg-surface-2">
+            <button type="button" onClick={resetScan} aria-label={_t('authenticator.scan.confirmCard.resetAriaLabel')} className="rounded-full p-1 text-neutral-text-hint hover:bg-surface-2">
               <X className="h-4 w-4" />
             </button>
           </div>
@@ -248,19 +250,20 @@ export default function ScanPage() {
             <div className="min-w-0">
               <p className="truncate font-semibold text-ink">{r.order.listingTitle}</p>
               <p className="mt-0.5 text-sm text-neutral-text-muted">
-                {isDropoff ? '賣家' : '買家'}：<b>{r.order.counterpartyName}</b>
+                {isDropoff ? (locale === 'en' ? 'Seller' : '賣家') : (locale === 'en' ? 'Buyer' : '買家')}
+                {locale === 'en' ? ': ' : '：'}<b>{r.order.counterpartyName}</b>
               </p>
               <p className="mt-0.5 font-mono text-[11px] text-neutral-text-hint">#{r.order.id.slice(0, 8)}</p>
             </div>
           </div>
           <p className="mt-3 rounded-lg bg-surface-1 px-3 py-2 text-[12px] leading-relaxed text-neutral-text-muted">
-            ⚠ 請目測核對：手上件貨同上面商品相一致{isDropoff ? '' : '，同埋交收對象係本人'}。
+            {isDropoff ? _t('authenticator.scan.confirmCard.verifyNotice') : _t('authenticator.scan.confirmCard.verifyNotice.pickup')}
           </p>
 
           {/* Drop-off: ≥3 receipt photos */}
           {isDropoff && (
             <div className="mt-3">
-              <p className="text-xs font-semibold text-ink">接收相片（至少 3 張）</p>
+              <p className="text-xs font-semibold text-ink">{_t('authenticator.scan.confirmCard.photosLabel')}</p>
               <div className="mt-2 flex flex-wrap gap-2">
                 {photos.map((p, i) => (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -285,7 +288,11 @@ export default function ScanPage() {
             disabled={busy || (isDropoff && photos.length < 3)}
             className="mt-4 w-full rounded-lg bg-authBrand-500 py-3 text-sm font-bold text-white shadow-auth-btn hover:bg-authBrand-600 disabled:opacity-50"
           >
-            {busy ? '處理中…' : isDropoff ? `確認接收（${photos.length}/3 相）` : '確認交收（完成訂單 + 放款）'}
+            {busy
+              ? _t('authenticator.scan.confirmCard.confirmBtn.busy')
+              : isDropoff
+                ? _t('authenticator.scan.confirmCard.confirmBtn.dropoff', { count: photos.length })
+                : _t('authenticator.scan.confirmCard.confirmBtn.pickup')}
           </button>
         </div>
       )}
@@ -301,9 +308,9 @@ export default function ScanPage() {
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-authBrand-500/10">
                   <Camera className="h-6 w-6 text-authBrand-500" />
                 </div>
-                <p className="mt-3 text-sm font-semibold text-ink">掃描 QR 需要用相機</p>
+                <p className="mt-3 text-sm font-semibold text-ink">{_t('authenticator.scan.cameraPrompt.title')}</p>
                 <p className="mt-1 text-[12px] text-neutral-text-muted">
-                  相機畫面只用嚟即場解碼 QR，唔會錄影或者上傳。
+                  {_t('authenticator.scan.cameraPrompt.body')}
                 </p>
                 {cameraError && (
                   <p className="mt-2 rounded-lg bg-red-50 px-3 py-2 text-[12px] text-verdict-fail">{cameraError}</p>
@@ -315,7 +322,7 @@ export default function ScanPage() {
                   className="mt-4 inline-flex items-center gap-2 rounded-lg bg-authBrand-500 px-5 py-2.5 text-sm font-semibold text-white hover:bg-authBrand-600 disabled:opacity-50"
                 >
                   <Camera className="h-4 w-4" />
-                  {camState === 'checking' ? '檢查權限中…' : camState === 'starting' ? '開緊相機…' : '啟動相機'}
+                  {camState === 'checking' ? _t('authenticator.scan.cameraBtn.checking') : camState === 'starting' ? _t('authenticator.scan.cameraBtn.starting') : _t('authenticator.scan.cameraBtn.default')}
                 </button>
               </div>
             </div>
@@ -333,7 +340,7 @@ export default function ScanPage() {
             </p>
           )}
           <p className="mt-3 text-center text-[12px] text-neutral-text-hint">
-            對準對方 App 上嘅 QR 碼 · 碼每 60 秒更新，過期請對方刷新
+            {_t('authenticator.scan.footer.hint')}
           </p>
 
           {/* ── UAT/dev-only：桌面貼 token 跳過鏡頭 ── */}
