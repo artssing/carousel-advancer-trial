@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Button, Card, CardContent, TierPill, StarRating, Badge, Pill } from '@authentik/ui';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react';
 import {
   formatHKD, tierForPrice, calculateOrderFees, quoteAuthFee, formatSavings,
   categoryByApiEnum, brandLabel, brandFieldLabel,
@@ -43,6 +44,123 @@ const STATUS_LABEL: Record<string, string> = {
   SOLD: '已售出',
   REMOVED: '已下架',
 };
+
+type GallerySlide = { kind: 'image' | 'video'; src: string; poster?: string };
+
+/** 全屏放大睇相（eBay 式，founder 2026-07-21）：
+ *  - click 圖放大：desktop 滑鼠移動跟 cursor magnify（2.5x）；mobile tap 放大
+ *  - swipe / 箭咀 / Esc / ← → 揭相；X / 撳背景關
+ *  - video slide 照播（唔 zoom）
+ *  - portal 去 body，唔受 listing 頁任何 overflow/transform 影響 */
+function ImageLightbox({
+  slides, index, setIndex, onClose,
+}: {
+  slides: GallerySlide[];
+  index: number;
+  setIndex: (fn: (i: number) => number) => void;
+  onClose: () => void;
+}) {
+  const [zoom, setZoom] = useState(false);
+  const [origin, setOrigin] = useState('50% 50%');
+  const touchX = useRef<number | null>(null);
+  const s = slides[index];
+
+  useEffect(() => {
+    setZoom(false); // 揭去另一張時取消放大
+  }, [index]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+      else if (e.key === 'ArrowLeft') setIndex((i) => (i - 1 + slides.length) % slides.length);
+      else if (e.key === 'ArrowRight') setIndex((i) => (i + 1) % slides.length);
+    };
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';   // lock 背景 scroll
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [slides.length, onClose, setIndex]);
+
+  if (typeof document === 'undefined' || !s) return null;
+
+  function panFrom(clientX: number, clientY: number, el: HTMLImageElement) {
+    const r = el.getBoundingClientRect();
+    setOrigin(`${((clientX - r.left) / r.width) * 100}% ${((clientY - r.top) / r.height) * 100}%`);
+  }
+
+  return createPortal(
+    <div className="fixed inset-0 z-[70] flex flex-col bg-black/95" role="dialog" aria-modal="true">
+      {/* top bar */}
+      <div className="flex items-center justify-between px-4 py-3 text-white">
+        <span className="text-sm text-white/70">{index + 1} / {slides.length}</span>
+        <button type="button" onClick={onClose} aria-label="關閉" className="rounded-full p-2 transition hover:bg-white/10">
+          <X className="h-6 w-6" />
+        </button>
+      </div>
+      {/* stage — 撳背景關 */}
+      <div
+        className="relative flex flex-1 items-center justify-center overflow-hidden"
+        onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+        onTouchStart={(e) => { touchX.current = e.touches[0]?.clientX ?? null; }}
+        onTouchEnd={(e) => {
+          if (zoom || touchX.current === null || slides.length < 2) return;
+          const dx = (e.changedTouches[0]?.clientX ?? 0) - touchX.current;
+          if (Math.abs(dx) > 40) setIndex((i) => dx < 0 ? (i + 1) % slides.length : (i - 1 + slides.length) % slides.length);
+          touchX.current = null;
+        }}
+      >
+        {s.kind === 'video' ? (
+          <video src={s.src} poster={s.poster} controls playsInline autoPlay className="max-h-full max-w-full" />
+        ) : (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={s.src}
+            alt=""
+            onClick={() => setZoom((z) => !z)}
+            onMouseMove={(e) => { if (zoom) panFrom(e.clientX, e.clientY, e.currentTarget); }}
+            onTouchMove={(e) => { const t = e.touches[0]; if (zoom && t) panFrom(t.clientX, t.clientY, e.currentTarget); }}
+            style={{ transformOrigin: origin, transform: zoom ? 'scale(2.5)' : 'scale(1)' }}
+            className={`max-h-full max-w-full object-contain transition-transform duration-150 ${zoom ? 'cursor-zoom-out' : 'cursor-zoom-in'}`}
+          />
+        )}
+        {slides.length > 1 && !zoom && (
+          <>
+            <button
+              type="button"
+              onClick={() => setIndex((i) => (i - 1 + slides.length) % slides.length)}
+              className="absolute left-4 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/15 p-2 text-white transition hover:bg-white/25 md:block"
+            ><ChevronLeft className="h-6 w-6" /></button>
+            <button
+              type="button"
+              onClick={() => setIndex((i) => (i + 1) % slides.length)}
+              className="absolute right-4 top-1/2 hidden -translate-y-1/2 rounded-full bg-white/15 p-2 text-white transition hover:bg-white/25 md:block"
+            ><ChevronRight className="h-6 w-6" /></button>
+          </>
+        )}
+      </div>
+      {/* thumbnails */}
+      {slides.length > 1 && (
+        <div className="scrollbar-hide flex justify-start gap-2 overflow-x-auto p-3 md:justify-center">
+          {slides.map((t, i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setIndex(() => i)}
+              className={`h-14 w-14 shrink-0 overflow-hidden rounded border-2 transition ${i === index ? 'border-white' : 'border-white/25'}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={t.kind === 'video' ? (t.poster ?? '') : t.src} alt="" className="h-full w-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+    </div>,
+    document.body,
+  );
+}
 
 /** Layout-matched skeleton（founder 2026-07-20 mobile #3）：撳入商品即刻見到
  *  大圖 + 標題 + 價錢 + CTA 嘅骨架（唔再係一句「載入中…」），減少「壞咗」感 +
@@ -106,6 +224,8 @@ export default function ListingPage({ params }: { params: { id: string } }) {
   const [busy, setBusy] = useState(false);
   const [activeImg, setActiveImg] = useState(0);
   const touchStartX = useRef<number | null>(null);   // mobile swipe gallery (#4)
+  const touchMoved = useRef(false);                   // 分辨 swipe vs tap（tap 先開 lightbox）
+  const [lightboxOpen, setLightboxOpen] = useState(false);  // 放大睇相（eBay 式）
   const [chatOpen, setChatOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   // Active order on this listing — drives Seller Action Card (owner view) and
@@ -484,7 +604,10 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             <div>
               <div
                 className="relative aspect-square touch-pan-y select-none overflow-hidden rounded-[14px] border border-line bg-gradient-to-br from-[#eef1f5] to-[#dfe4ee] shadow-sh2"
-                onTouchStart={(e) => { touchStartX.current = e.touches[0]?.clientX ?? null; }}
+                onTouchStart={(e) => { touchStartX.current = e.touches[0]?.clientX ?? null; touchMoved.current = false; }}
+                onTouchMove={(e) => {
+                  if (touchStartX.current !== null && Math.abs((e.touches[0]?.clientX ?? 0) - touchStartX.current) > 10) touchMoved.current = true;
+                }}
                 onTouchEnd={(e) => {
                   // mobile swipe 揭相（#4）：橫掃 > 40px 先當有效，避免誤觸
                   if (touchStartX.current === null || slides.length < 2) return;
@@ -506,8 +629,19 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                       className="h-full w-full object-cover"
                     />
                   ) : (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={active.src} alt={listing.title} className="h-full w-full object-cover" />
+                    <>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={active.src}
+                        alt={listing.title}
+                        onClick={() => { if (!touchMoved.current) setLightboxOpen(true); }}
+                        className="h-full w-full cursor-zoom-in object-cover"
+                      />
+                      {/* 放大提示 */}
+                      <span className="pointer-events-none absolute right-3 top-3 flex items-center gap-1 rounded-full bg-black/45 px-2 py-1 text-[11px] font-medium text-white">
+                        <ZoomIn className="h-3.5 w-3.5" /> 放大
+                      </span>
+                    </>
                   )
                 ) : (
                   <div className="flex h-full items-center justify-center font-display-serif text-[16px] font-bold uppercase tracking-[0.18em] text-[#9aa3b5]">
@@ -557,6 +691,14 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                     </button>
                   ))}
                 </div>
+              )}
+              {lightboxOpen && (
+                <ImageLightbox
+                  slides={slides}
+                  index={activeImg}
+                  setIndex={setActiveImg}
+                  onClose={() => setLightboxOpen(false)}
+                />
               )}
             </div>
           );
