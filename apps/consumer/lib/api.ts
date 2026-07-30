@@ -56,6 +56,25 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+/**
+ * Upload a generated share collage (multipart, NOT JSON) → returns the
+ * SharePreview id, used to build a /s/:id link whose og:image is this collage.
+ * Requires auth; caller falls back to a plain link share if this throws.
+ */
+export async function uploadSharePreview(blob: Blob, listingId: string): Promise<{ id: string; imageUrl: string }> {
+  const token = getToken();
+  const fd = new FormData();
+  fd.append('file', blob, 'share.png');
+  fd.append('listingId', listingId);
+  const res = await fetch(`${API_URL}/share-previews`, {
+    method: 'POST',
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    body: fd,
+  });
+  if (!res.ok) throw new ApiError(res.status, res.statusText);
+  return res.json();
+}
+
 export const api = {
   register: (data: {
     email: string;

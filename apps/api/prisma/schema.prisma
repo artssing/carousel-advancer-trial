@@ -714,6 +714,20 @@ model OrderEvidence {
   @@index([orderId])
 }
 
+/// A generated social-share collage image, stored so a `/s/:id` page can expose
+/// it as og:image (Facebook/WhatsApp desktop link previews show the collage, not
+/// just the listing's first photo). imageUrl comes from StorageService (R2 in
+/// prod). Ephemeral by nature — safe to purge old rows.
+model SharePreview {
+  id        String   @id @default(cuid())
+  imageUrl  String
+  listingId String
+  createdAt DateTime @default(now())
+
+  @@index([listingId])
+  @@index([createdAt])
+}
+
 /// Stripe-backed payment intent / escrow state. One Order may have multiple
 /// rows over time (retry after decline). Order.activePaymentId points to
 /// the currently-relevant one. webhook handler is authoritative — never let

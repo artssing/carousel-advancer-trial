@@ -21,6 +21,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Share2, Download, Copy, Check, ChevronLeft } from 'lucide-react';
 import { formatHKD, conditionLabel } from '@authentik/utils';
+import { uploadSharePreview } from '@/lib/api';
 
 export interface ShareListing {
   id: string;
@@ -338,16 +339,32 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   // `text` lets apps that accept it (WhatsApp / Messenger) prefill the caption;
   // IG drops text so we also copy it to the clipboard as a fallback. Desktop
   // browsers without file-share fall back to download + copy-caption.
-  // Link share (option B) — works on desktop + mobile. Opens the platform's
-  // web share intent with the listing LINK; the preview image comes from the
-  // listing page's OpenGraph meta (first photo), NOT the generated collage.
-  // wa.me carries the caption text; Facebook's sharer only takes the URL.
-  function shareLink(kind: 'whatsapp' | 'facebook') {
-    const url =
+  // Link share (option B) — desktop + mobile. We upload the generated collage,
+  // then share a /s/:id link whose og:image IS that collage, so Facebook /
+  // WhatsApp unfurl the composed card (not the listing's first photo). If the
+  // upload fails (e.g. logged out), fall back to sharing the plain listing link
+  // (og:image = first photo). A blank window is opened synchronously first so
+  // the async upload doesn't trip the pop-up blocker.
+  async function shareLink(kind: 'whatsapp' | 'facebook') {
+    const win = window.open('', '_blank');
+    const dest = (shareUrl: string) =>
       kind === 'whatsapp'
-        ? `https://wa.me/?text=${encodeURIComponent(caption)}`
-        : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+        ? `https://wa.me/?text=${encodeURIComponent(buildCaption(listing, shareUrl))}`
+        : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
+    let target = dest(link); // fallback: listing link
+    try {
+      const blob: Blob | null = await new Promise((res) =>
+        canvasRef.current ? canvasRef.current.toBlob(res, 'image/png') : res(null),
+      );
+      if (blob) {
+        const { id } = await uploadSharePreview(blob, listing.id);
+        target = dest(`${window.location.origin}/s/${id}`);
+      }
+    } catch {
+      /* keep the listing-link fallback */
+    }
+    if (win) win.location.href = target;
+    else window.open(target, '_blank', 'noopener,noreferrer');
   }
 
   async function share() {
@@ -561,7 +578,7 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
                 </button>
               </div>
               <p className="mt-1 text-[11px] leading-relaxed text-neutral-text-hint">
-                分享商品連結，預覽圖用商品第一張相。想連上面張合成圖一齊分享，請用手機「分享圖片 + 文字」。
+                會出你上面揀嗰張合成圖做預覽。（未登入則出商品第一張相）
               </p>
             </div>
 

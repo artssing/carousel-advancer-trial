@@ -46,6 +46,9 @@ services:
       CORS_ORIGIN: "https://certifinehk.com,https://auth.certifinehk.com,https://admin.certifinehk.com"
       NEXT_PUBLIC_CONSUMER_URL: "https://certifinehk.com"
       GOOGLE_REDIRECT_URI: "https://api.certifinehk.com/api/auth/google/callback"
+      # Public base for StorageService `local` driver (/uploads/*). Superseded by
+      # STORAGE_DRIVER=s3 + S3_* once a Cloudflare R2 bucket exists (durable).
+      API_PUBLIC_BASE_URL: "https://api.certifinehk.com"
       STRIPE_MODE: "mock"
       STRIPE_API_BASE: ""
 
@@ -110,6 +113,8 @@ services:
       CORS_ORIGIN: "https://uat.certifinehk.com,https://uat-auth.certifinehk.com,https://uat-admin.certifinehk.com"
       NEXT_PUBLIC_CONSUMER_URL: "https://uat.certifinehk.com"
       GOOGLE_REDIRECT_URI: "https://uat-api.certifinehk.com/api/auth/google/callback"
+      # local-driver public base; R2 (STORAGE_DRIVER=s3 + S3_* in .env.uat) supersedes.
+      API_PUBLIC_BASE_URL: "https://uat-api.certifinehk.com"
       STRIPE_MODE: "mock"
       STRIPE_API_BASE: ""
 

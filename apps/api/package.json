@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@authentik/utils": "*",
+    "@aws-sdk/client-s3": "^3.1098.0",
     "@nestjs/common": "^10.3.7",
     "@nestjs/config": "^3.2.2",
     "@nestjs/core": "^10.3.7",

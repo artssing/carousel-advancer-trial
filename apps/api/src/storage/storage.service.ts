@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import { randomUUID } from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
@@ -44,6 +45,7 @@ export class StorageService {
   // (and dist/ is gitignored + wiped on every build, losing files). cwd is
   // stable: `nest start` / `node dist/main.js` are both invoked from apps/api/.
   private readonly uploadsDir = join(process.cwd(), 'uploads');
+  private s3Client: S3Client | null = null;
 
   constructor(private readonly config: ConfigService) {
     this.driver = (this.config.get<string>('STORAGE_DRIVER') ?? 'local') as 'local' | 's3';
@@ -75,15 +77,49 @@ export class StorageService {
     };
   }
 
-  // S3-compatible adapter — code-complete but inert until @aws-sdk/client-s3
-  // is installed and STORAGE_DRIVER=s3 is set. Throws a clear error otherwise
-  // rather than silently falling back, so a misconfigured prod env fails loud.
-  private async uploadToS3(_file: { buffer: Buffer; originalname: string; mimetype: string; size: number }): Promise<StoredFile> {
-    this.logger.error('STORAGE_DRIVER=s3 set but @aws-sdk/client-s3 adapter not wired up yet.');
-    throw new Error(
-      'S3 storage driver selected but not implemented in this environment. ' +
-        'Run: npm install @aws-sdk/client-s3 -w apps/api, then implement uploadToS3() ' +
-        'using S3_ENDPOINT/S3_BUCKET/S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY/S3_PUBLIC_BASE_URL.',
-    );
+  // S3-compatible adapter (AWS S3 / Cloudflare R2 / B2 / MinIO). Configure via
+  // STORAGE_DRIVER=s3 + S3_ENDPOINT/S3_BUCKET/S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY
+  // /S3_PUBLIC_BASE_URL. Fails loud on missing config rather than silently
+  // falling back, so a half-configured prod env is obvious.
+  private async uploadToS3(file: {
+    buffer: Buffer;
+    originalname: string;
+    mimetype: string;
+    size: number;
+  }): Promise<StoredFile> {
+    const bucket = this.config.get<string>('S3_BUCKET');
+    const publicBase = this.config.get<string>('S3_PUBLIC_BASE_URL');
+    const endpoint = this.config.get<string>('S3_ENDPOINT');
+    const accessKeyId = this.config.get<string>('S3_ACCESS_KEY_ID');
+    const secretAccessKey = this.config.get<string>('S3_SECRET_ACCESS_KEY');
+    if (!bucket || !publicBase || !endpoint || !accessKeyId || !secretAccessKey) {
+      this.logger.error('STORAGE_DRIVER=s3 but S3_* env vars are incomplete.');
+      throw new Error('S3 storage misconfigured — set S3_ENDPOINT/S3_BUCKET/S3_ACCESS_KEY_ID/S3_SECRET_ACCESS_KEY/S3_PUBLIC_BASE_URL.');
+    }
+
+    if (!this.s3Client) {
+      this.s3Client = new S3Client({
+        // R2 ignores region but the SDK requires a value; 'auto' is the R2 convention.
+        region: this.config.get<string>('S3_REGION') ?? 'auto',
+        endpoint,
+        credentials: { accessKeyId, secretAccessKey },
+        forcePathStyle: true, // R2 / MinIO need path-style addressing
+      });
+    }
+
+    const ext = file.originalname.includes('.') ? file.originalname.split('.').pop() : 'bin';
+    const key = `${randomUUID()}.${ext}`;
+    await this.s3Client.send(new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    }));
+
+    return {
+      url: `${publicBase.replace(/\/$/, '')}/${key}`,
+      mimeType: file.mimetype,
+      sizeBytes: file.size,
+    };
   }
 }
