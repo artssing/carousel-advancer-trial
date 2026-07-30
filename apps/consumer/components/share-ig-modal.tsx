@@ -39,8 +39,48 @@ const FORMAT_DIMS: Record<Format, { w: number; h: number; label: string; hint: s
   feed:  { w: 1080, h: 1080, label: 'Feed 帖文', hint: '方形帖文（caption 冇得 click link）' },
 };
 
-const NAVY = '#0a2540';
+const NAVY = '#0a2540'; // default info-bar background
 const INK = '#101828';
+
+const hex2 = (n: number) => Math.max(0, Math.min(255, Math.round(n))).toString(16).padStart(2, '0');
+
+/** Darken an average RGB to a deep, still-tinted background (white text stays
+ *  legible). Keeps the photo's hue but pins the brightest channel to ~64/255. */
+function darkenToBg(r: number, g: number, b: number): string {
+  const mx = Math.max(r, g, b, 1);
+  const scale = 64 / mx;
+  return `#${hex2(r * scale)}${hex2(g * scale)}${hex2(b * scale)}`;
+}
+
+/** Sample the hero photo's dominant colours → a few deep-tone background
+ *  candidates so the seller isn't stuck with navy. NAVY stays first (default). */
+function extractPalette(img: HTMLImageElement): string[] {
+  const S = 32;
+  const c = document.createElement('canvas');
+  c.width = S; c.height = S;
+  const cx = c.getContext('2d')!;
+  cx.drawImage(img, 0, 0, S, S);
+  const { data } = cx.getImageData(0, 0, S, S);
+  const buckets = new Map<string, { n: number; r: number; g: number; b: number }>();
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i]!, g = data[i + 1]!, b = data[i + 2]!, a = data[i + 3]!;
+    if (a < 200) continue;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b);
+    if (mx > 245 && mn > 245) continue; // skip near-white
+    if (mx < 14) continue;              // skip near-black
+    const key = `${r >> 5}-${g >> 5}-${b >> 5}`; // coarse 3-bit bins
+    const e = buckets.get(key) ?? { n: 0, r: 0, g: 0, b: 0 };
+    e.n++; e.r += r; e.g += g; e.b += b;
+    buckets.set(key, e);
+  }
+  const top = [...buckets.values()]
+    .sort((a, b) => b.n - a.n)
+    .slice(0, 3)
+    .map((e) => darkenToBg(e.r / e.n, e.g / e.n, e.b / e.n));
+  const out = [NAVY];
+  for (const col of top) if (!out.includes(col)) out.push(col);
+  return out.slice(0, 4);
+}
 
 function buildCaption(l: ShareListing, link: string): string {
   const lines = [l.title, formatHKD(l.priceHKD)];
@@ -146,7 +186,25 @@ function wrapText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number,
   return lines;
 }
 
-async function composite(l: ShareListing, photos: string[], format: Format, template: Template): Promise<HTMLCanvasElement> {
+/** Small top-right corner attribution mark (never overlaps the title bar). */
+function drawWatermark(ctx: CanvasRenderingContext2D, w: number, onLight: boolean) {
+  ctx.save();
+  ctx.font = '600 26px Georgia, serif';
+  ctx.textAlign = 'right';
+  if (onLight) {
+    ctx.fillStyle = '#98a2b3';
+  } else {
+    // white over photo — add a soft shadow so it stays legible on bright images
+    ctx.fillStyle = 'rgba(255,255,255,.82)';
+    ctx.shadowColor = 'rgba(0,0,0,.45)';
+    ctx.shadowBlur = 8;
+  }
+  ctx.fillText('via CERTI·FINE', w - 44, 58);
+  ctx.restore();
+  ctx.textAlign = 'left';
+}
+
+async function composite(l: ShareListing, photos: string[], format: Format, template: Template, bgColor: string): Promise<HTMLCanvasElement> {
   const { w, h } = FORMAT_DIMS[format];
   const canvas = document.createElement('canvas');
   canvas.width = w;
@@ -164,8 +222,8 @@ async function composite(l: ShareListing, photos: string[], format: Format, temp
   if (template === 'photo') {
     // 大相 + 底部資訊帶
     const barH = format === 'story' ? 380 : 300;
-    drawGrid({ x: 0, y: 0, w, h: h - barH }, NAVY);
-    ctx.fillStyle = NAVY;
+    drawGrid({ x: 0, y: 0, w, h: h - barH }, bgColor);
+    ctx.fillStyle = bgColor;
     ctx.fillRect(0, h - barH, w, barH);
     ctx.fillStyle = '#ffffff';
     ctx.font = '600 52px "Noto Sans HK", sans-serif';
@@ -180,11 +238,7 @@ async function composite(l: ShareListing, photos: string[], format: Format, temp
       const priceW = ctx.measureText(formatHKD(l.priceHKD)).width;
       ctx.fillText(`成色：${cond}（賣家申報）`, 70 + priceW + 260, h - 80);
     }
-    ctx.font = '600 30px Georgia, serif';
-    ctx.fillStyle = 'rgba(255,255,255,.65)';
-    ctx.textAlign = 'right';
-    ctx.fillText('via CERTI·FINE', w - 60, h - barH + 70);
-    ctx.textAlign = 'left';
+    drawWatermark(ctx, w, false);
   } else {
     // 簡約白底
     ctx.fillStyle = '#faf9f7';
@@ -204,11 +258,7 @@ async function composite(l: ShareListing, photos: string[], format: Format, temp
       ctx.fillStyle = '#667085';
       ctx.fillText(`成色：${cond}（賣家申報）`, margin, h - 70);
     }
-    ctx.font = '600 30px Georgia, serif';
-    ctx.fillStyle = '#98a2b3';
-    ctx.textAlign = 'right';
-    ctx.fillText('via CERTI·FINE', w - margin, h - 70);
-    ctx.textAlign = 'left';
+    drawWatermark(ctx, w, true);
   }
   return canvas;
 }
@@ -219,6 +269,8 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   const [photos, setPhotos] = useState<string[]>(listing.images[0] ? [listing.images[0]] : []);
   const [format, setFormat] = useState<Format>('story');
   const [template, setTemplate] = useState<Template>('photo');
+  const [bgColor, setBgColor] = useState<string>(NAVY);
+  const [palette, setPalette] = useState<string[]>([NAVY]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [rendering, setRendering] = useState(false);
   const [renderError, setRenderError] = useState(false);
@@ -232,13 +284,30 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   const caption = useMemo(() => buildCaption(listing, link), [listing, link]);
   const canWebShare = typeof navigator !== 'undefined' && !!navigator.canShare;
 
+  // Derive background palette from the hero photo (photos[0]).
+  const hero = photos[0];
+  useEffect(() => {
+    if (!hero) { setPalette([NAVY]); setBgColor(NAVY); return; }
+    let stale = false;
+    loadImage(hero)
+      .then((img) => {
+        if (stale) return;
+        let pal = [NAVY];
+        try { pal = extractPalette(img); } catch { pal = [NAVY]; }
+        setPalette(pal);
+        setBgColor((prev) => (pal.includes(prev) ? prev : NAVY));
+      })
+      .catch(() => { if (!stale) { setPalette([NAVY]); setBgColor(NAVY); } });
+    return () => { stale = true; };
+  }, [hero]);
+
   // Re-render preview whenever step 3 inputs settle.
   useEffect(() => {
     if (step !== 3) return;
     let stale = false;
     setRendering(true);
     setRenderError(false);
-    composite(listing, photos, format, template)
+    composite(listing, photos, format, template, bgColor)
       .then((canvas) => {
         if (stale) return;
         canvasRef.current = canvas;
@@ -248,7 +317,7 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
       .finally(() => { if (!stale) setRendering(false); });
     return () => { stale = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, photos.join(','), format, template, listing]);
+  }, [step, photos.join(','), format, template, bgColor, listing]);
 
   async function copyCaption() {
     await navigator.clipboard.writeText(caption);
@@ -423,6 +492,26 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
                 <img src={previewUrl} alt="分享預覽" className="w-full" />
               ) : null}
             </div>
+
+            {/* Background colour picker — derived from the hero photo. Only the
+                「大相 + 價錢帶」template has a coloured info bar. */}
+            {template === 'photo' && palette.length > 1 && (
+              <div className="mt-4">
+                <div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-text-hint">底色（跟相片配色）</div>
+                <div className="mt-1.5 flex items-center gap-2.5">
+                  {palette.map((c) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => setBgColor(c)}
+                      aria-label={`底色 ${c}`}
+                      className={`h-8 w-8 rounded-full border transition ${bgColor === c ? 'border-white ring-2 ring-brand-600' : 'border-line hover:scale-105'}`}
+                      style={{ background: c }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Caption preview */}
             <div className="mt-4 rounded-lg border border-line bg-surface-1 p-3">
