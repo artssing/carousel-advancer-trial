@@ -338,6 +338,18 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   // `text` lets apps that accept it (WhatsApp / Messenger) prefill the caption;
   // IG drops text so we also copy it to the clipboard as a fallback. Desktop
   // browsers without file-share fall back to download + copy-caption.
+  // Link share (option B) — works on desktop + mobile. Opens the platform's
+  // web share intent with the listing LINK; the preview image comes from the
+  // listing page's OpenGraph meta (first photo), NOT the generated collage.
+  // wa.me carries the caption text; Facebook's sharer only takes the URL.
+  function shareLink(kind: 'whatsapp' | 'facebook') {
+    const url =
+      kind === 'whatsapp'
+        ? `https://wa.me/?text=${encodeURIComponent(caption)}`
+        : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(link)}`;
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+
   async function share() {
     if (!canvasRef.current) return;
     await copyCaption();
@@ -527,7 +539,33 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
               <pre className="mt-1.5 whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-neutral-text">{caption}</pre>
             </div>
 
-            {/* Share guide */}
+            {/* Link share (B) — desktop + mobile, one button per app */}
+            <div className="mt-4">
+              <div className="text-[11px] font-semibold uppercase tracking-wide text-neutral-text-hint">分享連結（電腦、手機都用得）</div>
+              <div className="mt-1.5 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => shareLink('whatsapp')}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                  style={{ background: '#25D366' }}
+                >
+                  WhatsApp
+                </button>
+                <button
+                  type="button"
+                  onClick={() => shareLink('facebook')}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                  style={{ background: '#1877F2' }}
+                >
+                  Facebook
+                </button>
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-neutral-text-hint">
+                分享商品連結，預覽圖用商品第一張相。想連上面張合成圖一齊分享，請用手機「分享圖片 + 文字」。
+              </p>
+            </div>
+
+            {/* Image+text share guide (mobile native sheet) */}
             <div className="mt-3 rounded-lg bg-verify-soft px-3 py-2.5 text-[12px] leading-relaxed text-brand-800">
               撳「分享圖片 + 文字」→ 手機分享面板揀 WhatsApp / Facebook / Messenger / IG，張圖同文字會一齊帶埋。IG Story 記得用「連結」貼圖貼住商品 link。
             </div>
