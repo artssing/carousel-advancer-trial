@@ -278,7 +278,7 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   const link = useMemo(
-    () => `${typeof window !== 'undefined' ? window.location.origin : ''}/listing/${listing.id}?utm_source=ig&utm_medium=share`,
+    () => `${typeof window !== 'undefined' ? window.location.origin : ''}/listing/${listing.id}?utm_source=social&utm_medium=share`,
     [listing.id],
   );
   const caption = useMemo(() => buildCaption(listing, link), [listing, link]);
@@ -328,20 +328,25 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   function download() {
     if (!canvasRef.current) return;
     const a = document.createElement('a');
-    a.download = `authentik-${listing.id}.png`;
+    a.download = `certifine-${listing.id}.png`;
     a.href = canvasRef.current.toDataURL('image/png');
     a.click();
   }
 
+  // Web Share API L2 — the ONLY web path that carries the actual generated
+  // image into a specific app (WhatsApp / Facebook / Messenger / IG …). Passing
+  // `text` lets apps that accept it (WhatsApp / Messenger) prefill the caption;
+  // IG drops text so we also copy it to the clipboard as a fallback. Desktop
+  // browsers without file-share fall back to download + copy-caption.
   async function share() {
     if (!canvasRef.current) return;
     await copyCaption();
     canvasRef.current.toBlob(async (blob) => {
       if (!blob) return;
-      const file = new File([blob], `authentik-${listing.id}.png`, { type: 'image/png' });
+      const file = new File([blob], `certifine-${listing.id}.png`, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
         try {
-          await navigator.share({ files: [file] });
+          await navigator.share({ files: [file], text: caption, title: listing.title });
         } catch { /* user cancelled share sheet */ }
       } else {
         download();
@@ -366,7 +371,7 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
                 <ChevronLeft className="h-5 w-5" />
               </button>
             )}
-            <h3 className="font-display-serif text-[19px] font-bold text-ink">分享去 Instagram</h3>
+            <h3 className="font-display-serif text-[19px] font-bold text-ink">分享商品</h3>
           </div>
           <button type="button" onClick={onClose} aria-label="關閉" className="rounded-full p-1 text-neutral-text-muted hover:bg-surface-2">
             <X className="h-5 w-5" />
@@ -522,15 +527,15 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
               <pre className="mt-1.5 whitespace-pre-wrap font-sans text-[12px] leading-relaxed text-neutral-text">{caption}</pre>
             </div>
 
-            {/* IG steps guide */}
+            {/* Share guide */}
             <div className="mt-3 rounded-lg bg-verify-soft px-3 py-2.5 text-[12px] leading-relaxed text-brand-800">
-              出 Story 貼士：① share sheet 揀 Instagram → ② 喺 Story 編輯器撳貼圖加「連結」貼住商品 link → ③ 分享
+              撳「分享圖片 + 文字」→ 手機分享面板揀 WhatsApp / Facebook / Messenger / IG，張圖同文字會一齊帶埋。IG Story 記得用「連結」貼圖貼住商品 link。
             </div>
 
             <div className="mt-4 flex flex-col gap-2">
               {canWebShare && (
                 <button type="button" onClick={share} disabled={rendering || renderError} className="flex w-full items-center justify-center gap-2 rounded-lg bg-brand-600 py-3 text-sm font-semibold text-white shadow-sh2 hover:bg-brand-700 disabled:opacity-50">
-                  <Share2 className="h-4 w-4" /> 分享（已複製 caption）
+                  <Share2 className="h-4 w-4" /> 分享圖片 + 文字
                 </button>
               )}
               <div className="flex gap-2">
