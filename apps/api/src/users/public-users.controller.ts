@@ -2,7 +2,6 @@ import { Controller, ForbiddenException, Get, NotFoundException, Param, Query, U
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
-import { ListingStatus } from '@prisma/client';
 
 /**
  * Public-facing user info — exposed to logged-in users only (no scraping).
@@ -137,14 +136,12 @@ export class PublicUsersController {
     // Same tokenized AND-match semantics as listings.list() browse search —
     // each whitespace-separated term must hit title|description|brand.
     const terms = (q ?? '').split(/\s+/).map((t) => t.trim()).filter(Boolean);
-    // Seller public profile shows ACTIVE + RESERVED + SOLD (social proof — a
-    // buyer judging a seller wants their sold history). Card corner ribbon
-    // signals 已預留 / 已售出; DRAFT/REMOVED stay private. Global browse/search
-    // stays ACTIVE-only (founder ruling 2026-07-30) — this is the ONE public
-    // surface that intentionally surfaces reserved/sold.
+    // ACTIVE only (founder 2026-07-30): seller public profile does NOT surface
+    // reserved/sold items — same rationale as global browse (buyer can't act on
+    // them). RESERVED/SOLD reachable only via direct listing URL.
     const where = {
       sellerId: id,
-      status: { in: [ListingStatus.ACTIVE, ListingStatus.RESERVED, ListingStatus.SOLD] },
+      status: 'ACTIVE' as const,
       ...(terms.length
         ? {
             AND: terms.map((t) => ({
@@ -167,11 +164,9 @@ export class PublicUsersController {
           priceHKD: true,
           category: true,
           images: true,
-          status: true,
           createdAt: true,
         },
-        // ACTIVE first (still buyable), then reserved/sold history.
-        orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
+        orderBy: { createdAt: 'desc' },
         take,
         skip,
       }),
