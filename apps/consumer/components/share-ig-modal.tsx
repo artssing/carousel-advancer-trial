@@ -264,6 +264,72 @@ async function composite(l: ShareListing, photos: string[], format: Format, temp
   return canvas;
 }
 
+/** Link-preview card size. Facebook/WhatsApp/X all unfurl at ~1.91:1. */
+const OG_DIMS = { w: 1200, h: 630 };
+
+function hexToRgba(hex: string, a: number): string {
+  const m = hex.replace('#', '');
+  const r = parseInt(m.slice(0, 2), 16);
+  const g = parseInt(m.slice(2, 4), 16);
+  const b = parseInt(m.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${a})`;
+}
+
+/**
+ * Dedicated 1.91:1 card for LINK previews (Facebook / WhatsApp unfurls).
+ *
+ * The Story/Feed collage is 9:16 or 1:1 — Facebook crops that to a narrow strip
+ * and cuts the whole price band off, and WhatsApp tends to drop a preview whose
+ * image is far off its expected ratio. Same content, laid out for the aspect
+ * the crawlers actually render. The photo goes full-bleed with a scrim so the
+ * text stays legible over any image.
+ */
+async function compositeOg(l: ShareListing, photos: string[], bgColor: string): Promise<HTMLCanvasElement> {
+  const { w, h } = OG_DIMS;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+  const imgs = await Promise.all(photos.slice(0, MAX_COLLAGE_PHOTOS).map(loadImage));
+
+  ctx.fillStyle = bgColor;
+  ctx.fillRect(0, 0, w, h);
+  const cells = collageCells(imgs.length, { x: 0, y: 0, w, h });
+  cells.forEach((c, i) => { if (imgs[i]) drawCover(ctx, imgs[i]!, c.x, c.y, c.w, c.h); });
+
+  const scrimTop = h * 0.34;
+  const grad = ctx.createLinearGradient(0, scrimTop, 0, h);
+  grad.addColorStop(0, hexToRgba(bgColor, 0));
+  grad.addColorStop(0.55, hexToRgba(bgColor, 0.86));
+  grad.addColorStop(1, hexToRgba(bgColor, 0.98));
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, scrimTop, w, h - scrimTop);
+
+  const cond = conditionLabel(l.condition as any);
+  ctx.fillStyle = '#ffffff';
+  ctx.font = '600 44px "Noto Sans HK", sans-serif';
+  const titleLines = wrapText(ctx, l.title, w - 112, 2);
+  titleLines.forEach((line, i) => {
+    ctx.fillText(line, 56, h - 164 + i * 54);
+  });
+  ctx.font = '800 58px "Noto Sans HK", sans-serif';
+  ctx.fillStyle = '#7ee2b8';
+  const price = formatHKD(l.priceHKD);
+  ctx.fillText(price, 56, h - 48);
+  if (cond) {
+    const priceW = ctx.measureText(price).width;
+    ctx.font = '400 26px "Noto Sans HK", sans-serif';
+    ctx.fillStyle = 'rgba(255,255,255,.78)';
+    ctx.fillText(`成色：${cond}（賣家申報）`, 56 + priceW + 28, h - 52);
+  }
+  drawWatermark(ctx, w, false);
+  return canvas;
+}
+
+function Spinner() {
+  return <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />;
+}
+
 export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onClose: () => void }) {
   const [step, setStep] = useState(1);
   // Multi-select collage（founder 2026-07-12）：順序 = 排位，#1 = 主相。Cap 4。
@@ -273,9 +339,10 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   const [bgColor, setBgColor] = useState<string>(NAVY);
   const [palette, setPalette] = useState<string[]>([NAVY]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  /** /s/:id link whose og:image is this collage — pre-uploaded on step 3. */
+  /** /s/:id link whose og:image is the OG card. Built on first share click and
+   *  cached, so sharing to a second app costs no extra upload. */
   const [shareUrl, setShareUrl] = useState<string | null>(null);
-  const [preparingShare, setPreparingShare] = useState(false);
+  const [sharingKind, setSharingKind] = useState<'whatsapp' | 'facebook' | null>(null);
   const [rendering, setRendering] = useState(false);
   const [renderError, setRenderError] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -305,12 +372,10 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
     return () => { stale = true; };
   }, [hero]);
 
-  // Re-render preview whenever step 3 inputs settle, then upload the collage in
-  // the background so the WhatsApp/Facebook buttons can fire synchronously.
-  // (Uploading on click meant opening a blank tab that sat there for ~20s while
-  // a 1.4MB PNG went up — it read as broken.) The share copy is a JPEG: same
-  // card, ~10x smaller, and the canvas always paints an opaque background so
-  // there is no alpha to lose.
+  // Re-render preview whenever step 3 inputs settle. Nothing is uploaded here —
+  // the OG card is built and stored only when the user actually clicks a share
+  // button, so browsing the wizard costs no storage. Any cached share URL is
+  // dropped because the card it points at no longer matches these inputs.
   useEffect(() => {
     if (step !== 3) return;
     let stale = false;
@@ -322,22 +387,6 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
         if (stale) return;
         canvasRef.current = canvas;
         setPreviewUrl(canvas.toDataURL('image/png'));
-        setPreparingShare(true);
-        canvas.toBlob(
-          async (blob) => {
-            if (stale || !blob) { if (!stale) setPreparingShare(false); return; }
-            try {
-              const { id } = await uploadSharePreview(blob, listing.id, 'share.jpg');
-              if (!stale) setShareUrl(`${window.location.origin}/s/${id}`);
-            } catch {
-              /* not logged in / offline → buttons fall back to the listing link */
-            } finally {
-              if (!stale) setPreparingShare(false);
-            }
-          },
-          'image/jpeg',
-          0.85,
-        );
       })
       .catch(() => { if (!stale) setRenderError(true); })
       .finally(() => { if (!stale) setRendering(false); });
@@ -364,18 +413,43 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   // `text` lets apps that accept it (WhatsApp / Messenger) prefill the caption;
   // IG drops text so we also copy it to the clipboard as a fallback. Desktop
   // browsers without file-share fall back to download + copy-caption.
-  // Link share (option B) — desktop + mobile. Fully synchronous: the collage was
-  // already uploaded in the background (see the step-3 effect), so the click
-  // opens the share intent immediately and never trips the pop-up blocker.
-  // `shareUrl` (og:image = collage) when ready, else the plain listing link
-  // (og:image = first photo) — e.g. when the user isn't logged in.
-  function shareLink(kind: 'whatsapp' | 'facebook') {
-    const url = shareUrl ?? link;
-    const target =
-      kind === 'whatsapp'
-        ? `https://wa.me/?text=${encodeURIComponent(buildCaption(listing, url))}`
-        : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-    window.open(target, '_blank', 'noopener,noreferrer');
+  // Link share (option B) — desktop + mobile. Builds + uploads the 1.91:1 OG
+  // card on click (showing progress on the button), then jumps straight to the
+  // share intent. Uploading lazily keeps storage to what's actually shared; the
+  // result is cached so a second app costs nothing. If the upload fails (logged
+  // out, offline) we still share the plain listing link, whose og:image is the
+  // listing's first photo.
+  async function shareLink(kind: 'whatsapp' | 'facebook') {
+    if (sharingKind) return;
+    const go = (url: string) => {
+      const target =
+        kind === 'whatsapp'
+          ? `https://wa.me/?text=${encodeURIComponent(buildCaption(listing, url))}`
+          : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+      // Opening after an await can trip the pop-up blocker — fall back to
+      // navigating this tab so the share never silently does nothing.
+      const win = window.open(target, '_blank', 'noopener,noreferrer');
+      if (!win) window.location.href = target;
+    };
+
+    if (shareUrl) { go(shareUrl); return; }
+
+    setSharingKind(kind);
+    try {
+      const ogCanvas = await compositeOg(listing, photos, bgColor);
+      const blob: Blob | null = await new Promise((res) =>
+        ogCanvas.toBlob(res, 'image/jpeg', 0.82),
+      );
+      if (!blob) throw new Error('OG card render failed');
+      const { id } = await uploadSharePreview(blob, listing.id, 'share.jpg');
+      const url = `${window.location.origin}/s/${id}`;
+      setShareUrl(url);
+      go(url);
+    } catch {
+      go(link);
+    } finally {
+      setSharingKind(null);
+    }
   }
 
   async function share() {
@@ -574,28 +648,32 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
                 <button
                   type="button"
                   onClick={() => shareLink('whatsapp')}
-                  disabled={preparingShare}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  disabled={sharingKind !== null || rendering || renderError}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
                   style={{ background: '#25D366' }}
                 >
-                  WhatsApp
+                  {sharingKind === 'whatsapp' ? (
+                    <><Spinner /> 準備緊…</>
+                  ) : (
+                    'WhatsApp'
+                  )}
                 </button>
                 <button
                   type="button"
                   onClick={() => shareLink('facebook')}
-                  disabled={preparingShare}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                  disabled={sharingKind !== null || rendering || renderError}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-60"
                   style={{ background: '#1877F2' }}
                 >
-                  Facebook
+                  {sharingKind === 'facebook' ? (
+                    <><Spinner /> 準備緊…</>
+                  ) : (
+                    'Facebook'
+                  )}
                 </button>
               </div>
               <p className="mt-1 text-[11px] leading-relaxed text-neutral-text-hint">
-                {preparingShare
-                  ? '準備緊分享圖…'
-                  : shareUrl
-                  ? '會出你上面揀嗰張合成圖做預覽。'
-                  : '會出商品第一張相做預覽（登入後可以出埋合成圖）。'}
+                預覽卡會用你揀嘅相同價錢，按 Facebook / WhatsApp 嘅闊版尺寸另外生成。
               </p>
             </div>
 
