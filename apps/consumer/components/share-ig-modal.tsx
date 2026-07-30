@@ -350,9 +350,9 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 sm:items-center sm:p-6" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center sm:p-6" onClick={onClose}>
       <div
-        className="max-h-[92vh] w-full max-w-[520px] overflow-y-auto rounded-t-2xl bg-white p-6 shadow-sh3 sm:rounded-2xl"
+        className="max-h-[92vh] w-full max-w-[520px] overflow-y-auto rounded-2xl bg-white p-6 shadow-sh3"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
