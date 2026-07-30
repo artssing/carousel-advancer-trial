@@ -61,10 +61,15 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
  * SharePreview id, used to build a /s/:id link whose og:image is this collage.
  * Requires auth; caller falls back to a plain link share if this throws.
  */
-export async function uploadSharePreview(blob: Blob, listingId: string): Promise<{ id: string; imageUrl: string }> {
+export async function uploadSharePreview(
+  blob: Blob,
+  listingId: string,
+  filename = 'share.png',
+): Promise<{ id: string; imageUrl: string }> {
   const token = getToken();
   const fd = new FormData();
-  fd.append('file', blob, 'share.png');
+  // filename drives the stored object's extension — keep it in sync with blob type.
+  fd.append('file', blob, filename);
   fd.append('listingId', listingId);
   const res = await fetch(`${API_URL}/share-previews`, {
     method: 'POST',

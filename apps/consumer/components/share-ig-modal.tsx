@@ -273,6 +273,9 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   const [bgColor, setBgColor] = useState<string>(NAVY);
   const [palette, setPalette] = useState<string[]>([NAVY]);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  /** /s/:id link whose og:image is this collage — pre-uploaded on step 3. */
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [preparingShare, setPreparingShare] = useState(false);
   const [rendering, setRendering] = useState(false);
   const [renderError, setRenderError] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -302,17 +305,39 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
     return () => { stale = true; };
   }, [hero]);
 
-  // Re-render preview whenever step 3 inputs settle.
+  // Re-render preview whenever step 3 inputs settle, then upload the collage in
+  // the background so the WhatsApp/Facebook buttons can fire synchronously.
+  // (Uploading on click meant opening a blank tab that sat there for ~20s while
+  // a 1.4MB PNG went up — it read as broken.) The share copy is a JPEG: same
+  // card, ~10x smaller, and the canvas always paints an opaque background so
+  // there is no alpha to lose.
   useEffect(() => {
     if (step !== 3) return;
     let stale = false;
     setRendering(true);
     setRenderError(false);
+    setShareUrl(null);
     composite(listing, photos, format, template, bgColor)
       .then((canvas) => {
         if (stale) return;
         canvasRef.current = canvas;
         setPreviewUrl(canvas.toDataURL('image/png'));
+        setPreparingShare(true);
+        canvas.toBlob(
+          async (blob) => {
+            if (stale || !blob) { if (!stale) setPreparingShare(false); return; }
+            try {
+              const { id } = await uploadSharePreview(blob, listing.id, 'share.jpg');
+              if (!stale) setShareUrl(`${window.location.origin}/s/${id}`);
+            } catch {
+              /* not logged in / offline → buttons fall back to the listing link */
+            } finally {
+              if (!stale) setPreparingShare(false);
+            }
+          },
+          'image/jpeg',
+          0.85,
+        );
       })
       .catch(() => { if (!stale) setRenderError(true); })
       .finally(() => { if (!stale) setRendering(false); });
@@ -339,32 +364,18 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   // `text` lets apps that accept it (WhatsApp / Messenger) prefill the caption;
   // IG drops text so we also copy it to the clipboard as a fallback. Desktop
   // browsers without file-share fall back to download + copy-caption.
-  // Link share (option B) — desktop + mobile. We upload the generated collage,
-  // then share a /s/:id link whose og:image IS that collage, so Facebook /
-  // WhatsApp unfurl the composed card (not the listing's first photo). If the
-  // upload fails (e.g. logged out), fall back to sharing the plain listing link
-  // (og:image = first photo). A blank window is opened synchronously first so
-  // the async upload doesn't trip the pop-up blocker.
-  async function shareLink(kind: 'whatsapp' | 'facebook') {
-    const win = window.open('', '_blank');
-    const dest = (shareUrl: string) =>
+  // Link share (option B) — desktop + mobile. Fully synchronous: the collage was
+  // already uploaded in the background (see the step-3 effect), so the click
+  // opens the share intent immediately and never trips the pop-up blocker.
+  // `shareUrl` (og:image = collage) when ready, else the plain listing link
+  // (og:image = first photo) — e.g. when the user isn't logged in.
+  function shareLink(kind: 'whatsapp' | 'facebook') {
+    const url = shareUrl ?? link;
+    const target =
       kind === 'whatsapp'
-        ? `https://wa.me/?text=${encodeURIComponent(buildCaption(listing, shareUrl))}`
-        : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`;
-    let target = dest(link); // fallback: listing link
-    try {
-      const blob: Blob | null = await new Promise((res) =>
-        canvasRef.current ? canvasRef.current.toBlob(res, 'image/png') : res(null),
-      );
-      if (blob) {
-        const { id } = await uploadSharePreview(blob, listing.id);
-        target = dest(`${window.location.origin}/s/${id}`);
-      }
-    } catch {
-      /* keep the listing-link fallback */
-    }
-    if (win) win.location.href = target;
-    else window.open(target, '_blank', 'noopener,noreferrer');
+        ? `https://wa.me/?text=${encodeURIComponent(buildCaption(listing, url))}`
+        : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+    window.open(target, '_blank', 'noopener,noreferrer');
   }
 
   async function share() {
@@ -563,7 +574,8 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
                 <button
                   type="button"
                   onClick={() => shareLink('whatsapp')}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                  disabled={preparingShare}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                   style={{ background: '#25D366' }}
                 >
                   WhatsApp
@@ -571,14 +583,19 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
                 <button
                   type="button"
                   onClick={() => shareLink('facebook')}
-                  className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                  disabled={preparingShare}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
                   style={{ background: '#1877F2' }}
                 >
                   Facebook
                 </button>
               </div>
               <p className="mt-1 text-[11px] leading-relaxed text-neutral-text-hint">
-                會出你上面揀嗰張合成圖做預覽。（未登入則出商品第一張相）
+                {preparingShare
+                  ? '準備緊分享圖…'
+                  : shareUrl
+                  ? '會出你上面揀嗰張合成圖做預覽。'
+                  : '會出商品第一張相做預覽（登入後可以出埋合成圖）。'}
               </p>
             </div>
 
