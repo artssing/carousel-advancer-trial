@@ -352,9 +352,12 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-3 sm:items-center sm:p-6" onClick={onClose}>
       <div
-        className="max-h-[92vh] w-full max-w-[520px] overflow-y-auto rounded-2xl bg-white p-6 shadow-sh3"
+        className="flex max-h-[92vh] w-full max-w-[520px] flex-col overflow-hidden rounded-2xl bg-white shadow-sh3"
         onClick={(e) => e.stopPropagation()}
       >
+        {/* Inner scroll layer — separate from the rounded/overflow-hidden shell
+            so the scrollbar never squares off the right-side corners. */}
+        <div className="overflow-y-auto p-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -541,6 +544,7 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
             </div>
           </>
         )}
+        </div>
       </div>
     </div>
   );
