@@ -34,7 +34,7 @@ export function Footer() {
             {' '}© {new Date().getFullYear()} Certifine Ltd.
           </p>
           <div className="mt-4">
-            <LanguageSwitcher />
+            <LanguageSwitcher variant="select" />
           </div>
         </div>
 
