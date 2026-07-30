@@ -33,17 +33,18 @@ export interface ProductCardProps {
 }
 
 /**
- * Top-left 45° corner ribbon. One coherent system, mutually exclusive, priority
- * SOLD > RESERVED > tier-3. Colours: 已售出 slate (dim, but card stays a link so
- * the buyer can still open the listing / seller profile), 已預留 amber, tier-3
- * brand green.
+ * Top-left 45° corner ribbon — a transaction-STATE signal only, mutually
+ * exclusive, priority SOLD > RESERVED. 已售出 slate (dim, but card stays a link
+ * so the buyer can still open the listing / seller profile), 已預留 amber.
  *
- * NOTE: the tier-3 badge is NOT a verification claim — a listing is not
- * authenticated pre-sale (authentication happens per-order after purchase) and
- * there is no cert field on Listing. It reads 「必經鑑定」(Tier 3 = mandatory
- * authentication) to stay accurate + platform-neutral. Do NOT relabel it 「已驗證」.
+ * NO tier / verification ribbon (founder 2026-07-30): buyers already learn a
+ * Tier-3 item is mandatorily authenticated at checkout — a card tag would only
+ * bait attention. A verified badge becomes meaningful ONLY once a
+ * pre-sale-authentication flow exists (seller obtains an authenticator cert
+ * before listing) + a cert field on Listing — see backlog. Until then no
+ * authenticity claim on cards (platform-neutral).
  */
-function CornerRibbon({ status, tier }: { status?: string | null; tier: 1 | 2 | 3 }) {
+function CornerRibbon({ status }: { status?: string | null }) {
   let label: string | null = null;
   let cls = '';
   if (status === 'SOLD') {
@@ -52,9 +53,6 @@ function CornerRibbon({ status, tier }: { status?: string | null; tier: 1 | 2 | 
   } else if (status === 'RESERVED') {
     label = '已預留';
     cls = 'bg-amber-500';
-  } else if (tier === 3) {
-    label = '必經鑑定';
-    cls = 'bg-brand-600';
   }
   if (!label) return null;
   return (
@@ -90,7 +88,7 @@ export function ProductCard({ listing: l, meta }: ProductCardProps) {
             {brandLabel}
           </div>
         )}
-        <CornerRibbon status={l.status} tier={tier} />
+        <CornerRibbon status={l.status} />
       </div>
       <div className="flex flex-1 flex-col gap-1.5 px-4 pb-4 pt-3.5">
         <h3 className="line-clamp-2 min-h-[2.6em] text-sm font-semibold leading-snug text-neutral-text">

@@ -53,5 +53,5 @@ customer 刪除一律 soft（status flip + `removedAt`/`removedByRole`）；hard
 
 - **2026-07-30（REVERSES 2026-06-11 Q1）**：交易中（RESERVED）件貨 **唔可以** 出現喺 global browse/search — 買家見到都買唔到，浪費注意力＋似壞 app。Global browse/search 只留 `ACTIVE`。`listings.service.ts:list()` where = `status: ACTIVE`。
 - RESERVED / SOLD 仍可經 direct URL 到達；**seller 公開 profile** 係唯一刻意 show ACTIVE+RESERVED+SOLD 嘅 public grid（社會證明），卡左上角 45° corner ribbon 標記 `已預留` / `已售出`。
-- **Product card 左上角 ribbon system**（`product-card.tsx`）：互斥，優先 SOLD > RESERVED > tier-3。已售出=slate 灰（相 dim 但卡仍可 click 入 detail）、已預留=amber、tier-3=brand 綠。
-- **tier-3 ribbon 唔係 verification claim**：listing 賣之前未經鑑定（鑑定係交易後 per-order），schema 亦冇 cert 欄位。ribbon 寫 `必經鑑定`（Tier 3 = 強制鑑定），**唔准** 寫「已驗證」（平台中立：平台唔可以 assert authenticity）。真「已驗證 + cert」系統 = backlog。
+- **Product card 左上角 ribbon system**（`product-card.tsx`）：**只係交易狀態**，互斥，優先 SOLD > RESERVED。已售出=slate 灰（相 dim 但卡仍可 click 入 detail）、已預留=amber。
+- **卡上冇 tier / verification ribbon**（founder 2026-07-30）：買家 checkout 已知 Tier-3 強制鑑定，落 tag 只係呃 attention 引人入去，無意義。「已驗證」badge 只有喺 **賣前鑑定 flow** 存在（賣家上架前搵鑑定師攞 cert）+ Listing 加 cert 欄位先有意義 → backlog。未有之前卡上唔做任何 authenticity claim（平台中立）。
