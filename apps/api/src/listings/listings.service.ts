@@ -69,11 +69,13 @@ export class ListingsService {
     // parseSearchQuery() (SSOT in @authentik/utils); the server just matches.
     const terms = (q ?? '').split(/\s+/).map((t) => t.trim()).filter(Boolean);
 
-    // Founder ruling 2026-06-11: RESERVED listings should still appear in
-    // browse/search (Q1). SOLD remains hidden — buyer can still reach via
-    // direct URL. DRAFT/REMOVED never appear here.
+    // Founder ruling 2026-07-30 (REVERSES 2026-06-11 Q1): in-transaction items
+    // must NOT surface in browse/search — a buyer who sees a RESERVED item
+    // cannot buy it, so it wastes attention and reads as broken. Only ACTIVE
+    // shows. RESERVED + SOLD stay reachable via direct URL / seller profile
+    // (where a corner ribbon signals 已預留 / 已售出). DRAFT/REMOVED never appear.
     const where: any = {
-      status: { in: [ListingStatus.ACTIVE, ListingStatus.RESERVED] },
+      status: ListingStatus.ACTIVE,
       ...(category ? { category } : {}),
       // Brand filter is multi-select (OR semantics): buyer picks one or more
       // brands in the sidebar → any listing matching ANY selected brand shows.

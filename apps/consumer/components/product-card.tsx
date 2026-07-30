@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Pill, TierPill } from '@authentik/ui';
+import { TierPill } from '@authentik/ui';
 import { formatHKD, tierForPrice, categoryByApiEnum } from '@authentik/utils';
 
 /**
@@ -25,9 +25,45 @@ export interface ProductCardProps {
     images?: string[];
     condition?: string | null;
     sellerDistrict?: string | null;
+    /** Listing lifecycle — drives the corner ribbon (已預留 / 已售出). */
+    status?: string | null;
   };
   /** Optional secondary line under the title (e.g. "九成新 · 尖沙咀"). */
   meta?: string;
+}
+
+/**
+ * Top-left 45° corner ribbon. One coherent system, mutually exclusive, priority
+ * SOLD > RESERVED > tier-3. Colours: 已售出 slate (dim, but card stays a link so
+ * the buyer can still open the listing / seller profile), 已預留 amber, tier-3
+ * brand green.
+ *
+ * NOTE: the tier-3 badge is NOT a verification claim — a listing is not
+ * authenticated pre-sale (authentication happens per-order after purchase) and
+ * there is no cert field on Listing. It reads 「必經鑑定」(Tier 3 = mandatory
+ * authentication) to stay accurate + platform-neutral. Do NOT relabel it 「已驗證」.
+ */
+function CornerRibbon({ status, tier }: { status?: string | null; tier: 1 | 2 | 3 }) {
+  let label: string | null = null;
+  let cls = '';
+  if (status === 'SOLD') {
+    label = '已售出';
+    cls = 'bg-slate-500';
+  } else if (status === 'RESERVED') {
+    label = '已預留';
+    cls = 'bg-amber-500';
+  } else if (tier === 3) {
+    label = '必經鑑定';
+    cls = 'bg-brand-600';
+  }
+  if (!label) return null;
+  return (
+    <span
+      className={`pointer-events-none absolute -left-[42px] top-[18px] z-10 w-[150px] -rotate-45 py-1 text-center text-[11px] font-bold tracking-[0.06em] text-white shadow-md ${cls}`}
+    >
+      {label}
+    </span>
+  );
 }
 
 export function ProductCard({ listing: l, meta }: ProductCardProps) {
@@ -35,6 +71,7 @@ export function ProductCard({ listing: l, meta }: ProductCardProps) {
   const cat = categoryByApiEnum(l.category);
   const cover = l.coverUrl ?? l.images?.[0] ?? null;
   const brandLabel = l.brand ?? cat?.shortLabel ?? '';
+  const isSold = l.status === 'SOLD';
   return (
     <Link
       href={`/listing/${l.id}`}
@@ -46,18 +83,14 @@ export function ProductCard({ listing: l, meta }: ProductCardProps) {
           <img
             src={cover}
             alt={l.title}
-            className="absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.02]"
+            className={`absolute inset-0 h-full w-full object-cover transition duration-300 group-hover:scale-[1.02] ${isSold ? 'opacity-55 grayscale-[35%]' : ''}`}
           />
         ) : (
           <div className="absolute inset-0 flex items-center justify-center font-display-serif text-[13px] font-bold uppercase tracking-[0.14em] text-[#9aa3b5]">
             {brandLabel}
           </div>
         )}
-        {tier === 3 && (
-          <Pill variant="verify" size="sm" className="absolute left-3 top-3">
-            ◆ 已驗證
-          </Pill>
-        )}
+        <CornerRibbon status={l.status} tier={tier} />
       </div>
       <div className="flex flex-1 flex-col gap-1.5 px-4 pb-4 pt-3.5">
         <h3 className="line-clamp-2 min-h-[2.6em] text-sm font-semibold leading-snug text-neutral-text">
