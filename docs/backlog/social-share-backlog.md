@@ -82,3 +82,13 @@ Founder 提過 Carousell 有。同 Facebook 一樣 pattern：
 而家 `/listing/:id` 個 `og:image` = 商品第一張相（未經設計）。可以考慮 server-side 生成同一款 1200×630 卡（價錢 + 標題 + watermark）做 listing 頁 og:image，咁**任何人直接貼 listing link**（唔止經 share wizard）都有靚 preview。
 
 要 server-side canvas（`@napi-rs/canvas` 或 `satori`）+ cache。**Effort**：1-2 日。
+
+---
+
+## 7. UAT 測試垃圾（2026-08-01 QA 之後）
+
+除咗原本 #4 嗰批,QA regression 又留低:
+- 8 個 SharePreview row + R2 object,**其中一個係 `.sh` 文字檔**(舊 code 未有 magic-byte sniff 嗰陣上載,`79752550-f774-4651-9989-020779feed73.sh`,content-type 報 image/png)
+- listing `cmsak25i100015vcny20a29k7`(RESERVED)、order `cmsak2xyg00045vcnwb74usd3`(PAID)、2 個未確認嘅 cashout intent
+
+清理要 founder 明確指名個 bucket 授權。

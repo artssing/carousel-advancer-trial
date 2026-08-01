@@ -33,3 +33,38 @@ agent frontmatter 改做 `opus`。呢個係 founder 自己部機嘅全域設定�
 ## 3. Repo-wide lint 壞（已知）
 
 CLAUDE.md 已記低：`npm run type-check` 先係權威 gate。修 lint config 未排期。
+
+---
+
+## 4. 部署陷阱：`build api-uat` 唔會 rebuild API（2026-08-01 中招）
+
+`docker-compose.deploy.yml` 入面 **`api-uat` 冇 `build:` section** —— 佢直接用
+`api-prod` build 出嘅 `certifine-api:latest`。所以:
+
+```bash
+# ❌ 表面成功,實際乜都冇 rebuild
+docker compose ... build api-uat
+
+# ✅ 要 build 個 image owner
+docker compose ... build api-prod
+docker compose ... up -d --force-recreate api-prod api-uat
+```
+
+中招症狀:consumer 有新 code,API 行緊舊 code,行為對唔上,好易 debug 錯方向。
+驗證方法:`docker images | grep certifine-api` 睇個 tag 幾時建,或者
+`docker exec certifine-api-uat grep -rl <新函數名> dist/`。
+
+## 5. `prisma db push` 會被 `apps/api/.env` 蓋過
+
+`set -a; . ./.env.uat` export 出嚟嘅 `DATABASE_URL` **入唔到** —— prisma 讀返
+`apps/api/.env`(指住 PROD DB)蓋過去。一定要 inline:
+
+```bash
+DATABASE_URL="postgresql://…/authentik_uat?schema=public" npx prisma db push
+```
+
+出事嗰陣佢照樣印「Your database is now in sync」,所以要自己 verify:
+`docker exec authentik-postgres psql -U authentik -d authentik_uat -c "\d \"SharePreview\""`
+
+**PROD DB 連 `SharePreview` 張 table 都未有**(從來未 push 過)—— 上 PROD 前要補,
+見 `prod-not-live-backlog.md`。
