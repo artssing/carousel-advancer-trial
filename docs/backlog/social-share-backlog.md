@@ -37,19 +37,13 @@ R2 配置：bucket `certifine-media`(prod) / `certifine-media-uat`，custom doma
 
 ---
 
-## 2. 分享 flow 完全冇 analytics tagging（review blocker）
+## 2. ~~分享 flow 冇 analytics tagging~~ ✅ 2026-07-31 做咗
 
-**問題**：成個 share wizard 一個 `track()` 都冇，`packages/utils/src/analytics-events.ts` 亦冇任何 share event。違反 CLAUDE.md：「新 feature 有用戶可見互動 = 必須 tag analytics event ... 冇 tagging = review blocker」。
+4 個 event 已入 registry SSOT + wire 好：`share_modal_opened` / `share_step_advanced` /
+`share_bg_color_selected` / `share_action_completed`（channel = native / download /
+copy_caption / link_whatsapp / link_facebook）。
 
-**要加嘅 events**：
-- 開 share modal
-- step 推進（揀相 → 揀格式/樣式 → 預覽）
-- 揀底色
-- 最終動作：`navigator.share` / 下載 / 複製文案 / WhatsApp / Facebook
-
-**流程**：① event 入 registry SSOT ② `cd packages/utils && npx tsc -p tsconfig.build.json` rebuild ③ wire `track()` ④ update analytics spec changelog。Gate：`npm run type-check`。
-
-**Effort**：~半日。
+**仲欠**：`docs/proposals/analytics-tagging-spec.md` 個 Changelog 未補呢 4 個 event。
 
 ---
 

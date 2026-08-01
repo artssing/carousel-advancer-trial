@@ -5,6 +5,14 @@ import { randomUUID } from 'crypto';
 import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 
+/** MIME → file extension for the types whose subtype isn't the extension. */
+const MIME_EXT: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/svg+xml': 'svg',
+  'video/quicktime': 'mov',
+  'video/x-matroska': 'mkv',
+};
+
 export interface StoredFile {
   url: string;
   mimeType: string;
@@ -22,12 +30,12 @@ export interface StoredFile {
  *     production target. Flip via env — no code change needed:
  *       STORAGE_DRIVER=s3
  *       S3_ENDPOINT=https://<account>.r2.cloudflarestorage.com
- *       S3_BUCKET=authentik-media
+ *       S3_BUCKET=certifine-media
  *       S3_ACCESS_KEY_ID=...
  *       S3_SECRET_ACCESS_KEY=...
- *       S3_PUBLIC_BASE_URL=https://media.authentik.hk   (R2 custom domain / public bucket URL)
- *     Requires `npm install @aws-sdk/client-s3 -w apps/api` (not installed yet —
- *     deliberately deferred until a real bucket exists; see production-setup doc).
+ *       S3_PUBLIC_BASE_URL=https://media.certifinehk.com  (R2 custom domain)
+ *     Live on UAT + PROD since 2026-07-30 (buckets certifine-media /
+ *     certifine-media-uat); secrets live in apps/api/.env.prod / .env.uat.
  *
  * Callers never see the driver — they just get back a stable `url` to store
  * in Listing.images / OrderEvidence.mediaUrl etc. Swapping driver later does
@@ -51,6 +59,20 @@ export class StorageService {
     this.driver = (this.config.get<string>('STORAGE_DRIVER') ?? 'local') as 'local' | 's3';
   }
 
+  /**
+   * Object key = random UUID + an extension derived from the MIME type.
+   *
+   * The extension deliberately does NOT come from `originalname`: that string
+   * is client-controlled, and `"a.png/../../x".split('.').pop()` yields a
+   * segment containing slashes — path traversal out of uploads/ on the local
+   * driver, and an injected key prefix on S3. Unknown types get `.bin`.
+   */
+  private keyFor(mimetype: string): string {
+    const subtype = mimetype.split('/')[1]?.toLowerCase().replace(/[^a-z0-9]/g, '') ?? '';
+    const ext = MIME_EXT[mimetype] ?? (subtype || 'bin');
+    return `${randomUUID()}.${ext}`;
+  }
+
   async upload(file: { buffer: Buffer; originalname: string; mimetype: string; size: number }): Promise<StoredFile> {
     if (this.driver === 's3') {
       return this.uploadToS3(file);
@@ -65,8 +87,7 @@ export class StorageService {
     size: number;
   }): Promise<StoredFile> {
     await mkdir(this.uploadsDir, { recursive: true });
-    const ext = file.originalname.includes('.') ? file.originalname.split('.').pop() : 'bin';
-    const filename = `${randomUUID()}.${ext}`;
+    const filename = this.keyFor(file.mimetype);
     await writeFile(join(this.uploadsDir, filename), file.buffer);
     const apiPort = this.config.get<string>('API_PORT') ?? '4000';
     const base = this.config.get<string>('API_PUBLIC_BASE_URL') ?? `http://localhost:${apiPort}`;
@@ -107,8 +128,7 @@ export class StorageService {
       });
     }
 
-    const ext = file.originalname.includes('.') ? file.originalname.split('.').pop() : 'bin';
-    const key = `${randomUUID()}.${ext}`;
+    const key = this.keyFor(file.mimetype);
     await this.s3Client.send(new PutObjectCommand({
       Bucket: bucket,
       Key: key,

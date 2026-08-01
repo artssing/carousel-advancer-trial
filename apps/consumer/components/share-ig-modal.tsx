@@ -1,18 +1,20 @@
 'use client';
 
 /**
- * Share-to-Instagram wizard (MVP — docs/proposals/ig-share-proposal.md).
+ * Social-share wizard (MVP — docs/proposals/ig-share-proposal.md).
  *
  * 3-step guided flow so a casual seller gets a polished branded asset with
- * zero design effort: ① pick photo ② pick format (Story/Feed) + template
+ * zero design effort: ① pick photos ② pick format (Story/Feed) + template
  * ③ preview + share. Compositing is pure client-side HTML5 canvas — no
  * external service, no per-use cost.
  *
  * Share paths:
- *  - Mobile: navigator.share({ files }) opens the native share sheet (IG
- *    listed if installed). Caption is pre-copied to clipboard because IG's
- *    share target drops text.
- *  - Desktop / unsupported: download PNG + copy caption buttons.
+ *  - Image + caption (mobile): navigator.share({ files }) opens the native
+ *    share sheet (IG listed if installed). Caption is also copied to the
+ *    clipboard because IG's share target drops text.
+ *  - Link (desktop + mobile): a dedicated 1.91:1 OG card is generated and
+ *    uploaded on click, then WhatsApp / Facebook unfurl it from /s/:id.
+ *  - Fallback: download PNG + copy caption.
  *
  * Platform-neutrality (CLAUDE.md core legal posture): the asset carries a
  * small "via CERTI·FINE" corner mark — attribution, never a guarantee. No
@@ -20,8 +22,9 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Share2, Download, Copy, Check, ChevronLeft } from 'lucide-react';
-import { formatHKD, conditionLabel } from '@authentik/utils';
+import { formatHKD, conditionLabel, type ShareChannel } from '@authentik/utils';
 import { uploadSharePreview } from '@/lib/api';
+import { track } from '@/lib/analytics';
 
 export interface ShareListing {
   id: string;
@@ -330,7 +333,16 @@ function Spinner() {
   return <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" />;
 }
 
-export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onClose: () => void }) {
+export function ShareIgModal({
+  listing,
+  onClose,
+  entry = 'listing_detail',
+}: {
+  listing: ShareListing;
+  onClose: () => void;
+  /** Which surface opened the wizard — seller (my-listings) vs buyer (listing). */
+  entry?: 'listing_detail' | 'my_listings';
+}) {
   const [step, setStep] = useState(1);
   // Multi-select collage（founder 2026-07-12）：順序 = 排位，#1 = 主相。Cap 4。
   const [photos, setPhotos] = useState<string[]>(listing.images[0] ? [listing.images[0]] : []);
@@ -347,6 +359,32 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   const [renderError, setRenderError] = useState(false);
   const [copied, setCopied] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const copiedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
+
+  useEffect(() => {
+    track('share_modal_opened', { listing_id: listing.id, entry });
+    // Open is a one-shot funnel entry — re-firing on prop identity change would
+    // inflate the top of the funnel.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /** Funnel exit — every share path lands here so channels stay comparable. */
+  function trackShare(channel: ShareChannel) {
+    track('share_action_completed', {
+      listing_id: listing.id,
+      channel,
+      format,
+      template,
+      photo_count: photos.length,
+    });
+  }
+
+  function goToStep(next: 2 | 3) {
+    track('share_step_advanced', { listing_id: listing.id, step: next, photo_count: photos.length });
+    setStep(next);
+  }
 
   const link = useMemo(
     () => `${typeof window !== 'undefined' ? window.location.origin : ''}/listing/${listing.id}?utm_source=social&utm_medium=share`,
@@ -394,25 +432,31 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, photos.join(','), format, template, bgColor, listing]);
 
-  async function copyCaption() {
-    await navigator.clipboard.writeText(caption);
+  /** Never throws — clipboard access can be denied (insecure context, policy),
+   *  and a failed copy must not abort the image share that awaits it. */
+  async function copyCaption(): Promise<boolean> {
+    try {
+      await navigator.clipboard.writeText(caption);
+    } catch {
+      return false;
+    }
     setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    if (copiedTimer.current) clearTimeout(copiedTimer.current);
+    copiedTimer.current = setTimeout(() => setCopied(false), 2000);
+    return true;
   }
 
   function download() {
-    if (!canvasRef.current) return;
+    // Reuse the already-rendered data URL — re-encoding the canvas costs a
+    // second full PNG serialisation for an identical result.
+    const href = previewUrl ?? canvasRef.current?.toDataURL('image/png');
+    if (!href) return;
     const a = document.createElement('a');
     a.download = `certifine-${listing.id}.png`;
-    a.href = canvasRef.current.toDataURL('image/png');
+    a.href = href;
     a.click();
   }
 
-  // Web Share API L2 — the ONLY web path that carries the actual generated
-  // image into a specific app (WhatsApp / Facebook / Messenger / IG …). Passing
-  // `text` lets apps that accept it (WhatsApp / Messenger) prefill the caption;
-  // IG drops text so we also copy it to the clipboard as a fallback. Desktop
-  // browsers without file-share fall back to download + copy-caption.
   // Link share (option B) — desktop + mobile. Builds + uploads the 1.91:1 OG
   // card on click (showing progress on the button), then jumps straight to the
   // share intent. Uploading lazily keeps storage to what's actually shared; the
@@ -421,20 +465,36 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
   // listing's first photo.
   async function shareLink(kind: 'whatsapp' | 'facebook') {
     if (sharingKind) return;
-    const go = (url: string) => {
-      const target =
-        kind === 'whatsapp'
-          ? `https://wa.me/?text=${encodeURIComponent(buildCaption(listing, url))}`
-          : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
-      // Opening after an await can trip the pop-up blocker — fall back to
-      // navigating this tab so the share never silently does nothing.
+    const targetFor = (url: string) =>
+      kind === 'whatsapp'
+        ? `https://wa.me/?text=${encodeURIComponent(buildCaption(listing, url))}`
+        : `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+
+    trackShare(kind === 'whatsapp' ? 'link_whatsapp' : 'link_facebook');
+
+    if (shareUrl) {
+      const target = targetFor(shareUrl);
       const win = window.open(target, '_blank', 'noopener,noreferrer');
       if (!win) window.location.href = target;
-    };
+      return;
+    }
 
-    if (shareUrl) { go(shareUrl); return; }
-
+    // Open the tab NOW, inside the user gesture — a window.open issued after
+    // the upload await is treated as unsolicited and gets blocked. NOT
+    // 'noopener' here: that makes window.open return null, and we need the
+    // handle to point the tab at the target once the OG card is stored
+    // (win.opener is nulled below instead). Give it a holding message so the
+    // second or so of upload doesn't look like a broken blank tab.
+    const win = window.open('', '_blank');
+    if (win) {
+      win.opener = null;
+      win.document.write(
+        '<title>準備緊…</title><body style="margin:0;display:grid;place-items:center;height:100vh;font:600 15px/1.5 system-ui,sans-serif;color:#475467">準備緊分享圖片…</body>',
+      );
+      win.document.close();
+    }
     setSharingKind(kind);
+    let url = link;
     try {
       const ogCanvas = await compositeOg(listing, photos, bgColor);
       const blob: Blob | null = await new Promise((res) =>
@@ -442,16 +502,26 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
       );
       if (!blob) throw new Error('OG card render failed');
       const { id } = await uploadSharePreview(blob, listing.id, 'share.jpg');
-      const url = `${window.location.origin}/s/${id}`;
+      url = `${window.location.origin}/s/${id}`;
       setShareUrl(url);
-      go(url);
     } catch {
-      go(link);
+      /* fall back to the plain listing link — its og:image is the first photo */
     } finally {
       setSharingKind(null);
     }
+
+    const target = targetFor(url);
+    if (win && !win.closed) win.location.href = target;
+    // Pop-up blocked (or the user closed the tab) — navigate here instead so
+    // the share never silently does nothing.
+    else window.location.href = target;
   }
 
+  // Web Share API L2 — the ONLY web path that carries the actual generated
+  // image into a specific app (WhatsApp / Facebook / Messenger / IG …). Passing
+  // `text` lets apps that accept it (WhatsApp / Messenger) prefill the caption;
+  // IG drops text so we also copy it to the clipboard as a fallback. Desktop
+  // browsers without file-share fall back to download + copy-caption.
   async function share() {
     if (!canvasRef.current) return;
     await copyCaption();
@@ -459,11 +529,13 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
       if (!blob) return;
       const file = new File([blob], `certifine-${listing.id}.png`, { type: 'image/png' });
       if (navigator.canShare?.({ files: [file] })) {
+        trackShare('native');
         try {
           await navigator.share({ files: [file], text: caption, title: listing.title });
         } catch { /* user cancelled share sheet */ }
       } else {
         download();
+        trackShare('download');
       }
     }, 'image/png');
   }
@@ -542,7 +614,7 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
             </p>
             <button
               type="button"
-              onClick={() => setStep(2)}
+              onClick={() => goToStep(2)}
               disabled={photos.length === 0}
               className="mt-4 w-full rounded-lg bg-brand-600 py-3 text-sm font-semibold text-white shadow-sh2 hover:bg-brand-700 disabled:opacity-50"
             >
@@ -593,7 +665,7 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
             </div>
             <button
               type="button"
-              onClick={() => setStep(3)}
+              onClick={() => goToStep(3)}
               className="mt-5 w-full rounded-lg bg-brand-600 py-3 text-sm font-semibold text-white shadow-sh2 hover:bg-brand-700"
             >
               生成預覽
@@ -625,7 +697,14 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
                     <button
                       key={c}
                       type="button"
-                      onClick={() => setBgColor(c)}
+                      onClick={() => {
+                        setBgColor(c);
+                        track('share_bg_color_selected', {
+                          listing_id: listing.id,
+                          color: c,
+                          is_default: c === NAVY,
+                        });
+                      }}
                       aria-label={`底色 ${c}`}
                       className={`h-8 w-8 rounded-full border transition ${bgColor === c ? 'border-white ring-2 ring-brand-600' : 'border-line hover:scale-105'}`}
                       style={{ background: c }}
@@ -689,10 +768,10 @@ export function ShareIgModal({ listing, onClose }: { listing: ShareListing; onCl
                 </button>
               )}
               <div className="flex gap-2">
-                <button type="button" onClick={download} disabled={rendering || renderError} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-line bg-white py-2.5 text-sm font-semibold text-ink shadow-sh1 hover:bg-surface-2 disabled:opacity-50">
+                <button type="button" onClick={() => { download(); trackShare('download'); }} disabled={rendering || renderError} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-line bg-white py-2.5 text-sm font-semibold text-ink shadow-sh1 hover:bg-surface-2 disabled:opacity-50">
                   <Download className="h-4 w-4" /> 下載圖片
                 </button>
-                <button type="button" onClick={copyCaption} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-line bg-white py-2.5 text-sm font-semibold text-ink shadow-sh1 hover:bg-surface-2">
+                <button type="button" onClick={() => { void copyCaption(); trackShare('copy_caption'); }} className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-line bg-white py-2.5 text-sm font-semibold text-ink shadow-sh1 hover:bg-surface-2">
                   {copied ? <Check className="h-4 w-4 text-brand-600" /> : <Copy className="h-4 w-4" />} {copied ? '已複製' : '複製文案'}
                 </button>
               </div>

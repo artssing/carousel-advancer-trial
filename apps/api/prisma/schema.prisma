@@ -722,9 +722,15 @@ model SharePreview {
   id        String   @id @default(cuid())
   imageUrl  String
   listingId String
+  /// Who uploaded it. NOT necessarily the seller — any logged-in user may share
+  /// someone else's listing, which is the point of sharing. Recorded so an
+  /// abusive card (an image bound to a listing it misrepresents) is traceable
+  /// back to an account. Nullable: rows created before this field existed.
+  uploaderId String?
   createdAt DateTime @default(now())
 
   @@index([listingId])
+  @@index([uploaderId])
   @@index([createdAt])
 }
 

@@ -39,6 +39,11 @@ export const ANALYTICS_EVENTS = [
   'checkout_completed',
   /** SERVER-SIDE：cron sweepPaymentExpired 直接落 DB，唔經 client batch（founder 2026-07-20 ruling #5） */
   'checkout_payment_expired',
+  // share domain（社交分享 funnel — 賣家自發引流，MVP 2026-07-31）
+  'share_modal_opened',
+  'share_step_advanced',
+  'share_bg_color_selected',
+  'share_action_completed',
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
@@ -141,6 +146,43 @@ export interface CheckoutPaymentExpiredProps {
   tier: 1 | 2 | 3;
   total_hkd: number;
   buyer_user_id: string;
+}
+
+// ── share domain（分享 funnel）────────────────────────────────────────────
+/** 分享對象／方式。link_* = 生成 OG 卡再跳 app；native = navigator.share 帶圖。 */
+export type ShareChannel =
+  | 'native'
+  | 'download'
+  | 'copy_caption'
+  | 'link_whatsapp'
+  | 'link_facebook';
+
+export interface ShareModalOpenedProps {
+  listing_id: string;
+  /** 賣家喺自己 my-listings 分享，定買家喺 listing 頁分享 */
+  entry: 'listing_detail' | 'my_listings';
+}
+
+/** step 2 = 揀格式/樣式，step 3 = 預覽。漏斗流失率靠呢個計。 */
+export interface ShareStepAdvancedProps {
+  listing_id: string;
+  step: 2 | 3;
+  photo_count: number;
+}
+
+export interface ShareBgColorSelectedProps {
+  listing_id: string;
+  /** hex，用嚟睇有幾多人唔要 default NAVY */
+  color: string;
+  is_default: boolean;
+}
+
+export interface ShareActionCompletedProps {
+  listing_id: string;
+  channel: ShareChannel;
+  format: 'story' | 'feed';
+  template: 'photo' | 'clean';
+  photo_count: number;
 }
 
 export interface UserLoginProps {

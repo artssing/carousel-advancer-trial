@@ -16,7 +16,7 @@
 
 | 檔 | 係乜 | 刪法 |
 |---|---|---|
-| `docker-compose.app.yml` | 舊 Jenkins deploy compose（31xx host port，已加 DEPRECATED banner） | Jenkins 行過幾次新 pipeline 冇問題後刪 |
+| `docker-compose.app.yml` | 舊 Jenkins deploy compose（31xx host port，已加 DEPRECATED banner） | Jenkins 行過幾次新 pipeline 冇問題後刪。**2026-08-01：佢起嘅 8 個 container 已清**（`docker compose -p authentik down` + `-p authentik_uat down`）—— 兩個 api 一直 crash loop（image 舊到冇 `dist/main.js`），其餘 6 個 frontend 淨係食 RAM。檔案本身未刪 |
 | `.env.compose.prod` / `.env.compose.uat` | 只服務 app.yml + Jenkinsfile isolate cp 嗰行 | 同 app.yml 一齊刪；順手刪 Jenkinsfile 嗰句 `cp "$SRC"/.env.compose.*`（Jenkinsfile 改動要 `./ci.sh fresh` 重種） |
 | 舊 image `authentik-api/consumer/authenticator/admin:*` | app.yml build 出嚟嘅舊名 image | `docker image prune` / 逐個 `docker rmi` |
 

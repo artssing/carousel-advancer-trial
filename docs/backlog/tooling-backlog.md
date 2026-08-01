@@ -5,7 +5,14 @@
 **症狀**：spawn 即刻收到
 > Agent terminated early due to an API error: There's an issue with the selected model (deepseek-v4-pro). It may not exist or you may not have access to it.
 
-試過喺 Agent call 加 `model` override，**一樣死**（override 唔蓋過 agent frontmatter）。2026-07-30 試咗兩次都係。
+**Root cause（2026-07-31 查到）**：agent frontmatter 本身冇問題（`model: sonnet`）。
+壞喺 `~/.claude/settings.json` —— 佢將 `ANTHROPIC_BASE_URL` 指去 DeepSeek，再 map
+`sonnet` → `deepseek-v4-pro`（拎唔到）。所以**所有** `model: sonnet` 嘅 agent 都死，
+唔止 coordinator。
+
+**Workaround（已驗證行得）**：spawn 時加 `model: "opus"`（map 去 `deepseek-v4-flash`，拎到）。
+**真修法**：改 `~/.claude/settings.json` 嗰堆 `ANTHROPIC_DEFAULT_*_MODEL`，或者將 3 個
+agent frontmatter 改做 `opus`。呢個係 founder 自己部機嘅全域設定，未經同意冇郁。
 
 **影響**：CLAUDE.md 寫明「UI/UX gap 一發現必須 spawn coordinator」，founder 亦成日叫「同 Coordinator 傾」。而家個 agent 用唔到，UX proposal 要 inline 做（founder 照樣收到 ranked proposals + 要 sign-off 嘅位）。
 

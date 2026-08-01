@@ -286,7 +286,7 @@ export default function MyListingsPage() {
           })}
         </div>
       )}
-      {shareListing && <ShareIgModal listing={shareListing} onClose={() => setShareListing(null)} />}
+      {shareListing && <ShareIgModal listing={shareListing} entry="my_listings" onClose={() => setShareListing(null)} />}
 
       {/* ConfirmDialog v2 — soft delete（可還原，T3） */}
       <ConfirmDialog

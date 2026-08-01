@@ -10,7 +10,7 @@ import { formatHKD, tierForPrice, categoryByApiEnum } from '@authentik/utils';
  *   - `.p-card` — rounded-xl white bg + border-line + shadow-sh1
  *   - Hover — translateY(-2px) + shadow-sh3
  *   - `.ph` — aspect-square gradient placeholder (with brand watermark fallback)
- *   - Verify pill overlay top-left when tier === 3 (proxied for verified status)
+ *   - Corner ribbon top-left for transaction state only (see CornerRibbon)
  *   - `.body` — title 2-line clamp + optional meta line + row (price + tier pill)
  */
 

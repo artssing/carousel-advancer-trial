@@ -34,6 +34,17 @@ export function hasToken() {
   return !!getToken();
 }
 
+/** NestJS error bodies carry the useful message (`message` may be an array of
+ *  validation errors); statusText alone is usually just "Bad Request". */
+async function apiError(res: Response): Promise<ApiError> {
+  let msg: string | string[] = res.statusText;
+  try {
+    const body = await res.json();
+    msg = body.message ?? msg;
+  } catch {}
+  return new ApiError(res.status, Array.isArray(msg) ? msg.join(', ') : msg);
+}
+
 async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = getToken();
   const res = await fetch(`${API_URL}${path}`, {
@@ -44,14 +55,7 @@ async function req<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...(init.headers ?? {}),
     },
   });
-  if (!res.ok) {
-    let msg = res.statusText;
-    try {
-      const body = await res.json();
-      msg = body.message ?? msg;
-    } catch {}
-    throw new ApiError(res.status, Array.isArray(msg) ? msg.join(', ') : msg);
-  }
+  if (!res.ok) throw await apiError(res);
   if (res.status === 204) return undefined as T;
   return res.json() as Promise<T>;
 }
@@ -68,7 +72,8 @@ export async function uploadSharePreview(
 ): Promise<{ id: string; imageUrl: string }> {
   const token = getToken();
   const fd = new FormData();
-  // filename drives the stored object's extension — keep it in sync with blob type.
+  // The server derives the stored extension from the sniffed image type, not
+  // from this filename — it's only here because FormData wants one.
   fd.append('file', blob, filename);
   fd.append('listingId', listingId);
   const res = await fetch(`${API_URL}/share-previews`, {
@@ -76,7 +81,7 @@ export async function uploadSharePreview(
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: fd,
   });
-  if (!res.ok) throw new ApiError(res.status, res.statusText);
+  if (!res.ok) throw await apiError(res);
   return res.json();
 }
 
