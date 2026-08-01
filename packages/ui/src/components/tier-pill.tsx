@@ -21,7 +21,10 @@ const tierConfig: Record<
     icon: ShieldAlert,
   },
   3: {
-    label: 'Tier 3 · Verified',
+    // NOT "Verified" (founder 2026-08-02): the pill names the tier's RULE, like
+    // the other two — nothing about a listing is authenticated before it sells,
+    // so a per-item "Verified" would be the platform asserting authenticity.
+    label: 'Tier 3 · Mandatory Auth',
     description: '> HKD 10,000 · 強制鑑定',
     classes: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
     icon: ShieldCheck,

@@ -363,6 +363,19 @@ export function ShareIgModal({
 
   useEffect(() => () => { if (copiedTimer.current) clearTimeout(copiedTimer.current); }, []);
 
+  // Lock body scroll + Esc to close — same idiom as the top-nav mobile drawer
+  // (docs/lessons.md: reuse the known pattern, don't invent a second one).
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [onClose]);
+
   useEffect(() => {
     track('share_modal_opened', { listing_id: listing.id, entry });
     // Open is a one-shot funnel entry — re-firing on prop identity change would
