@@ -189,7 +189,10 @@ export default function SellerPage() {
       {/* ═══ Listings ═══ */}
       <div className="mb-[18px] mt-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="font-display-serif text-[27px] font-bold leading-tight tracking-[-0.01em] text-ink">
-          在售貨品（{q ? `${total} / ${profile.activeListingsCount}` : total}）
+          {/* NOT 「在售貨品」 (founder 2026-08-02): this list now includes
+              RESERVED and SOLD, so calling the count 在售 contradicts the
+              「在售 N」 stat right above it. */}
+          賣家貨品（{q ? `${total} / ${profile.activeListingsCount}` : total}）
         </h2>
         <div className="relative w-full sm:w-[300px]">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-text-hint" />
@@ -227,7 +230,7 @@ export default function SellerPage() {
           </p>
         ) : (
           <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-neutral-text-muted shadow-sh1">
-            呢個賣家暫時冇上架中嘅商品。
+            呢個賣家暫時冇任何貨品。
           </p>
         )
       ) : (

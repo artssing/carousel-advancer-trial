@@ -1,6 +1,7 @@
 import { Controller, ForbiddenException, Get, NotFoundException, Param, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
+import { ListingStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 /**
@@ -122,7 +123,7 @@ export class PublicUsersController {
     };
   }
 
-  /** ACTIVE listings of a user — for IM "睇佢仲賣緊咩" + /seller/:id page */
+  /** Public listings of a user — for IM "睇佢仲賣緊咩" + /seller/:id page */
   @Get(':id/listings')
   async sellerListings(
     @Param('id') id: string,
@@ -136,12 +137,14 @@ export class PublicUsersController {
     // Same tokenized AND-match semantics as listings.list() browse search —
     // each whitespace-separated term must hit title|description|brand.
     const terms = (q ?? '').split(/\s+/).map((t) => t.trim()).filter(Boolean);
-    // ACTIVE only (founder 2026-07-30): seller public profile does NOT surface
-    // reserved/sold items — same rationale as global browse (buyer can't act on
-    // them). RESERVED/SOLD reachable only via direct listing URL.
+    // Founder 2026-08-02 (REVISES 2026-07-30): the seller profile DOES show
+    // RESERVED and SOLD — browse is where a buyer shops, so unbuyable items are
+    // noise there, but a profile is where you size up a seller, and "this one
+    // sold" is exactly the signal you want. The corner ribbon on the card marks
+    // the state. DRAFT/REMOVED stay hidden — those are the seller's own drafts.
     const where = {
       sellerId: id,
-      status: 'ACTIVE' as const,
+      status: { in: [ListingStatus.ACTIVE, ListingStatus.RESERVED, ListingStatus.SOLD] },
       ...(terms.length
         ? {
             AND: terms.map((t) => ({
@@ -165,8 +168,15 @@ export class PublicUsersController {
           category: true,
           images: true,
           createdAt: true,
+          // Drives the card's corner ribbon (已預留 / 已售出) — the profile is
+          // the one surface that shows non-ACTIVE listings.
+          status: true,
         },
-        orderBy: { createdAt: 'desc' },
+        // ACTIVE first, then the rest newest-first: a visitor should land on
+        // what they can actually buy, with sold history underneath as evidence.
+        // Postgres orders an enum by declaration order, and ListingStatus is
+        // declared ACTIVE → RESERVED → SOLD, so `asc` is already that order.
+        orderBy: [{ status: 'asc' }, { createdAt: 'desc' }],
         take,
         skip,
       }),
