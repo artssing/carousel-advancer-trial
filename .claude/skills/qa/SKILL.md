@@ -40,6 +40,11 @@ If the deployment is stale, say so and offer to rebuild before spawning.
 Spawn `qa-tester` with the mode and selector, and tell it which change is
 under test so it can verify the deployment. It reads its own scope files.
 
+For `sync`, remind it the **shared sweep is mandatory**: every scope file is
+diffed against `packages/` as well as its own `owners`, because an `owners`
+list always lags behind what a scope actually depends on. Anything the sweep
+finds relevant gets added to `owners` on the spot.
+
 ## After it returns
 
 Relay the outstanding mismatches. For each one, state plainly that it is

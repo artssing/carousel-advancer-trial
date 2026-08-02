@@ -55,11 +55,26 @@ because the code "looks right" — if you did not hit it, it is SKIPPED.
 Update scope files against code changes. For each target scope file:
 
 1. Read its `last_synced_commit` and `owners` from the frontmatter.
-2. `git diff <last_synced_commit>..HEAD -- <owners>` — if empty, skip the file
-   entirely and say so. Do not read anything else.
-3. Read only the changed files. Add cases for new behaviour, revise cases whose
+2. Diff **two** path sets since that commit:
+   - `git diff <last_synced_commit>..HEAD -- <owners>`
+   - `git diff <last_synced_commit>..HEAD -- packages/` — the **shared sweep**
+3. If both are empty, skip the file entirely and say so. Do not read anything else.
+4. Read only the changed files. Add cases for new behaviour, revise cases whose
    expectations changed, mark removed behaviour's cases as deleted.
-4. Set `last_synced_commit` to current HEAD.
+5. Set `last_synced_commit` to current HEAD.
+
+**The shared sweep is mandatory and is not optional judgement about whether the
+owners list looks complete.** `packages/utils` and `packages/ui` are consumed by
+every app, and a scope file's `owners` will always lag behind what it actually
+depends on — someone eventually forgets to add a newly-used component. The sweep
+means a SSOT change can never go invisible just because a line was not written
+down.
+
+For each file in the shared diff, decide whether this particular scope's cases
+depend on it. Most of the time the answer is no — say so in one line and move on;
+do not invent cases to justify the sweep. When the answer is yes and the path is
+not already in `owners`, **add it** — the sweep found the gap, `owners` should
+close it so the next sync catches it directly.
 
 Case IDs are **never reused** — deleting a case leaves a gap in the numbering so
 old reports still line up.

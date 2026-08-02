@@ -75,9 +75,19 @@ Release 前 / 大 refactor 之後先跑。
 /qa sync all
 ```
 
-Agent：對每個目標 scope 檔，行 `git diff <last_synced_commit>..HEAD -- <owners>`，
-**只讀有變嘅檔**，加／改／刪 case，然後更新 `last_synced_commit`。
-冇 diff 就即刻收工，唔浪費 token。
+Agent：對每個目標 scope 檔，由佢個 `last_synced_commit` 起計，diff **兩組路徑**：
+
+1. 佢自己個 `owners`
+2. `packages/`（**shared sweep**，強制，唔可以跳）
+
+**只讀有變嘅檔**，加／改／刪 case，然後更新 `last_synced_commit`。兩組都空就即刻收工。
+
+Shared sweep 嘅存在理由：`owners` 一定會落後 —— 有人用咗個新 component 但唔記得寫落去，
+嗰個檔就永遠隱形。2026-08-02 就係咁：`tier-pill.tsx` 得 browse 一個 scope 認頭，
+但 sell 同 checkout 都有 case 靠佢，改咗 label 佢哋一世唔知。
+
+Sweep 見到有關嘅檔，**要順手加返入 `owners`** —— 下次就唔使靠 sweep 執返。
+大部分時候 sweep 嘅結論係「同我無關」，一行講完就算，唔好為咗交功課砌 case 出嚟。
 
 Sync **淨係改 scope 檔**，唔會改 code，唔會判斷邊個 case 係 bug。
 
