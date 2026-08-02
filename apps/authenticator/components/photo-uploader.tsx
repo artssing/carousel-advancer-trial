@@ -140,7 +140,7 @@ export function PhotoUploader({
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
-            className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-500"
+            className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-authBrand-400 hover:text-authBrand-500"
           >
             <ImagePlus className="h-5 w-5" />
             <span className="text-[10px]">加相</span>

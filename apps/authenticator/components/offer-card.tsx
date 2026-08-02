@@ -225,7 +225,7 @@ export function OfferCard({ offerId, currentUserId, onAction }: OfferCardProps) 
               type="button"
               disabled={busy}
               onClick={() => setCounterOpen((v) => !v)}
-              className="inline-flex items-center gap-1 rounded-md border border-brand-300 bg-brand-50 px-3 py-1.5 text-xs font-medium text-brand-700 hover:bg-brand-100 disabled:opacity-50"
+              className="inline-flex items-center gap-1 rounded-md border border-authBrand-300 bg-authBrand-50 px-3 py-1.5 text-xs font-medium text-authBrand-700 hover:bg-authBrand-100 disabled:opacity-50"
             >
               <RefreshCw className="h-3.5 w-3.5" />另出價
             </button>
@@ -248,7 +248,7 @@ export function OfferCard({ offerId, currentUserId, onAction }: OfferCardProps) 
               type="button"
               disabled={busy || !counterPrice || Number(counterPrice) <= 0}
               onClick={() => act(() => api.offers.counter(offer.id, Number(counterPrice)))}
-              className="rounded bg-brand-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-brand-700 disabled:opacity-50"
+              className="rounded bg-authBrand-600 px-2 py-1 text-[11px] font-medium text-white hover:bg-authBrand-700 disabled:opacity-50"
             >
               還價
             </button>

@@ -235,7 +235,11 @@ export const api = {
   },
 
   orders: {
-    list: () => req<any[]>('/orders'),
+    /** Paged since 2026-08-02 — the old bare array grew without bound. */
+    list: (limit = 20, offset = 0, role?: 'buyer' | 'seller') =>
+      req<{ items: any[]; total: number; buyerTotal: number; sellerTotal: number }>(
+        `/orders?limit=${limit}&offset=${offset}${role ? `&role=${role}` : ''}`,
+      ),
     badgeCount: () => req<{ count: number }>('/orders/badge-count'),
     /** Public — most recent AUTH_PASSED / DELIVERED / COMPLETED orders. */
     recentPassed: () => req<Array<{

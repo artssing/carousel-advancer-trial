@@ -267,19 +267,44 @@ export class OrdersService {
 
   // NOTE: buyer/seller only — authenticators must use listForAuthenticator().
   // Do NOT call this for auth-role users; WHERE clause intentionally excludes authenticatorId (Lesson #6).
-  async listForUser(userId: string) {
+  /**
+   * Paged order list (founder 2026-08-02: the unpaged version returned every
+   * order in one array and the client filtered in memory — fine at 35 orders,
+   * not at 3,500).
+   *
+   * `role` filters server-side so a page of "my purchases" is a real page and
+   * not 20 mixed rows the client then throws half of away. Totals come back per
+   * role so the tab counts stay honest no matter how little has been loaded.
+   */
+  async listForUser(
+    userId: string,
+    opts: { role?: 'buyer' | 'seller'; limit?: number; offset?: number } = {},
+  ) {
+    const take = Math.min(Math.max(opts.limit ?? 20, 1), 100);
+    const skip = Math.max(opts.offset ?? 0, 0);
+
+    // 賣家唔見 draft（買家未 double-confirm 嘅 AWAITING_PAYMENT，貨未 lock）—
+    // 嗰啲只係人哋個購物車，唔係真單（founder 2026-07-20）。買家自己就見到。
+    const asBuyer = { buyerId: userId };
+    const asSeller = {
+      sellerId: userId,
+      NOT: { status: OrderStatus.AWAITING_PAYMENT, paymentDeadlineAt: null },
+    };
+    const where =
+      opts.role === 'buyer' ? asBuyer
+      : opts.role === 'seller' ? asSeller
+      : { OR: [asBuyer, asSeller] };
+
+    const [total, buyerTotal, sellerTotal] = await Promise.all([
+      this.prisma.order.count({ where }),
+      this.prisma.order.count({ where: asBuyer }),
+      this.prisma.order.count({ where: asSeller }),
+    ]);
+
     const orders = await this.prisma.order.findMany({
-      // 賣家唔見 draft（買家未 double-confirm 嘅 AWAITING_PAYMENT，貨未 lock）—
-      // 嗰啲只係人哋個購物車，唔係真單（founder 2026-07-20）。買家自己就見到。
-      where: {
-        OR: [
-          { buyerId: userId },
-          {
-            sellerId: userId,
-            NOT: { status: OrderStatus.AWAITING_PAYMENT, paymentDeadlineAt: null },
-          },
-        ],
-      },
+      where,
+      take,
+      skip,
       orderBy: { createdAt: 'desc' },
       include: {
         // list card 只需 cover 一張 —— 用 coverUrl，唔好 select images[]（全部相）
@@ -299,12 +324,15 @@ export class OrdersService {
     // ⚠️ Strip base64 相陣列（founder 2026-07-20 perf #5）：呢啲欄位 list card
     // 唔 render，但 base64 落 JSON 令 payload 由 ~55KB 谷到 ~1MB（32 單實測
     // handoverPhotos 一個就 969KB）。相只喺訂單詳情 `get()` 先返。
-    return orders.map(
+    const items = orders.map(
       ({ handoverPhotos, authReceiptPhotos, deliveryReceiptPhotos, returnPhotos, ...o }) => ({
         ...o,
         review: reviewMap.get(o.id) ?? null,
       }),
     );
+    // Envelope, not a bare array: the client needs the totals to label its tabs
+    // truthfully when it has only loaded the first page.
+    return { items, total, buyerTotal, sellerTotal };
   }
 
   /**

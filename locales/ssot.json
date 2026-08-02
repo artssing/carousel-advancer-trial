@@ -423,8 +423,12 @@
       "en": "Listed: {time}"
     },
     "sellerCondition": {
-      "zh": "賣方申報：{condition}",
+      "zh": "賣家申報：{condition}",
       "en": "As stated by seller: {condition}"
+    },
+    "specConditionLabel": {
+      "zh": "狀況（賣家申報）",
+      "en": "Condition (as stated by seller)"
     },
     "share": {
       "zh": "分享",

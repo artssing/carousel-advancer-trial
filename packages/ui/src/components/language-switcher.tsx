@@ -65,11 +65,15 @@ export function LanguageSwitcher({ variant = 'button' }: Props) {
   const label = locale === 'zh' ? 'EN' : '繁';
   const title = locale === 'zh' ? 'Switch to English' : '切換至繁體中文';
 
+  // Transparent + currentColor, NOT bg-white: this component is mounted in all
+  // three portals, and a hardcoded light chip renders as a white blob on the
+  // admin dark-ops layout (found by QA 2026-08-02). A shared component must
+  // inherit its host's theme, not impose the consumer's.
   return (
     <a
       href={localeHref(nextLang)}
       title={title}
-      className="inline-flex items-center gap-1.5 rounded-lg border border-line-2 bg-white px-3 py-1.5 text-[13px] font-semibold text-neutral-text-muted shadow-sh1 transition hover:border-verify hover:text-neutral-text no-underline"
+      className="inline-flex items-center gap-1.5 rounded-lg border border-current/20 bg-transparent px-3 py-1.5 text-[13px] font-semibold opacity-70 transition hover:opacity-100 no-underline"
     >
       <Languages className="h-3.5 w-3.5" />
       <span>{label}</span>

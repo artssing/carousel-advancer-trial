@@ -36,8 +36,17 @@ export class OrdersController {
   }
 
   @Get()
-  list(@CurrentUser() user: CurrentUserData) {
-    return this.orders.listForUser(user.userId);
+  list(
+    @CurrentUser() user: CurrentUserData,
+    @Query('role') role?: 'buyer' | 'seller',
+    @Query('limit') limit?: string,
+    @Query('offset') offset?: string,
+  ) {
+    return this.orders.listForUser(user.userId, {
+      role: role === 'buyer' || role === 'seller' ? role : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+      offset: offset ? parseInt(offset, 10) : undefined,
+    });
   }
 
   @Get(':id')

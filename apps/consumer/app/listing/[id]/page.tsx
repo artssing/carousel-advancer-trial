@@ -347,9 +347,11 @@ export default function ListingPage({ params }: { params: { id: string } }) {
     if (!iAmSeller && me.id) {
       // also valid for buyer — same fetch works for both
     }
-    api.orders.list()
-      .then((orders: any[]) => {
-        const match = orders.find((o) =>
+    // Only the newest orders can still be active for this listing, so one page
+    // is enough — this must not re-introduce an unbounded fetch.
+    api.orders.list(50)
+      .then(({ items: orders }) => {
+        const match = orders.find((o: any) =>
           o.listingId === listing.id &&
           o.status !== 'COMPLETED' &&
           (o.status !== 'REFUNDED' || (o.returnPhotosUploadedAt && !o.returnSellerAckAt)) &&
@@ -767,7 +769,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                       return cat ? brandLabel(cat.id as any, listing.brand) : listing.brand;
                     })()
                   : null,
-                listing.condition ? `賣方申報：${conditionLabel(listing.condition)}` : null,
+                listing.condition ? `賣家申報：${conditionLabel(listing.condition)}` : null,
               ].filter(Boolean).join(' · ')}
             </div>
           )}
@@ -842,7 +844,10 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             const cat = categoryByApiEnum(listing.category);
             const districtLabelStr = stationDisplayLabel(listing.sellerDistrict) ?? '—';
             const spec = [
-              { k: '狀況', v: listing.condition ? conditionLabel(listing.condition) : '—' },
+              // Attribution is not decoration: an unattributed 「狀況」 reads as a
+              // fact the platform verified. Condition is the seller's claim and
+              // has to say so, in the same words everywhere (founder 2026-08-02).
+              { k: '狀況（賣家申報）', v: listing.condition ? conditionLabel(listing.condition) : '—' },
               { k: '品類', v: cat?.labelZh ?? '—' },
               { k: '品牌', v: listing.brand ? (cat ? brandLabel(cat.id as any, listing.brand) : listing.brand) : '—' },
               { k: '地區', v: districtLabelStr },

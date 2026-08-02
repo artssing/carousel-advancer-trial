@@ -163,11 +163,11 @@ export function CashoutWizard({
                 <CardContent className="p-4 text-sm text-slate-600">
                   你仲未有提款帳戶。
                   {onAddMethodClick ? (
-                    <button onClick={onAddMethodClick} className="ml-1 text-brand-600 underline">
+                    <button onClick={onAddMethodClick} className="ml-1 text-authBrand-600 underline">
                       新增 →
                     </button>
                   ) : (
-                    <Link href="/account/wallet/methods" className="ml-1 text-brand-600 underline">
+                    <Link href="/account/wallet/methods" className="ml-1 text-authBrand-600 underline">
                       去新增 →
                     </Link>
                   )}
@@ -179,7 +179,7 @@ export function CashoutWizard({
                   <Card
                     key={m.id}
                     onClick={() => setSelectedMethodId(m.id)}
-                    className={`cursor-pointer transition ${selectedMethodId === m.id ? 'border-brand-500 ring-2 ring-brand-200' : ''}`}
+                    className={`cursor-pointer transition ${selectedMethodId === m.id ? 'border-authBrand-500 ring-2 ring-authBrand-200' : ''}`}
                   >
                     <CardContent className="flex items-center gap-3 p-3 text-sm">
                       <span className="text-xl">
@@ -200,11 +200,11 @@ export function CashoutWizard({
                   </Card>
                 ))}
                 {onAddMethodClick ? (
-                  <button onClick={onAddMethodClick} className="block w-full text-center text-xs text-brand-600 hover:underline">
+                  <button onClick={onAddMethodClick} className="block w-full text-center text-xs text-authBrand-600 hover:underline">
                     + 新增提款帳戶
                   </button>
                 ) : (
-                  <Link href="/account/wallet/methods" className="block text-center text-xs text-brand-600 hover:underline">
+                  <Link href="/account/wallet/methods" className="block text-center text-xs text-authBrand-600 hover:underline">
                     + 新增提款帳戶
                   </Link>
                 )}
@@ -237,7 +237,7 @@ export function CashoutWizard({
                 step="1"
                 value={amountStr}
                 onChange={(e) => setAmountStr(e.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-base focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
+                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-base focus:border-authBrand-500 focus:outline-none focus:ring-1 focus:ring-authBrand-500"
               />
               <span className="mt-1 block text-xs text-slate-500">
                 每次提款 HKD {minHKD} – HKD {Math.min(maxHKD, availableHKD).toLocaleString()}

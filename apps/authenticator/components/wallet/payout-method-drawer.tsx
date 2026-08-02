@@ -155,7 +155,7 @@ export function PayoutMethodDrawer({
                 </div>
                 <div className="flex flex-col items-end gap-1 text-xs">
                   {!m.isDefault && (
-                    <button onClick={() => setAsDefault(m.id)} className="flex items-center gap-1 text-brand-600 hover:underline">
+                    <button onClick={() => setAsDefault(m.id)} className="flex items-center gap-1 text-authBrand-600 hover:underline">
                       <Star className="h-3 w-3" /> 設為預設
                     </button>
                   )}

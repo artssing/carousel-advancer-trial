@@ -26,6 +26,9 @@ import { QrHandoverCard } from '@/components/qr-handover-card';
 // STATUS_LABEL_BASE, getStatusLabel, needsMyAction, isMeetupOrder, TERMINAL_STATUSES
 // all live in packages/utils/src/order-status.ts. Listing page reuses the same.
 
+/** One page of orders. Most accounts never need a second one. */
+const ORDERS_PAGE_SIZE = 20;
+
 const DELIVERY_LABEL: Record<string, string> = {
   SHIP: '物流寄送',
   MEETUP_AUTH: '鑑定師面交',
@@ -219,6 +222,8 @@ export default function OrdersPage() {
   const initialRole = (searchParams.get('role') as TabRole) ?? 'buyer';
 
   const [orders, setOrders]               = useState<any[]>([]);
+  const [ordersTotal, setOrdersTotal]     = useState(0);
+  const [loadingMoreOrders, setLoadingMoreOrders] = useState(false);
   const [authOrders, setAuthOrders]       = useState<any[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [isAuthenticator, setIsAuthenticator] = useState(false);
@@ -245,13 +250,29 @@ export default function OrdersPage() {
     ['buyer', 'seller', 'auth'].includes(initialRole) ? initialRole : 'buyer',
   );
 
+  /** 載入更多 — appends the next page; totals come from the server so the tab
+   *  labels stay right even before everything is loaded. */
+  const loadMoreOrders = useCallback(async () => {
+    setLoadingMoreOrders(true);
+    try {
+      const page = await api.orders.list(ORDERS_PAGE_SIZE, orders.length);
+      setOrders((prev) => [...prev, ...page.items]);
+      setOrdersTotal(page.total);
+    } catch { /* keep what is already on screen */ }
+    setLoadingMoreOrders(false);
+  }, [orders.length]);
+
   const fetchData = useCallback(async () => {
     if (!hasToken()) { setAuthed(false); setLoading(false); return; }
     setAuthed(true);
     try {
-      const [me, orderList] = await Promise.all([api.me(), api.orders.list()]);
+      // Paged (founder 2026-08-02). PAGE_SIZE covers the overwhelming majority
+      // of accounts in one shot; 載入更多 handles the rest instead of shipping
+      // every order a user has ever had on first paint.
+      const [me, orderPage] = await Promise.all([api.me(), api.orders.list(ORDERS_PAGE_SIZE)]);
       setCurrentUserId(me.id);
-      setOrders(orderList);
+      setOrders(orderPage.items);
+      setOrdersTotal(orderPage.total);
 
       // 如果用戶有鑑定師身份，同時拉鑑定 inbox
       if (me.authenticator) {
@@ -990,6 +1011,18 @@ export default function OrdersPage() {
           busy={actionBusy === moneyConfirm.orderId}
           dismissOnBackdrop={false}
         />
+      )}
+      {!loading && orders.length < ordersTotal && (
+        <div className="mt-6 text-center">
+          <button
+            type="button"
+            onClick={loadMoreOrders}
+            disabled={loadingMoreOrders}
+            className="rounded-lg border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink shadow-sh1 transition hover:bg-surface-2 disabled:opacity-50"
+          >
+            {loadingMoreOrders ? '載入中…' : `載入更多（尚有 ${ordersTotal - orders.length} 張）`}
+          </button>
+        </div>
       )}
     </div>
   );
