@@ -31,3 +31,7 @@ apps/api/uploads/
 
 # Cloudflare tunnel token (secret)
 .env.tunnel
+
+# Playwright browser-lane artefacts (docs/qa/browser)
+test-results/
+playwright-report/
