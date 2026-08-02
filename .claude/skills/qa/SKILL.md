@@ -12,12 +12,14 @@ whole point is to keep the case detail out of the main session's context.
 
 | Input | Meaning |
 |---|---|
+| `run` | **default** — only what changed since the last report, plus smoke (~10–15 min) |
 | `run share` | one feature, both layers |
-| `run backend` / `run frontend` | one layer, all features |
-| `run full` | everything |
+| `run backend` / `run frontend` / `run static` | one layer |
+| `run full` | everything — release gate only, 142 min on 2026-08-02 |
 | `sync share` / `sync all` | update scope files from code changes |
 
-No arguments → ask which, listing the features from `docs/qa/scope/_index.md`.
+No arguments at all → `run` (diff-scoped). Only ask which when the selector is
+given but matches nothing.
 
 ## Before dispatching a `run`
 
@@ -47,8 +49,19 @@ finds relevant gets added to `owners` on the spot.
 
 ## After it returns
 
-Relay the outstanding mismatches. For each one, state plainly that it is
+Relay the outstanding mismatches, and keep the `Known, unchanged` line as one
+line — those were already ruled on and must not re-consume attention. For each one, state plainly that it is
 **either a regression or a stale case** and let the founder decide — never
 present a mismatch as a confirmed bug, and never start fixing before that
 call is made. If the founder rules that a case is stale, run `/qa sync` for
 that feature rather than editing the scope file by hand.
+
+## Founder rulings the agent must not re-litigate
+
+- Daily runs are diff-scoped; untouched code is not re-verified every time
+  (2026-08-02). The smoke set plus a release-gate `full` covers the risk.
+- `browser` lane runs Playwright in a throwaway container; the image is removed
+  after every run. Purely visual cases stay `manual`.
+- QA uses the `qa-*` accounts, never the demo ones.
+- Restoring the UAT DB from a snapshot before a `full` run is allowed, but only
+  when explicitly asked for — it destroys anything the founder parked on UAT.

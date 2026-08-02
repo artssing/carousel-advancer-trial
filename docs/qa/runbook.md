@@ -14,10 +14,19 @@
 
 ## 帳號（password 全部 `password123`）
 
-- 買家：alice / bob / carol / dave@demo.hk
-- 賣家：tom / jenny@demo.hk
-- 鑑定師：milan / procheck / cardlab@authentik.hk
-- Legacy 賣家：seller@authentik.hk
+**QA 一律用呢兩個，唔准掂 demo 帳號**（2026-08-02 起）：
+
+- `qa-buyer@demo.hk`
+- `qa-seller@demo.hk`
+
+點解：08-02 一次 full run 喺 tom 個錢包整咗個 HK$100 PROCESSING 提款出嚟，
+又喺佢名下開咗幾件 listing。跑多幾次，demo 帳號就唔再適合 demo。
+
+Demo 帳號（**唔好用嚟做 QA**）：買家 alice / bob / carol / dave@demo.hk；
+賣家 tom / jenny@demo.hk；鑑定師 milan / procheck / cardlab@authentik.hk。
+鑑定師 flow 暫時仍然要借 milan —— 未有 QA 專用鑑定師帳號（要 admin 開通）。
+
+註冊個 body key 係 `displayName`，**唔係** `name`。
 
 登入：`POST /api/auth/login` → `accessToken`。
 **注意**：睇自己資料嘅 route 係 `/api/me`，唔係 `/api/auth/me`。
@@ -78,7 +87,15 @@ docker exec authentik-postgres psql -U authentik -d authentik_uat -c '\d "ShareP
 
 ## 測試數據
 
-UAT 亂玩得（空 auto-seed）。但**每次 run 完要喺報告尾列低留低咗咩** —— listing / order / share-preview / cashout intent 嘅 id，方便日後清。
+UAT 亂玩得（空 auto-seed）。規矩：
+
+1. 用 QA 帳號，唔好掂 demo 帳號。
+2. 每次 run 生成 run-id（`qa-20260802-a`），listing title 前綴 + analytics
+   `anonymous_id` / `session_id` 一律用佢，事後認得返、篩得走。
+3. **每次 run 完要喺報告尾列低留低咗咩** —— listing / order / share-preview /
+   cashout intent 嘅 id。
+4. Full run 之前可以由乾淨 snapshot 還原 UAT DB（`scripts/db-copy.sh`），
+   一次過解決殘留。**但一定要 founder 明示先做** —— 會炸走佢人手放喺 UAT 嘅嘢。
 
 唔好自己刪 R2 bucket 入面嘅嘢：要 founder 明確指名個 bucket 授權（見 `docs/backlog/social-share-backlog.md` #4、#7）。
 

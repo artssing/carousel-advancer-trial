@@ -31,24 +31,52 @@ whole `scope/` tree unless the selector is `full`.
 
 ## Modes
 
-### `run <selector>`
+### `run [selector]`
 
-`<selector>` is a feature (`share`, `checkout`, …), a layer (`backend`,
-`frontend`), or `full`.
+No selector is the **default and the common case**: diff-scoped. Read the HEAD
+recorded in the most recent report, `git diff <that>..HEAD`, map changed paths
+through each scope file's `owners`, and run only the scope files that were hit,
+plus the smoke set (login, browse 200, tier boundaries 999/1000/9999/10000,
+order→payment happy path, the role-isolation matrix). Typically 10–15 minutes.
+
+With a selector: a feature (`share`, `checkout`, …), a layer (`backend`,
+`frontend`, `static`), or `full`. `full` is a release gate, not a daily run —
+it took 142 minutes on 2026-08-02.
 
 1. **Verify the deployment is actually live before testing anything.** This is
    mandatory — see runbook. On 2026-08-01 an entire run was invalidated because
    the API container was serving two-day-old code. If the running code does not
    contain the change you are meant to be testing, STOP and report that instead.
-2. Execute every case in the resolved scope files, in order.
+2. Execute every case in the resolved scope files, in order — **respecting each
+   case's lane**:
+   - `curl` / `static` — you run these.
+   - `browser` — run `./docs/qa/browser/run.sh [grep]`. It runs Playwright in a
+     throwaway container and prints plain text you can read. **Never** answer a
+     `browser` case by grepping source; a class name in a bundle is not proof of
+     what rendered.
+   - `manual` — not yours. List them for the founder's release checklist.
+   Skip cases marked `unverified` or `pending`, and report their counts
+   separately — they are not part of this run's total.
 3. Record the actual result for each — with the request and response, or the
    command and output, that proves it.
-4. Write the report to `docs/qa/reports/YYYY-MM-DD-<selector>.md` and also
+4. Check every mismatch against `docs/qa/known.md` BEFORE reporting it. If the
+   ID is registered and your evidence matches the recorded fingerprint, it goes
+   in a single `Known, unchanged ×N` line, NOT in Outstanding. If the evidence
+   differs from the fingerprint, it goes back into Outstanding — the situation
+   changed, so the old ruling may no longer hold.
+5. Write the report to `docs/qa/reports/YYYY-MM-DD-<selector>.md` and also
    return it.
 
-Cases you genuinely cannot exercise (no browser automation, needs a real OTP)
-are `SKIPPED` with the reason. Never guess a result. Never mark something PASS
-because the code "looks right" — if you did not hit it, it is SKIPPED.
+`SKIPPED` should now be rare — a case that cannot be run by design carries a
+lane that says so, declared up front rather than discovered mid-run. Reserve
+SKIPPED for a `curl`/`static` case blocked by the environment, and say what
+blocked it. Never guess a result, and never mark PASS because the code "looks
+right" — if you did not hit it, you did not verify it.
+
+**Test data**: use the QA accounts (`qa-buyer@demo.hk` / `qa-seller@demo.hk` /
+`qa-auth@authentik.hk`), never alice/tom/milan — the demo accounts have to stay
+presentable. Prefix anything you create with the run id (`qa-20260802-a`) and
+itemise it at the end of the report.
 
 ### `sync <selector|all>`
 
@@ -88,7 +116,14 @@ decides whether an existing mismatch was a bug.
 # QA — <selector> — YYYY-MM-DD
 
 Deployment verified: <what you checked, and what proved the new code is live>
+Lane budget: curl N · static N · browser N · manual N (not run) · unverified N (not counted)
 Cases: N run · N matched · N mismatched · N skipped
+Known, unchanged: N (see known.md)
+
+## Decision table
+| ID | one line | first seen | my read | founder |
+|----|----------|-----------|---------|---------|
+| CC-01 | checkout total summed client-side | **new** | likely real | ☐ |
 
 ## Outstanding
 ### MISMATCH [SB-02] 文字檔扮 image/png
@@ -110,12 +145,20 @@ Cases: N run · N matched · N mismatched · N skipped
 Put the `scope last synced` line on every mismatch — it is the founder's main
 signal for "is this a real regression or just a stale case?".
 
+Every mismatch must also end with a **two-way question** so the founder is
+choosing, not deducing: "should `Order` carry `totalHKD` (real bug), or is
+client-side summing acceptable (the case needs changing)?"
+
+Tag each mismatch `observed` (you actually hit it) or `source-only` (inferred
+from reading code). Never let a `source-only` finding read like an observation.
+
 ## Rules
 
 - Default target is **UAT**. Never test against PROD.
 - Never `npm install`, never start a dev server on this machine (it is the
   server box — see CLAUDE.md), never edit product code.
 - Do not delete anything from an R2 bucket or the database.
-- You have no browser automation. Browser-only cases are SKIPPED with a note so
-  the main session can drive them.
+- You have no browser *tool*, but you do have Bash — `browser` lane cases run
+  through `./docs/qa/browser/run.sh`, whose output is plain text. Only cases
+  with lane `manual` go to a human.
 - Keep the returned summary tight; the full detail belongs in the report file.

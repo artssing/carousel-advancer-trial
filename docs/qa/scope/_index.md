@@ -8,7 +8,9 @@
 1. Selector 完全等於下面 `feature` 一欄 → 讀嗰個 feature 兩層（backend + frontend）嘅檔。
 2. Selector 係 `backend` / `frontend` → 讀嗰一層全部。
 3. Selector 係 `full` → 讀晒全部。
-4. Selector 對唔上 → **唔好靠估**。列返有咩 feature 可以揀，然後停。
+4. **冇 selector** → 預設 diff-scoped：讀上一份報告個 HEAD，`git diff <上次>..HEAD`，
+   用下面張表嘅 owners 反查中招嘅 scope 檔，再加 smoke 集。
+5. Selector 對唔上 → **唔好靠估**。列返有咩 feature 可以揀，然後停。
 
 ## 對照表
 
@@ -23,6 +25,7 @@
 | `wallet` | `backend/wallet.md` | — | `apps/api/src/wallet/**`, `apps/consumer/app/account/**` |
 | `authenticator` | `backend/authenticator.md` | `frontend/authenticator-portal.md` | `apps/api/src/authenticators/**`, `apps/authenticator/**` |
 | `admin` | `backend/admin.md` | `frontend/admin-portal.md` | `apps/api/src/admin/**`, `apps/admin/**` |
+| `rules` | `static/rules.md` | — | `apps/**`, `packages/**` |
 | `i18n` | — | `frontend/i18n.md` | `locales/**`, `packages/utils/src/locales/**`, `apps/*/app/api/locale/**` |
 
 ## 跨 feature 嘅嘢
