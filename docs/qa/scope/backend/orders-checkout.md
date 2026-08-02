@@ -5,7 +5,8 @@ owners:
   - apps/api/src/orders/**
   - apps/api/src/payments/**
   - packages/utils/src/tier.ts
-last_synced_commit: 8029541
+  - packages/utils/src/analytics-events.ts
+last_synced_commit: 3b8dfcd
 ---
 
 # Orders / Checkout / Payments — Backend

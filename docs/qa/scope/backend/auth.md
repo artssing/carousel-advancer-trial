@@ -4,7 +4,7 @@ feature: auth
 owners:
   - apps/api/src/auth/**
   - apps/api/src/users/**
-last_synced_commit: 8029541
+last_synced_commit: 3b8dfcd
 ---
 
 # Auth — Backend

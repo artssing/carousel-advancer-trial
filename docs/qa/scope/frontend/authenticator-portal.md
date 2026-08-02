@@ -3,7 +3,7 @@ layer: frontend
 feature: authenticator
 owners:
   - apps/authenticator/**
-last_synced_commit: 8029541
+last_synced_commit: 3b8dfcd
 ---
 
 # Authenticator portal — Frontend

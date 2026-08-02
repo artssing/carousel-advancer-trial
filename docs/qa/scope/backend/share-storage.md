@@ -4,7 +4,7 @@ feature: share
 owners:
   - apps/api/src/storage/**
   - apps/api/prisma/schema.prisma
-last_synced_commit: 8029541
+last_synced_commit: 3b8dfcd
 ---
 
 # Share / Storage — Backend

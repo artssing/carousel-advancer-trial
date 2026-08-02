@@ -7,7 +7,7 @@ owners:
   - packages/utils/src/search.ts
   - packages/utils/src/categories.ts
   - packages/utils/src/brands.ts
-last_synced_commit: 8029541
+last_synced_commit: 3b8dfcd
 ---
 
 # Listings / Browse / Search — Backend

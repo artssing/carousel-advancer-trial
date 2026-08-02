@@ -6,7 +6,7 @@ owners:
   - apps/consumer/app/s/**
   - apps/consumer/app/listing/[id]/layout.tsx
   - apps/consumer/lib/listing-og.ts
-last_synced_commit: 8029541
+last_synced_commit: 3b8dfcd
 ---
 
 # Share wizard + OG meta — Frontend
@@ -18,6 +18,9 @@ last_synced_commit: 8029541
   - 內層 `overflow-y-auto` 同外層 `rounded-2xl overflow-hidden` 要分開
 - [SF-03] Modal 開住嗰陣，**背景唔郁**（body scroll lock）
 - [SF-04] 撳 **Esc** 關到 modal
+- [SF-22] 關咗 modal（Esc／背景／X 任何一種）之後，**背景 scroll 返轉頭**
+  - cleanup 係還原開 modal 之前嗰個 `body.style.overflow`，唔係硬set `''`。
+    鎖住冇解返會令成版頁死咗，症狀同「modal 開唔到」完全唔同，要獨立驗
 - [SF-05] Step 1 揀相：最多 4 張，揀多過一張就顯示排位數字
 - [SF-06] Step 3 預覽出到圖，浮水印喺**右上角**，唔壓住標題
 - [SF-07] 底色 picker 由主相抽色，NAVY 永遠排第一

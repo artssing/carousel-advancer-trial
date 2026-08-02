@@ -4,7 +4,9 @@ feature: checkout
 owners:
   - apps/consumer/app/checkout/**
   - apps/consumer/app/orders/**
-last_synced_commit: 8029541
+  - packages/ui/src/components/tier-pill.tsx
+  - packages/utils/src/tier.ts
+last_synced_commit: 3b8dfcd
 ---
 
 # Checkout / Orders — Frontend

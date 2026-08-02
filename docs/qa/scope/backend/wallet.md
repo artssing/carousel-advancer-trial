@@ -3,7 +3,7 @@ layer: backend
 feature: wallet
 owners:
   - apps/api/src/wallet/**
-last_synced_commit: 8029541
+last_synced_commit: 3b8dfcd
 ---
 
 # Wallet / 提款 2FA — Backend

@@ -3,7 +3,7 @@ layer: backend
 feature: admin
 owners:
   - apps/api/src/admin/**
-last_synced_commit: 8029541
+last_synced_commit: 3b8dfcd
 ---
 
 # Admin — Backend

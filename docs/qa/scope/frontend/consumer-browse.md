@@ -7,7 +7,11 @@ owners:
   - apps/consumer/components/product-card.tsx
   - apps/consumer/components/top-nav.tsx
   - packages/ui/src/components/tier-pill.tsx
-last_synced_commit: 8029541
+  - packages/utils/src/tier.ts
+  - packages/utils/src/categories.ts
+  - packages/utils/src/brands.ts
+  - packages/utils/src/search.ts
+last_synced_commit: 3b8dfcd
 ---
 
 # Browse / Listing detail — Frontend

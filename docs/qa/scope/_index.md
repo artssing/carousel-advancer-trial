@@ -27,10 +27,14 @@
 
 ## 跨 feature 嘅嘢
 
-呢兩樣改動一定會影響多過一個 feature，sync 嗰陣要覆蓋晒全部 scope：
-
 - `packages/utils/**` — SSOT（tier / category / search / analytics registry）
 - `packages/ui/**` — 共用 component（`TierPill`、`Pill`、`Button`…）
+
+**規矩**：呢兩個 package 入面每個檔，凡係有 case 靠佢，就要**寫落嗰個 scope 檔嘅 `owners`**。
+唔准淨係靠呢一節提你 —— `sync` 只睇 `owners`，冇寫入去嘅路徑，改咗都唔會浮出嚟。
+
+同一個檔出現喺幾個 scope 嘅 `owners` 係**正常**（`tier-pill.tsx` 而家喺 browse / sell /
+checkout 三個)。重覆好過漏，一個 SSOT 改動本來就應該喺每個靠佢嘅 feature 度重驗。
 
 ## Layer 分工
 

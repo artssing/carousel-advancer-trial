@@ -4,7 +4,7 @@ feature: authenticator
 owners:
   - apps/api/src/authenticators/**
   - apps/api/src/orders/**
-last_synced_commit: 8029541
+last_synced_commit: 3b8dfcd
 ---
 
 # Authenticator — Backend

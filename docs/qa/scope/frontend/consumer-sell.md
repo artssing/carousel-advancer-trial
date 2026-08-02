@@ -4,7 +4,10 @@ feature: sell
 owners:
   - apps/consumer/app/sell/**
   - apps/consumer/app/my-listings/**
-last_synced_commit: 8029541
+  - packages/ui/src/components/tier-pill.tsx
+  - packages/utils/src/tier.ts
+  - packages/utils/src/categories.ts
+last_synced_commit: 3b8dfcd
 ---
 
 # Sell / My listings — Frontend
