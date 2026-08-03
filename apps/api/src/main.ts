@@ -4,6 +4,7 @@ import { ValidationPipe, Logger } from '@nestjs/common';
 import { json, raw, urlencoded } from 'express';
 import { join } from 'path';
 import { AppModule } from './app.module';
+import { PrismaInputFilter } from './common/prisma-input.filter';
 
 async function bootstrap() {
   // Disable Nest's default body parser so we can raise the size limit.
@@ -35,6 +36,10 @@ async function bootstrap() {
       forbidNonWhitelisted: true,
     }),
   );
+  // Safety net for the routes that still take untyped bodies: bad input becomes
+  // a 400 instead of a Prisma-thrown 500. See prisma-input.filter.ts for why a
+  // blanket Prisma→400 mapping is deliberately NOT what this does.
+  app.useGlobalFilters(new PrismaInputFilter());
   app.setGlobalPrefix('api');
   const port = Number(process.env.API_PORT ?? 4000);
   await app.listen(port);

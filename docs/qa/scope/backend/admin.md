@@ -39,19 +39,6 @@ last_synced_commit: 3b8dfcd
   - 實測：九條全部 401
   - 理由：admin 資料冇任何一條可以匿名讀。買家 token → 403 嗰半見 [AU-11] 矩陣
 
-- [AD-04] `curl` `pending` — Force refund：**CAPTURED** 嘅 payment 真係去到 gateway refund
-  - `PATCH $API/admin/orders/<id>/force-refund -H "Authorization: Bearer $ADMIN" -d '{"reason":"…"}'`
-    （`admin.controller.ts:872`）
-  - `pending` 原因（兩重，兩重都要 founder 拍板先解得到）：
-    1. **UAT 到唔到嗰個 state**。Escrow 單經 `create-intent` + `confirm-mock` 只到 **AUTHORIZED**；
-       要 CAPTURED 就要 `release-escrow`，但嗰陣 order 已經 COMPLETED，force-refund 會俾終態擋住
-       （`admin.controller.ts:884` `訂單已係終態 …，唔可以 force-refund`）。
-    2. **UAT `STRIPE_MODE=mock`**，「真係去到 gateway refund」喺 UAT 定義上驗唔到。
-  - 已知行得通嘅分支（2026-08-02 實測，但**唔係**呢條 case 講嘅 state）：PAID + AUTHORIZED 單
-    force-refund → `{"status":"REFUNDED","fromStatus":"PAID"}`、payment `CANCELLED`、listing 放返 ACTIVE、
-    `AdminAction order.forceRefund` 有 audit row。
-  - 理由：force refund 係 admin 唯一一個可以單方面郁到錢嘅動作，唔驗過唔敢放
-
 - [AD-05] `static` `verified` — Admin code path 入面**冇任何** hard delete
   - `grep -rn "\.delete(\|deleteMany" apps/api/src/admin/` → **0 hit**（2026-08-03）
   - ⚠️ 呢條只講「source 入面搵唔到 hard-delete 呼叫」，唔等於 runtime 一定唔會刪。
@@ -59,6 +46,10 @@ last_synced_commit: 3b8dfcd
   - 理由：CLAUDE.md 寫死 soft delete only；hard delete 一旦寫落去係唔可逆嘅
 
 ## 已刪嘅 ID（永不重用）
+
+- **AD-04**（CAPTURED force refund）—— 2026-08-03 founder 拍板撤走。UAT 去唔到 CAPTURED
+  而唔令張單變 terminal（`admin.controller.ts:884` 會擋），加上 `STRIPE_MODE=mock`，
+  「真係打去 gateway」喺呢個環境定義上驗唔到。
 
 - **AD-02**（「買家 token 打以上任何一個 → 403」）—— 2026-08-03 併入 [AU-11] 角色隔離矩陣
   （`backend/auth.md`）。

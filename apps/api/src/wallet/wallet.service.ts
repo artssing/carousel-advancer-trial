@@ -430,7 +430,21 @@ export class WalletService implements OnModuleInit {
    * fails (e.g. balance changed), the user re-initiates with a fresh OTP —
    * a used code must never become retryable.
    */
-  private async consumeIntent(userId: string, intentId: string, kind: PayoutIntentKind, code: string, email: string) {
+  private async consumeIntent(
+    userId: string,
+    intentId: string,
+    kind: PayoutIntentKind,
+    code: string,
+    email: string,
+    /**
+     * Checks the frozen payload BEFORE anything is consumed. Intents created
+     * before the DTOs existed can hold junk (an `accountName` that is not a
+     * string, say); without this the executor threw AFTER the OTP was spent,
+     * so the user did everything right, got a 500, and the intent was dead on
+     * retry. Failing here costs them nothing.
+     */
+    assertPayloadUsable?: (payload: unknown) => void,
+  ) {
     const intent = await this.prisma.payoutIntent.findUnique({ where: { id: intentId } });
     if (!intent || intent.userId !== userId || intent.kind !== kind) {
       throw new NotFoundException('驗證請求不存在，請重新發起');
@@ -441,6 +455,7 @@ export class WalletService implements OnModuleInit {
     if (intent.expiresAt < new Date()) {
       throw new BadRequestException('驗證請求已過期，請重新發起提款');
     }
+    assertPayloadUsable?.(intent.payload);
     // Verify OTP first (attempt-counting lives in consumeEmailOtp) — wrong
     // code must NOT consume the intent, so the user can retry within limits.
     await this.auth.consumeEmailOtp(email, code, 'PAYOUT_CONFIRM');
@@ -482,6 +497,11 @@ export class WalletService implements OnModuleInit {
     const user = await this.requireVerifiedChannel(userId);
     const intent = await this.consumeIntent(
       userId, intentId, PayoutIntentKind.PAYOUT_REQUEST, code, user.email,
+      (p: any) => {
+        if (!p || typeof p.payoutMethodId !== 'string' || !Number.isInteger(p.amountHKD)) {
+          throw new BadRequestException('呢個提款請求嘅資料已失效，請重新發起');
+        }
+      },
     );
     const payload = intent.payload as { payoutMethodId: string; amountHKD: number };
     return this.createRequest(userId, payload, { via: intent.channel, at: new Date() });
@@ -517,6 +537,16 @@ export class WalletService implements OnModuleInit {
     const user = await this.requireVerifiedChannel(userId);
     const intent = await this.consumeIntent(
       userId, intentId, PayoutIntentKind.ADD_METHOD, code, user.email,
+      (p: any) => {
+        if (
+          !p ||
+          typeof p.type !== 'string' ||
+          typeof p.accountIdentifier !== 'string' ||
+          typeof p.accountName !== 'string'
+        ) {
+          throw new BadRequestException('呢個收款戶口請求嘅資料已失效，請重新發起');
+        }
+      },
     );
     const payload = intent.payload as {
       type: PayoutMethodTypeKey;

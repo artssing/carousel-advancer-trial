@@ -4,6 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
 import { WalletService } from './wallet.service';
 import type { PayoutMethodTypeKey } from '@authentik/utils';
+import { ConfirmIntentDto, InitiateAddMethodDto, InitiatePayoutDto } from './dto';
 
 @Controller('wallet')
 @UseGuards(JwtAuthGuard)
@@ -28,13 +29,7 @@ export class WalletController {
   initiateAddMethod(
     @CurrentUser() user: CurrentUserData,
     @Req() req: Request,
-    @Body() dto: {
-      type: PayoutMethodTypeKey;
-      accountIdentifier: string;
-      bankCode?: string;
-      accountName: string;
-      isDefault?: boolean;
-    },
+    @Body() dto: InitiateAddMethodDto,
   ) {
     return this.wallet.initiateAddMethod(user.userId, dto, req.ip);
   }
@@ -42,7 +37,7 @@ export class WalletController {
   @Post('methods/confirm')
   confirmAddMethod(
     @CurrentUser() user: CurrentUserData,
-    @Body() dto: { intentId: string; code: string },
+    @Body() dto: ConfirmIntentDto,
   ) {
     return this.wallet.confirmAddMethod(user.userId, dto.intentId, dto.code);
   }
@@ -70,7 +65,7 @@ export class WalletController {
   initiatePayout(
     @CurrentUser() user: CurrentUserData,
     @Req() req: Request,
-    @Body() dto: { payoutMethodId: string; amountHKD: number },
+    @Body() dto: InitiatePayoutDto,
   ) {
     return this.wallet.initiatePayout(user.userId, dto, req.ip);
   }
@@ -78,7 +73,7 @@ export class WalletController {
   @Post('requests/confirm')
   confirmPayout(
     @CurrentUser() user: CurrentUserData,
-    @Body() dto: { intentId: string; code: string },
+    @Body() dto: ConfirmIntentDto,
   ) {
     return this.wallet.confirmPayout(user.userId, dto.intentId, dto.code);
   }

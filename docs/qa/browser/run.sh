@@ -12,6 +12,14 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 IMAGE="mcr.microsoft.com/playwright:v1.49.0-jammy"
 GREP="${1:-}"
 
+# Hard stop before anything runs: this suite creates orders, uploads objects and
+# burns OTPs. It must never be pointed at production (founder 2026-08-02).
+BASE="${QA_BASE_URL:-https://uat.certifinehk.com}"
+case "$BASE" in
+  *uat*|*localhost*|*127.0.0.1*) ;;
+  *) echo "REFUSING: browser lane only runs against UAT or localhost. Got: $BASE"; exit 2 ;;
+esac
+
 GREP_ARG=""
 [[ -n "$GREP" ]] && GREP_ARG="--grep '$GREP'"
 

@@ -25,7 +25,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@authentik/ui';
-import { formatHKD } from '@authentik/utils';
+import { formatHKD, tierForPrice } from '@authentik/utils';
 import { ArrowLeft, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { api, hasToken, clearToken } from '@/lib/api';
 import { track } from '@/lib/analytics';
@@ -143,7 +143,7 @@ export default function CheckoutPage() {
         order_id: orderId,
         listing_id: order?.listing?.id ?? order?.listingId,
         tier: order?.tier ?? undefined,
-        total_hkd: order ? order.salePriceHKD + order.authFeeHKD + order.platformFeeHKD : 0,
+        total_hkd: order?.totalHKD ?? 0,
       });
     } catch (e: any) {
       // e.g. 俾另一位買家搶先 confirm 咗 — 留喺 review step 顯示，唔好炸成頁
@@ -287,7 +287,9 @@ export default function CheckoutPage() {
     );
   }
 
-  const total = order.salePriceHKD + order.authFeeHKD + order.platformFeeHKD;
+  // Server-computed (CLAUDE.md: client never re-derives money). Falls back to
+  // the old sum only so a stale cached response cannot blank the total out.
+  const total = order.totalHKD ?? order.salePriceHKD + order.authFeeHKD + order.platformFeeHKD;
   const isHold = order.salePriceHKD >= 1000;
 
   // ── 付款時限已過 — 全頁接管（ruling：重行成個流程，冇一鍵重開）─────────
@@ -334,7 +336,9 @@ export default function CheckoutPage() {
   }
 
   // ── Main checkout ─────────────────────────────────────────────────────
-  const tier = order.salePriceHKD >= 10000 ? 3 : order.salePriceHKD >= 1000 ? 2 : 1;
+  // tierForPrice is the SSOT — hardcoding the thresholds here is exactly how
+  // they drift apart (static rule RS-01).
+  const tier = tierForPrice(order.salePriceHKD) as 1 | 2 | 3;
 
   return (
     <div className="mx-auto max-w-container-l3 px-4 pb-16 sm:px-6">

@@ -276,6 +276,23 @@ export class OrdersService {
    * not 20 mixed rows the client then throws half of away. Totals come back per
    * role so the tab counts stay honest no matter how little has been loaded.
    */
+  /**
+   * What the buyer actually pays: item + authenticator fee + platform fee.
+   *
+   * Server-side because CLAUDE.md forbids the client re-deriving money, and
+   * until 2026-08-02 the checkout page had no choice — the Order response
+   * carried the three components but no total, so it summed them itself
+   * (found by QA as CC-01). One definition, one place.
+   */
+  private withTotal<T extends { salePriceHKD: number; authFeeHKD: number; platformFeeHKD: number }>(
+    order: T,
+  ): T & { totalHKD: number } {
+    return {
+      ...order,
+      totalHKD: order.salePriceHKD + order.authFeeHKD + order.platformFeeHKD,
+    };
+  }
+
   async listForUser(
     userId: string,
     opts: { role?: 'buyer' | 'seller'; limit?: number; offset?: number } = {},
@@ -325,10 +342,8 @@ export class OrdersService {
     // 唔 render，但 base64 落 JSON 令 payload 由 ~55KB 谷到 ~1MB（32 單實測
     // handoverPhotos 一個就 969KB）。相只喺訂單詳情 `get()` 先返。
     const items = orders.map(
-      ({ handoverPhotos, authReceiptPhotos, deliveryReceiptPhotos, returnPhotos, ...o }) => ({
-        ...o,
-        review: reviewMap.get(o.id) ?? null,
-      }),
+      ({ handoverPhotos, authReceiptPhotos, deliveryReceiptPhotos, returnPhotos, ...o }) =>
+        this.withTotal({ ...o, review: reviewMap.get(o.id) ?? null }),
     );
     // Envelope, not a bare array: the client needs the totals to label its tabs
     // truthfully when it has only loaded the first page.
@@ -457,7 +472,7 @@ export class OrdersService {
       select: { id: true, rating: true, comment: true, createdAt: true },
     });
 
-    return { ...order, review: review ?? null };
+    return this.withTotal({ ...order, review: review ?? null });
   }
 
   async markPaid(orderId: string, userId: string) {
