@@ -134,17 +134,27 @@ function run(file: string, write: boolean, nsOverride: string | null) {
   // labels, timeline steps) are the common case here and must NOT be rewritten:
   // they would compile against an undefined `_t`. Report them for a human, who
   // has to decide between moving them inside or making them a function of locale.
+  //
+  // Shared components use named exports (`export function ConversationPane`),
+  // not a default export, so the target is: the default export if there is one,
+  // otherwise the first exported PascalCase function. Anything in a second
+  // component in the same file stays out of scope and gets reported.
   let bodyStart = -1;
   let bodyEnd = -1;
+  let componentName = '';
+  const isExported = (stmt: ts.FunctionDeclaration) =>
+    stmt.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
+  const isDefault = (stmt: ts.FunctionDeclaration) =>
+    stmt.modifiers?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword);
   for (const stmt of sf.statements) {
-    if (
-      ts.isFunctionDeclaration(stmt) &&
-      stmt.body &&
-      stmt.modifiers?.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword)
-    ) {
-      bodyStart = stmt.body.getStart(sf);
-      bodyEnd = stmt.body.getEnd();
-    }
+    if (!ts.isFunctionDeclaration(stmt) || !stmt.body) continue;
+    const pascal = /^[A-Z]/.test(stmt.name?.text ?? '');
+    const pick = isDefault(stmt) || (bodyStart < 0 && isExported(stmt) && pascal);
+    if (!pick) continue;
+    bodyStart = stmt.body.getStart(sf);
+    bodyEnd = stmt.body.getEnd();
+    componentName = stmt.name?.text ?? '';
+    if (isDefault(stmt)) break; // a default export always wins
   }
   const inComponent = (pos: number) => bodyStart >= 0 && pos > bodyStart && pos < bodyEnd;
 
@@ -274,9 +284,14 @@ function run(file: string, write: boolean, nsOverride: string | null) {
   }
 
   // Insert the boilerplate as the first statements of the default-exported component.
-  const comp = out.match(/export default function\s+\w+\s*\([^)]*\)\s*\{\n/);
+  // Anchor on the component the edits were scoped to, not on `export default`:
+  // shared components are named exports.
+  const anchor = componentName
+    ? new RegExp(`function\\s+${componentName}\\s*\\(([\\s\\S]*?)\\)\\s*\\{\\n`)
+    : /export default function\s+\w+\s*\([^)]*\)\s*\{\n/;
+  const comp = out.match(anchor);
   if (!comp || comp.index === undefined) {
-    console.log('搵唔到 `export default function` — boilerplate 要人手加');
+    console.log(`搵唔到 ${componentName || 'export default'} 個 function 開頭 — boilerplate 要人手加`);
   } else {
     const at = comp.index + comp[0].length;
     out = out.slice(0, at) + BOILERPLATE + out.slice(at);
