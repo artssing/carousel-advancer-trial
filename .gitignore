@@ -35,3 +35,11 @@ apps/api/uploads/
 # Playwright browser-lane artefacts (docs/qa/browser)
 test-results/
 playwright-report/
+
+# n8n export dumps — 56M+ 嘅本機備份，唔屬於 source。拆 repo 前特別緊要：
+# git subtree split 會照搬 history，一入咗就四個 repo 都揹住。
+n8n-backup-*/
+
+# QA/screenshot 殘留（bodyLen + console log，冇檔名嗰陣寫成 undefined.*）
+undefined.png
+undefined.meta.json
