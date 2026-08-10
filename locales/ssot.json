@@ -206,397 +206,9 @@
     }
   },
   "listing": {
-    "delivery.ship": {
-      "zh": "物流寄送",
-      "en": "Shipping"
-    },
-    "delivery.meetupAuth": {
-      "zh": "鑑定師面交",
-      "en": "Authenticator meetup"
-    },
-    "delivery.meetup3way": {
-      "zh": "三方面交",
-      "en": "Three-way meetup"
-    },
-    "delivery.meetupDirect": {
-      "zh": "買賣雙方面交",
-      "en": "Direct meetup"
-    },
-    "delivery.shipDesc": {
-      "zh": "有鑑定：賣家寄→鑑定師→你；無鑑定：賣家直寄你",
-      "en": "With authentication: seller ships to authenticator then you; without: seller ships directly to you"
-    },
-    "delivery.meetupAuthDesc": {
-      "zh": "你去鑑定師地點，當場鑑定 + 交收",
-      "en": "You go to the authenticator's location for on-site authentication and handover"
-    },
-    "delivery.meetup3wayDesc": {
-      "zh": "你、賣家、鑑定師同場，當場鑑定 + 交收",
-      "en": "You, seller, and authenticator meet on-site for authentication and handover"
-    },
-    "delivery.meetupDirectDesc": {
-      "zh": "純撮合、無鑑定，你同賣家直接見面",
-      "en": "Pure matchmaking, no authentication — you meet the seller directly"
-    },
-    "payment.escrow": {
-      "zh": "線上託管",
-      "en": "Online escrow"
-    },
-    "payment.escrowDesc": {
-      "zh": "平台代收款項，交易完成後派款畀賣家 + 鑑定師",
-      "en": "The platform holds the payment and releases it to the seller and authenticator upon transaction completion."
-    },
-    "payment.cashDirect": {
-      "zh": "賣家直收",
-      "en": "Direct to seller"
-    },
-    "payment.cashDirectDesc": {
-      "zh": "買家自行付款畀賣家 (FPS / 銀行轉帳 / 現金)，平台不託管",
-      "en": "The buyer pays the seller directly (FPS / bank transfer / cash). The platform does not hold the payment."
-    },
-    "status.draft": {
-      "zh": "草稿",
-      "en": "Draft"
-    },
-    "status.active": {
-      "zh": "上架中",
-      "en": "Active"
-    },
-    "status.reserved": {
-      "zh": "已預留",
-      "en": "Reserved"
-    },
-    "status.sold": {
-      "zh": "已售出",
-      "en": "Sold"
-    },
-    "status.removed": {
-      "zh": "已下架",
-      "en": "Removed"
-    },
-    "lightbox.closeAria": {
-      "zh": "關閉",
-      "en": "Close"
-    },
-    "lightbox.zoom": {
-      "zh": "放大",
-      "en": "Zoom in"
-    },
-    "breadcrumb.home": {
-      "zh": "首頁",
-      "en": "Home"
-    },
-    "owner.banner": {
-      "zh": "這是你上架嘅商品",
-      "en": "This is your listing"
-    },
-    "owner.status": {
-      "zh": "狀態：{status}",
-      "en": "Status: {status}"
-    },
-    "reserved.bannerTitle": {
-      "zh": "此商品交易進行中",
-      "en": "This item is in an active transaction"
-    },
-    "reserved.bannerDesc": {
-      "zh": "已有買家落單，暫時唔可以購買。",
-      "en": "A buyer has placed an order for this item. It is currently unavailable for purchase."
-    },
-    "sold.bannerTitle": {
-      "zh": "此商品已售出",
-      "en": "This item has been sold"
-    },
-    "sold.bannerDesc": {
-      "zh": "交易已完成，呢件商品唔可以再買入。可以睇下面類似商品 ↓",
-      "en": "Transaction completed. This item is no longer available. Check similar items below ↓"
-    },
-    "seller.viewProfile": {
-      "zh": "睇賣家檔案 →",
-      "en": "View seller profile →"
-    },
-    "seller.label": {
-      "zh": "賣家：{name}",
-      "en": "Seller: {name}"
-    },
-    "chat.contactSeller": {
-      "zh": "聯絡賣家",
-      "en": "Contact the seller"
-    },
-    "chat.askSimilarSold": {
-      "zh": "問賣家有冇同類貨或補貨計劃",
-      "en": "Inquire whether the seller has similar items or anticipates restocking."
-    },
-    "chat.askSimilarReserved": {
-      "zh": "問賣家有冇同類貨",
-      "en": "Inquire whether the seller has similar items."
-    },
-    "price.original": {
-      "zh": "原價 {price}",
-      "en": "Original price {price}"
-    },
-    "price.negotiatedBadge": {
-      "zh": "✓ 議價成交價",
-      "en": "✓ Negotiated price"
-    },
-    "price.negotiatedConfirm": {
-      "zh": "議價已確認，請完成落單",
-      "en": "The negotiated price has been confirmed. Please proceed to complete your order."
-    },
-    "price.deadline": {
-      "zh": "付款期限：{date}",
-      "en": "Payment deadline: {date}"
-    },
-    "price.deadlineSoon": {
-      "zh": "請盡快完成落單，否則預留會自動取消。",
-      "en": "Please complete your order soon, otherwise the reservation will be automatically cancelled."
-    },
-    "price.tierChanged": {
-      "zh": "ⓘ 協議價格屬 {tier}，與原 listing tier 不同。",
-      "en": "ⓘ The agreed price falls under {tier}, which differs from the original listing tier."
-    },
-    "price.soldPrice": {
-      "zh": "成交價",
-      "en": "Sold price"
-    },
-    "spec.condition": {
-      "zh": "狀況",
-      "en": "Condition"
-    },
-    "spec.category": {
-      "zh": "品類",
-      "en": "Category"
-    },
-    "spec.brand": {
-      "zh": "品牌",
-      "en": "Brand"
-    },
-    "spec.district": {
-      "zh": "地區",
-      "en": "District"
-    },
-    "spec.placeholder": {
-      "zh": "—",
-      "en": "—"
-    },
-    "tier.trustPanelT3": {
-      "zh": "強制鑑定 · Tier 3",
-      "en": "Mandatory authentication · Tier 3"
-    },
-    "tier.trustPanelT2": {
-      "zh": "可選鑑定 · Tier 2",
-      "en": "Optional authentication · Tier 2"
-    },
-    "tier.trustPanelT1": {
-      "zh": "純撮合 · Tier 1",
-      "en": "Pure matchmaking · Tier 1"
-    },
-    "tier.descT3": {
-      "zh": "此商品成交價 ≥ HKD 10,000，落單時必須由具名鑑定師鑑定通過方可完成交易。真偽責任由該鑑定師按合約及 E&O 保險承擔。",
-      "en": "This item's transaction price is ≥ HKD 10,000. A named authenticator must verify it before the transaction can complete. Authenticity liability is assumed by the authenticator per their contract and E&O insurance."
-    },
-    "tier.descT2": {
-      "zh": "此商品可選鑑定。買家可於落單時揀鑑定師增加信心，鑑定費由買家承擔。",
-      "en": "Authentication is optional for this item. Buyers can choose an authenticator at checkout for added confidence, with the fee borne by the buyer."
-    },
-    "tier.descT1": {
-      "zh": "此商品屬純撮合，成交前建議自行核實真偽及成色。平台不承擔真偽責任。",
-      "en": "This is a matchmaking-only listing. We recommend verifying authenticity and condition yourself before transacting. The platform does not assume authenticity liability."
-    },
-    "tier.disclaimer": {
-      "zh": "平台為資訊中介，真偽由具名鑑定師負責，Certifine 不作真偽保證。",
-      "en": "The platform is an information intermediary. Authenticity is the responsibility of the named authenticator. Certifine does not guarantee authenticity."
-    },
-    "time.justNow": {
-      "zh": "剛剛",
-      "en": "Just now"
-    },
-    "time.minutesAgo": {
-      "zh": "{n} 分鐘前",
-      "en": "{n} minutes ago"
-    },
-    "time.hoursAgo": {
-      "zh": "{n} 小時前",
-      "en": "{n} hours ago"
-    },
-    "time.daysAgo": {
-      "zh": "{n} 日前",
-      "en": "{n} days ago"
-    },
-    "time.monthsAgo": {
-      "zh": "{n} 個月前",
-      "en": "{n} months ago"
-    },
-    "time.prefix": {
-      "zh": "上架：{time}",
-      "en": "Listed: {time}"
-    },
-    "sellerCondition": {
-      "zh": "賣家申報：{condition}",
-      "en": "As stated by seller: {condition}"
-    },
-    "specConditionLabel": {
-      "zh": "狀況（賣家申報）",
-      "en": "Condition (as stated by seller)"
-    },
-    "share": {
-      "zh": "分享",
-      "en": "Share"
-    },
-    "mandatoryAuthBadge": {
-      "zh": "◆ 強制鑑定",
-      "en": "◆ Mandatory authentication"
-    },
-    "sellerAction.urgent": {
-      "zh": "⚠ 需要你處理",
-      "en": "⚠ Action needed"
-    },
-    "sellerAction.orderInfo": {
-      "zh": "訂單 {id} · {buyerName} 買入 · {deliveryLabel}",
-      "en": "Order {id} · {buyerName} buying · {deliveryLabel}"
-    },
-    "sellerAction.inProgress": {
-      "zh": "訂單進行中",
-      "en": "Order in progress"
-    },
-    "sellerAction.viewOrder": {
-      "zh": "查看訂單 →",
-      "en": "View order →"
-    },
-    "conversations.title": {
-      "zh": "對話（{count}）",
-      "en": "Messages ({count})"
-    },
-    "conversations.threeWay": {
-      "zh": "三方",
-      "en": "3-way"
-    },
-    "conversations.private": {
-      "zh": "私",
-      "en": "Private"
-    },
-    "conversations.hint": {
-      "zh": "任何狀態都可以同對方傾偈；對話完成 / 退款 / 爭議後變 read-only 存檔。",
-      "en": "You can message the other party at any stage. After completion, refund, or dispute, conversations become read-only archives."
-    },
-    "seller.acceptedDelivery": {
-      "zh": "你接受嘅交收方式",
-      "en": "Your accepted delivery methods"
-    },
-    "seller.ownerHint": {
-      "zh": "買家會在呢度見到揀鑑定師、交收同付款嘅選項。你唔可以購買自己嘅商品。",
-      "en": "Buyers will see authenticator, delivery, and payment options here. You cannot purchase your own items."
-    },
-    "seller.editListing": {
-      "zh": "編輯商品",
-      "en": "Edit listing"
-    },
-    "seller.myListings": {
-      "zh": "我的商品",
-      "en": "My listings"
-    },
-    "seller.mySoldOrders": {
-      "zh": "我賣出嘅訂單",
-      "en": "My sold orders"
-    },
-    "buyer.trackOrderTitle": {
-      "zh": "你係這個訂單嘅買家",
-      "en": "You are the buyer for this order"
-    },
-    "buyer.trackOrder": {
-      "zh": "追蹤進度 →",
-      "en": "Track progress →"
-    },
-    "buyer.cancelReleaseNote": {
-      "zh": "如果交易最終取消或退款，商品會重新上架。",
-      "en": "If the transaction is cancelled or refunded, the item will be re-listed."
-    },
-    "buyer.notYetOrdered": {
-      "zh": "如果你已經係呢張訂單嘅買家，可以在「我的訂單」追蹤進度。",
-      "en": "If you are the buyer for this order, you can track progress in \"My Orders\"."
-    },
-    "t3Banner.title": {
-      "zh": "Tier 3 強制鑑定",
-      "en": "Tier 3 Mandatory Authentication"
-    },
-    "t3Banner.desc": {
-      "zh": "此商品價格 ≥ HKD 10,000，必須揀一位平台註冊鑑定師驗證後才會放款。",
-      "en": "This item is priced ≥ HKD 10,000. You must select a registered authenticator to verify it before payment is released."
-    },
-    "step1.delivery": {
-      "zh": "交收方式",
-      "en": "Delivery method"
-    },
-    "step1.needsAuth": {
-      "zh": "需要鑑定師{disabledNote}",
-      "en": "Requires authenticator{disabledNote}"
-    },
-    "step2.authRequired": {
-      "zh": "揀鑑定師（必選 1）",
-      "en": "Select authenticator (required)"
-    },
-    "step2.authOptional": {
-      "zh": "揀鑑定師（可選）",
-      "en": "Select authenticator (optional)"
-    },
-    "step2.noAuth": {
-      "zh": "唔使鑑定",
-      "en": "No authentication"
-    },
-    "step2.noAuthDesc": {
-      "zh": "自行承擔風險、無鑑定費",
-      "en": "At your own risk. No authentication fee applies."
-    },
-    "step2.completedCount": {
-      "zh": "已鑑定 {n} 件",
-      "en": "{n} items authenticated"
-    },
-    "step2.acceptsMeetup": {
-      "zh": "接受面交",
-      "en": "Accepts meetup"
-    },
-    "step2.authFee": {
-      "zh": "鑑定費 {fee}（{rate}%，最低 {minFee}）",
-      "en": "Authentication fee {fee} ({rate}%, min {minFee})"
-    },
-    "step2.viewProfile": {
-      "zh": "睇檔案 →",
-      "en": "View profile →"
-    },
-    "step2.noAuthCategory": {
-      "zh": "此品類暫無註冊鑑定師。",
-      "en": "No registered authenticators for this category yet."
-    },
-    "step2.noAuthWarning": {
-      "zh": "⚠️ 此品類暫時冇平台註冊鑑定師。需要鑑定師嘅交收方式暫時不可選。",
-      "en": "⚠️ There are currently no registered authenticators for this category. Delivery methods requiring an authenticator are unavailable."
-    },
-    "branch.selectLabel": {
-      "zh": "交收分店（由鑑定師提供）",
-      "en": "Pickup branch (provided by authenticator)"
-    },
-    "branch.pickAuthFirst": {
-      "zh": "請先揀鑑定師，先會顯示佢嘅分店列表。",
-      "en": "Please select an authenticator first to see their branch list."
-    },
-    "branch.noBranches": {
-      "zh": "呢位鑑定師暫時冇可用分店，請揀其他鑑定師或交收方式。",
-      "en": "This authenticator has no available branches. Please choose another authenticator or delivery method."
-    },
-    "branch.primary": {
-      "zh": "主要",
-      "en": "Primary"
-    },
     "branch.businessHours": {
       "zh": "營業時間：{hours}",
       "en": "Business hours: {hours}"
-    },
-    "branch.notes": {
-      "zh": "⚠ {b.notes}",
-      "en": "⚠ {b.notes}"
-    },
-    "branch.googleMaps": {
-      "zh": "📍 Google Maps",
-      "en": "📍 Google Maps"
     },
     "branch.contactPhone": {
       "zh": "📞 {phone}",
@@ -610,49 +222,33 @@
       "zh": "交收地點由鑑定師提供，平台中立 — 請依時到場。",
       "en": "Meetup locations are provided by the authenticator. The platform is neutral — please arrive on time."
     },
-    "meetupDirect.locationLabel": {
-      "zh": "面交地點",
-      "en": "Meetup location"
+    "branch.googleMaps": {
+      "zh": "📍 Google Maps",
+      "en": "📍 Google Maps"
     },
-    "meetupDirect.other": {
-      "zh": "其他地點",
-      "en": "Other location"
+    "branch.noBranches": {
+      "zh": "呢位鑑定師暫時冇可用分店，請揀其他鑑定師或交收方式。",
+      "en": "This authenticator has no available branches. Please choose another authenticator or delivery method."
     },
-    "meetupDirect.customPlaceholder": {
-      "zh": "請填寫你建議嘅面交地點",
-      "en": "Enter your suggested meetup location"
+    "branch.notes": {
+      "zh": "⚠ {b.notes}",
+      "en": "⚠ {b.notes}"
     },
-    "meetupDirect.hint": {
-      "zh": "賣家建議地點供參考，如需更改可揀「其他」並填寫。",
-      "en": "The seller's suggested location is for reference. Select \"Other\" to suggest a different one."
+    "branch.pickAuthFirst": {
+      "zh": "請先揀鑑定師，先會顯示佢嘅分店列表。",
+      "en": "Please select an authenticator first to see their branch list."
     },
-    "step3.payment": {
-      "zh": "付款方式",
-      "en": "Payment method"
+    "branch.primary": {
+      "zh": "主要",
+      "en": "Primary"
     },
-    "payment.shipNoAuthWarning": {
-      "zh": "物流寄送（無鑑定師）：平台唔會託管款項，買賣雙方需要自行協議付款方式 (FPS / 銀行轉帳 / 現金)。如出現爭議，平台冇方法協助處理，請自行解決。",
-      "en": "Shipping without authentication: The platform does not hold the payment. The buyer and seller must arrange payment directly (FPS / bank transfer / cash). If a dispute arises, the platform is unable to assist. Please resolve the matter between yourselves."
+    "branch.selectLabel": {
+      "zh": "交收分店（由鑑定師提供）",
+      "en": "Pickup branch (provided by authenticator)"
     },
-    "payment.offlineCashWarning": {
-      "zh": "線下現金交收平台不會託管款項，未能提供款項保障，請自行注意交收安全。",
-      "en": "Offline cash transactions are not held by the platform and offer no payment protection. Please ensure safety during the meetup."
-    },
-    "fee.title": {
-      "zh": "費用明細",
-      "en": "Fee breakdown"
-    },
-    "fee.itemPrice": {
-      "zh": "商品價",
-      "en": "Item price"
-    },
-    "fee.authFee": {
-      "zh": "鑑定費（賣家付{name}）",
-      "en": "Authentication fee (seller pays {name})"
-    },
-    "fee.platformFee": {
-      "zh": "平台撮合費 1.5%（賣家付）",
-      "en": "Platform fee 1.5% (paid by seller)"
+    "breadcrumb.home": {
+      "zh": "首頁",
+      "en": "Home"
     },
     "buyButton.busy": {
       "zh": "處理中…",
@@ -666,49 +262,605 @@
       "zh": "付款並啟動交易",
       "en": "Pay and start transaction"
     },
-    "loginPrompt": {
-      "zh": "未登入？先登入",
-      "en": "Not logged in? Please log in first."
+    "buyer.cancelReleaseNote": {
+      "zh": "如果交易最終取消或退款，商品會重新上架。",
+      "en": "If the transaction is cancelled or refunded, the item will be re-listed."
     },
-    "related.title": {
-      "zh": "同類商品",
-      "en": "Similar items"
+    "buyer.notYetOrdered": {
+      "zh": "如果你已經係呢張訂單嘅買家，可以在「我的訂單」追蹤進度。",
+      "en": "If you are the buyer for this order, you can track progress in \"My Orders\"."
+    },
+    "buyer.trackOrder": {
+      "zh": "追蹤進度 →",
+      "en": "Track progress →"
+    },
+    "buyer.trackOrderTitle": {
+      "zh": "你係這個訂單嘅買家",
+      "en": "You are the buyer for this order"
+    },
+    "chat.askSimilarReserved": {
+      "zh": "問賣家有冇同類貨",
+      "en": "Inquire whether the seller has similar items."
+    },
+    "chat.askSimilarSold": {
+      "zh": "問賣家有冇同類貨或補貨計劃",
+      "en": "Inquire whether the seller has similar items or anticipates restocking."
+    },
+    "chat.contactSeller": {
+      "zh": "聯絡賣家",
+      "en": "Contact the seller"
     },
     "chat.readonlyCompleted": {
       "zh": "訂單已完成，對話存檔僅供查閱。",
       "en": "Order completed. Conversation archived for reference."
     },
-    "chat.readonlyRefunded": {
-      "zh": "訂單已退款，對話存檔僅供查閱。",
-      "en": "Order refunded. Conversation archived for reference."
-    },
     "chat.readonlyDisputed": {
       "zh": "訂單爭議處理中，對話已鎖定。",
       "en": "Order is under dispute. Conversation has been locked."
     },
-    "error.chooseDelivery": {
-      "zh": "請揀一種交收方式",
-      "en": "Please select a delivery method"
+    "chat.readonlyRefunded": {
+      "zh": "訂單已退款，對話存檔僅供查閱。",
+      "en": "Order refunded. Conversation archived for reference."
+    },
+    "conversations.hint": {
+      "zh": "任何狀態都可以同對方傾偈；對話完成 / 退款 / 爭議後變 read-only 存檔。",
+      "en": "You can message the other party at any stage. After completion, refund, or dispute, conversations become read-only archives."
+    },
+    "conversations.private": {
+      "zh": "私",
+      "en": "Private"
+    },
+    "conversations.threeWay": {
+      "zh": "三方",
+      "en": "3-way"
+    },
+    "conversations.title": {
+      "zh": "對話（{count}）",
+      "en": "Messages ({count})"
+    },
+    "delivery.meetup3way": {
+      "zh": "三方面交",
+      "en": "Three-way meetup"
+    },
+    "delivery.meetup3wayDesc": {
+      "zh": "你、賣家、鑑定師同場，當場鑑定 + 交收",
+      "en": "You, seller, and authenticator meet on-site for authentication and handover"
+    },
+    "delivery.meetupAuth": {
+      "zh": "鑑定師面交",
+      "en": "Authenticator meetup"
+    },
+    "delivery.meetupAuthDesc": {
+      "zh": "你去鑑定師地點，當場鑑定 + 交收",
+      "en": "You go to the authenticator's location for on-site authentication and handover"
+    },
+    "delivery.meetupDirect": {
+      "zh": "買賣雙方面交",
+      "en": "Direct meetup"
+    },
+    "delivery.meetupDirectDesc": {
+      "zh": "純撮合、無鑑定，你同賣家直接見面",
+      "en": "Pure matchmaking, no authentication — you meet the seller directly"
+    },
+    "delivery.ship": {
+      "zh": "物流寄送",
+      "en": "Shipping"
+    },
+    "delivery.shipDesc": {
+      "zh": "有鑑定：賣家寄→鑑定師→你；無鑑定：賣家直寄你",
+      "en": "With authentication: seller ships to authenticator then you; without: seller ships directly to you"
     },
     "error.chooseAuth": {
       "zh": "此交收方式需要鑑定，請先揀一位鑑定師",
       "en": "This delivery method requires authentication. Please select an authenticator first."
     },
-    "error.choosePayment": {
-      "zh": "請揀一種付款方式",
-      "en": "Please select a payment method"
-    },
     "error.chooseBranch": {
       "zh": "請揀鑑定師嘅交收分店",
       "en": "Please select the authenticator's branch"
+    },
+    "error.chooseDelivery": {
+      "zh": "請揀一種交收方式",
+      "en": "Please select a delivery method"
     },
     "error.chooseMeetupLocation": {
       "zh": "請揀選面交地點",
       "en": "Please select a meetup location"
     },
+    "error.choosePayment": {
+      "zh": "請揀一種付款方式",
+      "en": "Please select a payment method"
+    },
     "error.enterMeetupLocation": {
       "zh": "請填寫你建議嘅面交地點",
       "en": "Please enter your suggested meetup location"
+    },
+    "fee.authFee": {
+      "zh": "鑑定費（賣家付{name}）",
+      "en": "Authentication fee (seller pays {name})"
+    },
+    "fee.itemPrice": {
+      "zh": "商品價",
+      "en": "Item price"
+    },
+    "fee.platformFee": {
+      "zh": "平台撮合費 1.5%（賣家付）",
+      "en": "Platform fee 1.5% (paid by seller)"
+    },
+    "fee.title": {
+      "zh": "費用明細",
+      "en": "Fee breakdown"
+    },
+    "lightbox.closeAria": {
+      "zh": "關閉",
+      "en": "Close"
+    },
+    "lightbox.zoom": {
+      "zh": "放大",
+      "en": "Zoom in"
+    },
+    "loginPrompt": {
+      "zh": "未登入？先登入",
+      "en": "Not logged in? Please log in first."
+    },
+    "mandatoryAuthBadge": {
+      "zh": "◆ 強制鑑定",
+      "en": "◆ Mandatory authentication"
+    },
+    "meetupDirect.customPlaceholder": {
+      "zh": "請填寫你建議嘅面交地點",
+      "en": "Enter your suggested meetup location"
+    },
+    "meetupDirect.hint": {
+      "zh": "賣家建議地點供參考，如需更改可揀「其他」並填寫。",
+      "en": "The seller's suggested location is for reference. Select \"Other\" to suggest a different one."
+    },
+    "meetupDirect.locationLabel": {
+      "zh": "面交地點",
+      "en": "Meetup location"
+    },
+    "meetupDirect.other": {
+      "zh": "其他地點",
+      "en": "Other location"
+    },
+    "owner.banner": {
+      "zh": "這是你上架嘅商品",
+      "en": "This is your listing"
+    },
+    "owner.status": {
+      "zh": "狀態：{status}",
+      "en": "Status: {status}"
+    },
+    "payment.cashDirect": {
+      "zh": "賣家直收",
+      "en": "Direct to seller"
+    },
+    "payment.cashDirectDesc": {
+      "zh": "買家自行付款畀賣家 (FPS / 銀行轉帳 / 現金)，平台不託管",
+      "en": "The buyer pays the seller directly (FPS / bank transfer / cash). The platform does not hold the payment."
+    },
+    "payment.escrow": {
+      "zh": "線上託管",
+      "en": "Online escrow"
+    },
+    "payment.escrowDesc": {
+      "zh": "平台代收款項，交易完成後派款畀賣家 + 鑑定師",
+      "en": "The platform holds the payment and releases it to the seller and authenticator upon transaction completion."
+    },
+    "payment.offlineCashWarning": {
+      "zh": "線下現金交收平台不會託管款項，未能提供款項保障，請自行注意交收安全。",
+      "en": "Offline cash transactions are not held by the platform and offer no payment protection. Please ensure safety during the meetup."
+    },
+    "payment.shipNoAuthWarning": {
+      "zh": "物流寄送（無鑑定師）：平台唔會託管款項，買賣雙方需要自行協議付款方式 (FPS / 銀行轉帳 / 現金)。如出現爭議，平台冇方法協助處理，請自行解決。",
+      "en": "Shipping without authentication: The platform does not hold the payment. The buyer and seller must arrange payment directly (FPS / bank transfer / cash). If a dispute arises, the platform is unable to assist. Please resolve the matter between yourselves."
+    },
+    "price.deadline": {
+      "zh": "付款期限：{date}",
+      "en": "Payment deadline: {date}"
+    },
+    "price.deadlineSoon": {
+      "zh": "請盡快完成落單，否則預留會自動取消。",
+      "en": "Please complete your order soon, otherwise the reservation will be automatically cancelled."
+    },
+    "price.negotiatedBadge": {
+      "zh": "✓ 議價成交價",
+      "en": "✓ Negotiated price"
+    },
+    "price.negotiatedConfirm": {
+      "zh": "議價已確認，請完成落單",
+      "en": "The negotiated price has been confirmed. Please proceed to complete your order."
+    },
+    "price.original": {
+      "zh": "原價 {price}",
+      "en": "Original price {price}"
+    },
+    "price.soldPrice": {
+      "zh": "成交價",
+      "en": "Sold price"
+    },
+    "price.tierChanged": {
+      "zh": "ⓘ 協議價格屬 {tier}，與原 listing tier 不同。",
+      "en": "ⓘ The agreed price falls under {tier}, which differs from the original listing tier."
+    },
+    "related.title": {
+      "zh": "同類商品",
+      "en": "Similar items"
+    },
+    "reserved.bannerDesc": {
+      "zh": "已有買家落單，暫時唔可以購買。",
+      "en": "A buyer has placed an order for this item. It is currently unavailable for purchase."
+    },
+    "reserved.bannerTitle": {
+      "zh": "此商品交易進行中",
+      "en": "This item is in an active transaction"
+    },
+    "seller.acceptedDelivery": {
+      "zh": "你接受嘅交收方式",
+      "en": "Your accepted delivery methods"
+    },
+    "seller.editListing": {
+      "zh": "編輯商品",
+      "en": "Edit listing"
+    },
+    "seller.label": {
+      "zh": "賣家：{name}",
+      "en": "Seller: {name}"
+    },
+    "seller.myListings": {
+      "zh": "我的商品",
+      "en": "My listings"
+    },
+    "seller.mySoldOrders": {
+      "zh": "我賣出嘅訂單",
+      "en": "My sold orders"
+    },
+    "seller.ownerHint": {
+      "zh": "買家會在呢度見到揀鑑定師、交收同付款嘅選項。你唔可以購買自己嘅商品。",
+      "en": "Buyers will see authenticator, delivery, and payment options here. You cannot purchase your own items."
+    },
+    "seller.viewProfile": {
+      "zh": "睇賣家檔案 →",
+      "en": "View seller profile →"
+    },
+    "sellerAction.inProgress": {
+      "zh": "訂單進行中",
+      "en": "Order in progress"
+    },
+    "sellerAction.orderInfo": {
+      "zh": "訂單 {id} · {buyerName} 買入 · {deliveryLabel}",
+      "en": "Order {id} · {buyerName} buying · {deliveryLabel}"
+    },
+    "sellerAction.urgent": {
+      "zh": "⚠ 需要你處理",
+      "en": "⚠ Action needed"
+    },
+    "sellerAction.viewOrder": {
+      "zh": "查看訂單 →",
+      "en": "View order →"
+    },
+    "sellerCondition": {
+      "zh": "賣家申報：{condition}",
+      "en": "As stated by seller: {condition}"
+    },
+    "share": {
+      "zh": "分享",
+      "en": "Share"
+    },
+    "share.back": {
+      "zh": "上一步",
+      "en": "Back"
+    },
+    "share.bgColorAria": {
+      "zh": "底色 {color}",
+      "en": "Background colour {color}"
+    },
+    "share.bgColorLabel": {
+      "zh": "底色（跟相片配色）",
+      "en": "Background colour (from the photo)"
+    },
+    "share.caption.condition": {
+      "zh": "成色：{cond}（賣家申報）",
+      "en": "Condition: {cond} (as stated by the seller)"
+    },
+    "share.caption.hashtags": {
+      "zh": "#Certifine #香港二手{brand}",
+      "en": "#Certifine #HongKongResale{brand}"
+    },
+    "share.caption.more": {
+      "zh": "睇多啲：{link}",
+      "en": "See more: {link}"
+    },
+    "share.captionLabel": {
+      "zh": "Caption（撳分享時自動複製）",
+      "en": "Caption (copied automatically when you share)"
+    },
+    "share.card.condition": {
+      "zh": "成色：{cond}（賣家申報）",
+      "en": "Condition: {cond} (seller-stated)"
+    },
+    "share.close": {
+      "zh": "關閉",
+      "en": "Close"
+    },
+    "share.copied": {
+      "zh": "已複製",
+      "en": "Copied"
+    },
+    "share.copyCaption": {
+      "zh": "複製文字",
+      "en": "Copy caption"
+    },
+    "share.download": {
+      "zh": "下載圖片",
+      "en": "Download image"
+    },
+    "share.format.feed": {
+      "zh": "Feed 帖文",
+      "en": "Feed post"
+    },
+    "share.format.feedHint": {
+      "zh": "方形帖文（caption 冇得 click link）",
+      "en": "Square post (links in the caption are not clickable)"
+    },
+    "share.format.story": {
+      "zh": "Story",
+      "en": "Story"
+    },
+    "share.format.storyHint": {
+      "zh": "可加連結貼圖，導流最好",
+      "en": "Supports a link sticker — best for driving traffic"
+    },
+    "share.formatLabel": {
+      "zh": "格式",
+      "en": "Format"
+    },
+    "share.generatePreview": {
+      "zh": "生成預覽",
+      "en": "Generate preview"
+    },
+    "share.linkShareHint": {
+      "zh": "預覽卡會用你揀嘅相同價錢，按 Facebook / WhatsApp 嘅闊版尺寸另外生成。",
+      "en": "The preview card is generated separately at Facebook/WhatsApp’s wide size, using the photo and price you picked."
+    },
+    "share.linkShareLabel": {
+      "zh": "分享連結（電腦、手機都用得）",
+      "en": "Share a link (works on desktop and mobile)"
+    },
+    "share.nativeHint": {
+      "zh": "撳「分享圖片 + 文字」→ 手機分享面板揀 WhatsApp / Facebook / Messenger / IG，張圖同文字會一齊帶埋。IG Story 記得用「連結」貼圖貼住商品 link。",
+      "en": "Tap “Share image + text”, then pick WhatsApp / Facebook / Messenger / Instagram in your phone’s share sheet — the image and the caption travel together. On an IG Story, add the item link with a link sticker."
+    },
+    "share.next": {
+      "zh": "下一步",
+      "en": "Next"
+    },
+    "share.photosHint": {
+      "zh": "揀多過一張會自動合成 collage",
+      "en": "Pick more than one and they are combined into a collage"
+    },
+    "share.photosPicked": {
+      "zh": "已揀 {n} 張 — 第 1 張做主相，會自動合成一張",
+      "en": "{n} selected — the first is the main photo, the rest are combined"
+    },
+    "share.preparing": {
+      "zh": "準備緊…",
+      "en": "Preparing…"
+    },
+    "share.preparingImage": {
+      "zh": "準備緊分享圖片…",
+      "en": "Preparing the share image…"
+    },
+    "share.previewAlt": {
+      "zh": "分享預覽",
+      "en": "Share preview"
+    },
+    "share.renderError": {
+      "zh": "生成失敗 — 相片來源唔支援跨域讀取，試下揀第二張相。",
+      "en": "Could not generate — that photo source does not allow cross-origin reads. Try another photo."
+    },
+    "share.shareImageText": {
+      "zh": "分享圖片 + 文字",
+      "en": "Share image + text"
+    },
+    "share.step1": {
+      "zh": "① 揀相（可多選，最多 4 張合成一張）",
+      "en": "① Pick photos (up to 4, combined into one image)"
+    },
+    "share.step2": {
+      "zh": "② 揀格式同樣式",
+      "en": "② Pick a format and style"
+    },
+    "share.step3": {
+      "zh": "③ 預覽 + 分享",
+      "en": "③ Preview and share"
+    },
+    "share.template.clean": {
+      "zh": "簡約白底",
+      "en": "Clean white"
+    },
+    "share.template.cleanHint": {
+      "zh": "白底留白，襯淺色相",
+      "en": "White background with space — suits light photos"
+    },
+    "share.template.photo": {
+      "zh": "大相 + 價錢帶",
+      "en": "Big photo + price bar"
+    },
+    "share.template.photoHint": {
+      "zh": "相片做主角，底部深藍資訊帶",
+      "en": "Photo-led, with a deep blue info bar along the bottom"
+    },
+    "share.templateLabel": {
+      "zh": "樣式",
+      "en": "Style"
+    },
+    "share.title": {
+      "zh": "分享商品",
+      "en": "Share this item"
+    },
+    "sold.bannerDesc": {
+      "zh": "交易已完成，呢件商品唔可以再買入。可以睇下面類似商品 ↓",
+      "en": "Transaction completed. This item is no longer available. Check similar items below ↓"
+    },
+    "sold.bannerTitle": {
+      "zh": "此商品已售出",
+      "en": "This item has been sold"
+    },
+    "spec.brand": {
+      "zh": "品牌",
+      "en": "Brand"
+    },
+    "spec.category": {
+      "zh": "品類",
+      "en": "Category"
+    },
+    "spec.condition": {
+      "zh": "狀況",
+      "en": "Condition"
+    },
+    "spec.district": {
+      "zh": "地區",
+      "en": "District"
+    },
+    "spec.placeholder": {
+      "zh": "—",
+      "en": "—"
+    },
+    "specConditionLabel": {
+      "zh": "狀況（賣家申報）",
+      "en": "Condition (as stated by seller)"
+    },
+    "status.active": {
+      "zh": "上架中",
+      "en": "Active"
+    },
+    "status.draft": {
+      "zh": "草稿",
+      "en": "Draft"
+    },
+    "status.removed": {
+      "zh": "已下架",
+      "en": "Removed"
+    },
+    "status.reserved": {
+      "zh": "已預留",
+      "en": "Reserved"
+    },
+    "status.sold": {
+      "zh": "已售出",
+      "en": "Sold"
+    },
+    "step1.delivery": {
+      "zh": "交收方式",
+      "en": "Delivery method"
+    },
+    "step1.needsAuth": {
+      "zh": "需要鑑定師{disabledNote}",
+      "en": "Requires authenticator{disabledNote}"
+    },
+    "step2.acceptsMeetup": {
+      "zh": "接受面交",
+      "en": "Accepts meetup"
+    },
+    "step2.authFee": {
+      "zh": "鑑定費 {fee}（{rate}%，最低 {minFee}）",
+      "en": "Authentication fee {fee} ({rate}%, min {minFee})"
+    },
+    "step2.authOptional": {
+      "zh": "揀鑑定師（可選）",
+      "en": "Select authenticator (optional)"
+    },
+    "step2.authRequired": {
+      "zh": "揀鑑定師（必選 1）",
+      "en": "Select authenticator (required)"
+    },
+    "step2.completedCount": {
+      "zh": "已鑑定 {n} 件",
+      "en": "{n} items authenticated"
+    },
+    "step2.noAuth": {
+      "zh": "唔使鑑定",
+      "en": "No authentication"
+    },
+    "step2.noAuthCategory": {
+      "zh": "此品類暫無註冊鑑定師。",
+      "en": "No registered authenticators for this category yet."
+    },
+    "step2.noAuthDesc": {
+      "zh": "自行承擔風險、無鑑定費",
+      "en": "At your own risk. No authentication fee applies."
+    },
+    "step2.noAuthWarning": {
+      "zh": "⚠️ 此品類暫時冇平台註冊鑑定師。需要鑑定師嘅交收方式暫時不可選。",
+      "en": "⚠️ There are currently no registered authenticators for this category. Delivery methods requiring an authenticator are unavailable."
+    },
+    "step2.viewProfile": {
+      "zh": "睇檔案 →",
+      "en": "View profile →"
+    },
+    "step3.payment": {
+      "zh": "付款方式",
+      "en": "Payment method"
+    },
+    "t3Banner.desc": {
+      "zh": "此商品價格 ≥ HKD 10,000，必須揀一位平台註冊鑑定師驗證後才會放款。",
+      "en": "This item is priced ≥ HKD 10,000. You must select a registered authenticator to verify it before payment is released."
+    },
+    "t3Banner.title": {
+      "zh": "Tier 3 強制鑑定",
+      "en": "Tier 3 Mandatory Authentication"
+    },
+    "tier.descT1": {
+      "zh": "此商品屬純撮合，成交前建議自行核實真偽及成色。平台不承擔真偽責任。",
+      "en": "This is a matchmaking-only listing. We recommend verifying authenticity and condition yourself before transacting. The platform does not assume authenticity liability."
+    },
+    "tier.descT2": {
+      "zh": "此商品可選鑑定。買家可於落單時揀鑑定師增加信心，鑑定費由買家承擔。",
+      "en": "Authentication is optional for this item. Buyers can choose an authenticator at checkout for added confidence, with the fee borne by the buyer."
+    },
+    "tier.descT3": {
+      "zh": "此商品成交價 ≥ HKD 10,000，落單時必須由具名鑑定師鑑定通過方可完成交易。真偽責任由該鑑定師按合約及 E&O 保險承擔。",
+      "en": "This item's transaction price is ≥ HKD 10,000. A named authenticator must verify it before the transaction can complete. Authenticity liability is assumed by the authenticator per their contract and E&O insurance."
+    },
+    "tier.disclaimer": {
+      "zh": "平台為資訊中介，真偽由具名鑑定師負責，Certifine 不作真偽保證。",
+      "en": "The platform is an information intermediary. Authenticity is the responsibility of the named authenticator. Certifine does not guarantee authenticity."
+    },
+    "tier.trustPanelT1": {
+      "zh": "純撮合 · Tier 1",
+      "en": "Pure matchmaking · Tier 1"
+    },
+    "tier.trustPanelT2": {
+      "zh": "可選鑑定 · Tier 2",
+      "en": "Optional authentication · Tier 2"
+    },
+    "tier.trustPanelT3": {
+      "zh": "強制鑑定 · Tier 3",
+      "en": "Mandatory authentication · Tier 3"
+    },
+    "time.daysAgo": {
+      "zh": "{n} 日前",
+      "en": "{n} days ago"
+    },
+    "time.hoursAgo": {
+      "zh": "{n} 小時前",
+      "en": "{n} hours ago"
+    },
+    "time.justNow": {
+      "zh": "剛剛",
+      "en": "Just now"
+    },
+    "time.minutesAgo": {
+      "zh": "{n} 分鐘前",
+      "en": "{n} minutes ago"
+    },
+    "time.monthsAgo": {
+      "zh": "{n} 個月前",
+      "en": "{n} months ago"
+    },
+    "time.prefix": {
+      "zh": "上架：{time}",
+      "en": "Listed: {time}"
     }
   },
   "sell": {
