@@ -4,6 +4,7 @@
  *  fields, inline validation. Mock-mode: parent passes selected card number
  *  for visual debugging; production: stripe Elements would replace this. */
 import { useRef, useState, useEffect } from 'react';
+import { getClientLocale, createT } from '@authentik/utils';
 import {
   BRAND_SPECS, detectBrand, digitsOnly, formatCardNumber, formatExpiry,
   luhnCheck, validateExpiry, validateCardholderName, type CardBrand,
@@ -29,6 +30,10 @@ const BRAND_BADGE: Record<CardBrand, string> = {
 };
 
 export function CardForm({ value, onChange, showErrors }: CardFormProps) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const expiryRef = useRef<HTMLInputElement>(null);
   const cvvRef = useRef<HTMLInputElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
@@ -37,17 +42,18 @@ export function CardForm({ value, onChange, showErrors }: CardFormProps) {
   const brand = detectBrand(value.number);
   const spec = BRAND_SPECS[brand];
   const numberError = touched.number || showErrors
-    ? (value.number.length !== spec.length ? `卡號應該係 ${spec.length} 位` :
-       !luhnCheck(value.number) ? '卡號格式錯誤' : null)
+    ? (value.number.length !== spec.length ? _t('checkout.card.error.numberLength', { len: spec.length }) :
+       !luhnCheck(value.number) ? _t('checkout.card.error.numberInvalid') : null)
     : null;
   const expiryError = touched.expiry || showErrors
-    ? (value.expiry.length < 4 ? '請填到期日' : validateExpiry(value.expiry).reason ?? null)
+    ? (value.expiry.length < 4 ? _t('checkout.card.error.expiryRequired')
+       : validateExpiry(value.expiry).reason ? _t(validateExpiry(value.expiry).reason!) : null)
     : null;
   const cvvError = touched.cvv || showErrors
-    ? (value.cvv.length !== spec.cvvLength ? `CVV 應該係 ${spec.cvvLength} 位` : null)
+    ? (value.cvv.length !== spec.cvvLength ? _t('checkout.card.error.cvvLength', { len: spec.cvvLength }) : null)
     : null;
   const nameError = touched.name || showErrors
-    ? validateCardholderName(value.name).reason ?? null
+    ? (validateCardholderName(value.name).reason ? _t(validateCardholderName(value.name).reason!) : null)
     : null;
 
   // Sync brand to parent whenever it changes
@@ -79,7 +85,7 @@ export function CardForm({ value, onChange, showErrors }: CardFormProps) {
     <div className="space-y-3">
       {/* Card number */}
       <div>
-        <label className="text-xs font-medium text-slate-700">卡號</label>
+        <label className="text-xs font-medium text-slate-700">{_t('checkout.card.numberLabel')}</label>
         <div className="relative mt-1">
           <input
             type="text"
@@ -106,7 +112,7 @@ export function CardForm({ value, onChange, showErrors }: CardFormProps) {
       {/* Expiry + CVV side by side */}
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="text-xs font-medium text-slate-700">到期日</label>
+          <label className="text-xs font-medium text-slate-700">{_t('checkout.card.expiryLabel')}</label>
           <input
             ref={expiryRef}
             type="text"
@@ -126,7 +132,7 @@ export function CardForm({ value, onChange, showErrors }: CardFormProps) {
         <div>
           <label className="text-xs font-medium text-slate-700">
             CVV{' '}
-            <span className="text-slate-400" title={brand === 'amex' ? '卡正面 4 位數' : '卡背面 3 位數'}>
+            <span className="text-slate-400" title={brand === 'amex' ? _t('checkout.card.cvvHintAmex') : _t('checkout.card.cvvHint')}>
               ⓘ
             </span>
           </label>
@@ -136,7 +142,7 @@ export function CardForm({ value, onChange, showErrors }: CardFormProps) {
             value={value.cvv}
             onChange={(e) => handleCvv(e.target.value)}
             onBlur={() => setTouched((t) => ({ ...t, cvv: true }))}
-            placeholder={spec.cvvLength === 4 ? '4 位數' : '3 位數'}
+            placeholder={spec.cvvLength === 4 ? _t('checkout.card.cvvPlaceholder4') : _t('checkout.card.cvvPlaceholder3')}
             inputMode="numeric"
             autoComplete="cc-csc"
             maxLength={spec.cvvLength}
@@ -151,7 +157,7 @@ export function CardForm({ value, onChange, showErrors }: CardFormProps) {
 
       {/* Cardholder name */}
       <div>
-        <label className="text-xs font-medium text-slate-700">持卡人姓名（同卡上一致）</label>
+        <label className="text-xs font-medium text-slate-700">{_t('checkout.card.nameLabel')}</label>
         <input
           ref={nameRef}
           type="text"
@@ -171,7 +177,7 @@ export function CardForm({ value, onChange, showErrors }: CardFormProps) {
       {/* Save card — disabled with Phase 2 label (lesson #11) */}
       <label className="flex items-center gap-2 rounded-md bg-slate-50 px-3 py-2 text-xs text-slate-500">
         <input type="checkbox" disabled className="h-3.5 w-3.5" />
-        <span>儲存呢張卡用嚟下次付款</span>
+        <span>{_t('checkout.card.saveCard')}</span>
         <span className="ml-auto rounded bg-slate-200 px-1.5 py-0.5 text-[10px] text-slate-600">Phase 2</span>
       </label>
     </div>

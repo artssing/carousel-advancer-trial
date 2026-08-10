@@ -1,10 +1,11 @@
 'use client';
+import { getClientLocale, createT } from '@authentik/utils';
 
 /** Vertical accordion picker — replaces horizontal tabs.
  *  Each method renders as a tappable row; the selected row expands inline
  *  to show the method's body (card form / wallet QR / etc.).
  *  Booking.com / Trip.com default pattern. */
-import type { ReactNode } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { PAYMENT_METHODS, type PaymentMethodId } from '@/lib/payment-methods';
 
 interface Props {
@@ -15,6 +16,10 @@ interface Props {
 }
 
 export function MethodAccordion({ active, onChange, renderBody }: Props) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   return (
     <ol className="space-y-2">
       {PAYMENT_METHODS.map((m) => {
@@ -54,9 +59,9 @@ export function MethodAccordion({ active, onChange, renderBody }: Props) {
                       isActive ? 'text-brand-800' : 'text-slate-800'
                     }`}
                   >
-                    {m.label}
+                    {m.labelKey ? _t(m.labelKey) : m.label}
                   </span>
-                  <span className="text-[11px] text-slate-500 truncate">{m.tagline}</span>
+                  <span className="text-[11px] text-slate-500 truncate">{m.taglineKey ? _t(m.taglineKey) : m.tagline}</span>
                 </span>
               </span>
 

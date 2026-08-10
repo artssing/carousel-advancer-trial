@@ -10,20 +10,24 @@ export type PaymentMethodId = 'CARD' | 'ALIPAY_HK' | 'WECHAT_HK' | 'FPS' | 'APPL
 
 export interface PaymentMethodConfig {
   id: PaymentMethodId;
-  label: string;
+  /** Brand names (Alipay HK, WeChat Pay) are the same in both locales and stay
+   *  literal; anything translatable carries a t() key instead. */
+  label?: string;
+  labelKey?: string;
   /** Inline SVG / emoji for tab icon (kept light — real brand SVGs added later) */
   icon: string;
   /** Short marketing tag shown under the tab on desktop */
-  tagline: string;
+  tagline?: string;
+  taglineKey?: string;
   /** Order in tab strip */
   order: number;
 }
 
 export const PAYMENT_METHODS: PaymentMethodConfig[] = [
-  { id: 'CARD',       label: '信用卡',     icon: '💳', tagline: 'Visa / MC / Amex / UnionPay', order: 1 },
-  { id: 'ALIPAY_HK',  label: 'Alipay HK',  icon: '🅰️', tagline: '掃 QR · 即時付款',           order: 2 },
-  { id: 'WECHAT_HK',  label: 'WeChat Pay', icon: '💬', tagline: '香港錢包 · 掃 QR',           order: 3 },
-  { id: 'FPS',        label: 'FPS 轉數快', icon: '⚡', tagline: '銀行 app 即時轉賬',          order: 4 },
+  { id: 'CARD',       labelKey: 'checkout.method.card',  icon: '💳', taglineKey: 'checkout.method.card.tagline',   order: 1 },
+  { id: 'ALIPAY_HK',  label: 'Alipay HK',  icon: '🅰️', taglineKey: 'checkout.method.alipay.tagline', order: 2 },
+  { id: 'WECHAT_HK',  label: 'WeChat Pay', icon: '💬', taglineKey: 'checkout.method.wechat.tagline', order: 3 },
+  { id: 'FPS',        labelKey: 'checkout.method.fps',   icon: '⚡', taglineKey: 'checkout.method.fps.tagline',    order: 4 },
   { id: 'APPLE_PAY',  label: 'Apple Pay',  icon: '',  tagline: 'Touch ID / Face ID',         order: 5 },
 ];
 
@@ -39,16 +43,17 @@ export interface TestCard {
   number: string;
   brand: CardBrand;
   outcome: TestCardOutcome;
-  label: string;
+  /** t() key, not text. */
+  labelKey: string;
 }
 
 export const TEST_CARDS: TestCard[] = [
-  { number: '4242424242424242', brand: 'visa', outcome: 'success',      label: '✓ 成功（Visa）' },
-  { number: '5555555555554444', brand: 'mc',   outcome: 'success',      label: '✓ 成功（Mastercard）' },
-  { number: '378282246310005',  brand: 'amex', outcome: 'success',      label: '✓ 成功（Amex 15 digit）' },
-  { number: '4000000000000002', brand: 'visa', outcome: 'decline',      label: '✗ 信用卡被拒' },
-  { number: '4000000000009995', brand: 'visa', outcome: 'insufficient', label: '✗ 餘額不足' },
-  { number: '4000002500003155', brand: 'visa', outcome: '3ds_fail',     label: '✗ 3DS 驗證失敗' },
+  { number: '4242424242424242', brand: 'visa', outcome: 'success',      labelKey: 'checkout.testCard.visaOk' },
+  { number: '5555555555554444', brand: 'mc',   outcome: 'success',      labelKey: 'checkout.testCard.mcOk' },
+  { number: '378282246310005',  brand: 'amex', outcome: 'success',      labelKey: 'checkout.testCard.amexOk' },
+  { number: '4000000000000002', brand: 'visa', outcome: 'decline',      labelKey: 'checkout.testCard.declined' },
+  { number: '4000000000009995', brand: 'visa', outcome: 'insufficient', labelKey: 'checkout.testCard.insufficient' },
+  { number: '4000002500003155', brand: 'visa', outcome: '3ds_fail',     labelKey: 'checkout.testCard.3dsFail' },
 ];
 
 // ─── Card brand detection (BIN prefix) ─────────────────────────────────────
@@ -130,22 +135,24 @@ export function luhnCheck(digits: string): boolean {
 }
 
 /** Validate MM/YY string (not in the past, valid month). */
+/** `reason` is a t() key, not text — this module has no locale. */
 export function validateExpiry(mmYY: string): { ok: boolean; reason?: string } {
   const m = mmYY.match(/^(\d{2})\s*\/?\s*(\d{2})$/);
-  if (!m) return { ok: false, reason: '到期日格式應為 MM/YY' };
+  if (!m) return { ok: false, reason: 'checkout.card.error.expiryFormat' };
   const mm = parseInt(m[1]!, 10);
   const yy = parseInt(m[2]!, 10);
-  if (mm < 1 || mm > 12) return { ok: false, reason: '月份必須 01-12' };
+  if (mm < 1 || mm > 12) return { ok: false, reason: 'checkout.card.error.expiryMonth' };
   const now = new Date();
   const expDate = new Date(2000 + yy, mm, 0);    // last day of expiry month
-  if (expDate < now) return { ok: false, reason: '卡已到期' };
+  if (expDate < now) return { ok: false, reason: 'checkout.card.error.expired' };
   return { ok: true };
 }
 
 /** Validate cardholder name. */
+/** `reason` is a t() key, not text — this module has no locale. */
 export function validateCardholderName(name: string): { ok: boolean; reason?: string } {
   const trimmed = name.trim();
-  if (trimmed.length < 2) return { ok: false, reason: '請輸入持卡人姓名' };
-  if (!/^[A-Za-z\s一-鿿.\-']+$/.test(trimmed)) return { ok: false, reason: '姓名格式無效' };
+  if (trimmed.length < 2) return { ok: false, reason: 'checkout.card.error.nameRequired' };
+  if (!/^[A-Za-z\s一-鿿.\-']+$/.test(trimmed)) return { ok: false, reason: 'checkout.card.error.nameInvalid' };
   return { ok: true };
 }

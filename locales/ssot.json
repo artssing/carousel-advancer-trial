@@ -1110,9 +1110,85 @@
     }
   },
   "checkout": {
+    "applePay.notice": {
+      "zh": "真實環境：撳一下會跳 Touch ID / Face ID。Mock 模式：揀下面 dev button。",
+      "en": "In production this opens Touch ID / Face ID. In mock mode, use the dev buttons below."
+    },
+    "applePay.verifying": {
+      "zh": "Touch ID 驗證中…",
+      "en": "Verifying with Touch ID…"
+    },
     "authenticator.feeLine": {
       "zh": "鑑定費 {fee}",
       "en": "Authentication fee {fee}"
+    },
+    "card.cvvHint": {
+      "zh": "卡背面 3 位數",
+      "en": "3 digits on the back of the card"
+    },
+    "card.cvvHintAmex": {
+      "zh": "卡正面 4 位數",
+      "en": "4 digits on the front of the card"
+    },
+    "card.cvvPlaceholder3": {
+      "zh": "3 位數",
+      "en": "3 digits"
+    },
+    "card.cvvPlaceholder4": {
+      "zh": "4 位數",
+      "en": "4 digits"
+    },
+    "card.error.cvvLength": {
+      "zh": "CVV 應該係 {len} 位",
+      "en": "The CVV should be {len} digits"
+    },
+    "card.error.expired": {
+      "zh": "卡已到期",
+      "en": "This card has expired"
+    },
+    "card.error.expiryFormat": {
+      "zh": "到期日格式應為 MM/YY",
+      "en": "Expiry date must look like MM/YY"
+    },
+    "card.error.expiryMonth": {
+      "zh": "月份必須 01-12",
+      "en": "Month must be between 01 and 12"
+    },
+    "card.error.expiryRequired": {
+      "zh": "請填到期日",
+      "en": "Enter the expiry date"
+    },
+    "card.error.nameInvalid": {
+      "zh": "姓名格式無效",
+      "en": "That name format is not valid"
+    },
+    "card.error.nameRequired": {
+      "zh": "請輸入持卡人姓名",
+      "en": "Enter the cardholder name"
+    },
+    "card.error.numberInvalid": {
+      "zh": "卡號格式錯誤",
+      "en": "That card number is not valid"
+    },
+    "card.error.numberLength": {
+      "zh": "卡號應該係 {len} 位",
+      "en": "The card number should be {len} digits"
+    },
+    "card.expiryLabel": {
+      "zh": "到期日",
+      "en": "Expiry date"
+    },
+    "card.nameLabel": {
+      "zh": "持卡人姓名（同卡上一致）",
+      "en": "Cardholder name (as printed on the card)"
+    },
+    "card.numberLabel": {
+      "zh": "卡號",
+      "en": "Card number"
+    },
+    "card.saveCard": {
+      "zh": "儲存呢張卡用嚟下次付款",
+      "en": "Save this card for next time"
     },
     "deadline.notice": {
       "zh": "付款時限 — 過時訂單自動取消",
@@ -1205,6 +1281,30 @@
     "loading": {
       "zh": "載入中…",
       "en": "Loading…"
+    },
+    "method.alipay.tagline": {
+      "zh": "掃 QR · 即時付款",
+      "en": "Scan a QR code · instant payment"
+    },
+    "method.card": {
+      "zh": "信用卡",
+      "en": "Credit card"
+    },
+    "method.card.tagline": {
+      "zh": "Visa / MC / Amex / UnionPay",
+      "en": "Visa / MC / Amex / UnionPay"
+    },
+    "method.fps": {
+      "zh": "FPS 轉數快",
+      "en": "FPS"
+    },
+    "method.fps.tagline": {
+      "zh": "銀行 app 即時轉賬",
+      "en": "Instant transfer from your banking app"
+    },
+    "method.wechat.tagline": {
+      "zh": "香港錢包 · 掃 QR",
+      "en": "Hong Kong wallet · scan a QR code"
     },
     "offlineCash.cta": {
       "zh": "知道喇，去訂單頁跟進",
@@ -1394,6 +1494,70 @@
       "zh": "付款成功",
       "en": "Payment successful"
     },
+    "summary.authFee": {
+      "zh": "鑑定費",
+      "en": "Authentication fee"
+    },
+    "summary.escrowNotice": {
+      "zh": "款項受平台託管保障，鑑定通過並完成交收前不會放款予賣家；鑑定不通過可全額退款。",
+      "en": "Your payment is held in escrow. It is not released to the seller until the item passes authentication and handover is complete; if it fails authentication you are refunded in full."
+    },
+    "summary.itemPrice": {
+      "zh": "貨品價格",
+      "en": "Item price"
+    },
+    "summary.platformFee": {
+      "zh": "平台服務費",
+      "en": "Platform fee"
+    },
+    "summary.tier1Notice": {
+      "zh": "Tier 1 訂單即時扣款。如取消會 refund，銀行 5–10 個工作天入賬。",
+      "en": "Tier 1 orders are charged immediately. Cancellations are refunded, and banks take 5–10 working days to post it."
+    },
+    "summary.title": {
+      "zh": "費用明細",
+      "en": "Fee breakdown"
+    },
+    "summary.total": {
+      "zh": "應付總額",
+      "en": "Total due"
+    },
+    "testCard.3dsFail": {
+      "zh": "✗ 3DS 驗證失敗",
+      "en": "✗ 3DS verification failed"
+    },
+    "testCard.amexOk": {
+      "zh": "✓ 成功（Amex 15 digit）",
+      "en": "✓ Success (Amex, 15 digits)"
+    },
+    "testCard.declined": {
+      "zh": "✗ 信用卡被拒",
+      "en": "✗ Card declined"
+    },
+    "testCard.insufficient": {
+      "zh": "✗ 餘額不足",
+      "en": "✗ Insufficient funds"
+    },
+    "testCard.mcOk": {
+      "zh": "✓ 成功（Mastercard）",
+      "en": "✓ Success (Mastercard)"
+    },
+    "testCard.visaOk": {
+      "zh": "✓ 成功（Visa）",
+      "en": "✓ Success (Visa)"
+    },
+    "testMode.banner": {
+      "zh": "測試模式 — 輸入下方測試卡號模擬付款",
+      "en": "Test mode — use the test card numbers below to simulate a payment"
+    },
+    "testMode.collapse": {
+      "zh": "收起",
+      "en": "Hide"
+    },
+    "testMode.expand": {
+      "zh": "查看測試卡號",
+      "en": "Show test cards"
+    },
     "tierDesc1": {
       "zh": "Tier 1 · 純撮合",
       "en": "Tier 1 · Pure matchmaking"
@@ -1417,6 +1581,50 @@
     "timer.warning": {
       "zh": "⏰ 付款時限快到（剩 {n} 分鐘）— 請盡快完成付款，否則訂單會自動取消。",
       "en": "⏰ Payment deadline approaching ({n} minutes remaining) — please complete payment promptly, otherwise the order will be automatically cancelled."
+    },
+    "trust.escrow": {
+      "zh": "平台 escrow 保管",
+      "en": "Held in platform escrow"
+    },
+    "trust.namedAuthenticator": {
+      "zh": "第三方鑑定師核實",
+      "en": "Verified by a third-party authenticator"
+    },
+    "trust.ssl": {
+      "zh": "SSL 加密傳輸",
+      "en": "SSL-encrypted"
+    },
+    "wallet.alipayInstruction": {
+      "zh": "請喺 Alipay HK app 掃描上方 QR code 確認付款",
+      "en": "Scan the QR code above in the Alipay HK app to confirm payment"
+    },
+    "wallet.amountLine": {
+      "zh": "金額：HK${amount} · 有效期 {mm}:{ss}",
+      "en": "Amount: HK${amount} · expires in {mm}:{ss}"
+    },
+    "wallet.fpsInstruction": {
+      "zh": "請開啟你嘅銀行 app → 轉數快 → 掃描 QR code（收款人：Certifine Escrow）",
+      "en": "Open your banking app → FPS → scan the QR code (payee: Certifine Escrow)"
+    },
+    "wallet.mockFail": {
+      "zh": "🧪 模擬失敗",
+      "en": "🧪 Simulate failure"
+    },
+    "wallet.mockNotice": {
+      "zh": "Mock 模式：dev 按掣模擬 wallet 回覆 · 真實環境會 redirect 去 wallet app",
+      "en": "Mock mode: these buttons simulate the wallet’s reply. In production you are redirected to the wallet app."
+    },
+    "wallet.mockSuccess": {
+      "zh": "🧪 模擬成功",
+      "en": "🧪 Simulate success"
+    },
+    "wallet.waiting": {
+      "zh": "等待確認中…",
+      "en": "Waiting for confirmation…"
+    },
+    "wallet.wechatInstruction": {
+      "zh": "請喺 WeChat app 掃描上方 QR code 確認付款",
+      "en": "Scan the QR code above in the WeChat app to confirm payment"
     }
   },
   "orders": {

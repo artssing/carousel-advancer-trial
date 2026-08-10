@@ -5,6 +5,7 @@
  *  buttons or after auto-resolve timer expires. */
 import { useEffect, useState } from 'react';
 import { Button } from '@authentik/ui';
+import { getClientLocale, createT } from '@authentik/utils';
 import type { PaymentMethodId } from '@/lib/payment-methods';
 
 interface Props {
@@ -14,25 +15,30 @@ interface Props {
   busy: boolean;
 }
 
-const METHOD_COPY: Record<string, { name: string; instruction: string; brandColor: string }> = {
+// instructionKey, not text — this map is module scope.
+const METHOD_COPY: Record<string, { name?: string; nameKey?: string; instructionKey: string; brandColor: string }> = {
   ALIPAY_HK: {
     name: 'Alipay HK',
-    instruction: '請喺 Alipay HK app 掃描上方 QR code 確認付款',
+    instructionKey: 'checkout.wallet.alipayInstruction',
     brandColor: 'bg-blue-50 border-blue-300 text-blue-900',
   },
   WECHAT_HK: {
     name: 'WeChat Pay HK',
-    instruction: '請喺 WeChat app 掃描上方 QR code 確認付款',
+    instructionKey: 'checkout.wallet.wechatInstruction',
     brandColor: 'bg-emerald-50 border-emerald-300 text-emerald-900',
   },
   FPS: {
-    name: 'FPS 轉數快',
-    instruction: '請開啟你嘅銀行 app → 轉數快 → 掃描 QR code（收款人：Certifine Escrow）',
+    nameKey: 'checkout.method.fps',
+    instructionKey: 'checkout.wallet.fpsInstruction',
     brandColor: 'bg-amber-50 border-amber-300 text-amber-900',
   },
 };
 
 export function WalletPanel({ method, amountHKD, onResolve, busy }: Props) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const copy = METHOD_COPY[method] ?? METHOD_COPY.ALIPAY_HK;
   const [seconds, setSeconds] = useState(300);   // 5-min fake expiry
 
@@ -47,7 +53,7 @@ export function WalletPanel({ method, amountHKD, onResolve, busy }: Props) {
 
   return (
     <div className={`rounded-xl border p-4 ${copy!.brandColor}`}>
-      <p className="text-sm font-semibold">{copy!.name}</p>
+      <p className="text-sm font-semibold">{copy!.nameKey ? _t(copy!.nameKey) : copy!.name}</p>
       <div className="my-3 flex items-center justify-center">
         {/* Placeholder QR — diagonal pattern, ~160px square */}
         <div
@@ -62,15 +68,15 @@ export function WalletPanel({ method, amountHKD, onResolve, busy }: Props) {
           ))}
         </div>
       </div>
-      <p className="text-center text-xs">{copy!.instruction}</p>
+      <p className="text-center text-xs">{_t(copy!.instructionKey)}</p>
       <p className="mt-1 text-center text-[11px] opacity-70">
-        金額：HK${amountHKD.toLocaleString()} · 有效期 {mm}:{ss}
+        {_t('checkout.wallet.amountLine', { amount: amountHKD.toLocaleString(), mm, ss })}
       </p>
 
       {busy ? (
         <div className="mt-3 flex items-center justify-center gap-2 text-xs">
           <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
-          等待確認中…
+          {_t('checkout.wallet.waiting')}
         </div>
       ) : (
         <div className="mt-4 grid grid-cols-2 gap-2 border-t border-current/20 pt-3">
@@ -79,19 +85,19 @@ export function WalletPanel({ method, amountHKD, onResolve, busy }: Props) {
             size="sm"
             onClick={() => onResolve('success')}
           >
-            🧪 模擬成功
+            {_t('checkout.wallet.mockSuccess')}
           </Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => onResolve('fail')}
           >
-            🧪 模擬失敗
+            {_t('checkout.wallet.mockFail')}
           </Button>
         </div>
       )}
       <p className="mt-2 text-center text-[9px] opacity-60">
-        Mock 模式：dev 按掣模擬 wallet 回覆 · 真實環境會 redirect 去 wallet app
+        {_t('checkout.wallet.mockNotice')}
       </p>
     </div>
   );
