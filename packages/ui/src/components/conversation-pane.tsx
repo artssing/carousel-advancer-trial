@@ -26,6 +26,19 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { X, Send, MessageCircle, ExternalLink, Store, ShieldCheck, ChevronLeft, Tag } from 'lucide-react';
+import { createT, getClientLocale, type TLocale } from '@authentik/utils';
+
+/**
+ * Every string in this file lives in `locales/ssot.json` under `ui.conversation.*`.
+ * Module-level helpers take `_t` as an argument — they render user-visible copy
+ * but sit outside the component, where no hook-derived translator is in scope.
+ */
+type Translate = (key: string, params?: Record<string, string | number>) => string;
+
+/** Intl locale tag for date/time formatting — not the same thing as our TLocale. */
+function intlTag(locale: TLocale): string {
+  return locale === 'en' ? 'en-HK' : 'zh-HK';
+}
 
 /** Per-portal colour tokens. Literal class strings so Tailwind can see them. */
 const THEME_TOKENS = {
@@ -100,19 +113,22 @@ interface Message {
 
 interface PresenceInfo { online: boolean; lastSeenAt?: string | null; }
 
-function formatLastSeen(info: PresenceInfo | undefined): string | null {
+function formatLastSeen(info: PresenceInfo | undefined, _t: Translate, locale: TLocale): string | null {
   if (!info) return null;
-  if (info.online) return '在線';
+  if (info.online) return _t('ui.conversation.presence.online');
   if (!info.lastSeenAt) return null;
   const d = new Date(info.lastSeenAt);
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today.getTime() - 86400000);
   const msgDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  const t = d.toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', hour12: false });
-  if (msgDay.getTime() >= today.getTime()) return `今日 ${t}`;
-  if (msgDay.getTime() >= yesterday.getTime()) return `昨日 ${t}`;
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日 ${t}`;
+  const time = d.toLocaleTimeString(intlTag(locale), { hour: '2-digit', minute: '2-digit', hour12: false });
+  if (msgDay.getTime() >= today.getTime()) return _t('ui.conversation.time.todayAt', { time });
+  if (msgDay.getTime() >= yesterday.getTime()) return _t('ui.conversation.time.yesterdayAt', { time });
+  // Intl gives "2026年8月10日" / "10 August 2026" — the year-month-day pattern
+  // is not something we can interpolate from a single translated template.
+  const date = d.toLocaleDateString(intlTag(locale), { year: 'numeric', month: 'long', day: 'numeric' });
+  return _t('ui.conversation.time.dateAt', { date, time });
 }
 
 /** Determine tick status for a message the current user sent */
@@ -135,11 +151,11 @@ function getTickStatus(
 }
 
 /** Tick icon shown in own message bubbles */
-function MessageTick({ status, tooltip }: { status: 'sending' | 'sent' | 'read' | 'failed'; tooltip?: string }) {
+function MessageTick({ status, tooltip, _t }: { status: 'sending' | 'sent' | 'read' | 'failed'; tooltip?: string; _t: Translate }) {
   if (status === 'sending') {
     return (
       <span
-        title="傳送中"
+        title={_t('ui.conversation.tick.sending')}
         style={{
           display: 'inline-block',
           fontSize: '9px',
@@ -155,54 +171,82 @@ function MessageTick({ status, tooltip }: { status: 'sending' | 'sent' | 'read' 
       >✓</span>
     );
   }
-  if (status === 'failed') return <span className="text-[9px] text-red-300" title="傳送失敗">!</span>;
-  if (status === 'read') return <span className="text-[9px] font-bold text-white" title={tooltip ?? '已讀'} style={{ letterSpacing: '-0.35em' }}>✓✓</span>;
-  return <span className="text-[9px] font-bold text-white" title="已送達">✓</span>;
+  if (status === 'failed') return <span className="text-[9px] text-red-300" title={_t('ui.conversation.tick.failed')}>!</span>;
+  if (status === 'read') return <span className="text-[9px] font-bold text-white" title={tooltip ?? _t('ui.conversation.tick.read')} style={{ letterSpacing: '-0.35em' }}>✓✓</span>;
+  return <span className="text-[9px] font-bold text-white" title={_t('ui.conversation.tick.delivered')}>✓</span>;
 }
 
-const ROLE_LABEL: Record<string, string> = {
-  BUYER: '買家', SELLER: '賣家', AUTHENTICATOR: '鑑定師', SYSTEM: '系統',
-};
+/**
+ * Role name. Written out rather than looked up in a map so every key is a
+ * literal that `scripts/i18n-check-keys.ts` can actually verify.
+ */
+function roleLabel(role: string | undefined, _t: Translate): string {
+  if (role === 'BUYER') return _t('ui.conversation.role.BUYER');
+  if (role === 'SELLER') return _t('ui.conversation.role.SELLER');
+  if (role === 'AUTHENTICATOR') return _t('ui.conversation.role.AUTHENTICATOR');
+  if (role === 'SYSTEM') return _t('ui.conversation.role.SYSTEM');
+  return _t('ui.conversation.role.unknown');
+}
 
-const WEEKDAY_ZH = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-
-function formatDateDivider(d: Date): string {
+function formatDateDivider(d: Date, _t: Translate, locale: TLocale): string {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
   const dDay = new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
   const daysDiff = Math.round((startOfToday - dDay) / 86400000);
-  if (daysDiff === 0) return '今日';
-  if (daysDiff === 1) return '昨日';
-  if (daysDiff > 1 && daysDiff < 7) return WEEKDAY_ZH[d.getDay()] ?? '';
-  if (d.getFullYear() === now.getFullYear()) return `${d.getMonth() + 1}月${d.getDate()}日`;
-  return `${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日`;
+  if (daysDiff === 0) return _t('ui.conversation.divider.today');
+  if (daysDiff === 1) return _t('ui.conversation.divider.yesterday');
+  if (daysDiff > 1 && daysDiff < 7) return _t(`ui.conversation.divider.weekday.${d.getDay()}`);
+  if (d.getFullYear() === now.getFullYear()) {
+    return d.toLocaleDateString(intlTag(locale), { month: 'long', day: 'numeric' });
+  }
+  return d.toLocaleDateString(intlTag(locale), { year: 'numeric', month: 'long', day: 'numeric' });
 }
 
-function formatTime(d: Date): string {
-  return d.toLocaleTimeString('zh-HK', { hour: '2-digit', minute: '2-digit', hour12: false });
+function formatTime(d: Date, locale: TLocale): string {
+  return d.toLocaleTimeString(intlTag(locale), { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 function sameDay(a: Date, b: Date): boolean {
   return a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 }
 
-function DateDivider({ date }: { date: Date }) {
+function DateDivider({ date, _t, locale }: { date: Date; _t: Translate; locale: TLocale }) {
   return (
     <div className="my-3 flex justify-center">
       <span className="rounded-full bg-surface-2/80 px-2.5 py-0.5 text-[10px] font-medium text-neutral-text-muted">
-        {formatDateDivider(date)}
+        {formatDateDivider(date, _t, locale)}
       </span>
     </div>
   );
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  PENDING_PAYMENT: '待付款', PAID: '已付款',
-  SHIPPED_TO_AUTHENTICATOR: '已寄鑑定師', RECEIVED_BY_AUTHENTICATOR: '鑑定師簽收',
-  AUTHENTICATING: '鑑定中', AUTH_PASSED: '鑑定通過', AUTH_FAILED: '鑑定不通過',
-  SHIPPED_TO_BUYER: '已寄買家', DELIVERED: '已送達', COMPLETED: '已完成',
-  DISPUTED: '爭議處理中', REFUNDED: '已退款',
-  AWAITING_MEETUP: '等待面交', MEETUP_AUTHENTICATING: '面交鑑定中',
+/** Order statuses this pane shows as a chip. Short forms — `utils.orderStatus`
+ *  carries the long sentence versions used on the orders pages, which do not
+ *  fit here. Values are ssot keys, resolved through `_t` at render time. */
+const STATUS_KEY: Record<string, string> = {
+  PENDING_PAYMENT: 'ui.conversation.status.PENDING_PAYMENT',
+  PAID: 'ui.conversation.status.PAID',
+  SHIPPED_TO_AUTHENTICATOR: 'ui.conversation.status.SHIPPED_TO_AUTHENTICATOR',
+  RECEIVED_BY_AUTHENTICATOR: 'ui.conversation.status.RECEIVED_BY_AUTHENTICATOR',
+  AUTHENTICATING: 'ui.conversation.status.AUTHENTICATING',
+  AUTH_PASSED: 'ui.conversation.status.AUTH_PASSED',
+  AUTH_FAILED: 'ui.conversation.status.AUTH_FAILED',
+  SHIPPED_TO_BUYER: 'ui.conversation.status.SHIPPED_TO_BUYER',
+  DELIVERED: 'ui.conversation.status.DELIVERED',
+  COMPLETED: 'ui.conversation.status.COMPLETED',
+  DISPUTED: 'ui.conversation.status.DISPUTED',
+  REFUNDED: 'ui.conversation.status.REFUNDED',
+  AWAITING_MEETUP: 'ui.conversation.status.AWAITING_MEETUP',
+  MEETUP_AUTHENTICATING: 'ui.conversation.status.MEETUP_AUTHENTICATING',
+};
+
+const OFFER_STATUS_KEY: Record<string, string> = {
+  PENDING: 'ui.conversation.offer.status.PENDING',
+  ACCEPTED: 'ui.conversation.offer.status.ACCEPTED',
+  REJECTED: 'ui.conversation.offer.status.REJECTED',
+  COUNTERED: 'ui.conversation.offer.status.COUNTERED',
+  EXPIRED: 'ui.conversation.offer.status.EXPIRED',
+  WITHDRAWN: 'ui.conversation.offer.status.WITHDRAWN',
 };
 
 const STATUS_COLOR: Record<string, string> = {
@@ -283,6 +327,13 @@ export function ConversationPane({
   const { api, getToken, apiBaseUrl: API_URL } = deps;
   const tk = THEME_TOKENS[theme];
 
+  // Locale is read after mount (cookie), so the server renders zh and English
+  // arrives on hydrate — the same idiom as top-nav/footer. See
+  // docs/backlog/i18n-backlog.md §3.6 for the SSR fix that would replace it.
+  const [locale, setLocaleState] = useState<TLocale>('zh');
+  useEffect(() => { setLocaleState(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const contextId = convIdProp ?? orderId ?? listingId ?? '';
   const [activeConvId, setActiveConvId] = useState<string | null>(convIdProp ?? null);
   const activeConvIdRef = useRef<string | null>(convIdProp ?? null);
@@ -294,7 +345,10 @@ export function ConversationPane({
   const [error, setError] = useState<string | null>(null);
   const [connected, setConnected] = useState(false);
   const [typing, setTyping] = useState(false);
-  const [typingLabel, setTypingLabel] = useState('對方正在輸入…');
+  // Store the role, not the rendered sentence: the label has to re-translate
+  // when the locale arrives on hydrate, and state set inside a socket handler
+  // would otherwise freeze whatever language was current at that moment.
+  const [typingRole, setTypingRole] = useState<string | undefined>(undefined);
   const [presenceMap, setPresenceMap] = useState<Record<string, PresenceInfo>>({});
   // Ref-based dedup: prevent any residual duplicate broadcasts
   const seenMessageIds = useRef(new Set<string>());
@@ -401,7 +455,7 @@ export function ConversationPane({
       setMessages(d.messages ?? []);
       if (Array.isArray(d.parties)) setLiveParties(d.parties);
     } catch (e: any) {
-      setError(e?.message ?? '無法切換對話');
+      setError(e?.message ?? _t('ui.conversation.error.switchTab'));
     } finally {
       setTabSwitching(false);
     }
@@ -427,7 +481,7 @@ export function ConversationPane({
       setReplaceConfirmOpen(false);
       refreshActiveOffer();
     } catch (e: any) {
-      setError(e?.message ?? '提出議價失敗');
+      setError(e?.message ?? _t('ui.conversation.error.offerFailed'));
     } finally {
       setOfferSubmitBusy(false);
     }
@@ -558,12 +612,7 @@ export function ConversationPane({
 
     socket.on('typing', (data: { userId?: string; role?: string } | undefined) => {
       if (data?.userId === currentUserId) return; // own typing, ignore
-      const roleLabel =
-        data?.role === 'BUYER' ? '買家'
-        : data?.role === 'SELLER' ? '賣家'
-        : data?.role === 'AUTHENTICATOR' ? '鑑定師'
-        : '對方';
-      setTypingLabel(`${roleLabel}正在輸入…`);
+      setTypingRole(data?.role);
       setTyping(true);
       if (typingTimeout.current) clearTimeout(typingTimeout.current);
       typingTimeout.current = setTimeout(() => setTyping(false), 3000);
@@ -646,7 +695,7 @@ export function ConversationPane({
         setMessages((prev) =>
           prev.map((m) => m.tempId === tempId ? { ...m, sendStatus: 'failed' } : m),
         );
-        setError(ack?.error ?? '訊息未能發出，請重試');
+        setError(ack?.error ?? _t('ui.conversation.error.sendFailed'));
       }
       // On success: server will broadcast 'message' event which replaces the optimistic entry
     });
@@ -683,9 +732,11 @@ export function ConversationPane({
   const anyOnline = counterpartyIds.some((uid) => presenceMap[uid]?.online);
   const firstLastSeen = counterpartyIds.map((uid) => presenceMap[uid]).find((p) => p && !p.online)?.lastSeenAt;
   const presenceLabel = anyOnline
-    ? '在線'
+    ? _t('ui.conversation.presence.online')
     : firstLastSeen
-      ? `最後上線：${formatLastSeen({ online: false, lastSeenAt: firstLastSeen })}`
+      ? _t('ui.conversation.presence.lastSeen', {
+          time: formatLastSeen({ online: false, lastSeenAt: firstLastSeen }, _t, locale) ?? '',
+        })
       : null;
 
   return (
@@ -699,7 +750,7 @@ export function ConversationPane({
               <button
                 onClick={onClose}
                 className="-ml-1 mt-0.5 rounded-lg p-1 hover:bg-surface-2"
-                aria-label="返回對話列表"
+                aria-label={_t('ui.conversation.header.back')}
               >
                 <ChevronLeft className="h-5 w-5 text-neutral-text-muted" />
               </button>
@@ -741,10 +792,7 @@ export function ConversationPane({
                 <div className="mt-1.5 flex flex-wrap items-center gap-1">
                   {effectiveParties.map((p) => {
                     const isMe = p.id === currentUserId;
-                    const roleLabel =
-                      p.role === 'BUYER' ? '買家'
-                      : p.role === 'SELLER' ? '賣家'
-                      : '鑑定師';
+                    const label = roleLabel(p.role, _t);
                     const cls =
                       p.role === 'AUTHENTICATOR' ? 'bg-emerald-100 text-emerald-800'
                       : p.role === 'SELLER' ? 'bg-amber-100 text-amber-800'
@@ -756,14 +804,14 @@ export function ConversationPane({
                     const baseClass = `inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium ${cls} ${isMe ? 'ring-1 ring-line-2' : ''}`;
                     const content = (
                       <>
-                        <span className="opacity-70">{roleLabel}</span>
+                        <span className="opacity-70">{label}</span>
                         <span>{p.displayName}</span>
-                        {isMe && <span className="text-[9px] opacity-60">(你)</span>}
+                        {isMe && <span className="text-[9px] opacity-60">{_t('ui.conversation.header.meTag')}</span>}
                       </>
                     );
                     if (isMe) {
                       return (
-                        <span key={p.id} className={baseClass} title="你（喺三方對話入面）">
+                        <span key={p.id} className={baseClass} title={_t('ui.conversation.header.meTitle')}>
                           {content}
                         </span>
                       );
@@ -774,7 +822,7 @@ export function ConversationPane({
                         href={href as any}
                         onClick={linkOnClick}
                         className={`${baseClass} hover:opacity-80`}
-                        title={`查看${roleLabel}：${p.displayName}`}
+                        title={_t('ui.conversation.header.viewParty', { role: label, name: p.displayName })}
                       >
                         {content}
                       </Link>
@@ -786,11 +834,11 @@ export function ConversationPane({
               <div className="mt-1.5 flex flex-wrap items-center gap-1">
                 {orderStatus ? (
                   <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${STATUS_COLOR[orderStatus] ?? 'bg-surface-2 text-neutral-text-muted'}`}>
-                    {STATUS_LABEL[orderStatus] ?? orderStatus}
+                    {STATUS_KEY[orderStatus] ? _t(STATUS_KEY[orderStatus]!) : orderStatus}
                   </span>
                 ) : conversationType === 'listing' ? (
                   <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">
-                    商品查詢（未落單）
+                    {_t('ui.conversation.status.listingInquiry')}
                   </span>
                 ) : null}
               </div>
@@ -811,18 +859,18 @@ export function ConversationPane({
                 const nameOf = (role: 'BUYER' | 'SELLER' | 'AUTHENTICATOR') =>
                   effectiveParties.find((p) => p.role === role)?.displayName ?? role;
                 type TabDef = { kind: ConvKind; label: string };
-                const tabs: TabDef[] = [{ kind: 'THREE_WAY', label: '三方對話' }];
+                const withLabel = (role: 'BUYER' | 'SELLER' | 'AUTHENTICATOR') =>
+                  _t('ui.conversation.tabs.with', { role: roleLabel(role, _t), name: nameOf(role) });
+                const tabs: TabDef[] = [{ kind: 'THREE_WAY', label: _t('ui.conversation.tabs.threeWay') }];
                 if (myRole === 'BUYER' || myRole === 'SELLER') {
                   const other = myRole === 'BUYER' ? 'SELLER' : 'BUYER';
-                  tabs.push({ kind: 'BUYER_SELLER', label: `同${other === 'SELLER' ? '賣家' : '買家'} ${nameOf(other)}` });
+                  tabs.push({ kind: 'BUYER_SELLER', label: withLabel(other) });
                 }
                 if (hasAuth && (myRole === 'BUYER' || myRole === 'AUTHENTICATOR')) {
-                  if (myRole === 'BUYER') tabs.push({ kind: 'BUYER_AUTH', label: `同鑑定師 ${nameOf('AUTHENTICATOR')}` });
-                  else tabs.push({ kind: 'BUYER_AUTH', label: `同買家 ${nameOf('BUYER')}` });
+                  tabs.push({ kind: 'BUYER_AUTH', label: withLabel(myRole === 'BUYER' ? 'AUTHENTICATOR' : 'BUYER') });
                 }
                 if (hasAuth && (myRole === 'SELLER' || myRole === 'AUTHENTICATOR')) {
-                  if (myRole === 'SELLER') tabs.push({ kind: 'SELLER_AUTH', label: `同鑑定師 ${nameOf('AUTHENTICATOR')}` });
-                  else tabs.push({ kind: 'SELLER_AUTH', label: `同賣家 ${nameOf('SELLER')}` });
+                  tabs.push({ kind: 'SELLER_AUTH', label: withLabel(myRole === 'SELLER' ? 'AUTHENTICATOR' : 'SELLER') });
                 }
                 if (tabs.length <= 1) return null;
                 return (
@@ -842,8 +890,8 @@ export function ConversationPane({
                           } ${tabSwitching ? 'opacity-60' : ''}`}
                           title={
                             t.kind === 'THREE_WAY'
-                              ? '所有 3 方都可以見到，包括 SYSTEM 通知'
-                              : '私密對話，只有呢兩方睇得到；平台會保留 log 供爭議仲裁'
+                              ? _t('ui.conversation.tabs.threeWayTitle')
+                              : _t('ui.conversation.tabs.pairTitle')
                           }
                         >
                           {t.label}
@@ -877,7 +925,7 @@ export function ConversationPane({
             </div>
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-medium text-neutral-text">{listingTitle}</p>
-              <p className="text-[10px] text-neutral-text-hint">睇商品詳情 →</p>
+              <p className="text-[10px] text-neutral-text-hint">{_t('ui.conversation.listingCard.view')}</p>
             </div>
             <ExternalLink className="h-3.5 w-3.5 shrink-0 text-neutral-text-hint" />
           </Link>
@@ -896,7 +944,10 @@ export function ConversationPane({
                 {sellerInfo.kycVerified && <ShieldCheck className="h-3 w-3 text-blue-500" />}
               </div>
               <p className="text-[10px] text-neutral-text-hint">
-                已售 {sellerInfo.soldAsSellerCount} 件 · 上架中 {sellerInfo.activeListingsCount} 件
+                {_t('ui.conversation.sellerCard.stats', {
+                  sold: sellerInfo.soldAsSellerCount,
+                  active: sellerInfo.activeListingsCount,
+                })}
               </p>
             </div>
             <Store className="h-3.5 w-3.5 shrink-0 text-neutral-text-hint" />
@@ -918,7 +969,11 @@ export function ConversationPane({
                 : (hLeft < 6 ? 'border-red-300 bg-red-50 text-red-800'
                   : hLeft < 12 ? 'border-amber-300 bg-amber-50 text-amber-900'
                   : 'border-amber-200 bg-amber-50 text-amber-800');
-            const label = isAccepted ? '✓ 議價成功' : `議價進行中 · 第 ${''}`;
+            // Was `議價進行中 · 第 ${''}` — an empty interpolation left over from a
+            // round-number that never got wired, so it rendered a dangling "· 第 ".
+            const label = isAccepted
+              ? _t('ui.conversation.offer.accepted')
+              : _t('ui.conversation.offer.inProgress');
             return (
               <div className={`mt-2 flex items-center justify-between gap-2 rounded-lg border px-3 py-1.5 text-xs ${tone}`}>
                 <div className="flex items-center gap-2">
@@ -926,7 +981,7 @@ export function ConversationPane({
                   <span className="font-medium">{label} · HK${activeOffer.priceHKD.toLocaleString('en-HK')}</span>
                   {msLeft > 0 && (
                     <span className="opacity-75">
-                      · 剩 {hLeft}h {mLeft}m
+                      · {_t('ui.conversation.offer.timeLeft', { hours: hLeft, minutes: mLeft })}
                     </span>
                   )}
                 </div>
@@ -936,7 +991,7 @@ export function ConversationPane({
                     onClick={linkOnClick}
                     className="rounded bg-emerald-600 px-2 py-1 text-[10px] font-medium text-white hover:bg-emerald-700"
                   >
-                    立即落單 →
+                    {_t('ui.conversation.offer.orderNow')}
                   </Link>
                 )}
               </div>
@@ -952,33 +1007,29 @@ export function ConversationPane({
               onClick={() => setHistoryOpen((v) => !v)}
               className="flex w-full items-center justify-between gap-2 px-3 py-1.5 text-left text-xs text-neutral-text-muted hover:bg-surface-2"
             >
-              <span>議價過往（{offerHistory.length} 輪）</span>
+              <span>{_t('ui.conversation.offer.historyToggle', { rounds: offerHistory.length })}</span>
               <span className="text-neutral-text-hint">{historyOpen ? '▲' : '▼'}</span>
             </button>
             {historyOpen && (
               <ul className="border-t border-line divide-y divide-line text-[11px]">
                 {offerHistory.map((o) => {
-                  const statusLabel =
-                    o.status === 'PENDING' ? '待回覆'
-                    : o.status === 'ACCEPTED' ? '✓ 已接受'
-                    : o.status === 'REJECTED' ? '✗ 已拒絕'
-                    : o.status === 'COUNTERED' ? '已還價'
-                    : o.status === 'EXPIRED' ? '已過期'
-                    : o.status === 'WITHDRAWN' ? '已撤回' : o.status;
+                  const statusLabel = OFFER_STATUS_KEY[o.status]
+                    ? _t(OFFER_STATUS_KEY[o.status]!)
+                    : o.status;
                   const statusColor =
                     o.status === 'ACCEPTED' ? 'text-emerald-700'
                     : o.status === 'PENDING' ? 'text-amber-700'
                     : 'text-neutral-text-hint';
                   return (
                     <li key={o.id} className="flex items-center justify-between gap-2 px-3 py-1.5">
-                      <span className="text-neutral-text-muted">第 {o.roundNumber} 輪</span>
+                      <span className="text-neutral-text-muted">{_t('ui.conversation.offer.round', { n: o.roundNumber })}</span>
                       <span className="text-neutral-text">HK${o.priceHKD.toLocaleString('en-HK')}</span>
                       <span className="text-neutral-text-hint">
-                        由 {o.proposedByRole === 'BUYER' ? '買家' : '賣家'}
+                        {_t('ui.conversation.offer.byRole', { role: roleLabel(o.proposedByRole, _t) })}
                       </span>
                       <span className={`font-medium ${statusColor}`}>{statusLabel}</span>
                       <span className="text-neutral-text-hint">
-                        {new Date(o.createdAt).toLocaleString('zh-HK', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                        {new Date(o.createdAt).toLocaleString(intlTag(locale), { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </li>
                   );
@@ -1020,7 +1071,7 @@ export function ConversationPane({
             const offerId = offerMatch[1] ?? '';
             return (
               <div key={msg.id}>
-                {showDateDivider && <DateDivider date={msgDate} />}
+                {showDateDivider && <DateDivider date={msgDate} _t={_t} locale={locale} />}
                 <div className={`${spacingClass}`}>
                   {renderOffer(offerId)}
                 </div>
@@ -1031,7 +1082,7 @@ export function ConversationPane({
           if (isSystem) {
             return (
               <div key={msg.id}>
-                {showDateDivider && <DateDivider date={msgDate} />}
+                {showDateDivider && <DateDivider date={msgDate} _t={_t} locale={locale} />}
                 <div className={`flex justify-center ${spacingClass}`}>
                   {/* messages.html .sys — white pill w/ line border */}
                   <p className="rounded-full border border-line bg-white px-3.5 py-1 text-[12px] text-neutral-text-hint">{msg.body}</p>
@@ -1046,7 +1097,7 @@ export function ConversationPane({
 
           return (
             <div key={msg.tempId ?? msg.id}>
-              {showDateDivider && <DateDivider date={msgDate} />}
+              {showDateDivider && <DateDivider date={msgDate} _t={_t} locale={locale} />}
               <div className={`flex ${isMe ? 'justify-end' : 'justify-start'} ${spacingClass}`}>
                 {/* messages.html .bubble — asymmetric top corner per side */}
                 <div className={`max-w-[80%] px-3.5 py-2.5 text-[14px] leading-relaxed ${
@@ -1058,20 +1109,20 @@ export function ConversationPane({
                 }`}>
                   {!isMe && !groupedWithPrev && (
                     <p className="mb-0.5 text-[10px] font-medium text-neutral-text-hint">
-                      {msg.sender?.displayName ?? ROLE_LABEL[msg.senderRole]}
+                      {msg.sender?.displayName ?? roleLabel(msg.senderRole, _t)}
                     </p>
                   )}
                   <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.body}</p>
                   <div className={`mt-0.5 flex items-center justify-end gap-1 text-[9px] ${isMe ? tk.bubbleMeMeta : 'text-neutral-text-hint'}`}>
-                    <span>{formatTime(msgDate)}</span>
-                    {tickStatus && <MessageTick status={tickStatus} />}
+                    <span>{formatTime(msgDate, locale)}</span>
+                    {tickStatus && <MessageTick status={tickStatus} _t={_t} />}
                     {tickStatus === 'failed' && (
                       <button
                         type="button"
                         onClick={() => retryMessage(msg)}
                         className="ml-0.5 rounded px-1 text-[9px] font-medium text-red-200 underline hover:text-white"
                       >
-                        重試
+                        {_t('ui.conversation.composer.retry')}
                       </button>
                     )}
                   </div>
@@ -1084,7 +1135,9 @@ export function ConversationPane({
         {typing && (
           <div className="mt-3 flex justify-start">
             <div className="rounded-2xl bg-surface-2 px-3.5 py-2">
-              <p className="text-xs text-neutral-text-hint animate-pulse">{typingLabel}</p>
+              <p className="text-xs text-neutral-text-hint animate-pulse">
+                {_t('ui.conversation.typing.label', { role: roleLabel(typingRole, _t) })}
+              </p>
             </div>
           </div>
         )}
@@ -1099,7 +1152,7 @@ export function ConversationPane({
       {readOnly ? (
         <div className="border-t border-line bg-surface-2 px-4 py-3 text-center">
           <p className="text-xs text-neutral-text-muted">
-            {readOnlyReason ?? '此對話已存檔，僅供查閱，無法發送新訊息。'}
+            {readOnlyReason ?? _t('ui.conversation.readOnly.default')}
           </p>
         </div>
       ) : (
@@ -1110,16 +1163,20 @@ export function ConversationPane({
               <div className="flex items-start gap-2">
                 <Tag className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" />
                 <div className="flex-1">
-                  <p className="text-xs font-medium text-amber-900">取代而家嘅議價？</p>
+                  <p className="text-xs font-medium text-amber-900">{_t('ui.conversation.offer.replace.title')}</p>
                   <p className="mt-0.5 text-[11px] text-amber-800">
-                    當前議價：<strong>HK${activeOffer.priceHKD.toLocaleString('en-HK')}</strong>
-                    （由 {activeOffer && offerHistory.find((o) => o.id === activeOffer.id)?.proposedByRole === 'BUYER' ? '買家' : '賣家'} 提出）
+                    {_t('ui.conversation.offer.replace.current')}
+                    <strong>HK${activeOffer.priceHKD.toLocaleString('en-HK')}</strong>
+                    {_t('ui.conversation.offer.replace.proposedBy', {
+                      role: roleLabel(offerHistory.find((o) => o.id === activeOffer.id)?.proposedByRole ?? 'SELLER', _t),
+                    })}
                   </p>
                   <p className="mt-0.5 text-[11px] text-amber-700">
-                    新出價：<strong>HK${offerPrice ? Number(offerPrice).toLocaleString('en-HK') : '—'}</strong>
+                    {_t('ui.conversation.offer.replace.newPrice')}
+                    <strong>HK${offerPrice ? Number(offerPrice).toLocaleString('en-HK') : '—'}</strong>
                   </p>
                   <p className="mt-1 text-[10px] text-amber-600">
-                    確認後，舊嘅議價會被撤回，新出價會通知對方。
+                    {_t('ui.conversation.offer.replace.note')}
                   </p>
                 </div>
               </div>
@@ -1130,7 +1187,7 @@ export function ConversationPane({
                   disabled={offerSubmitBusy}
                   className="rounded-md border border-line-2 bg-white px-3 py-1 text-xs font-medium text-neutral-text hover:bg-surface-2"
                 >
-                  取消
+                  {_t('ui.conversation.offer.replace.cancel')}
                 </button>
                 <button
                   type="button"
@@ -1138,7 +1195,7 @@ export function ConversationPane({
                   disabled={offerSubmitBusy}
                   className="rounded-md bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
                 >
-                  確認取代
+                  {_t('ui.conversation.offer.replace.confirm')}
                 </button>
               </div>
             </div>
@@ -1148,12 +1205,14 @@ export function ConversationPane({
           {offerFormOpen && conversationType === 'listing' && (
             <div className="mb-2 flex items-center gap-2 rounded-xl bg-amber-50 px-3 py-2">
               <Tag className="h-3.5 w-3.5 shrink-0 text-amber-700" />
-              <span className="text-xs text-amber-900">議價 HK$</span>
+              <span className="text-xs text-amber-900">{_t('ui.conversation.offer.form.label')}</span>
               <input
                 type="number"
                 value={offerPrice}
                 onChange={(e) => setOfferPrice(e.target.value)}
-                placeholder={activeOffer ? `當前 HK$${activeOffer.priceHKD}` : '輸入金額'}
+                placeholder={activeOffer
+                  ? _t('ui.conversation.offer.form.currentPlaceholder', { price: activeOffer.priceHKD })
+                  : _t('ui.conversation.offer.form.amountPlaceholder')}
                 min={1}
                 className="flex-1 rounded border border-amber-200 bg-white px-2 py-1 text-sm outline-none focus:border-amber-400"
               />
@@ -1163,13 +1222,13 @@ export function ConversationPane({
                 onClick={submitNewOffer}
                 className="rounded-md bg-amber-600 px-3 py-1 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-50"
               >
-                {activeOffer ? '更新出價' : '提出'}
+                {activeOffer ? _t('ui.conversation.offer.form.update') : _t('ui.conversation.offer.form.submit')}
               </button>
               <button
                 type="button"
                 onClick={() => { setOfferFormOpen(false); setOfferPrice(''); }}
                 className="rounded p-1 text-amber-700 hover:bg-amber-100"
-                aria-label="取消"
+                aria-label={_t('ui.conversation.offer.form.close')}
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -1177,7 +1236,7 @@ export function ConversationPane({
           )}
           {offerFormOpen && conversationType === 'listing' && (
             <p className="mb-1 text-[10px] text-amber-700">
-              出價有效期 24 小時。對方接受後商品會預留，買家須喺 12 小時內完成落單。
+              {_t('ui.conversation.offer.form.note')}
             </p>
           )}
 
@@ -1192,19 +1251,19 @@ export function ConversationPane({
             return (
               <div className="mb-2 rounded-xl border border-line bg-white p-2 shadow-sm">
                 <div className="mb-1.5 flex items-center justify-between">
-                  <p className="text-[11px] font-medium text-neutral-text">分享我嘅其他 listing</p>
+                  <p className="text-[11px] font-medium text-neutral-text">{_t('ui.conversation.crossSell.title')}</p>
                   <button
                     type="button"
                     onClick={() => setCrossSellOpen(false)}
                     className="rounded p-1 text-neutral-text-hint hover:bg-surface-2"
-                    aria-label="關閉"
+                    aria-label={_t('ui.conversation.crossSell.close')}
                   ><X className="h-3 w-3" /></button>
                 </div>
                 {myListingsLoading && (
-                  <p className="px-1 py-2 text-[10px] text-neutral-text-hint">載入中…</p>
+                  <p className="px-1 py-2 text-[10px] text-neutral-text-hint">{_t('ui.conversation.crossSell.loading')}</p>
                 )}
                 {!myListingsLoading && items.length === 0 && (
-                  <p className="px-1 py-2 text-[10px] text-neutral-text-hint">你冇其他在售 listing</p>
+                  <p className="px-1 py-2 text-[10px] text-neutral-text-hint">{_t('ui.conversation.crossSell.empty')}</p>
                 )}
                 {!myListingsLoading && items.length > 0 && (
                   <div className="grid grid-cols-2 gap-1.5">
@@ -1214,7 +1273,11 @@ export function ConversationPane({
                         type="button"
                         onClick={() => {
                           const origin = typeof window !== 'undefined' ? window.location.origin : '';
-                          const text = `👉 我仲有呢件貨：${l.title}（HK$${l.priceHKD.toLocaleString()}）\n${origin}/listing/${l.id}`;
+                          const line = _t('ui.conversation.crossSell.shareText', {
+                            title: l.title,
+                            price: l.priceHKD.toLocaleString(),
+                          });
+                          const text = `${line}\n${origin}/listing/${l.id}`;
                           setInput((prev) => prev ? `${prev}\n${text}` : text);
                           setCrossSellOpen(false);
                         }}
@@ -1234,7 +1297,7 @@ export function ConversationPane({
                   </div>
                 )}
                 <p className="mt-1.5 px-1 text-[9px] text-neutral-text-hint">
-                  揀完會放入訊息框，你確認後先 send。平台唔代發。
+                  {_t('ui.conversation.crossSell.note')}
                 </p>
               </div>
             );
@@ -1264,7 +1327,7 @@ export function ConversationPane({
                         .finally(() => setMyListingsLoading(false));
                     }
                   }}
-                  title="分享我嘅其他 listing"
+                  title={_t('ui.conversation.crossSell.title')}
                   className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border bg-white transition ${
                     crossSellOpen
                       ? 'border-verify-border bg-verify-soft text-verify'
@@ -1281,7 +1344,9 @@ export function ConversationPane({
               <button
                 type="button"
                 onClick={() => setOfferFormOpen((v) => !v)}
-                title={activeOffer ? `而家議價 HK$${activeOffer.priceHKD}（撳開更新）` : '提出議價'}
+                title={activeOffer
+                  ? _t('ui.conversation.offer.triggerActive', { price: activeOffer.priceHKD })
+                  : _t('ui.conversation.offer.trigger')}
                 className={`relative flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-full border bg-white transition ${
                   activeOffer
                     ? 'border-amber-300 bg-amber-50 text-amber-700 hover:bg-amber-100'
@@ -1299,7 +1364,7 @@ export function ConversationPane({
               value={input}
               onChange={(e) => { setInput(e.target.value); handleTyping(); }}
               onKeyDown={handleKeyDown}
-              placeholder="輸入訊息…"
+              placeholder={_t('ui.conversation.composer.placeholder')}
               rows={1}
               maxLength={500}
               className="flex-1 resize-none rounded-full border border-line-2 bg-white px-4 py-2.5 text-[14px] outline-none transition focus:border-verify"
