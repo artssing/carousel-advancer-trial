@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AlertOctagon, AlertTriangle, Info, X } from 'lucide-react';
 import { api } from '@/lib/api';
+import { getClientLocale, createT } from '@authentik/utils';
 
 /** Poll interval — 60s per coordinator (see docs/backlog/banner-backlog.md for
  *  SSE-based sub-10s alternative). */
@@ -52,6 +53,10 @@ const SEVERITY_STYLE: Record<Banner['severity'], { bar: string; icon: React.Reac
 };
 
 export function BannerBar() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const [banners, setBanners] = useState<Banner[]>([]);
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
 
@@ -97,7 +102,7 @@ export function BannerBar() {
                   type="button"
                   onClick={() => onDismiss(b.id)}
                   className="shrink-0 rounded p-0.5 hover:bg-black/10"
-                  aria-label="關閉此通知"
+                  aria-label={_t('layout.banner.closeAria')}
                 >
                   <X className="h-4 w-4" />
                 </button>

@@ -2,10 +2,15 @@
 
 /** Slim amber banner shown when STRIPE_MODE=mock. Disclosure expands to show
  *  test card numbers for manual QA. Hidden in test/live mode. */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getClientLocale, createT } from '@authentik/utils';
 import { TEST_CARDS } from '@/lib/payment-methods';
 
 export function TestModeBanner({ visible }: { visible: boolean }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const [open, setOpen] = useState(false);
   if (!visible) return null;
   return (
@@ -13,14 +18,14 @@ export function TestModeBanner({ visible }: { visible: boolean }) {
       <div className="flex items-center justify-between gap-2 px-3 py-2">
         <span className="flex items-center gap-1.5">
           <span>🧪</span>
-          <span>測試模式 — 輸入下方測試卡號模擬付款</span>
+          <span>{_t('checkout.testMode.banner')}</span>
         </span>
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
           className="text-[10px] font-medium underline-offset-2 hover:underline"
         >
-          {open ? '收起' : '查看測試卡號'}
+          {open ? _t('checkout.testMode.collapse') : _t('checkout.testMode.expand')}
         </button>
       </div>
       {open && (
@@ -30,7 +35,7 @@ export function TestModeBanner({ visible }: { visible: boolean }) {
               {TEST_CARDS.map((c) => (
                 <tr key={c.number} className="border-b border-amber-100 last:border-0">
                   <td className="py-1 pr-3">{c.number.replace(/(\d{4})(?=\d)/g, '$1 ')}</td>
-                  <td className="py-1 text-amber-800">{c.label}</td>
+                  <td className="py-1 text-amber-800">{_t(c.labelKey)}</td>
                 </tr>
               ))}
             </tbody>

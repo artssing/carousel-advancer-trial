@@ -6,6 +6,7 @@ import { Button, Pill, PayoutDisclaimer, ConfirmDialog, OtpInput } from '@authen
 import {
   HK_BANKS, PAYOUT_METHOD_TYPES, validatePayoutAccount,
   payoutMethodDisplayLabel, type PayoutMethodTypeKey,
+  getClientLocale, createT,
 } from '@authentik/utils';
 import { api, hasToken, ApiError } from '@/lib/api';
 import { Plus, Star, Trash2, AlertTriangle, Loader2, ShieldCheck } from 'lucide-react';
@@ -14,6 +15,10 @@ import { AccountSidebar } from '@/components/account/account-sidebar';
 type Method = Awaited<ReturnType<typeof api.wallet.methods>>[number];
 
 export default function MethodsPage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const router = useRouter();
   const [methods, setMethods] = useState<Method[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +54,7 @@ export default function MethodsPage() {
       const m = await api.wallet.methods();
       setMethods(m);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : '載入失敗');
+      setError(e instanceof ApiError ? e.message : _t('account.walletMethods.error.load'));
     } finally {
       setLoading(false);
     }
@@ -76,12 +81,12 @@ export default function MethodsPage() {
     setFormError(null);
     const meta = PAYOUT_METHOD_TYPES.find((t) => t.key === type)!;
     if (!accountName.trim()) {
-      setFormError('請輸入帳戶持有人姓名');
+      setFormError(_t('account.walletMethods.addForm.nameRequired'));
       return;
     }
     const v = validatePayoutAccount(type, identifier, meta.needsBank ? bankCode : undefined);
     if (!v.ok) {
-      setFormError(v.reason ?? '帳戶資料無效');
+      setFormError(v.reason ?? _t('account.walletMethods.error.invalidAccount'));
       return;
     }
     setSubmitting(true);
@@ -99,7 +104,7 @@ export default function MethodsPage() {
       setOtpError(null);
       setResendCooldown(60);
     } catch (e) {
-      setFormError(e instanceof ApiError ? e.message : '新增失敗');
+      setFormError(e instanceof ApiError ? e.message : _t('account.walletMethods.addForm.genericError'));
     } finally {
       setSubmitting(false);
     }
@@ -117,7 +122,7 @@ export default function MethodsPage() {
       resetForm();
       await refresh();
     } catch (e) {
-      setOtpError(e instanceof ApiError ? e.message : '驗證失敗，請稍後再試');
+      setOtpError(e instanceof ApiError ? e.message : _t('account.walletMethods.otp.verifyError'));
       setOtpResetKey((k) => k + 1);
     } finally {
       setOtpBusy(false);
@@ -142,7 +147,7 @@ export default function MethodsPage() {
       setOtpMasked(res.maskedTarget);
       setResendCooldown(60);
     } catch (e) {
-      setOtpError(e instanceof ApiError ? e.message : '重新發送失敗，請稍後再試');
+      setOtpError(e instanceof ApiError ? e.message : _t('account.walletMethods.otp.resendError'));
     }
   }
 
@@ -151,7 +156,7 @@ export default function MethodsPage() {
       await api.wallet.setDefault(id);
       await refresh();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : '操作失敗');
+      setError(e instanceof ApiError ? e.message : _t('account.walletMethods.operationError'));
     }
   }
 
@@ -161,7 +166,7 @@ export default function MethodsPage() {
       setDeletingId(null);
       await refresh();
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : '刪除失敗');
+      setError(e instanceof ApiError ? e.message : _t('account.walletMethods.deleteError'));
       setDeletingId(null);
     }
   }
@@ -176,10 +181,10 @@ export default function MethodsPage() {
         <section className="max-w-[640px]">
           <div className="mb-5 flex items-center justify-between">
             <h1 className="font-display-serif text-[26px] font-bold leading-tight tracking-[-0.01em] text-ink">
-              提現方式
+              {_t('account.walletMethods.heading')}
             </h1>
             {!adding && (
-              <Button size="sm" onClick={() => setAdding(true)}>＋ 新增</Button>
+              <Button size="sm" onClick={() => setAdding(true)}>{_t('account.walletMethods.addButton')}</Button>
             )}
           </div>
 
@@ -192,7 +197,7 @@ export default function MethodsPage() {
               {/* ═══ Method rows ═══ */}
               {methods.length === 0 && !adding && (
                 <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-neutral-text-muted shadow-sh1">
-                  你仲未有提款帳戶。撳「＋ 新增」開始。
+                  {_t('account.walletMethods.empty')}
                 </p>
               )}
               {methods.map((m) => (
@@ -203,13 +208,13 @@ export default function MethodsPage() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 text-[14px] font-semibold text-neutral-text">
                       {payoutMethodDisplayLabel(m.type, m.accountIdentifier, m.bankCode)}
-                      {m.isDefault && <Pill variant="verify" size="sm">預設</Pill>}
+                      {m.isDefault && <Pill variant="verify" size="sm">{_t('account.walletMethods.method.defaultPill')}</Pill>}
                     </div>
                     <div className="mt-1 text-[12px] text-neutral-text-hint">
                       {m.accountName}
                       {!m.nameMatchesKyc && (
                         <span className="ml-2 inline-flex items-center gap-0.5 text-amber-700">
-                          <AlertTriangle className="h-3 w-3" /> 姓名與 KYC 唔同
+                          <AlertTriangle className="h-3 w-3" /> {_t('account.walletMethods.method.nameMismatch')}
                         </span>
                       )}
                     </div>
@@ -217,11 +222,11 @@ export default function MethodsPage() {
                   <div className="flex shrink-0 flex-col items-end gap-1.5">
                     {!m.isDefault && (
                       <button onClick={() => setAsDefault(m.id)} className="flex items-center gap-1 text-[12px] font-semibold text-brand-600 hover:underline">
-                        <Star className="h-3 w-3" /> 設為預設
+                        <Star className="h-3 w-3" /> {_t('account.walletMethods.method.setDefault')}
                       </button>
                     )}
                     <button onClick={() => setDeletingId(m.id)} className="flex items-center gap-1 text-[12px] text-neutral-text-hint hover:text-danger">
-                      <Trash2 className="h-3 w-3" /> 刪除
+                      <Trash2 className="h-3 w-3" /> {_t('account.walletMethods.method.delete')}
                     </button>
                   </div>
                 </div>
@@ -234,12 +239,12 @@ export default function MethodsPage() {
                     <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-brand-600/10">
                       <ShieldCheck className="h-5 w-5 text-brand-600" />
                     </div>
-                    <p className="text-[14px] font-semibold text-neutral-text">驗證身份</p>
+                    <p className="text-[14px] font-semibold text-neutral-text">{_t('account.walletMethods.otpPanel.heading')}</p>
                     <p className="text-xs text-neutral-text-muted">
-                      為保障你嘅資金安全，新增收款戶口需要驗證。
+                      {_t('account.walletMethods.otpPanel.body')}
                     </p>
                     <p className="text-xs text-neutral-text-muted">
-                      驗證碼已發送至 <span className="font-medium text-neutral-text">{otpMasked}</span>
+                      {_t('account.walletMethods.otpSentTo')} <span className="font-medium text-neutral-text">{otpMasked}</span>
                     </p>
                   </div>
 
@@ -253,7 +258,7 @@ export default function MethodsPage() {
 
                   {otpBusy && (
                     <div className="mt-3 flex items-center justify-center gap-2 text-xs text-neutral-text-hint">
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> 驗證中…
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> {_t('account.walletMethods.otpPanel.verifying')}
                     </div>
                   )}
                   {otpError && (
@@ -266,7 +271,7 @@ export default function MethodsPage() {
                       onClick={() => { setOtpIntentId(null); setOtpError(null); }}
                       className="text-neutral-text-hint hover:text-neutral-text hover:underline"
                     >
-                      ← 返回修改
+                      {_t('account.walletMethods.otpPanel.backLink')}
                     </button>
                     <button
                       type="button"
@@ -274,7 +279,7 @@ export default function MethodsPage() {
                       disabled={resendCooldown > 0}
                       className="text-brand-600 hover:underline disabled:cursor-not-allowed disabled:text-neutral-text-hint disabled:no-underline"
                     >
-                      {resendCooldown > 0 ? `重新發送 (${resendCooldown}s)` : '重新發送驗證碼'}
+                      {resendCooldown > 0 ? _t('account.walletMethods.resendIn', { s: resendCooldown }) : _t('account.walletMethods.otpPanel.resendLink')}
                     </button>
                   </div>
                 </div>
@@ -283,10 +288,10 @@ export default function MethodsPage() {
               {/* ═══ Add form ═══ */}
               {adding && !otpIntentId && (
                 <div className="mt-2 rounded-xl border border-line bg-white p-5 shadow-sh1">
-                  <h3 className="mb-3 text-[14px] font-semibold text-neutral-text">新增提款帳戶</h3>
+                  <h3 className="mb-3 text-[14px] font-semibold text-neutral-text">{_t('account.walletMethods.addForm.heading')}</h3>
 
                   <label className="mb-3.5 block">
-                    <span className="mb-1.5 block text-[13px] font-semibold text-neutral-text-muted">提款方式</span>
+                    <span className="mb-1.5 block text-[13px] font-semibold text-neutral-text-muted">{_t('account.walletMethods.addForm.typeLabel')}</span>
                     <select
                       value={type}
                       onChange={(e) => { setType(e.target.value as PayoutMethodTypeKey); setIdentifier(''); setBankCode(''); }}
@@ -300,13 +305,13 @@ export default function MethodsPage() {
 
                   {typeMeta.needsBank && (
                     <label className="mb-3.5 block">
-                      <span className="mb-1.5 block text-[13px] font-semibold text-neutral-text-muted">銀行</span>
+                      <span className="mb-1.5 block text-[13px] font-semibold text-neutral-text-muted">{_t('account.walletMethods.addForm.bankLabel')}</span>
                       <select
                         value={bankCode}
                         onChange={(e) => setBankCode(e.target.value)}
                         className="w-full rounded-[8px] border border-line-2 bg-white px-3.5 py-2.5 text-[14px] outline-none focus:border-verify"
                       >
-                        <option value="">— 揀銀行 —</option>
+                        <option value="">{_t('account.walletMethods.addForm.bankPlaceholder')}</option>
                         {HK_BANKS.map((b) => (
                           <option key={b.code} value={b.code}>{b.code} · {b.name}</option>
                         ))}
@@ -315,7 +320,7 @@ export default function MethodsPage() {
                   )}
 
                   <label className="mb-3.5 block">
-                    <span className="mb-1.5 block text-[13px] font-semibold text-neutral-text-muted">{typeMeta.needsBank ? '戶口號碼' : '帳號識別符'}</span>
+                    <span className="mb-1.5 block text-[13px] font-semibold text-neutral-text-muted">{typeMeta.needsBank ? _t('account.walletMethods.addForm.accountLabel') : _t('account.walletMethods.addForm.identifierLabel')}</span>
                     <input
                       type="text"
                       value={identifier}
@@ -327,19 +332,19 @@ export default function MethodsPage() {
                   </label>
 
                   <label className="mb-3.5 block">
-                    <span className="mb-1.5 block text-[13px] font-semibold text-neutral-text-muted">帳戶持有人姓名</span>
+                    <span className="mb-1.5 block text-[13px] font-semibold text-neutral-text-muted">{_t('account.walletMethods.addForm.accountNameLabel')}</span>
                     <input
                       type="text"
                       value={accountName}
                       onChange={(e) => setAccountName(e.target.value)}
-                      placeholder="與銀行 / FPS 登記嘅姓名一致"
+                      placeholder={_t('account.walletMethods.addForm.accountNamePlaceholder')}
                       className="w-full rounded-[8px] border border-line-2 bg-white px-3.5 py-2.5 text-[14px] outline-none focus:border-verify"
                     />
                   </label>
 
                   <label className="mb-3.5 flex items-center gap-2 text-[13px] text-neutral-text-muted">
                     <input type="checkbox" checked={isDefault} onChange={(e) => setIsDefault(e.target.checked)} className="h-4 w-4 accent-brand-600" />
-                    設為預設帳戶
+                    {_t('account.walletMethods.addForm.defaultCheckbox')}
                   </label>
 
                   {formError && (
@@ -347,9 +352,9 @@ export default function MethodsPage() {
                   )}
 
                   <div className="flex gap-2">
-                    <Button variant="ghost" onClick={() => { setAdding(false); resetForm(); }} className="flex-1">取消</Button>
+                    <Button variant="ghost" onClick={() => { setAdding(false); resetForm(); }} className="flex-1">{_t('account.walletMethods.cancel')}</Button>
                     <Button onClick={submitAdd} disabled={submitting} className="flex-1">
-                      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : '傳送驗證碼'}
+                      {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : _t('account.walletMethods.addForm.submitButton')}
                     </Button>
                   </div>
                 </div>
@@ -366,9 +371,9 @@ export default function MethodsPage() {
       <ConfirmDialog
         open={!!deletingId}
         severity="danger"
-        title="刪除呢個收款方式？"
-        consequence="刪除後未完成嘅提款唔受影響（已凍結方式快照）。之後可以隨時重新加返。"
-        confirmLabel="確認刪除"
+        title={_t('account.walletMethods.delete.confirmDialog.title')}
+        consequence={_t('account.walletMethods.delete.confirmDialog.body')}
+        confirmLabel={_t('account.walletMethods.delete.confirmDialog.confirmLabel')}
         onConfirm={() => deletingId && confirmDelete(deletingId)}
         onCancel={() => setDeletingId(null)}
       />

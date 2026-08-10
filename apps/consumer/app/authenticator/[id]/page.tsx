@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card, CardContent, Badge, StarRating } from '@authentik/ui';
-import { formatHKD, CATEGORIES, type CategoryId } from '@authentik/utils';
+import { formatHKD, CATEGORIES, type CategoryId,
+  getClientLocale, createT,
+} from '@authentik/utils';
 import { MapPin, Clock, ShieldCheck, Award, ChevronLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 
@@ -23,6 +25,10 @@ function categoryLabel(enumVal: string): string {
 }
 
 export default function AuthenticatorProfilePage({ params }: { params: { id: string } }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const { id } = params;
   const [a, setA] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -38,13 +44,13 @@ export default function AuthenticatorProfilePage({ params }: { params: { id: str
     return <div className="mx-auto max-w-2xl px-4 py-12 text-sm text-red-600">{error}</div>;
   }
   if (!a) {
-    return <div className="mx-auto max-w-2xl px-4 py-12 text-sm text-slate-500">載入中…</div>;
+    return <div className="mx-auto max-w-2xl px-4 py-12 text-sm text-slate-500">{_t('authenticatorProfile.loading')}</div>;
   }
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 md:px-8">
       <Link href="/" className="mb-4 inline-flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700">
-        <ChevronLeft className="h-4 w-4" /> 返回
+        <ChevronLeft className="h-4 w-4" /> {_t('authenticatorProfile.back')}
       </Link>
 
       {/* Header */}
@@ -57,16 +63,16 @@ export default function AuthenticatorProfilePage({ params }: { params: { id: str
               <div className="mt-2 flex items-center gap-2">
                 <StarRating value={a.avgReviewRating ?? a.starRating} size="sm" />
                 <span className="text-sm text-slate-500">
-                  {(a.avgReviewRating ?? a.starRating).toFixed(1)}（{a.reviewCount} 個評價）
+                  {_t('authenticatorProfile.ratingWithCount', { rating: (a.avgReviewRating ?? a.starRating).toFixed(1), n: a.reviewCount })}
                 </span>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-xs text-slate-400">鑑定費率</p>
+              <p className="text-xs text-slate-400">{_t('authenticatorProfile.feeRate')}</p>
               <p className="text-lg font-semibold text-brand-700">
                 {Math.round(a.feeRatePct * 1000) / 10}%
               </p>
-              <p className="text-xs text-slate-500">最低 {formatHKD(a.feeMinHKD)}</p>
+              <p className="text-xs text-slate-500">{_t('browse.filter.priceMin')} {formatHKD(a.feeMinHKD)}</p>
             </div>
           </div>
 
@@ -81,12 +87,12 @@ export default function AuthenticatorProfilePage({ params }: { params: { id: str
           </div>
 
           <div className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
-            <Stat label="已鑑定" value={`${a.completedCount} 件`} icon={Award} />
-            <Stat label="爭議率" value={`${Math.round((a.disputeRate ?? 0) * 1000) / 10}%`} icon={ShieldCheck} />
+            <Stat label={_t('authenticatorProfile.stat.completed')} value={_t('authenticatorProfile.stat.completedValue', { n: a.completedCount })} icon={Award} />
+            <Stat label={_t('authenticatorProfile.stat.disputeRate')} value={`${Math.round((a.disputeRate ?? 0) * 1000) / 10}%`} icon={ShieldCheck} />
             {a.yearsExperience != null && (
-              <Stat label="年資" value={`${a.yearsExperience} 年`} icon={Award} />
+              <Stat label={_t('authenticatorProfile.stat.years')} value={_t('authenticatorProfile.stat.yearsValue', { n: a.yearsExperience })} icon={Award} />
             )}
-            {a.acceptsMeetup && <Stat label="面交" value="接受" icon={MapPin} />}
+            {a.acceptsMeetup && <Stat label={_t('authenticatorProfile.stat.meetup')} value={_t('authenticatorProfile.stat.meetupAccepted')} icon={MapPin} />}
           </div>
 
           {(a.locationAddress || a.businessHours) && (
@@ -116,9 +122,9 @@ export default function AuthenticatorProfilePage({ params }: { params: { id: str
       </Card>
 
       {/* Reviews */}
-      <h2 className="mb-3 mt-8 text-lg font-semibold">買家評價（{a.reviewCount}）</h2>
+      <h2 className="mb-3 mt-8 text-lg font-semibold">{_t('authenticatorProfile.reviewsTitle', { n: a.reviewCount })}</h2>
       {a.reviews?.length === 0 ? (
-        <p className="text-sm text-slate-500">暫無評價。</p>
+        <p className="text-sm text-slate-500">{_t('authenticatorProfile.noReviews')}</p>
       ) : (
         <div className="space-y-3">
           {a.reviews?.map((r: any) => (
@@ -141,7 +147,7 @@ export default function AuthenticatorProfilePage({ params }: { params: { id: str
       {/* Active listings (authenticator selling) */}
       {a.activeListings?.length > 0 && (
         <>
-          <h2 className="mb-3 mt-8 text-lg font-semibold">佢賣緊嘅商品</h2>
+          <h2 className="mb-3 mt-8 text-lg font-semibold">{_t('authenticatorProfile.theirListings')}</h2>
           <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
             {a.activeListings.map((l: any) => (
               <Link key={l.id} href={`/listing/${l.id}`} className="group">
@@ -151,7 +157,7 @@ export default function AuthenticatorProfilePage({ params }: { params: { id: str
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={l.images[0]} alt={l.title} className="h-full w-full object-cover transition group-hover:scale-105" />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-xs text-slate-400">暫無圖片</div>
+                      <div className="flex h-full items-center justify-center text-xs text-slate-400">{_t('authenticatorProfile.noImage')}</div>
                     )}
                   </div>
                   <CardContent className="p-3">

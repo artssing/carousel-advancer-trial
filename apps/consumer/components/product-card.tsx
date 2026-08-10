@@ -1,6 +1,9 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TierPill } from '@authentik/ui';
-import { formatHKD, tierForPrice, categoryByApiEnum } from '@authentik/utils';
+import { formatHKD, tierForPrice, categoryByApiEnum, getClientLocale, createT } from '@authentik/utils';
 
 /**
  * L3 Product card — the `.p-card` primitive from design-samples/final-L3.
@@ -45,13 +48,17 @@ export interface ProductCardProps {
  * authenticity claim on cards (platform-neutral).
  */
 function CornerRibbon({ status }: { status?: string | null }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   let label: string | null = null;
   let cls = '';
   if (status === 'SOLD') {
-    label = '已售出';
+    label = _t('browse.card.sold');
     cls = 'bg-slate-500';
   } else if (status === 'RESERVED') {
-    label = '已預留';
+    label = _t('browse.card.reserved');
     cls = 'bg-amber-500';
   }
   if (!label) return null;

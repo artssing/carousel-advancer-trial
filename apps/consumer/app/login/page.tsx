@@ -8,12 +8,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api, setToken } from '@/lib/api';
 import { trackLogin } from '@/lib/analytics';
-import { isPhoneIdentifier } from '@authentik/utils';
+import { isPhoneIdentifier,
+  getClientLocale, createT,
+} from '@authentik/utils';
 import { AuthHeroPanel } from '@/components/auth/auth-hero-panel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
 
 export default function LoginPage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const redirect = searchParams.get('redirect') ?? '/orders';
@@ -89,19 +95,19 @@ export default function LoginPage() {
           {/* Seg tabs */}
           <div className="mb-6 flex rounded-[10px] bg-surface-2 p-1">
             <span className="flex-1 rounded-[7px] bg-white py-2.5 text-center text-[14px] font-semibold text-ink shadow-sh1">
-              登入
+              {_t('login.submitBtn')}
             </span>
             <Link
               href="/register"
               className="flex-1 rounded-[7px] py-2.5 text-center text-[14px] font-semibold text-neutral-text-hint transition hover:text-neutral-text-muted"
             >
-              註冊
+              {_t('login.tab.register')}
             </Link>
           </div>
 
           {ssoError && (
             <p className="mb-4 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-              Google 登入未能完成：{ssoError === 'cancelled' ? '已取消' : ssoError}
+              {_t('login.error.googleFailed')}{ssoError === 'cancelled' ? _t('login.error.cancelled') : ssoError}
             </p>
           )}
 
@@ -115,21 +121,21 @@ export default function LoginPage() {
                     onClick={onGoogleSignIn}
                     className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-line-2 bg-white py-2.5 text-[13px] font-semibold text-neutral-text shadow-sh1 transition hover:border-brand-600 hover:text-brand-600"
                   >
-                    <GoogleIcon /> Google 登入
+                    <GoogleIcon /> {_t('login.googleLogin')}
                   </button>
                 )}
                 {appleOn && (
                   <button
                     type="button"
-                    onClick={() => setError('Apple 登入即將推出')}
+                    onClick={() => setError(_t('login.appleComingSoon'))}
                     className="flex flex-1 items-center justify-center gap-2 rounded-lg border border-line-2 bg-white py-2.5 text-[13px] font-semibold text-neutral-text shadow-sh1 transition hover:border-brand-600 hover:text-brand-600"
                   >
-                    <AppleIcon /> Apple 登入
+                    <AppleIcon /> {_t('login.appleLogin')}
                   </button>
                 )}
               </div>
               <div className="mb-[18px] mt-1.5 flex items-center gap-3 text-[12px] text-neutral-text-hint">
-                <span className="h-px flex-1 bg-line" /> 或用電郵 <span className="h-px flex-1 bg-line" />
+                <span className="h-px flex-1 bg-line" /> {_t('login.orEmailDivider')} <span className="h-px flex-1 bg-line" />
               </div>
             </>
           )}
@@ -138,24 +144,24 @@ export default function LoginPage() {
           <form onSubmit={onSubmit}>
             <div className="mb-[18px]">
               <label className="mb-1.5 block text-[13px] font-semibold text-neutral-text-muted">
-                電郵 / 手機號碼
+                {_t('login.identifierLabel')}
               </label>
               <input
                 type="text"
                 inputMode={isPhone ? 'tel' : 'email'}
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
-                placeholder="you@example.com 或 +852 XXXX XXXX"
+                placeholder={_t('login.identifierPlaceholder')}
                 required
                 autoComplete="username"
                 className="w-full rounded-[8px] border border-line-2 bg-white px-3.5 py-2.5 text-[14px] text-neutral-text shadow-[inset_0_1px_2px_rgba(10,37,64,0.03)] outline-none transition focus:border-verify focus:ring-2 focus:ring-verify/15"
               />
               {isPhone && (
-                <p className="mt-1 text-[10px] text-neutral-text-hint">已自動偵測為手機號碼登入</p>
+                <p className="mt-1 text-[10px] text-neutral-text-hint">{_t('login.phoneDetected')}</p>
               )}
             </div>
             <div className="mb-[18px]">
-              <label className="mb-1.5 block text-[13px] font-semibold text-neutral-text-muted">密碼</label>
+              <label className="mb-1.5 block text-[13px] font-semibold text-neutral-text-muted">{_t('login.passwordLabel')}</label>
               <input
                 type="password"
                 value={password}
@@ -175,15 +181,18 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full rounded-[8px] bg-brand-600 py-3 text-[15px] font-bold text-white shadow-[0_8px_20px_-10px_rgba(0,135,102,0.5)] transition hover:bg-brand-400 disabled:opacity-50"
             >
-              {loading ? '登入中…' : '登入'}
+              {loading ? _t('login.submitBtn.busy') : _t('login.submitBtn')}
             </button>
 
             <p className="mt-4 text-center text-[12px] text-neutral-text-hint">
-              未有帳戶？<Link href="/register" className="font-semibold text-brand-600 hover:underline">立即註冊</Link>
+              {/* ml-1 而唔係 {' '}：中文全形問號自帶空隙，英文冇，交畀 CSS 兩邊都啱。
+                  同 register 頁「已有帳戶？」嗰行做法一致。 */}
+              {_t('login.noAccount')}
+              <Link href="/register" className="ml-1 font-semibold text-brand-600 hover:underline">{_t('login.registerCta')}</Link>
             </p>
             <p className="mt-3 text-center text-[11px] leading-relaxed text-neutral-text-hint">
-              登入即表示你同意 <Link href="/terms" className="text-brand-600 hover:underline">服務條款</Link> 及{' '}
-              <Link href="/privacy" className="text-brand-600 hover:underline">私隱政策</Link>。
+              {_t('login.legal.prefix')} <Link href="/terms" className="text-brand-600 hover:underline">{_t('login.legal.terms')}</Link> {_t('login.legal.and')}{' '}
+              <Link href="/privacy" className="text-brand-600 hover:underline">{_t('login.legal.privacy')}</Link>{_t('login.legal.suffix')}
             </p>
             <p className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-center text-[11px] text-neutral-text-hint">
               Dev demo：seller@authentik.hk / password123

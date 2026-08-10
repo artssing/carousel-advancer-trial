@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PayoutDisclaimer } from '@authentik/ui';
-import { formatHKD } from '@authentik/utils';
+import { formatHKD,
+  getClientLocale, createT,
+} from '@authentik/utils';
 import { api, hasToken, ApiError } from '@/lib/api';
 import { CashoutWizard } from '@/components/wallet/cashout-wizard';
 import { StatusPill } from '@/components/wallet/status-pill';
@@ -15,6 +17,10 @@ type Method = Awaited<ReturnType<typeof api.wallet.methods>>[number];
 type Request = Awaited<ReturnType<typeof api.wallet.requests>>[number];
 
 export default function WalletPage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const router = useRouter();
   const [balance, setBalance] = useState<Balance | null>(null);
   const [methods, setMethods] = useState<Method[]>([]);
@@ -36,7 +42,7 @@ export default function WalletPage() {
       setMethods(m);
       setRecent(r.slice(0, 6));
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : '載入失敗');
+      setError(e instanceof ApiError ? e.message : _t('account.wallet.error.load'));
     } finally {
       setLoading(false);
     }
@@ -63,7 +69,7 @@ export default function WalletPage() {
 
         <section>
           <h1 className="mb-5 font-display-serif text-[26px] font-bold leading-tight tracking-[-0.01em] text-ink">
-            錢包
+            {_t('account.wallet.heading')}
           </h1>
 
           {loading ? (
@@ -74,11 +80,11 @@ export default function WalletPage() {
             <>
               {/* ═══ Navy balance card ═══ */}
               <div className="relative overflow-hidden rounded-[14px] bg-gradient-to-br from-ink to-[#123f5f] p-7 text-white shadow-sh3">
-                <div className="text-[12px] uppercase tracking-[0.1em] text-[#9db4cc]">可提現餘額</div>
+                <div className="text-[12px] uppercase tracking-[0.1em] text-[#9db4cc]">{_t('account.wallet.balance.availableLabel')}</div>
                 <div className="mt-2 text-[38px] font-extrabold leading-none">{formatHKD(balance.availableHKD)}</div>
                 {heldTotal > 0 && (
                   <div className="mt-1.5 text-[13px] text-[#9db4cc]">
-                    另有 {formatHKD(heldTotal)} 託管中（待鑑定 / 交收完成後入賬）
+                    {_t('account.wallet.heldNote', { amount: formatHKD(heldTotal) })}
                   </div>
                 )}
                 <div className="mt-5 flex gap-2.5">
@@ -88,13 +94,13 @@ export default function WalletPage() {
                     disabled={balance.availableHKD < balance.minHKD}
                     className="rounded-lg bg-brand-600 px-5 py-2.5 text-[14px] font-bold text-white shadow-[0_8px_20px_-10px_rgba(0,135,102,0.5)] transition hover:bg-brand-400 disabled:opacity-40"
                   >
-                    提現
+                    {_t('account.wallet.balance.withdrawButton')}
                   </button>
                   <Link
                     href="/account/wallet/payouts"
                     className="rounded-lg border border-white/25 bg-white/10 px-5 py-2.5 text-[14px] font-semibold text-white transition hover:bg-white/20"
                   >
-                    交易紀錄
+                    {_t('account.wallet.balance.transactionsLink')}
                   </Link>
                 </div>
                 <span className="pointer-events-none absolute bottom-3.5 right-5 font-display-serif text-[14px] font-extrabold tracking-[0.16em] opacity-35">
@@ -103,25 +109,25 @@ export default function WalletPage() {
               </div>
 
               {balance.availableHKD < balance.minHKD && balance.availableHKD > 0 && (
-                <p className="mt-2 text-xs text-neutral-text-hint">最低提款金額 HKD {balance.minHKD}。</p>
+                <p className="mt-2 text-xs text-neutral-text-hint">{_t('account.wallet.minWithdrawNote', { min: balance.minHKD })}。</p>
               )}
 
               {/* ═══ Subcards ═══ */}
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <div className="rounded-xl border border-line bg-white p-5 shadow-sh1">
                   <div className="text-[22px] font-extrabold text-ink">{formatHKD(heldTotal)}</div>
-                  <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-text-hint">託管中</div>
+                  <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-text-hint">{_t('account.wallet.subcard.held.label')}</div>
                 </div>
                 <div className="rounded-xl border border-line bg-white p-5 shadow-sh1">
                   <div className="text-[22px] font-extrabold text-ink">{formatHKD(balance.grossEarnedHKD)}</div>
-                  <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-text-hint">累計收入</div>
+                  <div className="mt-1.5 text-[11px] font-semibold uppercase tracking-[0.1em] text-neutral-text-hint">{_t('account.wallet.subcard.earned.label')}</div>
                 </div>
               </div>
 
               {/* ═══ Balance sources (income) ═══ */}
               {balance.breakdown.length > 0 && (
                 <div className="mt-4 rounded-xl border border-line bg-white p-5 shadow-sh1">
-                  <div className="mb-1 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">餘額來源</div>
+                  <div className="mb-1 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">{_t('account.wallet.breakdown.heading')}</div>
                   {balance.breakdown.map((b) => (
                     <div key={`${b.orderId}-${b.role}`} className="flex items-center gap-3.5 border-b border-line py-3.5 last:border-b-0">
                       <span className={`flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-[10px] bg-surface-2 text-[15px] font-extrabold ${b.bucket === 'AVAILABLE' ? 'text-verify' : 'text-neutral-text-muted'}`}>
@@ -132,9 +138,9 @@ export default function WalletPage() {
                           {b.listingTitle}
                         </Link>
                         <div className="mt-0.5 text-[12px] text-neutral-text-hint">
-                          {b.role === 'SELLER' ? '銷售收入' : '鑑定收入'}
+                          {b.role === 'SELLER' ? _t('account.wallet.breakdown.role.seller') : _t('account.wallet.breakdown.role.authenticator')}
                           {b.bucket === 'PENDING' && b.eligibleAt && (
-                            <span> · 可提取於 {new Date(b.eligibleAt).toLocaleDateString('zh-HK')}</span>
+                            <span>{_t('account.wallet.eligibleAt', { date: new Date(b.eligibleAt).toLocaleDateString(locale === 'en' ? 'en-HK' : 'zh-HK') })}</span>
                           )}
                         </div>
                       </div>
@@ -149,11 +155,11 @@ export default function WalletPage() {
               {/* ═══ Recent payouts (outflow) ═══ */}
               <div className="mt-4 rounded-xl border border-line bg-white p-5 shadow-sh1">
                 <div className="mb-1 flex items-center justify-between">
-                  <div className="text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">最近提款</div>
-                  <Link href="/account/wallet/payouts" className="text-[12px] font-semibold text-brand-600 hover:underline">全部紀錄 →</Link>
+                  <div className="text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">{_t('account.wallet.recentPayouts.heading')}</div>
+                  <Link href="/account/wallet/payouts" className="text-[12px] font-semibold text-brand-600 hover:underline">{_t('account.wallet.recentPayouts.allLink')}</Link>
                 </div>
                 {recent.length === 0 ? (
-                  <p className="py-4 text-center text-[13px] text-neutral-text-hint">尚未有提款紀錄</p>
+                  <p className="py-4 text-center text-[13px] text-neutral-text-hint">{_t('account.wallet.recentPayouts.empty')}</p>
                 ) : (
                   recent.map((r) => (
                     <div key={r.id} className="flex items-center gap-3.5 border-b border-line py-3.5 last:border-b-0">

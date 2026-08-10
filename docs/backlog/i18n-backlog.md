@@ -43,7 +43,37 @@ Founder 2026-07-30：「consumer 個 locale 其實好樣衰，先幫我放係 fo
 
 ## 3. Consumer 仲未 wire 嘅頁
 
-`sell` / `checkout` / `orders` / `account/*` / `listing/[id]` / `about` / `terms` / `privacy` / `messages` / `my-listings` / `seller/[id]`
+2026-08-10 數過（`grep -L createT` 掃晒 `apps/consumer/app/**/page.tsx`）：**24 個 page 得 `browse` 一個 import `createT`**。原本呢張清單漏咗 6 個，補返：
+
+`page.tsx`（首頁）· **`login`** · **`register`** · `sell` · `checkout/[orderId]` · `orders` · `orders/[id]` · `my-listings` · `messages` · `listing/[id]` · `seller/[id]` · `buyer/[id]` · `authenticator/[id]` · `s/[id]` · `auth/link-confirm` · `auth/complete-profile` · `account/profile` · `account/wallet` · `account/wallet/methods` · `account/wallet/payouts` · `about` · `terms` · `privacy`
+
+**`login` / `register` 應該排第一。** 英文用戶撞到嘅第一版 UI 就係佢哋 —— 而家由「建立你的帳戶」到「我哋會寄驗証碼到你嘅電郵。」全部 hardcode 中文。
+
+（`top-nav` / `footer` 入面個 `createT` 收成 `_t`，underscore = 而家未真用，只係 wire 好咗個線頭。）
+
+---
+
+## 3.5 已 wire 但未收乾淨嘅 page（2026-08-10）
+
+`login` / `register` / `AuthHeroPanel` 收乾淨咗（零剩餘）。`listing/[id]` / `orders` /
+`sell` 主體 copy 做晒，但仲有大約 100 處未收，全部係同三類：
+
+| 類 | 例 | 點解 codemod 唔掂 |
+|---|---|---|
+| 帶 `${}` 嘅字串 | `` `賣家申報：${conditionLabel(c)}` ``、`` `${mins} 分鐘前` `` | 要決定 params 點命名，係判斷題 |
+| module-level helper 掟嘅錯 | `sell/page.tsx:82` `reject(new Error('無法解碼影片'))` | 喺 component 外面，`_t` 唔喺 scope。建議掟 key，catch 嗰邊 `_t(e.message)` —— `t()` 查唔到會原樣返回，degrade 得乾淨 |
+| 剩低嘅零星字 | `取消`、`關閉`、`賣家：` | ssot 冇，或者多過一個 namespace 有 |
+
+**唔好當呢三頁做完。** 英文用戶而家見到嘅係主體英文 + 呢啲位中文。
+
+## 3.6 SSR 一律出中文（未解決）
+
+`getClientLocale()` 喺 `useEffect` 入面行，所以**伺服器一律 render 中文，英文要 hydrate 之後先出**。
+後果：英文用戶見到一閃中文；`curl` 攞到嘅 HTML 永遠係中文，即係**爬蟲同 SEO 收到嘅係中文版**。
+
+呢個係現有 idiom 嘅限制（`browse` / `top-nav` / `footer` 一直都係咁），唔係今次改動引入。
+真正解法喺第 1 項嗰個 enhancement 入面：locale 由 middleware 讀 cookie 塞落 `x-locale`
+header，server component 用 `getLocale(headers())`，或者行 `/en/…` 路由。
 
 ---
 
@@ -53,6 +83,18 @@ Admin 係內部 ops 工具，優先度最低。要唔要做英文版由 founder 
 
 ---
 
-## 5. `zh-copy-extraction.json`
+## 5. `zh-copy-extraction.json` — 對完賬（2026-08-10）
 
-Repo root 有個未 track 嘅 `zh-copy-extraction.json`，係早期抽 copy 嘅產物。決定 keep（放入 `scripts/` 或 `docs/`）定刪。
+Repo root 個未 track 檔，749 條 `{namespace, key, zh, context}`，係早期抽 hardcode 中文嘅產物。同 `locales/ssot.json` 對完：
+
+| | 條數 |
+|---|---:|
+| 已入 ssot，字一模一樣 | 638（85%） |
+| 已入，但 ssot 之後改過字（**ssot 為準**） | 14 |
+| 從來冇入過 ssot | 97 |
+
+嗰 97 條再掃 source（跳過 `.next`／`node_modules`）：**14 條字串已經冇咗**（嗰段 UI 刪咗）· **42 條係「取消」「登入」咁短嘅通用字**，grep 命中唔可信 · **41 條係真漏網**，而且幾乎全部集中喺 `register/page.tsx` 同 `login/page.tsx`。
+
+即係話：**呢 41 條唔係要逐條補 key，係整個 `login`／`register` 未 wire**（見上面第 3 項）。清單價值已經收喺呢度。
+
+**待 founder 決定：** 檔案本身（92K）可以刪。

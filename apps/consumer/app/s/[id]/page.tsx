@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
+import { detectLocale, createT } from '@authentik/utils';
 import type { Route } from 'next';
 import Link from 'next/link';
 import { ShareRedirect } from './redirect-client';
@@ -22,6 +24,9 @@ export async function generateMetadata(
 }
 
 export default async function SharePage({ params }: { params: { id: string } }) {
+  // Server component — the locale comes from the cookie on the request, not
+  // from getClientLocale(), which only exists in the browser.
+  const _t = createT(detectLocale(cookies().get('lang')?.value));
   const share = await getSharePreview(params.id);
   const listingHref = (
     share?.listingId
@@ -35,9 +40,9 @@ export default async function SharePage({ params }: { params: { id: string } }) 
       <div className="text-[18px] font-extrabold tracking-[0.2em] text-ink">
         CERTI<span className="text-brand-600">·</span>FINE
       </div>
-      <p className="text-sm text-neutral-text-hint">正在前往商品頁…</p>
+      <p className="text-sm text-neutral-text-hint">{_t('listing.redirect.going')}</p>
       <Link href={listingHref} className="text-sm font-semibold text-brand-600 underline">
-        如未自動跳轉，按此
+        {_t('listing.redirect.manual')}
       </Link>
     </main>
   );

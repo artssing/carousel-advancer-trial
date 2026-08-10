@@ -4,25 +4,28 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button, Pill, TierPill, ListingThumb, ConfirmDialog } from '@authentik/ui';
-import { formatHKD, tierForPrice, categoryByApiEnum } from '@authentik/utils';
+import { formatHKD, tierForPrice, categoryByApiEnum,
+  getClientLocale, createT,
+} from '@authentik/utils';
 import { api, hasToken } from '@/lib/api';
 import { ShareIgModal, type ShareListing } from '@/components/share-ig-modal';
 
 type StatusFilter = 'all' | 'ACTIVE' | 'RESERVED' | 'SOLD';
 
-const STATUS_PILL: Record<string, { text: string; variant: 'verify' | 'status' | 'tier' | 'gold' }> = {
-  ACTIVE:   { text: '上架中',  variant: 'verify' },
-  DRAFT:    { text: '草稿',    variant: 'tier' },
-  RESERVED: { text: '待鑑定配對', variant: 'status' },
-  SOLD:     { text: '已售出',  variant: 'tier' },
-  REMOVED:  { text: '已下架',  variant: 'tier' },
+// textKey, not text — module scope has no locale.
+const STATUS_PILL: Record<string, { textKey: string; variant: 'verify' | 'status' | 'tier' | 'gold' }> = {
+  ACTIVE:   { textKey: 'myListings.pillText.active',   variant: 'verify' },
+  DRAFT:    { textKey: 'myListings.pillText.draft',    variant: 'tier' },
+  RESERVED: { textKey: 'myListings.pillText.reserved', variant: 'status' },
+  SOLD:     { textKey: 'myListings.pillText.sold',     variant: 'tier' },
+  REMOVED:  { textKey: 'myListings.pillText.removed',  variant: 'tier' },
 };
 
-const DELIVERY_LABEL: Record<string, string> = {
-  SHIP: '寄送',
-  MEETUP_AUTH: '鑑定師面交',
-  MEETUP_3WAY: '三方面交',
-  MEETUP_DIRECT: '雙方面交',
+const DELIVERY_LABEL_KEY: Record<string, string> = {
+  SHIP: 'myListings.deliveryLabel.ship',
+  MEETUP_AUTH: 'myListings.deliveryLabel.meetupAuth',
+  MEETUP_3WAY: 'myListings.deliveryLabel.meetup3way',
+  MEETUP_DIRECT: 'myListings.deliveryLabel.meetupDirect',
 };
 
 /** Compact money for the stat card, e.g. HK$1.82M / HK$120K / HK$8,500. */
@@ -33,6 +36,10 @@ function compactHKD(v: number): string {
 }
 
 export default function MyListingsPage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const router = useRouter();
   const [listings, setListings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,7 +75,7 @@ export default function MyListingsPage() {
       setDeletePrompt(null);
       reload();
     } catch (e: any) {
-      setActError(e?.message ?? '刪除失敗');
+      setActError(e?.message ?? _t('myListings.error.delete'));
     } finally {
       setActBusy(null);
     }
@@ -81,7 +88,7 @@ export default function MyListingsPage() {
       await api.listings.restoreOwn(id);
       reload();
     } catch (e: any) {
-      setActError(e?.message ?? '還原失敗');
+      setActError(e?.message ?? _t('myListings.error.restore'));
     } finally {
       setActBusy(null);
     }
@@ -99,10 +106,10 @@ export default function MyListingsPage() {
   }, [allSorted, statusFilter]);
 
   const statCards = [
-    { n: String(active.length),   l: '在售中' },
-    { n: String(reserved.length), l: '進行中' },
-    { n: String(sold.length),     l: '已售出' },
-    { n: stats ? compactHKD(stats.lifetimeEarnings) : '—', l: '累計成交' },
+    { n: String(active.length),   l: _t('myListings.statLabel.active') },
+    { n: String(reserved.length), l: _t('myListings.statLabel.inProgress') },
+    { n: String(sold.length),     l: _t('myListings.statLabel.sold') },
+    { n: stats ? compactHKD(stats.lifetimeEarnings) : '—', l: _t('myListings.stat.earnings') },
   ];
 
   return (
@@ -111,12 +118,12 @@ export default function MyListingsPage() {
       <div className="mb-5 flex items-end justify-between gap-4">
         <div>
           <h1 className="font-display-serif text-[28px] font-bold leading-tight tracking-[-0.01em] text-ink">
-            我的上架
+            {_t('myListings.pageTitle')}
           </h1>
-          <p className="mt-1 text-[13px] text-neutral-text-hint">管理你刊登的貨品</p>
+          <p className="mt-1 text-[13px] text-neutral-text-hint">{_t('myListings.pageSubtitle')}</p>
         </div>
         <Link href="/sell">
-          <Button>＋ 刊登新貨品</Button>
+          <Button>{_t('myListings.newListing')}</Button>
         </Link>
       </div>
       {actError && (
@@ -137,10 +144,10 @@ export default function MyListingsPage() {
       {!loading && listings.length > 0 && (
         <div className="mb-6 flex gap-1 overflow-x-auto scrollbar-hide touch-pan-x overscroll-x-contain border-b border-line">
           {([
-            ['all', '全部', listings.length],
-            ['ACTIVE', '在售中', active.length],
-            ['RESERVED', '進行中', reserved.length],
-            ['SOLD', '已售出', sold.length],
+            ['all', _t('myListings.tab.all'), listings.length],
+            ['ACTIVE', _t('myListings.statLabel.active'), active.length],
+            ['RESERVED', _t('myListings.statLabel.inProgress'), reserved.length],
+            ['SOLD', _t('myListings.statLabel.sold'), sold.length],
           ] as const).map(([k, label, count]) => {
             const isActive = statusFilter === k;
             return (
@@ -179,9 +186,9 @@ export default function MyListingsPage() {
       {!loading && listings.length === 0 && (
         <div className="mt-14 rounded-xl border border-line bg-white p-10 text-center shadow-sh1">
           <p className="text-3xl">🏪</p>
-          <p className="mt-3 font-medium text-neutral-text">你未有上架任何商品</p>
-          <p className="mt-1 text-sm text-neutral-text-hint">上架商品後會喺呢度管理。</p>
-          <Link href="/sell"><Button className="mt-5">上架商品</Button></Link>
+          <p className="mt-3 font-medium text-neutral-text">{_t('myListings.empty.title')}</p>
+          <p className="mt-1 text-sm text-neutral-text-hint">{_t('myListings.emptyHint')}</p>
+          <Link href="/sell"><Button className="mt-5">{_t('myListings.empty.sellButton')}</Button></Link>
         </div>
       )}
 
@@ -191,7 +198,7 @@ export default function MyListingsPage() {
           {sorted.map((l) => {
             const img = l.images?.[0];
             const tier = tierForPrice(l.priceHKD) as 1 | 2 | 3;
-            const st = STATUS_PILL[l.status] ?? { text: l.status, variant: 'tier' as const };
+            const st = STATUS_PILL[l.status] ?? { textKey: l.status, variant: 'tier' as const };
             const methods: string[] = l.allowedDeliveryMethods ?? [];
             const ageDays = l.createdAt
               ? Math.max(0, Math.floor((Date.now() - new Date(l.createdAt).getTime()) / 86400000))
@@ -222,23 +229,23 @@ export default function MyListingsPage() {
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-neutral-text-hint">
                     <TierPill tier={tier} className="text-[10px] !py-0.5" />
                     <span>·</span>
-                    {ageDays != null && <span>已刊登 {ageDays} 日</span>}
+                    {ageDays != null && <span>{_t('myListings.listedDays', { n: ageDays })}</span>}
                     {methods.length > 0 && (
                       <>
                         <span>·</span>
-                        <span>{methods.map((m) => DELIVERY_LABEL[m] ?? m).join(' / ')}</span>
+                        <span>{methods.map((m) => _t(DELIVERY_LABEL_KEY[m] ?? m)).join(' / ')}</span>
                       </>
                     )}
                   </div>
                   {l.pendingPriceHKD && l.pendingPriceEffectiveAt && (
                     <div className="mt-1.5 inline-flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-800">
-                      ⏳ 待生效特價 HKD {l.pendingPriceHKD.toLocaleString('en-HK')} · {new Date(l.pendingPriceEffectiveAt).toLocaleString('zh-HK')}
+                      {_t('myListings.pendingPrice', { price: l.pendingPriceHKD.toLocaleString('en-HK'), date: new Date(l.pendingPriceEffectiveAt).toLocaleString(locale === 'en' ? 'en-HK' : 'zh-HK') })}
                     </div>
                   )}
                 </div>
 
                 <Pill variant={st.variant} size="md" className="hidden shrink-0 sm:inline-flex">
-                  {st.text}
+                  {_t(st.textKey)}
                 </Pill>
 
                 <div className="shrink-0 text-right">
@@ -255,28 +262,28 @@ export default function MyListingsPage() {
                 <div className="relative flex shrink-0 flex-col gap-1.5 sm:flex-row">
                   {(l.status === 'ACTIVE' || l.status === 'DRAFT') && (
                     <Link href={`/sell?edit=${l.id}` as any}>
-                      <Button variant="ghost" size="sm">編輯</Button>
+                      <Button variant="ghost" size="sm">{_t('myListings.edit')}</Button>
                     </Link>
                   )}
                   {l.status === 'ACTIVE' && (l.images?.length ?? 0) > 0 && (
-                    <Button variant="ghost" size="sm" onClick={() => setShareListing(l)}>分享</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setShareListing(l)}>{_t('myListings.share')}</Button>
                   )}
                   <Link href={`/listing/${l.id}`}>
-                    <Button variant="ghost" size="sm">查看</Button>
+                    <Button variant="ghost" size="sm">{_t('myListings.view')}</Button>
                   </Link>
                   {/* Soft delete（founder 2026-07-10）— ConfirmDialog v2 */}
                   {(l.status === 'ACTIVE' || l.status === 'DRAFT') && (
                     <Button variant="ghost" size="sm" className="!text-red-600 hover:!bg-red-50" onClick={() => setDeletePrompt(l.id)}>
-                      刪除
+                      {_t('myListings.delete')}
                     </Button>
                   )}
                   {/* REMOVED：自刪可還原；平台下架要搵客服 */}
                   {l.status === 'REMOVED' && (
                     l.removedByRole === 'ADMIN' ? (
-                      <span className="self-center text-[11px] text-neutral-text-hint">已被平台下架 · 請聯絡客服</span>
+                      <span className="self-center text-[11px] text-neutral-text-hint">{_t('myListings.removedByAdmin')}</span>
                     ) : (
                       <Button variant="ghost" size="sm" disabled={actBusy === l.id} onClick={() => doRestore(l.id)}>
-                        {actBusy === l.id ? '…' : '還原'}
+                        {actBusy === l.id ? '…' : _t('myListings.restore')}
                       </Button>
                     )
                   )}
@@ -292,10 +299,10 @@ export default function MyListingsPage() {
       <ConfirmDialog
         open={!!deletePrompt}
         severity="danger"
-        title="刪除呢件商品？"
+        title={_t('myListings.deleteDialog.title')}
         description={deletePrompt ? listings.find((l) => l.id === deletePrompt)?.title : undefined}
-        consequence="商品會即時落架，買家搵唔到。刪錯咗可以隨時喺呢度撳「還原」。"
-        confirmLabel="確認刪除"
+        consequence={_t('myListings.removeConsequence')}
+        confirmLabel={_t('myListings.deleteDialog.confirm')}
         busy={actBusy === deletePrompt}
         onConfirm={() => deletePrompt && doDelete(deletePrompt)}
         onCancel={() => setDeletePrompt(null)}

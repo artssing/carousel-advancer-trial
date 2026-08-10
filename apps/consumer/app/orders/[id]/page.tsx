@@ -15,7 +15,9 @@ import {
   Badge, Button, Card, CardContent, CardHeader, CardTitle, ListingThumb,
   HandoverHistoryTimeline, RE_PHOTO_PRESETS, type HandoverRound, ConfirmDialog,
 } from '@authentik/ui';
-import { formatHKD, getStatusLabel, districtLabel, categoryByApiEnum } from '@authentik/utils';
+import { formatHKD, getStatusLabel, districtLabel, categoryByApiEnum,
+  getClientLocale, createT,
+} from '@authentik/utils';
 
 const MAX_REPHOTO = 2;
 const MEETUP_AUTH_PHASE_A: string[] = ['PAID', 'HANDOVER_TO_AUTH', 'SELLER_ACK_PENDING'];
@@ -36,16 +38,22 @@ const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'default
   DISPUTED: 'danger', REFUNDED: 'default',
 };
 
-const DELIVERY_LABEL: Record<string, string> = {
-  SHIP: '物流寄送', MEETUP_AUTH: '鑑定師面交', MEETUP_3WAY: '三方面交', MEETUP_DIRECT: '雙方面交',
+// Values are t() keys — these live outside the component, so _t is not in scope.
+const DELIVERY_LABEL_KEY: Record<string, string> = {
+  SHIP: 'orderDetail.delivery.ship', MEETUP_AUTH: 'orderDetail.delivery.meetupAuth',
+  MEETUP_3WAY: 'orderDetail.delivery.meetup3way', MEETUP_DIRECT: 'orderDetail.delivery.meetupDirect',
 };
-const PAYMENT_LABEL: Record<string, string> = {
-  ONLINE_ESCROW: '線上託管 (Escrow)', OFFLINE_CASH: '線下現金',
+const PAYMENT_LABEL_KEY: Record<string, string> = {
+  ONLINE_ESCROW: 'orderDetail.payment.escrow', OFFLINE_CASH: 'orderDetail.payment.cash',
 };
 
 const MEETUP_METHODS = ['MEETUP_AUTH', 'MEETUP_3WAY', 'MEETUP_DIRECT'];
 
 export default function OrderDetailPage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const params = useParams() as { id: string };
   const router = useRouter();
   const id = params.id;
@@ -82,7 +90,7 @@ export default function OrderDetailPage() {
     setDisputeConfirmOpen(false);
     const r = (reason ?? '').trim();
     if (!r) return; // dialog already gates this, belt-and-braces
-    await doAction('提出爭議', () => api.orders.dispute(order.id, r));
+    await doAction('orderDetail.action.dispute', () => api.orders.dispute(order.id, r));
   }
 
   function toggleRePhotoPreset(p: string) {
@@ -91,10 +99,10 @@ export default function OrderDetailPage() {
 
   async function submitRePhoto() {
     if (rePhotoPresets.length === 0 && !rePhotoComment.trim()) {
-      alert('請至少揀一個原因或填寫註釋');
+      alert(_t('orderDetail.rePhoto.needReason'));
       return;
     }
-    await doAction('要求重拍', () =>
+    await doAction('orderDetail.action.rePhoto', () =>
       api.orders.requestRePhoto(order.id, {
         presets: rePhotoPresets,
         comment: rePhotoComment.trim() || undefined,
@@ -106,7 +114,7 @@ export default function OrderDetailPage() {
   }
 
   async function submitCancelWithReason(reason: string) {
-    await doAction('取消交易', () =>
+    await doAction('orderDetail.action.cancelOrder', () =>
       api.orders.cancelHandover(order.id, reason.trim() || undefined),
     );
     setCancelReason('');
@@ -121,7 +129,7 @@ export default function OrderDetailPage() {
     Promise.all([api.me().then((m) => setMe({ id: m.id })), refresh()])
       .catch((e: any) => {
         if (e?.status === 401) { clearToken(); router.replace('/login'); return; }
-        setError(e?.message ?? '無法載入訂單');
+        setError(e?.message ?? _t('orderDetail.error.load'));
       })
       .finally(() => setLoading(false));
   }, [id, router]);
@@ -138,7 +146,7 @@ export default function OrderDetailPage() {
     return () => clearInterval(interval);
   }, [order?.id, order?.status, order?.deliveryMethod]);
 
-  if (loading) return <div className="mx-auto max-w-3xl px-4 py-12 text-sm text-slate-500">載入中…</div>;
+  if (loading) return <div className="mx-auto max-w-3xl px-4 py-12 text-sm text-slate-500">{_t('orderDetail.loading')}</div>;
   if (error) return <div className="mx-auto max-w-3xl px-4 py-12 text-sm text-red-600">{error}</div>;
   if (!order) return null;
 
@@ -147,27 +155,28 @@ export default function OrderDetailPage() {
   const isMeetup = MEETUP_METHODS.includes(order.deliveryMethod ?? '');
   const isCompleted = order.status === 'COMPLETED';
 
-  async function doAction(name: string, fn: () => Promise<any>) {
+  /** `nameKey` is a t() key, not text — it only surfaces inside the error line. */
+  async function doAction(nameKey: string, fn: () => Promise<any>) {
     setBusy(true);
     try {
       await fn();
       await refresh();
     } catch (e: any) {
-      setError(`${name} 失敗：${e?.message ?? '未知錯誤'}`);
+      setError(_t('orderDetail.action.failed', { name: _t(nameKey), reason: e?.message ?? _t('orderDetail.action.unknownError') }));
       setTimeout(() => setError(null), 4000);
     } finally { setBusy(false); }
   }
 
   // ── Timeline events (with timestamps if present) ─────────────────────
   const timeline = [
-    { key: 'createdAt',       label: '落單' },
-    { key: 'paidAt',          label: '已付款' },
-    { key: 'shippedToAuthAt', label: '寄至鑑定師' },
-    { key: 'receivedByAuthAt',label: '鑑定師簽收' },
-    { key: 'authCompletedAt', label: '鑑定完成' },
-    { key: 'shippedToBuyerAt',label: '寄至買家' },
-    { key: 'deliveredAt',     label: '買家確認收到' },
-    { key: 'completedAt',     label: '交易完成' },
+    { key: 'createdAt',       label: _t('orderDetail.timeline.created') },
+    { key: 'paidAt',          label: _t('orderDetail.timeline.paid') },
+    { key: 'shippedToAuthAt', label: _t('orderDetail.timeline.shippedToAuth') },
+    { key: 'receivedByAuthAt',label: _t('orderDetail.timeline.receivedByAuth') },
+    { key: 'authCompletedAt', label: _t('orderDetail.timeline.authCompleted') },
+    { key: 'shippedToBuyerAt',label: _t('orderDetail.timeline.shippedToBuyer') },
+    { key: 'deliveredAt',     label: _t('orderDetail.timeline.delivered') },
+    { key: 'completedAt',     label: _t('orderDetail.timeline.completed') },
   ].filter((e) => order[e.key]);
 
   return (
@@ -176,7 +185,7 @@ export default function OrderDetailPage() {
         onClick={() => router.push('/orders')}
         className="mb-4 flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
       >
-        <ArrowLeft className="h-4 w-4" /> 返回我的訂單
+        <ArrowLeft className="h-4 w-4" /> {_t('orderDetail.backToOrders')}
       </button>
 
       {/* Header */}
@@ -192,7 +201,7 @@ export default function OrderDetailPage() {
             href={`/listing/${order.listing.id}`}
             className="ml-auto text-xs text-brand-600 hover:underline"
           >
-            ← 返回商品頁
+            {_t('orderDetail.backToListing')}
           </Link>
         )}
       </div>
@@ -213,7 +222,7 @@ export default function OrderDetailPage() {
               {order.listing?.title}
             </Link>
             <p className="mt-1 font-display text-xl font-bold text-brand-700">{formatHKD(order.salePriceHKD)}</p>
-            <p className="mt-0.5 text-[10px] text-slate-400">商品分類 {order.listing?.category}</p>
+            <p className="mt-0.5 text-[10px] text-slate-400">{_t('orderDetail.listing.categoryLabel')} {order.listing?.category}</p>
           </div>
         </CardContent>
       </Card>
@@ -221,17 +230,17 @@ export default function OrderDetailPage() {
       {/* Parties */}
       <Card className="mb-4">
         <CardHeader className="border-b border-slate-100">
-          <CardTitle className="text-sm">交易參與方</CardTitle>
+          <CardTitle className="text-sm">{_t('orderDetail.card.parties')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 p-4 text-sm">
-          <Row label="買家" link={isBuyer ? null : (order.buyer?.id ? `/buyer/${order.buyer.id}` : null)}>
-            {order.buyer?.displayName} {isBuyer && <span className="text-[10px] text-brand-600">(你)</span>}
+          <Row label={_t('orderDetail.label.buyer')} link={isBuyer ? null : (order.buyer?.id ? `/buyer/${order.buyer.id}` : null)}>
+            {order.buyer?.displayName} {isBuyer && <span className="text-[10px] text-brand-600">{_t('orderDetail.you.self')}</span>}
           </Row>
-          <Row label="賣家" link={isSeller ? null : (order.seller?.id ? `/seller/${order.seller.id}` : null)}>
-            {order.seller?.displayName} {isSeller && <span className="text-[10px] text-brand-600">(你)</span>}
+          <Row label={_t('orderDetail.label.seller')} link={isSeller ? null : (order.seller?.id ? `/seller/${order.seller.id}` : null)}>
+            {order.seller?.displayName} {isSeller && <span className="text-[10px] text-brand-600">{_t('orderDetail.you.self')}</span>}
           </Row>
           {order.authenticator && (
-            <Row label="鑑定師" link={`/authenticator/${order.authenticator.id}`}>
+            <Row label={_t('orderDetail.label.authenticator')} link={`/authenticator/${order.authenticator.id}`}>
               {order.authenticator.displayName}
             </Row>
           )}
@@ -241,13 +250,13 @@ export default function OrderDetailPage() {
       {/* Delivery + Payment */}
       <Card className="mb-4">
         <CardHeader className="border-b border-slate-100">
-          <CardTitle className="text-sm">交收 + 付款</CardTitle>
+          <CardTitle className="text-sm">{_t('orderDetail.card.deliveryPayment')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 p-4 text-sm">
-          <Row label="交收方式">
+          <Row label={_t('orderDetail.delivery.label')}>
             <span className="inline-flex items-center gap-1.5">
               {isMeetup ? <Handshake className="h-3.5 w-3.5 text-amber-600" /> : <Package className="h-3.5 w-3.5 text-blue-600" />}
-              {DELIVERY_LABEL[order.deliveryMethod] ?? order.deliveryMethod}
+              {_t(DELIVERY_LABEL_KEY[order.deliveryMethod] ?? order.deliveryMethod)}
             </span>
           </Row>
           {/* Branch snapshot (MEETUP_AUTH / MEETUP_3WAY) — read from frozen
@@ -262,7 +271,7 @@ export default function OrderDetailPage() {
             const district = districtLabel(snap.districtKey);
             const mapsUrl = `https://maps.google.com/?q=${encodeURIComponent(snap.fullAddress + ' ' + (district ?? ''))}`;
             return (
-              <Row label="交收分店">
+              <Row label={_t('orderDetail.branch.label')}>
                 <span className="flex flex-col gap-0.5">
                   <span className="inline-flex items-center gap-1.5 font-medium">
                     <MapPin className="h-3.5 w-3.5 text-brand-600" />
@@ -275,7 +284,7 @@ export default function OrderDetailPage() {
                   </span>
                   <span className="text-xs text-slate-600">{snap.fullAddress}</span>
                   {snap.businessHours && (
-                    <span className="text-[11px] text-slate-500">營業：{snap.businessHours}</span>
+                    <span className="text-[11px] text-slate-500">{_t('orderDetail.meetupLocation.businessHours', { hours: snap.businessHours })}</span>
                   )}
                   {snap.notes && (
                     <span className="text-[11px] text-amber-700">⚠ {snap.notes}</span>
@@ -315,17 +324,17 @@ export default function OrderDetailPage() {
 
           {/* MEETUP_DIRECT free-text fallback */}
           {!order.meetupBranchSnapshot && (order.meetupFreeText || order.meetupLocation) && (
-            <Row label="面交地點">
+            <Row label={_t('orderDetail.meetupLocation.label')}>
               <span className="inline-flex items-center gap-1">
                 <MapPin className="h-3.5 w-3.5" /> {order.meetupFreeText ?? order.meetupLocation}
               </span>
             </Row>
           )}
-          <Row label="付款方式">
+          <Row label={_t('orderDetail.payment.label')}>
             <span className="inline-flex items-center gap-1.5">
               {order.paymentMethod === 'ONLINE_ESCROW' ? <Lock className="h-3.5 w-3.5 text-emerald-600" /> : <Wallet className="h-3.5 w-3.5 text-amber-600" />}
-              {PAYMENT_LABEL[order.paymentMethod] ?? order.paymentMethod}
-              {order.escrowHeld && <span className="ml-1 rounded bg-emerald-100 px-1.5 py-0 text-[9px] font-medium text-emerald-700">已 hold</span>}
+              {_t(PAYMENT_LABEL_KEY[order.paymentMethod] ?? order.paymentMethod)}
+              {order.escrowHeld && <span className="ml-1 rounded bg-emerald-100 px-1.5 py-0 text-[9px] font-medium text-emerald-700">{_t('orderDetail.payment.held')}</span>}
             </span>
           </Row>
         </CardContent>
@@ -334,14 +343,14 @@ export default function OrderDetailPage() {
       {/* Fee breakdown */}
       <Card className="mb-4">
         <CardHeader className="border-b border-slate-100">
-          <CardTitle className="text-sm">費用明細</CardTitle>
+          <CardTitle className="text-sm">{_t('orderDetail.card.fees')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 p-4 text-sm">
-          <Row label="成交價">{formatHKD(order.salePriceHKD)}</Row>
-          {order.authFeeHKD > 0 && <Row label="鑑定費（賣家付）">- {formatHKD(order.authFeeHKD)}</Row>}
-          <Row label="平台費 1.5%（賣家付）">- {formatHKD(order.platformFeeHKD)}</Row>
+          <Row label={_t('orderDetail.fee.salePrice')}>{formatHKD(order.salePriceHKD)}</Row>
+          {order.authFeeHKD > 0 && <Row label={_t('orderDetail.fee.authSeller')}>- {formatHKD(order.authFeeHKD)}</Row>}
+          <Row label={_t('orderDetail.fee.platformSeller')}>- {formatHKD(order.platformFeeHKD)}</Row>
           <div className="mt-2 border-t border-slate-100 pt-2">
-            <Row label="賣家實收"><span className="font-bold text-emerald-700">{formatHKD(order.sellerNetHKD)}</span></Row>
+            <Row label={_t('orderDetail.fee.sellerNet')}><span className="font-bold text-emerald-700">{formatHKD(order.sellerNetHKD)}</span></Row>
           </div>
         </CardContent>
       </Card>
@@ -350,7 +359,7 @@ export default function OrderDetailPage() {
       {timeline.length > 0 && (
         <Card className="mb-4">
           <CardHeader className="border-b border-slate-100">
-            <CardTitle className="text-sm">進度</CardTitle>
+            <CardTitle className="text-sm">{_t('orderDetail.card.timeline')}</CardTitle>
           </CardHeader>
           <CardContent className="p-4">
             <ol className="space-y-2.5">
@@ -378,7 +387,7 @@ export default function OrderDetailPage() {
           className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 bg-white py-2.5 text-sm text-slate-700 hover:bg-slate-50"
         >
           <MessageCircle className="h-4 w-4" />
-          訊息
+          {_t('orderDetail.messageButton')}
         </button>
       </div>
 
@@ -386,19 +395,19 @@ export default function OrderDetailPage() {
       {isBuyer && order.status === 'AWAITING_PAYMENT' && (
         <Card className="mb-4 border-amber-300 bg-amber-50">
           <CardContent className="p-4">
-            <p className="font-medium text-amber-900">等待付款</p>
+            <p className="font-medium text-amber-900">{_t('orderDetail.awaitingPayment.title')}</p>
             <p className="mt-0.5 text-xs text-amber-800">
               {order.paymentMethod === 'ONLINE_ESCROW'
-                ? '線上託管：信用卡 hold（鑑定通過先正式扣款）。'
-                : '線下現金：面交時付款，平台不代收。'}
+                ? _t('orderDetail.awaitingPayment.escrowDesc')
+                : _t('orderDetail.awaitingPayment.cashDesc')}
             </p>
             {order.paymentMethod === 'ONLINE_ESCROW' ? (
               <a href={`/checkout/${order.id}`} className="mt-2 inline-block">
-                <Button>立即付款 →</Button>
+                <Button>{_t('orderDetail.payNow')}</Button>
               </a>
             ) : (
-              <Button className="mt-2" disabled={busy} onClick={() => doAction('確認交易', () => api.orders.pay(order.id))}>
-                確認交易（面交現金）
+              <Button className="mt-2" disabled={busy} onClick={() => doAction('orderDetail.action.confirmPay', () => api.orders.pay(order.id))}>
+                {_t('orderDetail.confirmCash')}
               </Button>
             )}
           </CardContent>
@@ -410,13 +419,13 @@ export default function OrderDetailPage() {
       {isBuyer && order.status === 'SHIPPED_TO_BUYER' && (
         <Card className="mb-4 border-emerald-300 bg-emerald-50">
           <CardContent className="space-y-3 p-4">
-            <p className="font-medium text-emerald-900">商品已送達？</p>
-            <p className="text-xs text-emerald-800">確認收到貨後，款項即時釋放畀賣家，交易完成。如貨品有問題，請即撳「提出爭議」。</p>
+            <p className="font-medium text-emerald-900">{_t('orderDetail.delivered.title')}</p>
+            <p className="text-xs text-emerald-800">{_t('orderDetail.delivered.desc')}</p>
             <Button
               disabled={busy}
               onClick={() => setReleaseConfirmOpen(true)}
             >
-              確認已收到商品
+              {_t('orderDetail.confirmReceived')}
             </Button>
           </CardContent>
         </Card>
@@ -424,9 +433,9 @@ export default function OrderDetailPage() {
       {isBuyer && order.status === 'DELIVERED' && (
         <Card className="mb-4 border-emerald-300 bg-emerald-50">
           <CardContent className="p-4">
-            <p className="font-medium text-emerald-900">商品已送達 — 完成交易</p>
-            <Button className="mt-2" disabled={busy} onClick={() => doAction('完成', () => api.orders.complete(order.id))}>
-              確認完成交易
+            <p className="font-medium text-emerald-900">{_t('orderDetail.deliveredFinal.title')}</p>
+            <Button className="mt-2" disabled={busy} onClick={() => doAction(_t('orders.timeline.done'), () => api.orders.complete(order.id))}>
+              {_t('orderDetail.completeTransaction')}
             </Button>
           </CardContent>
         </Card>
@@ -436,7 +445,7 @@ export default function OrderDetailPage() {
       {isSeller && order.status === 'AUTH_RECEIVED_PENDING_SELLER_ACK' && (
         <Card className="mb-4 border-amber-300 bg-amber-50">
           <CardContent className="space-y-2 p-4">
-            <p className="font-medium text-amber-900">鑑定師已收件並影 unboxing 相。請 view 後確認 condition match。</p>
+            <p className="font-medium text-amber-900">{_t('orderDetail.sellerAck.title')}</p>
             {order.authReceiptPhotos?.length > 0 && (
               <div className="grid grid-cols-3 gap-2">
                 {order.authReceiptPhotos.map((src: string, i: number) => (
@@ -445,13 +454,13 @@ export default function OrderDetailPage() {
                 ))}
               </div>
             )}
-            <p className="text-[11px] text-amber-700">確認後鑑定進入下一階段。如有問題請即撳「提出爭議」。</p>
+            <p className="text-[11px] text-amber-700">{_t('orderDetail.sellerAck.hint')}</p>
             <div className="flex gap-2">
-              <Button disabled={busy} onClick={() => doAction('確認交付', () => api.orders.sellerHandoverAck(order.id))}>
-                確認 condition 正確
+              <Button disabled={busy} onClick={() => doAction('orderDetail.action.confirmHandover', () => api.orders.sellerHandoverAck(order.id))}>
+                {_t('orderDetail.confirmCondition')}
               </Button>
               <Button variant="outline" disabled={busy} onClick={onDispute}>
-                提出爭議
+                {_t('orderDetail.action.dispute')}
               </Button>
             </div>
           </CardContent>
@@ -464,10 +473,9 @@ export default function OrderDetailPage() {
         <Card className="mb-4 border-amber-300 bg-amber-50">
           <CardContent className="space-y-3 p-4">
             <div>
-              <p className="font-medium text-amber-900">鑑定師已上載商品狀況相片，請查閱後決定下一步。</p>
+              <p className="font-medium text-amber-900">{_t('orderDetail.meetupAuth.title')}</p>
               <p className="mt-0.5 text-[11px] text-amber-700">
-                已用重拍機會：<span className="font-semibold">{order.rePhotoCount ?? 0}</span> / {MAX_REPHOTO}。
-                確認後鑑定師正式接管商品（E&O 保險）。逾 7 日唔 ack 訂單會自動取消、買家獲全額退款。
+                {_t('orderDetail.meetupAuth.rePhotoUsed', { used: order.rePhotoCount ?? 0, max: MAX_REPHOTO })}
               </p>
             </div>
 
@@ -482,9 +490,9 @@ export default function OrderDetailPage() {
               <Button
                 className="w-full"
                 disabled={busy}
-                onClick={() => doAction('確認交付', () => api.orders.sellerHandoverAck(order.id))}
+                onClick={() => doAction('orderDetail.action.confirmHandover', () => api.orders.sellerHandoverAck(order.id))}
               >
-                ✓ 確認相片正確 · 完成交付
+                {_t('orderDetail.meetupAuth.confirm')}
               </Button>
 
               {(order.rePhotoCount ?? 0) < MAX_REPHOTO ? (
@@ -494,11 +502,11 @@ export default function OrderDetailPage() {
                   disabled={busy}
                   onClick={() => setRePhotoOpen(true)}
                 >
-                  要求重拍相片（剩 {MAX_REPHOTO - (order.rePhotoCount ?? 0)} 次）
+                  {_t('orderDetail.rePhoto.buttonWithCount', { left: MAX_REPHOTO - (order.rePhotoCount ?? 0) })}
                 </Button>
               ) : (
                 <p className="rounded bg-rose-50 px-2 py-1.5 text-center text-[11px] text-rose-700">
-                  ⚠️ 已用盡重拍機會，請選擇確認交付或取消交易。
+                  {_t('orderDetail.meetupAuth.exhausted')}
                 </p>
               )}
 
@@ -508,14 +516,14 @@ export default function OrderDetailPage() {
                 disabled={busy}
                 onClick={() => setCancelConfirmOpen(true)}
               >
-                取消交易（不可撤回）
+                {_t('orderDetail.meetupAuth.cancel')}
               </button>
             </div>
 
             {/* Re-photo request modal: preset checkboxes + comment */}
             {rePhotoOpen && (
               <div className="rounded border border-amber-400 bg-white p-3">
-                <p className="text-sm font-medium text-amber-900">要求鑑定師重拍 — 請揀原因（可多選）</p>
+                <p className="text-sm font-medium text-amber-900">{_t('orderDetail.rePhoto.title')}</p>
                 <div className="mt-2 grid grid-cols-1 gap-1.5 sm:grid-cols-2">
                   {RE_PHOTO_PRESETS.map((p) => (
                     <label
@@ -535,7 +543,7 @@ export default function OrderDetailPage() {
                 <textarea
                   value={rePhotoComment}
                   onChange={(e) => setRePhotoComment(e.target.value)}
-                  placeholder="（可選）補充細節，例如「請對住底部刮痕影 close-up」"
+                  placeholder={_t('orderDetail.rePhoto.commentPlaceholder')}
                   rows={2}
                   className="mt-2 w-full rounded border border-slate-300 p-2 text-xs"
                 />
@@ -545,7 +553,7 @@ export default function OrderDetailPage() {
                     disabled={busy || (rePhotoPresets.length === 0 && !rePhotoComment.trim())}
                     onClick={submitRePhoto}
                   >
-                    提交重拍要求
+                    {_t('orderDetail.rePhoto.submit')}
                   </Button>
                   <Button
                     variant="outline"
@@ -553,7 +561,7 @@ export default function OrderDetailPage() {
                     disabled={busy}
                     onClick={() => { setRePhotoOpen(false); setRePhotoPresets([]); setRePhotoComment(''); }}
                   >
-                    取消
+                    {_t('orderDetail.cancelLabel')}
                   </Button>
                 </div>
               </div>
@@ -569,7 +577,7 @@ export default function OrderDetailPage() {
         ['HANDOVER_TO_AUTH', 'SELLER_ACK_PENDING', 'CUSTODY', 'AUTH_PASSED', 'AWAITING_BUYER_PICKUP'].includes(order.status) && (
           <Card className="mb-4">
             <CardHeader>
-              <CardTitle className="text-sm">鑑定師接收記錄</CardTitle>
+              <CardTitle className="text-sm">{_t('orderDetail.card.handoverHistory')}</CardTitle>
             </CardHeader>
             <CardContent>
               <HandoverHistoryTimeline
@@ -586,18 +594,17 @@ export default function OrderDetailPage() {
         <Card className="mb-4 border-emerald-300 bg-emerald-50">
           <CardContent className="space-y-2 p-4">
             <p className="font-medium text-emerald-900">
-              ✓ 鑑定通過。請前往鑑定師店面取貨{order.authenticator?.displayName && `（${order.authenticator.displayName}）`}。
+              {_t('orderDetail.pickup.passed')}{order.authenticator?.displayName && _t('orderDetail.pickup.passedNamed', { name: order.authenticator.displayName })}
             </p>
             <p className="text-[11px] text-emerald-700">
-              現場驗貨。確認後代表你親手收到並認可貨品狀況，款項即時釋放畀賣家，不可撤回。
-              如貨品有問題，請唔好確認，撳「提出爭議」。
+              {_t('orderDetail.pickup.inspectNotice')}
             </p>
             <div className="flex gap-2">
-              <Button disabled={busy} onClick={() => doAction('確認收貨', () => api.orders.buyerReceiveAck(order.id))}>
-                我已在店 · 確認收到
+              <Button disabled={busy} onClick={() => doAction(_t('orders.timeline.confirmReceipt'), () => api.orders.buyerReceiveAck(order.id))}>
+                {_t('orderDetail.pickup.confirm')}
               </Button>
               <Button variant="outline" disabled={busy} onClick={onDispute}>
-                提出爭議
+                {_t('orderDetail.action.dispute')}
               </Button>
             </div>
           </CardContent>
@@ -608,7 +615,7 @@ export default function OrderDetailPage() {
       {isSeller && order.status === 'REFUNDED' && order.returnPhotosUploadedAt && !order.returnSellerAckAt && (
         <Card className="mb-4 border-red-300 bg-red-50">
           <CardContent className="space-y-2 p-4">
-            <p className="font-medium text-red-900">鑑定不通過。買家已退款。請前往鑑定師店面取回商品，並 view 退貨相確認 condition。</p>
+            <p className="font-medium text-red-900">{_t('orderDetail.return.title')}</p>
             {order.returnPhotos?.length > 0 && (
               <div className="grid grid-cols-3 gap-2">
                 {order.returnPhotos.map((src: string, i: number) => (
@@ -618,10 +625,10 @@ export default function OrderDetailPage() {
               </div>
             )}
             <p className="text-[11px] text-red-700">
-              ⚠ 如逾期未取，鑑定師可能會收取寄存費（屬於你同鑑定師之間嘅安排，唔屬於 Certifine 平台責任）。
+              {_t('orderDetail.return.warning')}
             </p>
-            <Button disabled={busy} onClick={() => doAction('確認取回', () => api.orders.sellerReturnAck(order.id))}>
-              已取回商品
+            <Button disabled={busy} onClick={() => doAction('orderDetail.action.confirmReturn', () => api.orders.sellerReturnAck(order.id))}>
+              {_t('orderDetail.return.confirm')}
             </Button>
           </CardContent>
         </Card>
@@ -631,9 +638,9 @@ export default function OrderDetailPage() {
       {order.status === 'DISPUTED' && (
         <Card className="mb-4 border-red-300 bg-red-50">
           <CardContent className="p-4 text-sm">
-            <p className="font-medium text-red-900">⚠ 交易已凍結（DISPUTED）</p>
+            <p className="font-medium text-red-900">{_t('orderDetail.disputed.title')}</p>
             <p className="mt-1 text-red-700">
-              Certifine 為資訊中介，唔裁決爭議。請拎相片 + 對話作為證據自行解決（包括法律途徑）。
+              {_t('orderDetail.disputed.desc')}
             </p>
           </CardContent>
         </Card>
@@ -645,33 +652,33 @@ export default function OrderDetailPage() {
           {order.authenticator && !order.review && (
             <Card className="mb-4">
               <CardHeader className="border-b border-slate-100">
-                <CardTitle className="text-sm">評價鑑定師</CardTitle>
+                <CardTitle className="text-sm">{_t('orderDetail.review.rateAuth')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 p-4">
                 <StarRating value={reviewRating} onChange={setReviewRating} />
                 <textarea
                   value={reviewComment} onChange={(e) => setReviewComment(e.target.value)}
-                  placeholder="講下鑑定師服務（選填）" rows={2}
+                  placeholder={_t('orderDetail.review.commentAuth')} rows={2}
                   className="w-full rounded border border-slate-200 p-2 text-sm outline-none focus:border-brand-400"
                 />
                 <Button
                   disabled={busy || reviewRating === 0}
-                  onClick={() => doAction('評鑑定師', () => api.orders.review(order.id, { rating: reviewRating, comment: reviewComment || undefined }))}
+                  onClick={() => doAction('orderDetail.action.reviewAuthenticator', () => api.orders.review(order.id, { rating: reviewRating, comment: reviewComment || undefined }))}
                 >
-                  提交評價
+                  {_t('orderDetail.review.submitButton')}
                 </Button>
               </CardContent>
             </Card>
           )}
           <Card className="mb-4">
             <CardHeader className="border-b border-slate-100">
-              <CardTitle className="text-sm">評價賣家</CardTitle>
+              <CardTitle className="text-sm">{_t('orderDetail.review.rateSeller')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 p-4">
               <StarRating value={sellerReviewRating} onChange={setSellerReviewRating} />
               <textarea
                 value={sellerReviewComment} onChange={(e) => setSellerReviewComment(e.target.value)}
-                placeholder="貨品同描述相符？溝通如何？（選填）" rows={2}
+                placeholder={_t('orderDetail.review.commentSeller')} rows={2}
                 className="w-full rounded border border-slate-200 p-2 text-sm outline-none focus:border-brand-400"
               />
               <label className="flex items-start gap-2 text-xs text-slate-600">
@@ -682,17 +689,17 @@ export default function OrderDetailPage() {
                   className="mt-0.5 rounded border-slate-300"
                 />
                 <span>
-                  匿名留評（預設）：其他訪客只見「認證買家」。
+                  {_t('orderDetail.review.anonymous')}
                   <span className="block text-slate-400">
-                    賣家、鑑定師同平台 admin 仍會見到你嘅名以便處理交易爭議。
+                    {_t('orderDetail.review.anonymousHint')}
                   </span>
                 </span>
               </label>
               <Button
                 disabled={busy || sellerReviewRating === 0}
-                onClick={() => doAction('評賣家', () => api.users.createSellerReview(order.id, sellerReviewRating, sellerReviewComment || undefined, sellerReviewAnonymous))}
+                onClick={() => doAction('orderDetail.action.reviewSeller', () => api.users.createSellerReview(order.id, sellerReviewRating, sellerReviewComment || undefined, sellerReviewAnonymous))}
               >
-                提交評價
+                {_t('orderDetail.review.submitButton')}
               </Button>
             </CardContent>
           </Card>
@@ -709,9 +716,9 @@ export default function OrderDetailPage() {
           orderId={order.id}
           currentUserId={me.id}
           counterpartyName={
-            isBuyer ? (order.seller?.displayName ?? '賣家')
-            : isSeller ? (order.buyer?.displayName ?? '買家')
-            : `${order.buyer?.displayName ?? '買家'} / ${order.seller?.displayName ?? '賣家'}`
+            isBuyer ? (order.seller?.displayName ?? _t('orderDetail.label.seller'))
+            : isSeller ? (order.buyer?.displayName ?? _t('orderDetail.label.buyer'))
+            : `${order.buyer?.displayName ?? _t('orderDetail.label.buyerFallback')} / ${order.seller?.displayName ?? _t('orderDetail.label.sellerFallback')}`
           }
           listingTitle={order.listing?.title ?? ''}
           listingLinkId={order.listing?.id}
@@ -723,9 +730,9 @@ export default function OrderDetailPage() {
           onClose={() => setChatOpen(false)}
           readOnly={['COMPLETED', 'REFUNDED', 'DISPUTED'].includes(order.status)}
           readOnlyReason={
-            order.status === 'COMPLETED' ? '訂單已完成，對話存檔僅供查閱。'
-            : order.status === 'REFUNDED' ? '訂單已退款，對話存檔僅供查閱。'
-            : order.status === 'DISPUTED' ? '訂單爭議處理中，對話已鎖定。'
+            order.status === 'COMPLETED' ? _t('orderDetail.chat.readOnly.completed')
+            : order.status === 'REFUNDED' ? _t('orderDetail.chat.readOnly.refunded')
+            : order.status === 'DISPUTED' ? _t('orderDetail.chat.readOnly.disputed')
             : undefined
           }
         />
@@ -740,12 +747,12 @@ export default function OrderDetailPage() {
         onCancel={() => setReleaseConfirmOpen(false)}
         onConfirm={() => {
           setReleaseConfirmOpen(false);
-          doAction('確認收到', () => api.orders.confirmDelivered(order.id, []));
+          doAction('orderDetail.action.confirmReceived', () => api.orders.confirmDelivered(order.id, []));
         }}
-        title="確認已收到商品？"
+        title={_t('orderDetail.confirmDialog.receivedTitle')}
         description={<p>{order.listing?.title}</p>}
-        consequence="呢個動作會即時釋放款項畀賣家，訂單轉為完成，不可撤回。貨品有問題請改用「提出爭議」。"
-        confirmLabel="確認收貨 + 放款"
+        consequence={_t('orderDetail.confirmDialog.receivedConsequence')}
+        confirmLabel={_t('orderDetail.confirmDialog.receivedLabel')}
         severity="danger"
         busy={busy}
         dismissOnBackdrop={false}
@@ -760,34 +767,34 @@ export default function OrderDetailPage() {
           setCancelConfirmOpen(false);
           submitCancelWithReason(reason ?? '');
         }}
-        title="確認取消交易？"
-        consequence="買家會即時獲全額退款，商品重新上架。鑑定師已影相 record 會保留作 audit。此操作不可撤回。"
-        confirmLabel="確認取消"
-        cancelLabel="返回"
+        title={_t('orderDetail.confirmDialog.cancelTitle')}
+        consequence={_t('orderDetail.confirmDialog.cancelConsequence')}
+        confirmLabel={_t('orderDetail.confirmDialog.cancelLabel')}
+        cancelLabel={_t('orderDetail.confirmDialog.cancelCancelLabel')}
         severity="danger"
         busy={busy}
         requireReason
-        reasonLabel="取消原因"
-        reasonPlaceholder="例：賣家臨時唔賣 / 約唔到時間…"
+        reasonLabel={_t('orderDetail.confirmDialog.reasonLabel')}
+        reasonPlaceholder={_t('orderDetail.confirmDialog.reasonPlaceholder')}
       />
 
       <ConfirmDialog
         open={disputeConfirmOpen}
         onCancel={() => setDisputeConfirmOpen(false)}
         onConfirm={(reason) => doDispute(reason)}
-        title="提出爭議"
+        title={_t('orderDetail.confirmDialog.disputeTitle')}
         description={
           <p>
-            提出爭議後，訂單會凍結，平台同鑑定師會介入處理。請清楚簡述問題（例如商品狀況不符 / 收唔到貨 / 收款異常）。
+            {_t('orderDetail.confirmDialog.disputeDesc')}
           </p>
         }
-        confirmLabel="提交爭議"
-        cancelLabel="取消"
+        confirmLabel={_t('orderDetail.confirmDialog.disputeLabel')}
+        cancelLabel={_t('orderDetail.cancelLabel')}
         severity="warning"
         busy={busy}
         requireReason
-        reasonLabel="爭議原因"
-        reasonPlaceholder="例：貨品同 listing 描述不符；外觀有刮花…"
+        reasonLabel={_t('orderDetail.confirmDialog.disputeReasonLabel')}
+        reasonPlaceholder={_t('orderDetail.confirmDialog.disputeReasonPlaceholder')}
       />
     </div>
   );
@@ -805,6 +812,10 @@ function Row({ label, link, children }: { label: string; link?: string | null; c
 }
 
 function StarRating({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   return (
     <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((n) => (
@@ -813,7 +824,7 @@ function StarRating({ value, onChange }: { value: number; onChange: (n: number) 
           type="button"
           onClick={() => onChange(n)}
           className="text-2xl leading-none transition hover:scale-110"
-          aria-label={`${n} 星`}
+          aria-label={_t('orderDetail.review.starAria', { n })}
         >
           <span className={n <= value ? 'text-amber-400' : 'text-slate-300'}>★</span>
         </button>

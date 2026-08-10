@@ -25,7 +25,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@authentik/ui';
-import { formatHKD, tierForPrice } from '@authentik/utils';
+import { formatHKD, tierForPrice,
+  getClientLocale, createT,
+} from '@authentik/utils';
 import { ArrowLeft, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { api, hasToken, clearToken } from '@/lib/api';
 import { track } from '@/lib/analytics';
@@ -39,6 +41,10 @@ import { TestModeBanner } from '@/components/checkout/test-mode-banner';
 import { TrustStrip } from '@/components/checkout/trust-strip';
 
 export default function CheckoutPage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const router = useRouter();
   const params = useParams() as { orderId: string };
   const orderId = params.orderId;
@@ -106,7 +112,7 @@ export default function CheckoutPage() {
       })
       .catch((e) => {
         if (e?.status === 401) { clearToken(); router.replace('/login'); return; }
-        setLoadError(e?.message ?? '無法載入訂單');
+        setLoadError(e?.message ?? _t('checkout.error.loadOrder'));
       })
       .finally(() => setLoading(false));
   }, [orderId, router]);
@@ -147,7 +153,7 @@ export default function CheckoutPage() {
       });
     } catch (e: any) {
       // e.g. 俾另一位買家搶先 confirm 咗 — 留喺 review step 顯示，唔好炸成頁
-      setReviewError(e?.message ?? '確認失敗，請重試');
+      setReviewError(e?.message ?? _t('checkout.error.reviewFailed'));
     } finally {
       setConfirmBusy(false);
     }
@@ -187,22 +193,22 @@ export default function CheckoutPage() {
       try {
         const s = await api.payments.status(orderId);
         if (s.orderStatus === 'PAYMENT_EXPIRED') {
-          return { ok: false, code: 'expired', msg: '付款時限已過，訂單已取消 — 請重新落單' };
+          return { ok: false, code: 'expired', msg: _t('checkout.error.expired') };
         }
         if (s.orderStatus !== 'AWAITING_PAYMENT') return { ok: true };
         const p = s.payment;
         if (p?.status === 'AUTHORIZED' || p?.status === 'CAPTURED') return { ok: true };
         if (p?.status === 'FAILED') {
-          return { ok: false, code: p.failureCode ?? 'unknown', msg: p.failureMessage ?? '付款失敗，請重試' };
+          return { ok: false, code: p.failureCode ?? 'unknown', msg: p.failureMessage ?? _t('checkout.error.paymentFailed') };
         }
       } catch { /* transient poll error — keep trying */ }
     }
-    return { ok: false, code: 'timeout', msg: '付款確認超時 — 請稍後喺訂單頁檢查狀態，唔好重複付款' };
+    return { ok: false, code: 'timeout', msg: _t('checkout.error.confirmTimeout') };
   }
 
   async function runConfirm(testCard: string) {
     if (deadlineExpired) {
-      setPaymentError({ code: 'expired', msg: '付款時限已過 — 請重新落單' });
+      setPaymentError({ code: 'expired', msg: _t('checkout.error.deadlinePassed') });
       return;
     }
     setBusy(true);
@@ -234,10 +240,10 @@ export default function CheckoutPage() {
         setSuccess(true);
         fireCompletedAnalytics();
       } else {
-        setPaymentError({ code: r.code ?? 'unknown', msg: r.message ?? '付款失敗，請重試' });
+        setPaymentError({ code: r.code ?? 'unknown', msg: r.message ?? _t('checkout.error.paymentFailed') });
       }
     } catch (e: any) {
-      setPaymentError({ code: 'server', msg: e?.message ?? '網絡錯誤，請稍後重試' });
+      setPaymentError({ code: 'server', msg: e?.message ?? _t('checkout.error.network') });
     } finally {
       setBusy(false);
     }
@@ -266,7 +272,7 @@ export default function CheckoutPage() {
   }
 
   // ── Loading / guard states ───────────────────────────────────────────
-  if (loading) return <div className="mx-auto max-w-2xl px-4 py-12 text-sm text-slate-500">載入中…</div>;
+  if (loading) return <div className="mx-auto max-w-2xl px-4 py-12 text-sm text-slate-500">{_t('checkout.loading')}</div>;
   if (loadError) return <div className="mx-auto max-w-2xl px-4 py-12 text-sm text-red-600">{loadError}</div>;
   if (!order || !status) return null;
 
@@ -274,14 +280,14 @@ export default function CheckoutPage() {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center px-4 py-16 text-center">
         <div className="rounded-full bg-amber-100 p-4 text-3xl">💵</div>
-        <h1 className="mt-4 text-xl font-bold">此訂單為線下現金交收</h1>
+        <h1 className="mt-4 text-xl font-bold">{_t('checkout.offlineCash.title')}</h1>
         <p className="mt-2 text-sm text-slate-600">
           {order.deliveryMethod === 'MEETUP_DIRECT'
-            ? '直接面交訂單必須現金支付，冇網上付款步驟。同賣家約好時間地點，見面一手交錢一手交貨。'
-            : '呢張單揀咗線下現金，冇網上付款步驟。'}
+            ? _t('checkout.offlineCash.directDesc')
+            : _t('checkout.offlineCash.genericDesc')}
         </p>
         <Link href={`/orders/${orderId}` as any} className="mt-5">
-          <Button>知道喇，去訂單頁跟進</Button>
+          <Button>{_t('checkout.offlineCash.cta')}</Button>
         </Link>
       </div>
     );
@@ -297,16 +303,15 @@ export default function CheckoutPage() {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center px-4 py-16 text-center">
         <div className="rounded-full bg-red-100 p-4 text-3xl">⏰</div>
-        <h1 className="mt-4 text-2xl font-bold">付款時限已過</h1>
+        <h1 className="mt-4 text-2xl font-bold">{_t('checkout.expired.title')}</h1>
         <p className="mt-2 text-sm text-slate-600">
-          訂單超過 30 分鐘未完成付款，已自動取消，貨品已重新上架俾其他買家。
-          如仍想購買，請返回商品頁重新落單。
+          {_t('checkout.expired.body')}
         </p>
         <Link href={`/listing/${order.listing?.id ?? order.listingId}` as any} className="mt-5">
-          <Button>返回商品頁重新落單</Button>
+          <Button>{_t('checkout.expired.reorder')}</Button>
         </Link>
         <Link href="/browse" className="mt-3 text-sm text-brand-600 hover:underline">
-          瀏覽其他貨品
+          {_t('checkout.expired.browse')}
         </Link>
       </div>
     );
@@ -319,17 +324,17 @@ export default function CheckoutPage() {
         <div className="rounded-full bg-emerald-100 p-4">
           <CheckCircle2 className="h-12 w-12 text-emerald-600" />
         </div>
-        <h1 className="mt-4 text-2xl font-bold">付款成功</h1>
+        <h1 className="mt-4 text-2xl font-bold">{_t('checkout.success.title')}</h1>
         <p className="mt-2 text-sm text-slate-600">
           {isHold
-            ? `平台已 hold 你嘅 ${formatHKD(total)} 直至鑑定完成。鑑定師核實後先正式扣款。`
-            : `平台已正式扣款 ${formatHKD(total)}（Tier 1 即時 charge）。`}
+            ? _t('checkout.escrow.holdNotice', { amount: formatHKD(total) })
+            : _t('checkout.escrow.chargedNotice', { amount: formatHKD(total) })}
         </p>
         <p className="mt-4 text-xs text-slate-400">
-          正在跳轉去你嘅訂單… <span className="font-mono">{redirectCountdown}</span>
+          {_t('checkout.success.redirecting')} <span className="font-mono">{redirectCountdown}</span>
         </p>
         <Link href={`/orders/${orderId}` as any} className="mt-4">
-          <Button>立即前往訂單</Button>
+          <Button>{_t('checkout.success.goToOrder')}</Button>
         </Link>
       </div>
     );
@@ -344,16 +349,16 @@ export default function CheckoutPage() {
     <div className="mx-auto max-w-container-l3 px-4 pb-16 sm:px-6">
       {/* ═══ L3 Steps banner（review→pay 兩步，founder 2026-07-20）═══ */}
       <div className="flex flex-wrap items-center gap-6 border-b border-line py-4 text-[13px] text-neutral-text-hint">
-        <span>1 購物車</span>
+        <span>{_t('checkout.steps.cart')}</span>
         <span className={`flex items-center gap-2 ${step === 'review' ? 'font-semibold text-ink' : ''}`}>
           {step === 'review' && <span className="h-1.5 w-1.5 rounded-full bg-brand-600" />}
-          2 確認訂單
+          {_t('checkout.steps.review')}
         </span>
         <span className={`flex items-center gap-2 ${step === 'pay' ? 'font-semibold text-ink' : ''}`}>
           {step === 'pay' && <span className="h-1.5 w-1.5 rounded-full bg-brand-600" />}
-          3 付款
+          {_t('checkout.steps.pay')}
         </span>
-        <span>4 完成</span>
+        <span>{_t('checkout.steps.done')}</span>
         <span className="ml-auto flex items-center gap-3">
           {step === 'pay' && remainingSec !== null && (
             <span
@@ -364,30 +369,30 @@ export default function CheckoutPage() {
                     ? 'border-amber-300 bg-amber-50 text-amber-700'
                     : 'border-line bg-white text-neutral-text'
               }`}
-              title="付款時限 — 過時訂單自動取消"
+              title={_t('checkout.deadline.notice')}
             >
-              ⏱ 剩餘 {String(Math.floor(remainingSec / 60)).padStart(2, '0')}:{String(remainingSec % 60).padStart(2, '0')}
+              {_t('checkout.deadline.remaining', { mm: String(Math.floor(remainingSec / 60)).padStart(2, '0'), ss: String(remainingSec % 60).padStart(2, '0') })}
             </span>
           )}
-          <span className="font-mono text-[12px] text-neutral-text-hint">安全結帳 · #{orderId.slice(0, 8)}</span>
+          <span className="font-mono text-[12px] text-neutral-text-hint">{_t('checkout.secureCheckout')} · #{orderId.slice(0, 8)}</span>
         </span>
       </div>
       {step === 'pay' && remainingSec !== null && remainingSec < 300 && remainingSec > 0 && (
         <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-[13px] text-red-700">
-          ⏰ 付款時限快到（剩 {Math.ceil(remainingSec / 60)} 分鐘）— 請盡快完成付款，否則訂單會自動取消。
+          {_t('checkout.deadline.warning', { mins: Math.ceil(remainingSec / 60) })}
         </div>
       )}
 
       <div className="pt-8">
         <h1 className="font-display-serif text-[26px] font-bold leading-tight tracking-[-0.01em] text-ink">
-          {step === 'review' ? '確認訂單' : '付款'}
+          {step === 'review' ? _t('checkout.heading.review') : _t('checkout.heading.pay')}
         </h1>
         <p className="mt-1 text-[13px] text-neutral-text-hint">
           {tier === 3
-            ? 'Tier 3 高價貨品 · 需經第三方鑑定師鑑定後放款'
+            ? _t('checkout.tierDesc3')
             : tier === 2
-              ? 'Tier 2 · 買家可選鑑定師增加信心'
-              : 'Tier 1 · 純撮合'}
+              ? _t('checkout.tierDesc2')
+              : _t('checkout.tierDesc1')}
         </p>
       </div>
 
@@ -404,7 +409,7 @@ export default function CheckoutPage() {
               {/* ── Review step：你揀咗啲乜（founder 2026-07-20）── */}
               <div className="rounded-xl border border-line bg-white p-6 shadow-sh1">
                 <div className="mb-4 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">
-                  商品
+                  {_t('checkout.review.productSection')}
                 </div>
                 <div className="flex items-start gap-4">
                   {order.listing?.images?.[0] && (
@@ -422,16 +427,16 @@ export default function CheckoutPage() {
                 </div>
 
                 <div className="mb-3 mt-6 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">
-                  交收方式
+                  {_t('checkout.review.deliverySection')}
                 </div>
                 <p className="text-sm text-neutral-text">
                   {order.deliveryMethod === 'SHIP' &&
                     (order.authenticator
-                      ? '📦 賣家寄件 — 先寄去鑑定師，鑑定通過後轉寄俾你（SF Express）'
-                      : '📦 賣家直接寄俾你（SF Express）')}
-                  {order.deliveryMethod === 'MEETUP_AUTH' && '🏬 鑑定師分店交收 — 賣家交貨去分店，鑑定通過後你去分店取貨'}
-                  {order.deliveryMethod === 'MEETUP_3WAY' && '🤝 三方同場面交 — 你、賣家、鑑定師約同一時間地點，即場鑑定即場交收'}
-                  {order.deliveryMethod === 'MEETUP_DIRECT' && '🤝 同賣家直接面交'}
+                      ? _t('checkout.review.deliveryShipAuth')
+                      : _t('checkout.review.deliveryShipNoAuth'))}
+                  {order.deliveryMethod === 'MEETUP_AUTH' && _t('checkout.review.deliveryMeetupAuth')}
+                  {order.deliveryMethod === 'MEETUP_3WAY' && _t('checkout.review.deliveryMeetup3way')}
+                  {order.deliveryMethod === 'MEETUP_DIRECT' && _t('checkout.review.deliveryMeetupDirect')}
                 </p>
                 {(order.meetupBranchSnapshot as any)?.name && (
                   <p className="mt-1 text-[13px] text-neutral-text-hint">
@@ -441,7 +446,7 @@ export default function CheckoutPage() {
                 )}
 
                 <div className="mb-3 mt-6 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">
-                  鑑定
+                  {_t('checkout.review.authSection')}
                 </div>
                 {order.authenticator ? (
                   <div className="flex items-center gap-3 rounded-lg border border-line bg-slate-50 px-4 py-3">
@@ -449,18 +454,18 @@ export default function CheckoutPage() {
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium text-ink">{order.authenticator.displayName}</p>
                       <p className="text-[12px] text-neutral-text-hint">
-                        ★ {Number(order.authenticator.starRating ?? 0).toFixed(1)} · 鑑定費 {formatHKD(order.authFeeHKD)}
+                        ★ {Number(order.authenticator.starRating ?? 0).toFixed(1)} · {_t('checkout.authenticator.feeLine', { fee: formatHKD(order.authFeeHKD) })}
                       </p>
                     </div>
                   </div>
                 ) : (
-                  <p className="text-sm text-neutral-text-hint">無鑑定（Tier 1 純撮合）</p>
+                  <p className="text-sm text-neutral-text-hint">{_t('checkout.review.noAuth')}</p>
                 )}
 
                 <div className="mt-6 rounded-lg border border-verify-border bg-emerald-50/50 px-4 py-3 text-[13px] leading-relaxed text-neutral-text">
                   🛡️ {isHold
-                    ? '託管保障：確認付款後，平台會 hold 住呢筆錢（唔會即刻過數俾賣家）。鑑定師核實正貨後先正式扣款放行；鑑定唔過會全額退返俾你。'
-                    : 'Tier 1 訂單即時扣款，交收完成前平台託管，有問題可以開爭議。'}
+                    ? _t('checkout.escrow.explainerTiered')
+                    : _t('checkout.escrow.explainerTier1')}
                 </div>
               </div>
 
@@ -468,19 +473,19 @@ export default function CheckoutPage() {
                 <div className="rounded-xl border border-danger/40 bg-danger-soft p-4 text-sm text-danger shadow-sh1">
                   <p className="font-medium">⚠️ {reviewError}</p>
                   <Link href={`/listing/${order.listing?.id ?? order.listingId}` as any} className="mt-2 inline-block text-[13px] underline">
-                    返回商品頁
+                    {_t('checkout.review.backToListing')}
                   </Link>
                 </div>
               )}
               <Button className="w-full" size="lg" disabled={confirmBusy} onClick={confirmReview}>
-                {confirmBusy ? '處理中…' : '確認訂單，前往付款'}
+                {confirmBusy ? _t('checkout.pay.cardSubmit') : _t('checkout.review.confirmButton')}
               </Button>
               <p className="text-center text-[11px] text-neutral-text-hint">
-                確認前貨品唔會為你保留，可以隨時
+                {_t('checkout.review.noHoldBefore')}
                 <Link href={`/listing/${order.listing?.id ?? order.listingId}` as any} className="underline">
-                  返回上一頁修改
+                  {_t('checkout.review.backToEdit')}
                 </Link>
-                ；確認後貨品會為你鎖定 30 分鐘，超時未付款訂單自動取消。
+                {_t('checkout.review.holdAfter')}
               </p>
             </>
           )}
@@ -489,7 +494,7 @@ export default function CheckoutPage() {
           <>
           <div className="rounded-xl border border-line bg-white p-6 shadow-sh1">
             <div className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">
-              揀付款方式
+              {_t('checkout.pay.methodTitle')}
             </div>
 
             <TestModeBanner visible={status.stripeMode !== 'live'} />
@@ -534,15 +539,15 @@ export default function CheckoutPage() {
               <div className="flex items-start gap-2 text-sm text-danger">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium">付款失敗</p>
+                  <p className="font-medium">{_t('checkout.pay.errorTitle')}</p>
                   <p className="mt-0.5 text-xs">{paymentError.msg}</p>
                   <p className="mt-1 text-[10px] opacity-70">code: {paymentError.code}</p>
                 </div>
               </div>
               {method === 'CARD' && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button variant="outline" size="sm" onClick={switchCard}>換一張卡</Button>
-                  <Button size="sm" onClick={tryAgainSameCard} disabled={busy}>重試同一張卡</Button>
+                  <Button variant="outline" size="sm" onClick={switchCard}>{_t('checkout.pay.switchCard')}</Button>
+                  <Button size="sm" onClick={tryAgainSameCard} disabled={busy}>{_t('checkout.pay.retryCard')}</Button>
                 </div>
               )}
             </div>
@@ -561,10 +566,10 @@ export default function CheckoutPage() {
                 disabled={busy}
                 onClick={submitCard}
               >
-                {busy ? '處理中…' : isHold ? `授權 ${formatHKD(total)}` : `確認並付款 ${formatHKD(total)}`}
+                {busy ? _t('checkout.pay.cardSubmit') : isHold ? _t('checkout.submit.authorizeAmount', { amount: formatHKD(total) }) : _t('checkout.submit.payAmount', { amount: formatHKD(total) })}
               </Button>
               <p className="hidden text-center text-[10px] text-neutral-text-hint md:block">
-                撳「{isHold ? '授權' : '確認並付款'}」即表示你同意 Certifine 服務條款 + 鑑定流程
+                {_t('checkout.pay.submitAgree', { authLabel: isHold ? _t('checkout.submit.authorize') : _t('checkout.submit.pay') })}
               </p>
 
               {/* Mobile sticky submit */}
@@ -575,7 +580,7 @@ export default function CheckoutPage() {
                   disabled={busy}
                   onClick={submitCard}
                 >
-                  {busy ? '處理中…' : isHold ? `授權 ${formatHKD(total)}` : `付款 ${formatHKD(total)}`}
+                  {busy ? _t('checkout.pay.cardSubmit') : isHold ? _t('checkout.submit.authorizeAmount', { amount: formatHKD(total) }) : _t('checkout.submit.payShort', { amount: formatHKD(total) })}
                 </Button>
               </div>
               {/* Spacer for mobile sticky button */}

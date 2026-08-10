@@ -8,7 +8,9 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Check, Search, Tag } from 'lucide-react';
 import { api, setToken, ApiError } from '@/lib/api';
-import { CATEGORIES, type CategoryId } from '@authentik/utils';
+import { CATEGORIES, type CategoryId,
+  getClientLocale, createT,
+} from '@authentik/utils';
 import { AuthHeroPanel } from '@/components/auth/auth-hero-panel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
@@ -46,9 +48,16 @@ function scorePassword(pw: string): number {
   if (/[^A-Za-z0-9]/.test(pw)) s++;
   return s;
 }
-const PW_LABEL = ['—', '弱', '普通', '良好', '強'];
+// Indexed by password-strength score. Keys, not text: the labels have to
+// follow the locale, and this array lives outside the component where _t
+// does not exist, so the lookup happens at the use site.
+const PW_LABEL_KEYS = [null, 'register.strength.weak', 'register.strength.fair', 'register.strength.good', 'register.strength.strong'] as const;
 
 export default function RegisterPage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const router = useRouter();
   const [step, setStep] = useState<Step>('METHOD');
   const [error, setError] = useState<string | null>(null);
@@ -92,10 +101,10 @@ export default function RegisterPage() {
 
   async function onSendOtp() {
     setError(null);
-    if (!email.trim()) { setError('請輸入電郵地址'); return; }
-    if (password.length < 6) { setError('密碼至少 6 個字元'); return; }
-    if (!displayName.trim()) { setError('請輸入顯示名稱'); return; }
-    if (!consent) { setError('請確認你已年滿 18 歲並同意條款'); return; }
+    if (!email.trim()) { setError(_t('register.error.emailRequired')); return; }
+    if (password.length < 6) { setError(_t('register.error.passwordMin')); return; }
+    if (!displayName.trim()) { setError(_t('auth.completeProfile.emptyNameError')); return; }
+    if (!consent) { setError(_t('register.error.consentRequired')); return; }
     setLoading(true);
     try {
       await api.emailSendOtp(email.trim(), 'REGISTER_EMAIL');
@@ -104,7 +113,7 @@ export default function RegisterPage() {
       // Focus first OTP box next paint.
       setTimeout(() => otpRefs.current[0]?.focus(), 60);
     } catch (err: any) {
-      setError(err instanceof ApiError ? err.message : '發送驗証碼失敗');
+      setError(err instanceof ApiError ? err.message : _t('register.error.sendOtp'));
     } finally { setLoading(false); }
   }
 
@@ -117,14 +126,14 @@ export default function RegisterPage() {
       await api.emailSendOtp(email.trim(), 'REGISTER_EMAIL');
       setOtpSentAt(Date.now());
     } catch (err: any) {
-      setError(err instanceof ApiError ? err.message : '發送失敗');
+      setError(err instanceof ApiError ? err.message : _t('register.error.sendFailed'));
     } finally { setLoading(false); }
   }
 
   async function onVerifyAndRegister() {
     setError(null);
     const code = otp.join('');
-    if (code.length !== 6) { setError('請輸入 6 位驗証碼'); return; }
+    if (code.length !== 6) { setError(_t('register.error.otpRequired')); return; }
     setLoading(true);
     try {
       const res = await api.register({
@@ -136,7 +145,7 @@ export default function RegisterPage() {
       setToken(res.accessToken);
       setStep('INTERESTS');
     } catch (err: any) {
-      setError(err instanceof ApiError ? err.message : '註冊失敗');
+      setError(err instanceof ApiError ? err.message : _t('register.error.registerFailed'));
     } finally { setLoading(false); }
   }
 
@@ -199,9 +208,9 @@ export default function RegisterPage() {
         <div className="w-full max-w-[400px]">
           {/* Corner switch to /login */}
           <div className="mb-2 text-right text-[13px] text-neutral-text-hint">
-            已有帳戶？
+            {_t('register.hasAccount')}
             <Link href="/login" className="ml-1 font-semibold text-brand-600 hover:underline">
-              登入
+              {_t('register.tab.login')}
             </Link>
           </div>
 
@@ -212,10 +221,10 @@ export default function RegisterPage() {
                 href="/login"
                 className="flex-1 rounded-[8px] py-2.5 text-center text-[14px] font-bold text-neutral-text-hint transition hover:text-neutral-text-muted"
               >
-                登入
+                {_t('register.tab.login')}
               </Link>
               <span className="flex-1 rounded-[8px] bg-white py-2.5 text-center text-[14px] font-bold text-ink shadow-sh1">
-                註冊
+                {_t('register.tab.register')}
               </span>
             </div>
           )}
@@ -242,10 +251,10 @@ export default function RegisterPage() {
           {step === 'METHOD' && (
             <>
               <h1 className="text-[24px] font-extrabold tracking-[-0.01em] text-ink">
-                建立你的帳戶
+                {_t('register.step.methodTitle')}
               </h1>
               <p className="mt-1.5 text-[14px] text-neutral-text-muted">
-                加入 Certifine，即刻探索經鑑定的正品。
+                {_t('register.step.methodDesc')}
               </p>
 
               <div className="mt-5 flex flex-col gap-2.5">
@@ -255,23 +264,23 @@ export default function RegisterPage() {
                     onClick={onGoogleSignIn}
                     className="flex items-center justify-center gap-2.5 rounded-[9px] border border-line-2 bg-white py-3 text-[14px] font-semibold text-neutral-text shadow-sh1 transition hover:border-brand-600 hover:bg-surface-2"
                   >
-                    <GoogleIcon /> 用 Google 繼續
+                    <GoogleIcon /> {_t('register.googleContinue')}
                   </button>
                 )}
                 {appleOn && (
                   <button
                     type="button"
-                    onClick={() => setError('Apple 登入即將推出')}
+                    onClick={() => setError(_t('register.appleComingSoon'))}
                     className="flex items-center justify-center gap-2.5 rounded-[9px] border border-line-2 bg-white py-3 text-[14px] font-semibold text-neutral-text shadow-sh1 transition hover:border-brand-600 hover:bg-surface-2"
                   >
-                    <AppleIcon /> 用 Apple 繼續
+                    <AppleIcon /> {_t('register.appleContinue')}
                   </button>
                 )}
               </div>
 
               {(googleOn || appleOn) && (
                 <div className="my-4 flex items-center gap-3 text-[12px] text-neutral-text-hint">
-                  <span className="h-px flex-1 bg-line" /> 或用電郵註冊
+                  <span className="h-px flex-1 bg-line" /> {_t('register.orEmailDivider')}
                   <span className="h-px flex-1 bg-line" />
                 </div>
               )}
@@ -281,15 +290,14 @@ export default function RegisterPage() {
                 onClick={() => setStep('ACCOUNT')}
                 className="w-full rounded-[9px] bg-brand-600 py-3 text-[15px] font-bold text-white shadow-[0_10px_24px_-10px_rgba(0,135,102,0.6)] transition hover:bg-brand-700"
               >
-                用電郵繼續
+                {_t('register.continueEmail')}
               </button>
 
               <p className="mt-4 text-center text-[12px] leading-relaxed text-neutral-text-hint">
-                繼續即表示你同意
-                <Link href="/terms" className="mx-1 font-semibold text-brand-600 hover:underline">服務條款</Link>
-                及
-                <Link href="/privacy" className="mx-1 font-semibold text-brand-600 hover:underline">私隱政策</Link>
-                。
+                {_t('register.legal.prefix')}
+                <Link href="/terms" className="mx-1 font-semibold text-brand-600 hover:underline">{_t('register.legal.terms')}</Link>
+                {_t('register.legal.and')}
+                <Link href="/privacy" className="mx-1 font-semibold text-brand-600 hover:underline">{_t('register.legal.privacy')}</Link>{_t('register.legal.suffix')}
               </p>
             </>
           )}
@@ -298,16 +306,16 @@ export default function RegisterPage() {
           {step === 'ACCOUNT' && (
             <>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-600">
-                步驟 1 / 3 · 帳戶
+                {_t('register.step.accountNum')}
               </p>
               <h1 className="mt-1.5 text-[24px] font-extrabold tracking-[-0.01em] text-ink">
-                設定登入資料
+                {_t('register.step.accountTitle')}
               </h1>
               <p className="mt-1.5 text-[14px] text-neutral-text-muted">
-                我哋會寄驗証碼到你嘅電郵。
+                {_t('register.step.accountDesc')}
               </p>
 
-              <Field label="顯示名稱" hint="會顯示於你的公開檔案，可隨時修改">
+              <Field label={_t('register.displayNameLabel')} hint={_t('register.displayNameHint')}>
                 <input
                   type="text"
                   value={displayName}
@@ -318,7 +326,7 @@ export default function RegisterPage() {
                 />
               </Field>
 
-              <Field label="電郵地址">
+              <Field label={_t('account.profile.security.email.heading')}>
                 <input
                   type="email"
                   autoComplete="email"
@@ -329,7 +337,7 @@ export default function RegisterPage() {
                 />
               </Field>
 
-              <Field label="設定密碼" hint="最少 8 字元；混合字母、數字、符號更安全" nomargin>
+              <Field label={_t('register.passwordLabel')} hint={_t('register.passwordHint')} nomargin>
                 <input
                   type="password"
                   autoComplete="new-password"
@@ -349,7 +357,7 @@ export default function RegisterPage() {
                   ))}
                 </div>
                 <p className="mt-1 text-[11px] text-neutral-text-hint">
-                  密碼強度：{PW_LABEL[strength]}
+                  {_t('register.strengthPrefix')}{PW_LABEL_KEYS[strength] ? _t(PW_LABEL_KEYS[strength]!) : '—'}
                 </p>
               </Field>
 
@@ -361,11 +369,10 @@ export default function RegisterPage() {
                   className="mt-0.5 h-4 w-4 shrink-0 accent-brand-600"
                 />
                 <span>
-                  我已年滿 18 歲，並同意
-                  <Link href="/terms" className="mx-1 font-semibold text-brand-600 hover:underline">服務條款</Link>
-                  及
-                  <Link href="/privacy" className="mx-1 font-semibold text-brand-600 hover:underline">私隱政策</Link>
-                  。
+                  {_t('register.consentLabel')}
+                  <Link href="/terms" className="mx-1 font-semibold text-brand-600 hover:underline">{_t('register.legal.terms')}</Link>
+                  {_t('register.legal.and')}
+                  <Link href="/privacy" className="mx-1 font-semibold text-brand-600 hover:underline">{_t('register.legal.privacy')}</Link>{_t('register.legal.suffix')}
                 </span>
               </label>
 
@@ -374,14 +381,14 @@ export default function RegisterPage() {
                 disabled={loading}
                 className="w-full rounded-[9px] bg-brand-600 py-3 text-[15px] font-bold text-white shadow-[0_10px_24px_-10px_rgba(0,135,102,0.6)] transition hover:bg-brand-700 disabled:opacity-40"
               >
-                {loading ? '寄出中…' : '寄出驗証碼'}
+                {loading ? _t('register.sendOtp.busy') : _t('register.sendOtp')}
               </button>
 
               <button
                 onClick={() => setStep('METHOD')}
                 className="mt-3.5 flex items-center gap-1 text-[13px] text-neutral-text-hint hover:text-neutral-text-muted"
               >
-                <ChevronLeft className="h-3.5 w-3.5" /> 返回
+                <ChevronLeft className="h-3.5 w-3.5" /> {_t('register.back')}
               </button>
             </>
           )}
@@ -390,18 +397,18 @@ export default function RegisterPage() {
           {step === 'EMAIL_OTP' && (
             <>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-600">
-                步驟 2 / 3 · 驗証
+                {_t('register.step.otpNum')}
               </p>
               <h1 className="mt-1.5 text-[24px] font-extrabold tracking-[-0.01em] text-ink">
-                輸入驗証碼
+                {_t('register.step.otpTitle')}
               </h1>
               <p className="mt-1.5 text-[14px] text-neutral-text-muted">
-                已寄 6 位數字到 <span className="font-semibold text-neutral-text">{email}</span>。
+                {_t('register.otpSentTo')} <span className="font-semibold text-neutral-text">{email}</span>{_t('register.otpSentTo.suffix')}
               </p>
 
               {/* Dev mode banner — Lesson #11 pattern */}
               <p className="mb-3 mt-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] text-amber-800">
-                [開發模式] 驗証碼喺 API console 印出，唔會發送真實電郵。固定驗証碼：
+                {_t('register.devNotice')}
                 <code className="ml-1 font-mono font-bold">888888</code>
               </p>
 
@@ -423,13 +430,13 @@ export default function RegisterPage() {
               </div>
 
               <div className="mt-3 text-center text-[13px] text-neutral-text-hint">
-                未收到？
+                {_t('register.notReceived')}
                 <button
                   onClick={onResendOtp}
                   disabled={resendCooldownSec > 0 || loading}
                   className="ml-1 font-semibold text-brand-600 hover:underline disabled:text-neutral-text-hint disabled:no-underline"
                 >
-                  {resendCooldownSec > 0 ? `${resendCooldownSec} 秒後可重寄` : '重新發送'}
+                  {resendCooldownSec > 0 ? _t('register.resendCooldown', { seconds: resendCooldownSec }) : _t('register.resend')}
                 </button>
               </div>
 
@@ -438,14 +445,14 @@ export default function RegisterPage() {
                 disabled={loading || otp.join('').length !== 6}
                 className="mt-4 w-full rounded-[9px] bg-brand-600 py-3 text-[15px] font-bold text-white shadow-[0_10px_24px_-10px_rgba(0,135,102,0.6)] transition hover:bg-brand-700 disabled:opacity-40"
               >
-                {loading ? '驗証中…' : '驗証並繼續'}
+                {loading ? _t('register.verifyButton.busy') : _t('register.verifyButton')}
               </button>
 
               <button
                 onClick={() => setStep('ACCOUNT')}
                 className="mt-3.5 flex items-center gap-1 text-[13px] text-neutral-text-hint hover:text-neutral-text-muted"
               >
-                <ChevronLeft className="h-3.5 w-3.5" /> 返回修改
+                <ChevronLeft className="h-3.5 w-3.5" /> {_t('register.backEdit')}
               </button>
             </>
           )}
@@ -454,13 +461,13 @@ export default function RegisterPage() {
           {step === 'INTERESTS' && (
             <>
               <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-brand-600">
-                步驟 3 / 3 · 興趣
+                {_t('register.step.interestsNum')}
               </p>
               <h1 className="mt-1.5 text-[24px] font-extrabold tracking-[-0.01em] text-ink">
-                你想收藏 / 交易咩？
+                {_t('register.step.interestsTitle')}
               </h1>
               <p className="mt-1.5 text-[14px] text-neutral-text-muted">
-                為你個人化首頁，可隨時修改。
+                {_t('register.step.interestsDesc')}
               </p>
 
               <div className="mt-5 flex flex-wrap gap-2.5">
@@ -490,14 +497,14 @@ export default function RegisterPage() {
                   disabled={loading}
                   className="flex-1 rounded-[9px] border border-line-2 bg-white py-3 text-[14px] font-bold text-neutral-text shadow-sh1 transition hover:border-brand-600 hover:text-brand-600 disabled:opacity-40"
                 >
-                  略過
+                  {_t('register.skip')}
                 </button>
                 <button
                   onClick={() => onSaveInterests(false)}
                   disabled={loading}
                   className="flex-1 rounded-[9px] bg-brand-600 py-3 text-[15px] font-bold text-white shadow-[0_10px_24px_-10px_rgba(0,135,102,0.6)] transition hover:bg-brand-700 disabled:opacity-40"
                 >
-                  {loading ? '儲存中…' : `繼續 (${interests.size})`}
+                  {loading ? _t('register.saving') : _t('register.continueCount', { count: interests.size })}
                 </button>
               </div>
             </>
@@ -510,10 +517,10 @@ export default function RegisterPage() {
                 <Check className="h-[34px] w-[34px] text-brand-600" strokeWidth={2.5} />
               </div>
               <h1 className="text-[24px] font-extrabold tracking-[-0.01em] text-ink">
-                歡迎加入，{displayName || '朋友'}！
+                {_t('register.welcomePrefix')}{displayName || _t('register.friend')}{_t('register.welcomeSuffix')}
               </h1>
               <p className="mt-2 text-[14px] text-neutral-text-muted">
-                帳戶已建立。開始探索正品，或刊登你嘅第一件貨品。
+                {_t('register.doneDesc')}
               </p>
 
               <div className="mt-5 grid grid-cols-2 gap-3">
@@ -522,30 +529,30 @@ export default function RegisterPage() {
                   className="rounded-xl border border-line bg-white p-4 text-left shadow-sh1 transition hover:-translate-y-0.5 hover:border-brand-600 hover:shadow-sh3"
                 >
                   <Search className="h-6 w-6 text-brand-600" />
-                  <p className="mt-2 text-[15px] font-bold text-ink">開始瀏覽</p>
-                  <p className="mt-0.5 text-[12px] text-neutral-text-hint">熱門手袋、腕錶、潮物</p>
+                  <p className="mt-2 text-[15px] font-bold text-ink">{_t('register.card.browseTitle')}</p>
+                  <p className="mt-0.5 text-[12px] text-neutral-text-hint">{_t('register.card.browseDesc')}</p>
                 </Link>
                 <Link
                   href="/sell"
                   className="rounded-xl border border-line bg-white p-4 text-left shadow-sh1 transition hover:-translate-y-0.5 hover:border-brand-600 hover:shadow-sh3"
                 >
                   <Tag className="h-6 w-6 text-brand-600" />
-                  <p className="mt-2 text-[15px] font-bold text-ink">刊登出售</p>
-                  <p className="mt-0.5 text-[12px] text-neutral-text-hint">賣出你嘅收藏</p>
+                  <p className="mt-2 text-[15px] font-bold text-ink">{_t('register.card.sellTitle')}</p>
+                  <p className="mt-0.5 text-[12px] text-neutral-text-hint">{_t('register.card.sellDesc')}</p>
                 </Link>
               </div>
 
               <p className="mt-4 text-[12px] leading-relaxed text-neutral-text-hint">
-                想加強帳戶安全？稍後可以喺
-                <Link href="/account/profile" className="mx-1 font-semibold text-brand-600 hover:underline">個人檔案</Link>
-                綁定手機或完成身分驗證。
+                {_t('register.securityHint.prefix')}
+                <Link href="/account/profile" className="mx-1 font-semibold text-brand-600 hover:underline">{_t('account.profile.page.title')}</Link>
+                {_t('register.securityHint.suffix')}
               </p>
 
               <button
                 onClick={() => { router.push('/'); router.refresh(); }}
                 className="mt-5 w-full rounded-[9px] bg-brand-600 py-3 text-[15px] font-bold text-white shadow-[0_10px_24px_-10px_rgba(0,135,102,0.6)] transition hover:bg-brand-700"
               >
-                去首頁
+                {_t('register.goHome')}
               </button>
             </div>
           )}

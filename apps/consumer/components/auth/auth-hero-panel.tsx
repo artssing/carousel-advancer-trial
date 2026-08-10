@@ -1,4 +1,8 @@
+'use client';
+
+import { useEffect, useState } from 'react';
 import { Check, ShieldCheck } from 'lucide-react';
+import { getClientLocale, createT } from '@authentik/utils';
 
 /**
  * Shared left-side hero panel used by /login and /register.
@@ -16,13 +20,19 @@ import { Check, ShieldCheck } from 'lucide-react';
  * When founder later ships real launch stats, add a new `stats?: {…}` prop and
  * render below the trust-points list — don't fabricate placeholders.
  */
-const TRUST_POINTS = [
-  '具名鑑定師把關，星級由演算法派生',
-  '款項託管，鑑定通過先放款',
-  '瀏覽免驗證，30 秒開始探索',
+// Keys, not text — the panel lives outside any component here, so the lookup
+// happens where _t is in scope.
+const TRUST_POINT_KEYS = [
+  'auth.hero.point.authenticator',
+  'auth.hero.point.escrow',
+  'auth.hero.point.browse',
 ];
 
 export function AuthHeroPanel() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   return (
     <div className="relative hidden flex-col justify-center overflow-hidden bg-gradient-to-br from-ink via-[#0d3350] to-[#0f4a5f] px-[8%] py-16 text-white lg:flex">
       {/* Abstract radial glow blobs — pure decoration, no data claims. */}
@@ -61,19 +71,19 @@ export function AuthHeroPanel() {
           Authenticated Resale · Hong Kong
         </p>
         <h1 className="mt-3.5 max-w-[440px] font-display-serif text-[38px] font-bold leading-[1.18] tracking-[-0.01em] text-white">
-          加入 Certifine，<br />
-          只買賣被驗證過的正品。
+          {_t('auth.hero.heading.line1')}<br />
+          {_t('auth.hero.heading.line2')}
         </h1>
         <p className="mt-4 max-w-[400px] text-[15px] leading-relaxed text-[#a8c0d4]">
-          每宗高價交易都有具名鑑定師把關、款項全程託管。買得安心，賣得放心。
+          {_t('auth.hero.subheading')}
         </p>
         <div className="mt-7 flex flex-col gap-3">
-          {TRUST_POINTS.map((t) => (
-            <div key={t} className="flex items-start gap-3 text-[14px] text-[#cdd9e6]">
+          {TRUST_POINT_KEYS.map((k) => (
+            <div key={k} className="flex items-start gap-3 text-[14px] text-[#cdd9e6]">
               <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand-400/20 ring-1 ring-brand-400/40">
                 <Check className="h-3 w-3 text-brand-400" strokeWidth={3} />
               </span>
-              {t}
+              {_t(k)}
             </div>
           ))}
         </div>
