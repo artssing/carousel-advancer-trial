@@ -6,8 +6,9 @@
  * Used in dual-ack flows (MEETUP_AUTH + SHIP) for handover evidence.
  * Min 3 photos enforced on submit.
  */
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ImagePlus, X } from 'lucide-react';
+import { getClientLocale, createT } from '@authentik/utils';
 
 const MAX_PHOTOS = 8;
 // 50MB sanity ceiling — anything bigger is almost certainly accidental
@@ -20,10 +21,10 @@ const COMPRESS_QUALITY = 0.82;
 async function compressImageToDataURL(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onerror = () => reject(new Error('讀取相片失敗'));
+    reader.onerror = () => reject(new Error('sell.photo.error.read'));
     reader.onload = () => {
       const img = new Image();
-      img.onerror = () => reject(new Error('無法解碼呢張相'));
+      img.onerror = () => reject(new Error('sell.photo.error.decode'));
       img.onload = () => {
         const { width, height } = img;
         const ratio = Math.min(1, COMPRESS_MAX_DIM / Math.max(width, height));
@@ -32,7 +33,7 @@ async function compressImageToDataURL(file: File): Promise<string> {
         const canvas = document.createElement('canvas');
         canvas.width = w; canvas.height = h;
         const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error('Canvas 2D context 不支援'));
+        if (!ctx) return reject(new Error('sell.photo.error.canvas'));
         ctx.drawImage(img, 0, 0, w, h);
         resolve(canvas.toDataURL('image/jpeg', COMPRESS_QUALITY));
       };
@@ -66,6 +67,10 @@ export function PhotoUploader({
   hint,
   disabled = false,
 }: Props) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -78,7 +83,7 @@ export function PhotoUploader({
       if (f.size > HARD_INPUT_MAX) { oversize++; continue; }
       valid.push(f);
     }
-    if (oversize > 0) setError(`已略過 ${oversize} 張超過 50MB 嘅相`);
+    if (oversize > 0) setError(_t('sell.photo.error.oversize', { n: oversize }));
     const remaining = MAX_PHOTOS - photos.length;
     const toAdd = valid.slice(0, remaining);
     if (toAdd.length === 0) {
@@ -90,7 +95,7 @@ export function PhotoUploader({
       const dataUrls = await Promise.all(toAdd.map(compressImageToDataURL));
       onChange([...photos, ...dataUrls]);
     } catch (err: any) {
-      setError(err?.message ?? '相片處理失敗');
+      setError(_t(err?.message ?? 'sell.photo.error.process'));
     }
     e.target.value = '';
   }
@@ -119,7 +124,7 @@ export function PhotoUploader({
           <div key={`exist-${i}`} className="relative aspect-square">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={src} alt={`existing ${i + 1}`} className="h-full w-full rounded-lg object-cover" />
-            <div className="absolute inset-x-0 bottom-0 bg-black/40 px-1 py-0.5 text-center text-[9px] text-white">已上載</div>
+            <div className="absolute inset-x-0 bottom-0 bg-black/40 px-1 py-0.5 text-center text-[9px] text-white">{_t('sell.photo.uploadedBadge')}</div>
           </div>
         ))}
         {photos.map((src, i) => (
@@ -143,12 +148,12 @@ export function PhotoUploader({
             className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-slate-300 text-slate-400 hover:border-brand-400 hover:text-brand-500"
           >
             <ImagePlus className="h-5 w-5" />
-            <span className="text-[10px]">加相</span>
+            <span className="text-[10px]">{_t('sell.photo.add')}</span>
           </button>
         )}
       </div>
       <p className={`text-[10px] ${isShort ? 'text-red-600' : 'text-slate-400'}`}>
-        {hint ?? `已上載 ${total} / ${MAX_PHOTOS} 張 · 最少 ${minRequired} 張`}
+        {hint ?? _t('sell.photo.counter', { total, max: MAX_PHOTOS, min: minRequired })}
       </p>
       {error && <p className="text-[10px] text-red-600">{error}</p>}
     </div>

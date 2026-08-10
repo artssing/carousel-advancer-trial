@@ -1,116 +1,36 @@
 {
   "browse": {
-    "search.placeholder": {
-      "zh": "搜尋品牌、型號、關鍵字…",
-      "en": "Search brands, models, keywords…"
+    "card.reserved": {
+      "zh": "已預留",
+      "en": "Reserved"
     },
-    "search.button": {
-      "zh": "搜尋",
-      "en": "Search"
+    "card.sold": {
+      "zh": "已售出",
+      "en": "Sold"
     },
-    "loading": {
-      "zh": "載入中…",
-      "en": "Loading…"
+    "chip.brand": {
+      "zh": "{fieldLabel}：{l}",
+      "en": "{fieldLabel}: {l}"
     },
-    "resultCount": {
-      "zh": "找到 {total} 件符合結果",
-      "en": "{total} results found"
+    "chip.category": {
+      "zh": "品類：{labelZh}",
+      "en": "Category: {labelZh}"
     },
-    "filter.clearAll": {
-      "zh": "全部重設",
-      "en": "Reset all"
+    "chip.condition": {
+      "zh": "狀況：{conditionLabel} 或以上",
+      "en": "Condition: {conditionLabel} or better"
     },
-    "filter.mobileDrawer": {
-      "zh": "篩選",
-      "en": "Filters"
-    },
-    "filter.closeAriaLabel": {
-      "zh": "關閉篩選",
-      "en": "Close filters"
-    },
-    "filter.drawerViewResults": {
-      "zh": "查看 {total} 件結果",
-      "en": "View {total} results"
-    },
-    "filter.group.category": {
-      "zh": "品類",
-      "en": "Category"
-    },
-    "filter.group.priceTier": {
-      "zh": "價格層",
-      "en": "Price tier"
-    },
-    "filter.group.condition": {
-      "zh": "狀況以上",
-      "en": "Condition"
-    },
-    "filter.allCategories": {
-      "zh": "全部品類",
-      "en": "All categories"
-    },
-    "filter.unlimited": {
-      "zh": "不限",
-      "en": "Any"
-    },
-    "filter.comingSoon": {
-      "zh": "即將",
-      "en": "Coming soon"
-    },
-    "filter.conditionHint": {
-      "zh": "顯示所選或更好嘅成色",
-      "en": "Show selected condition or better"
-    },
-    "filter.priceHKD": {
-      "zh": "HK$",
-      "en": "HK$"
-    },
-    "filter.priceMin": {
-      "zh": "最低",
-      "en": "Min"
-    },
-    "filter.priceMax": {
-      "zh": "最高",
-      "en": "Max"
-    },
-    "filter.priceSep": {
-      "zh": "–",
-      "en": "–"
-    },
-    "filter.apply": {
-      "zh": "套用",
-      "en": "Apply"
-    },
-    "filter.brandMulti": {
-      "zh": "可選多個",
-      "en": "Select multiple"
-    },
-    "filter.allBrands": {
-      "zh": "全部{fieldLabel}",
-      "en": "All {fieldLabel}"
-    },
-    "filter.customBrand": {
-      "zh": "{id}（自訂）",
-      "en": "{id} (Custom)"
-    },
-    "filter.tier1Label": {
-      "zh": "Tier 1 · < $1,000",
-      "en": "Tier 1 · < $1,000"
-    },
-    "filter.tier2Label": {
-      "zh": "Tier 2 · $1k–9,999",
-      "en": "Tier 2 · $1k–9,999"
-    },
-    "filter.tier3Label": {
-      "zh": "Tier 3 · ≥ $10,000",
-      "en": "Tier 3 · ≥ $10,000"
-    },
-    "chip.removeCategory": {
-      "zh": "移除品類",
-      "en": "Remove category"
+    "chip.price": {
+      "zh": "價錢：HK${min}–{max}",
+      "en": "Price: HK${min}–{max}"
     },
     "chip.removeBrand": {
       "zh": "移除品牌 {l}",
       "en": "Remove brand {l}"
+    },
+    "chip.removeCategory": {
+      "zh": "移除品類",
+      "en": "Remove category"
     },
     "chip.removeCondition": {
       "zh": "移除狀況",
@@ -124,22 +44,6 @@
       "zh": "移除搜尋",
       "en": "Remove search"
     },
-    "chip.category": {
-      "zh": "品類：{labelZh}",
-      "en": "Category: {labelZh}"
-    },
-    "chip.brand": {
-      "zh": "{fieldLabel}：{l}",
-      "en": "{fieldLabel}: {l}"
-    },
-    "chip.condition": {
-      "zh": "狀況：{conditionLabel} 或以上",
-      "en": "Condition: {conditionLabel} or better"
-    },
-    "chip.price": {
-      "zh": "價錢：HK${min}–{max}",
-      "en": "Price: HK${min}–{max}"
-    },
     "chip.search": {
       "zh": "搜尋：{searchQuery}",
       "en": "Search: {searchQuery}"
@@ -152,33 +56,109 @@
       "zh": "我哋暫未開放此品類嘅交易，敬請期待。",
       "en": "Trading for this category has not yet opened. Please stay tuned for future availability."
     },
-    "empty.noResult": {
-      "zh": "找不到「{searchQuery}」嘅相關商品。",
-      "en": "No listings found for \"{searchQuery}\"."
-    },
     "empty.noFilterResult": {
       "zh": "此篩選暫無商品。",
       "en": "No listings match these filters."
+    },
+    "empty.noResult": {
+      "zh": "找不到「{searchQuery}」嘅相關商品。",
+      "en": "No listings found for \"{searchQuery}\"."
     },
     "empty.viewAll": {
       "zh": "查看全部 →",
       "en": "View all →"
     },
-    "sort.relevance": {
-      "zh": "相關度",
-      "en": "Relevance"
+    "endOfResults": {
+      "zh": "— 已顯示全部 {total} 件商品 —",
+      "en": "— All {total} listings shown —"
     },
-    "sort.newest": {
-      "zh": "最新上架",
-      "en": "Newest"
+    "filter.allBrands": {
+      "zh": "全部{fieldLabel}",
+      "en": "All {fieldLabel}"
     },
-    "sort.priceAsc": {
-      "zh": "價格：低至高",
-      "en": "Price: Low to High"
+    "filter.allCategories": {
+      "zh": "全部品類",
+      "en": "All categories"
     },
-    "sort.priceDesc": {
-      "zh": "價格：高至低",
-      "en": "Price: High to Low"
+    "filter.apply": {
+      "zh": "套用",
+      "en": "Apply"
+    },
+    "filter.brandMulti": {
+      "zh": "可選多個",
+      "en": "Select multiple"
+    },
+    "filter.clearAll": {
+      "zh": "全部重設",
+      "en": "Reset all"
+    },
+    "filter.closeAriaLabel": {
+      "zh": "關閉篩選",
+      "en": "Close filters"
+    },
+    "filter.comingSoon": {
+      "zh": "即將",
+      "en": "Coming soon"
+    },
+    "filter.conditionHint": {
+      "zh": "顯示所選或更好嘅成色",
+      "en": "Show selected condition or better"
+    },
+    "filter.customBrand": {
+      "zh": "{id}（自訂）",
+      "en": "{id} (Custom)"
+    },
+    "filter.drawerViewResults": {
+      "zh": "查看 {total} 件結果",
+      "en": "View {total} results"
+    },
+    "filter.group.category": {
+      "zh": "品類",
+      "en": "Category"
+    },
+    "filter.group.condition": {
+      "zh": "狀況以上",
+      "en": "Condition"
+    },
+    "filter.group.priceTier": {
+      "zh": "價格層",
+      "en": "Price tier"
+    },
+    "filter.mobileDrawer": {
+      "zh": "篩選",
+      "en": "Filters"
+    },
+    "filter.priceHKD": {
+      "zh": "HK$",
+      "en": "HK$"
+    },
+    "filter.priceMax": {
+      "zh": "最高",
+      "en": "Max"
+    },
+    "filter.priceMin": {
+      "zh": "最低",
+      "en": "Min"
+    },
+    "filter.priceSep": {
+      "zh": "–",
+      "en": "–"
+    },
+    "filter.tier1Label": {
+      "zh": "Tier 1 · < $1,000",
+      "en": "Tier 1 · < $1,000"
+    },
+    "filter.tier2Label": {
+      "zh": "Tier 2 · $1k–9,999",
+      "en": "Tier 2 · $1k–9,999"
+    },
+    "filter.tier3Label": {
+      "zh": "Tier 3 · ≥ $10,000",
+      "en": "Tier 3 · ≥ $10,000"
+    },
+    "filter.unlimited": {
+      "zh": "不限",
+      "en": "Any"
     },
     "loadMore": {
       "zh": "載入更多",
@@ -192,9 +172,37 @@
       "zh": "已顯示 {listings.length} / {total} 件",
       "en": "Showing {listings.length} / {total} items"
     },
-    "endOfResults": {
-      "zh": "— 已顯示全部 {total} 件商品 —",
-      "en": "— All {total} listings shown —"
+    "loading": {
+      "zh": "載入中…",
+      "en": "Loading…"
+    },
+    "resultCount": {
+      "zh": "找到 {total} 件符合結果",
+      "en": "{total} results found"
+    },
+    "search.button": {
+      "zh": "搜尋",
+      "en": "Search"
+    },
+    "search.placeholder": {
+      "zh": "搜尋品牌、型號、關鍵字…",
+      "en": "Search brands, models, keywords…"
+    },
+    "sort.newest": {
+      "zh": "最新上架",
+      "en": "Newest"
+    },
+    "sort.priceAsc": {
+      "zh": "價格：低至高",
+      "en": "Price: Low to High"
+    },
+    "sort.priceDesc": {
+      "zh": "價格：高至低",
+      "en": "Price: High to Low"
+    },
+    "sort.relevance": {
+      "zh": "相關度",
+      "en": "Relevance"
     }
   },
   "listing": {
@@ -704,161 +712,37 @@
     }
   },
   "sell": {
-    "pageTitle.edit": {
-      "zh": "編輯商品",
-      "en": "Edit listing"
-    },
-    "pageTitle.create": {
-      "zh": "刊登出售",
-      "en": "List item for sale"
-    },
-    "subtitle.edit": {
-      "zh": "只可以在商品上架中（未有買家落單）時修改。被預訂或售出後就會 locked。",
-      "en": "You can only edit listings that are active (no buyer has placed an order yet). Listings become locked once reserved or sold."
-    },
-    "subtitle.create": {
-      "zh": "填寫貨品資料。系統會按售價自動判斷鑑定分級。",
-      "en": "Fill in your item details. The system will determine the authentication tier based on the price."
-    },
-    "priceDrop.pending": {
-      "zh": "⏳ 待生效特價：HKD {price}",
-      "en": "⏳ Pending price drop: HKD {price}"
-    },
-    "priceDrop.pendingDate": {
-      "zh": "將於 {date} 自動生效。買家現在仍見到原售價。",
-      "en": "Will take effect on {date}. Buyers will still see the original price until then."
-    },
-    "priceDrop.active": {
-      "zh": "🏷️ 已生效特價：HKD {price}",
-      "en": "🏷️ Active price drop: HKD {price}"
-    },
-    "priceDrop.original": {
-      "zh": "原價 HKD {price}",
-      "en": "Original price HKD {price}"
-    },
-    "priceDrop.toast": {
-      "zh": "✓ {dropToast}",
-      "en": "✓ {dropToast}"
-    },
-    "priceDrop.confirmTitle": {
-      "zh": "確認減價？",
-      "en": "Confirm price drop?"
-    },
-    "priceDrop.confirmDesc": {
-      "zh": "此商品有 {count} 個未處理嘅議價。減價會排程在 48 小時 後生效；期間買家仍會見原售價，你嘅議價對手亦可能會基於原價繼續傾。建議先處理議價再改價。",
-      "en": "This item has {count} pending negotiations. The price drop will be scheduled to take effect in 48 hours. Buyers will still see the original price during this period, and negotiation parties may continue bargaining based on the original price. We recommend handling negotiations before changing the price."
-    },
-    "priceDrop.backToOffers": {
-      "zh": "返回處理議價",
-      "en": "Back to negotiations"
-    },
-    "priceDrop.confirmSchedule": {
-      "zh": "確認排程減價",
-      "en": "Confirm scheduled price drop"
-    },
-    "media.cardTitle": {
-      "zh": "商品相片 / 影片",
-      "en": "Photos / Video"
-    },
-    "media.sortHint": {
-      "zh": "💡 拖拉圖片可改變次序；第一張自動成為主圖",
-      "en": "💡 Drag to reorder images. The first becomes the cover photo."
-    },
-    "media.addImage": {
-      "zh": "加圖片",
-      "en": "Add image"
-    },
-    "media.maxLimit": {
-      "zh": "最多 {MAX_IMAGES} 張 · 支援 iPhone / Android 原相（會自動壓縮）· 第一張為主圖",
-      "en": "Up to {MAX_IMAGES} images · Supports iPhone / Android originals (auto-compressed) · The first image becomes the cover"
-    },
-    "media.videoAdded": {
-      "zh": "已加影片",
-      "en": "Video added"
-    },
-    "media.videoSpecs": {
-      "zh": "≤ 15 秒 / ≤ 15MB · 自動截首幀做縮圖",
-      "en": "≤ 15 sec / ≤ 15MB · Auto-thumbnail from first frame"
-    },
-    "media.videoCover": {
-      "zh": "將影片作為主圖（browse card cover）",
-      "en": "Use video as cover (browse card cover)"
-    },
-    "media.removeVideo": {
-      "zh": "移除",
-      "en": "Remove"
-    },
-    "media.addVideo": {
-      "zh": "▶ 加入商品影片（選填，最多 15 秒）",
-      "en": "▶ Add a product video (optional, max 15 sec)"
-    },
-    "media.imageAlt": {
-      "zh": "商品圖片 {index}",
-      "en": "Product image {index}"
-    },
-    "media.coverBadge": {
-      "zh": "主圖",
-      "en": "Cover"
-    },
-    "media.removeAria": {
-      "zh": "移除",
-      "en": "Remove"
-    },
-    "basic.cardTitle": {
-      "zh": "商品基本資料",
-      "en": "Basic info"
-    },
-    "basic.title": {
-      "zh": "商品標題",
-      "en": "Listing title"
-    },
-    "basic.titlePlaceholder": {
-      "zh": "例：Chanel Classic Flap Medium Caviar Black",
-      "en": "e.g. Chanel Classic Flap Medium Caviar Black"
-    },
-    "basic.category": {
-      "zh": "品類",
-      "en": "Category"
-    },
-    "basic.price": {
-      "zh": "要價（HKD）",
-      "en": "Asking price (HKD)"
-    },
-    "basic.brandOptional": {
-      "zh": "（選填）",
-      "en": "(Optional)"
-    },
-    "basic.brandCustomPlaceholder": {
-      "zh": "輸入{fieldLabel}名稱（最多 40 字）",
-      "en": "Enter a {fieldLabel} name (max 40 characters)"
-    },
-    "basic.brandBackToPreset": {
-      "zh": "返回揀預設",
-      "en": "Back to presets"
-    },
-    "basic.brandSelectPlaceholder": {
-      "zh": "請揀{fieldLabel}",
-      "en": "Select a {fieldLabel}"
-    },
-    "basic.brandCustomBadge": {
-      "zh": "自訂",
-      "en": "Custom"
+    "basic.brandAIIntelligence": {
+      "zh": "揀預設{fieldLabel}之後將來可以幫你 AI 自動識別商品；自訂亦會儲存但 AI 識別會較弱。",
+      "en": "Choosing a preset {fieldLabel} will enable AI-based auto-recognition for your items in the future. Custom entries will be saved, but AI recognition may be less accurate."
     },
     "basic.brandAutoDetected": {
       "zh": "自動偵測",
       "en": "Auto-detected"
     },
+    "basic.brandBackToPreset": {
+      "zh": "返回揀預設",
+      "en": "Back to presets"
+    },
     "basic.brandClear": {
       "zh": "清除",
       "en": "Clear"
     },
-    "basic.brandSearchPlaceholder": {
-      "zh": "搜尋{fieldLabel}…",
-      "en": "Search {fieldLabel}…"
+    "basic.brandCustomBadge": {
+      "zh": "自訂",
+      "en": "Custom"
+    },
+    "basic.brandCustomPlaceholder": {
+      "zh": "輸入{fieldLabel}名稱（最多 40 字）",
+      "en": "Enter a {fieldLabel} name (max 40 characters)"
     },
     "basic.brandNoResult": {
       "zh": "揾唔到「{search}」相關{fieldLabel}。揀「其他」自訂。",
       "en": "No {fieldLabel} found for \"{search}\". Select \"Other\" to add a custom one."
+    },
+    "basic.brandOptional": {
+      "zh": "（選填）",
+      "en": "(Optional)"
     },
     "basic.brandOther": {
       "zh": "＋ 其他（揾唔到我嘅{fieldLabel}）",
@@ -868,9 +752,21 @@
       "zh": "自訂",
       "en": "Custom"
     },
-    "basic.brandAIIntelligence": {
-      "zh": "揀預設{fieldLabel}之後將來可以幫你 AI 自動識別商品；自訂亦會儲存但 AI 識別會較弱。",
-      "en": "Choosing a preset {fieldLabel} will enable AI-based auto-recognition for your items in the future. Custom entries will be saved, but AI recognition may be less accurate."
+    "basic.brandSearchPlaceholder": {
+      "zh": "搜尋{fieldLabel}…",
+      "en": "Search {fieldLabel}…"
+    },
+    "basic.brandSelectPlaceholder": {
+      "zh": "請揀{fieldLabel}",
+      "en": "Select a {fieldLabel}"
+    },
+    "basic.cardTitle": {
+      "zh": "商品基本資料",
+      "en": "Basic info"
+    },
+    "basic.category": {
+      "zh": "品類",
+      "en": "Category"
     },
     "basic.condition": {
       "zh": "商品狀況 *",
@@ -880,105 +776,41 @@
       "zh": "成色由你申報，Certifine 不驗證。Tier 2/3 商品鑑定時以鑑定師意見為準。",
       "en": "Condition is self-declared. Certifine does not verify it. For Tier 2/3 items, the authenticator's assessment takes precedence during authentication."
     },
+    "basic.descPlaceholder": {
+      "zh": "購入日期、配件齊全度、瑕疵說明、購入地點 / 單據…",
+      "en": "Purchase date, completeness of accessories, defect notes, place of purchase / receipt…"
+    },
     "basic.description": {
       "zh": "商品描述",
       "en": "Description"
     },
-    "basic.descPlaceholder": {
-      "zh": "購入日期、配件齊全度、瑕疵說明、購入地點 / 單據…",
-      "en": "Purchase date, completeness of accessories, defect notes, place of purchase / receipt…"
+    "basic.price": {
+      "zh": "要價（HKD）",
+      "en": "Asking price (HKD)"
     },
     "basic.pricePreview": {
       "zh": "此價格對應：",
       "en": "This price corresponds to:"
     },
-    "delivery.cardTitle": {
-      "zh": "接受嘅交收方式",
-      "en": "Accepted delivery methods"
+    "basic.title": {
+      "zh": "商品標題",
+      "en": "Listing title"
     },
-    "delivery.hint": {
-      "zh": "揀你願意接受嘅交收方式（可多選），買家落單時會在你接受嘅方式入面揀一種。",
-      "en": "Select the delivery methods you are willing to accept (multiple allowed). Buyers will choose from your accepted options at checkout."
-    },
-    "delivery.ship": {
-      "zh": "物流寄送",
-      "en": "Shipping"
-    },
-    "delivery.shipDesc": {
-      "zh": "有鑑定：你寄→鑑定師→買家；無鑑定：直寄買家",
-      "en": "With authentication: you ship to the authenticator, then to the buyer. Without: ship directly to the buyer."
-    },
-    "delivery.meetupAuth": {
-      "zh": "鑑定師面交",
-      "en": "Authenticator meetup"
-    },
-    "delivery.meetupAuthDesc": {
-      "zh": "買家去鑑定師地點，當場鑑定 + 交收",
-      "en": "Buyer goes to the authenticator's location for on-site authentication and handover"
-    },
-    "delivery.meetup3way": {
-      "zh": "三方面交",
-      "en": "Three-way meetup"
-    },
-    "delivery.meetup3wayDesc": {
-      "zh": "你、買家、鑑定師同場，當場鑑定 + 交收",
-      "en": "You, buyer, and authenticator meet on-site for authentication and handover"
-    },
-    "delivery.meetupDirect": {
-      "zh": "買賣雙方面交",
-      "en": "Direct meetup"
-    },
-    "delivery.meetupDirectDesc": {
-      "zh": "純撮合、無鑑定，你同買家直接見面",
-      "en": "Pure matchmaking, no authentication — you meet the buyer directly"
-    },
-    "delivery.district": {
-      "zh": "你所在區域（面交配對用，選填，可揀多個候選）",
-      "en": "Your district (for meetup matching, optional, multiple allowed)"
-    },
-    "delivery.meetupLocations": {
-      "zh": "面交地點（買家落單時揀選）",
-      "en": "Meetup locations (buyer chooses at checkout)"
-    },
-    "delivery.meetupLocationsHint": {
-      "zh": "請提供至少一個建議面交地點，買家可揀選或填寫其他地點。",
-      "en": "Please provide at least one suggested meetup location. Buyers can choose or suggest another."
-    },
-    "delivery.meetupLocationPlaceholder": {
-      "zh": "例：旺角港鐵站 E 出口",
-      "en": "e.g. Mong Kok MTR Station Exit E"
-    },
-    "delivery.addLocation": {
-      "zh": "+ 加多一個地點",
-      "en": "+ Add another location"
-    },
-    "validation.imageOrVideo": {
-      "zh": "ⓘ 請先上載至少一張商品圖片或一段影片，先可以發佈上架。",
-      "en": "ⓘ Please upload at least one photo or a video before publishing."
+    "basic.titlePlaceholder": {
+      "zh": "例：Chanel Classic Flap Medium Caviar Black",
+      "en": "e.g. Chanel Classic Flap Medium Caviar Black"
     },
     "cancel": {
       "zh": "取消",
       "en": "Cancel"
     },
-    "submit.saving": {
-      "zh": "儲存中…",
-      "en": "Saving…"
-    },
-    "submit.publishing": {
-      "zh": "發佈中…",
-      "en": "Publishing…"
-    },
-    "submit.save": {
-      "zh": "儲存修改",
-      "en": "Save changes"
-    },
-    "submit.publish": {
-      "zh": "發佈刊登",
-      "en": "Publish listing"
-    },
     "delete.button": {
       "zh": "刪除呢件商品",
       "en": "Delete this listing"
+    },
+    "delete.confirmLabel": {
+      "zh": "確認刪除",
+      "en": "Confirm delete"
     },
     "delete.confirmTitle": {
       "zh": "刪除呢件商品？",
@@ -988,77 +820,97 @@
       "zh": "商品會即時落架，買家搵唔到。刪錯咗可以隨時在「我的上架」還原。",
       "en": "The item will be taken down immediately and will not be visible to buyers. You can restore it at any time from \"My Listings.\""
     },
-    "delete.confirmLabel": {
-      "zh": "確認刪除",
-      "en": "Confirm delete"
-    },
     "delete.error": {
       "zh": "刪除失敗",
       "en": "Delete failed"
     },
-    "rail.tierPreview": {
-      "zh": "◆ Tier {n} · {label}",
-      "en": "◆ Tier {n} · {label}"
+    "delivery.addLocation": {
+      "zh": "+ 加多一個地點",
+      "en": "+ Add another location"
     },
-    "rail.tierDesc3": {
-      "zh": "售價 ≥ HK$10,000，必須指定鑑定師，買家款項全程託管。",
-      "en": "Price ≥ HK$10,000. A specific authenticator is required. Buyer funds are held in escrow throughout."
+    "delivery.cardTitle": {
+      "zh": "接受嘅交收方式",
+      "en": "Accepted delivery methods"
     },
-    "rail.tierDesc2": {
-      "zh": "售價 HK$1,000–9,999，買家可選擇是否鑑定。",
-      "en": "Price HK$1,000–9,999. Buyer can choose whether to use authentication."
+    "delivery.district": {
+      "zh": "你所在區域（面交配對用，選填，可揀多個候選）",
+      "en": "Your district (for meetup matching, optional, multiple allowed)"
     },
-    "rail.tierDesc1": {
-      "zh": "售價 < HK$1,000，純撮合交易。",
-      "en": "Price < HK$1,000. Pure matchmaking transaction."
+    "delivery.hint": {
+      "zh": "揀你願意接受嘅交收方式（可多選），買家落單時會在你接受嘅方式入面揀一種。",
+      "en": "Select the delivery methods you are willing to accept (multiple allowed). Buyers will choose from your accepted options at checkout."
     },
-    "rail.noPriceHint": {
-      "zh": "輸入售價後，系統會即時顯示鑑定分級。",
-      "en": "Enter a price to see the authentication tier."
+    "delivery.meetup3way": {
+      "zh": "三方面交",
+      "en": "Three-way meetup"
     },
-    "rail.feePreview": {
-      "zh": "費用預覽",
-      "en": "Fee preview"
+    "delivery.meetup3wayDesc": {
+      "zh": "你、買家、鑑定師同場，當場鑑定 + 交收",
+      "en": "You, buyer, and authenticator meet on-site for authentication and handover"
     },
-    "rail.salePrice": {
-      "zh": "售價",
-      "en": "Sale price"
+    "delivery.meetupAuth": {
+      "zh": "鑑定師面交",
+      "en": "Authenticator meetup"
     },
-    "rail.platformFee": {
-      "zh": "平台費 1.5%",
-      "en": "Platform fee 1.5%"
+    "delivery.meetupAuthDesc": {
+      "zh": "買家去鑑定師地點，當場鑑定 + 交收",
+      "en": "Buyer goes to the authenticator's location for on-site authentication and handover"
     },
-    "rail.authFeeBuyer": {
-      "zh": "鑑定費（買家付）",
-      "en": "Authentication fee (paid by buyer)"
+    "delivery.meetupDirect": {
+      "zh": "買賣雙方面交",
+      "en": "Direct meetup"
     },
-    "rail.netAmount": {
-      "zh": "預計實收",
-      "en": "Estimated net"
+    "delivery.meetupDirectDesc": {
+      "zh": "純撮合、無鑑定，你同買家直接見面",
+      "en": "Pure matchmaking, no authentication — you meet the buyer directly"
     },
-    "rail.disclaimer": {
-      "zh": "最終金額以成交時 server 計算為準。平台為資訊中介，真偽由具名鑑定師負責。",
-      "en": "Final amounts are determined by the server at transaction time. The platform is an information intermediary; authenticity is handled by the named authenticator."
+    "delivery.meetupLocationPlaceholder": {
+      "zh": "例：旺角港鐵站 E 出口",
+      "en": "e.g. Mong Kok MTR Station Exit E"
+    },
+    "delivery.meetupLocations": {
+      "zh": "面交地點（買家落單時揀選）",
+      "en": "Meetup locations (buyer chooses at checkout)"
+    },
+    "delivery.meetupLocationsHint": {
+      "zh": "請提供至少一個建議面交地點，買家可揀選或填寫其他地點。",
+      "en": "Please provide at least one suggested meetup location. Buyers can choose or suggest another."
+    },
+    "delivery.ship": {
+      "zh": "物流寄送",
+      "en": "Shipping"
+    },
+    "delivery.shipDesc": {
+      "zh": "有鑑定：你寄→鑑定師→買家；無鑑定：直寄買家",
+      "en": "With authentication: you ship to the authenticator, then to the buyer. Without: ship directly to the buyer."
+    },
+    "error.canvas2d": {
+      "zh": "Canvas 2D 不支援",
+      "en": "Canvas 2D not supported"
+    },
+    "error.imageTooLarge": {
+      "zh": "每張圖片不可超過 50MB，已略過 {n} 張超大圖片。",
+      "en": "Each image must not exceed 50MB. {n} oversized images were skipped."
     },
     "error.loadListing": {
       "zh": "載入商品失敗",
       "en": "Failed to load listing"
     },
-    "error.notOwner": {
-      "zh": "唔可以修改其他賣家嘅商品",
-      "en": "You cannot edit another seller's listing"
+    "error.mixedLimits": {
+      "zh": "部分圖片超過 50MB，另有圖片超出 {MAX_IMAGES} 張上限，未能加入。",
+      "en": "Some images exceed 50MB, and others exceed the {MAX_IMAGES} limit. None were added."
     },
     "error.notActive": {
       "zh": "商品已被預訂或售出，唔可以修改",
       "en": "The item has been reserved or sold and cannot be edited"
     },
-    "error.videoDecode": {
-      "zh": "無法解碼影片",
-      "en": "Unable to decode video"
+    "error.notOwner": {
+      "zh": "唔可以修改其他賣家嘅商品",
+      "en": "You cannot edit another seller's listing"
     },
-    "error.canvas2d": {
-      "zh": "Canvas 2D 不支援",
-      "en": "Canvas 2D not supported"
+    "error.photoDecode": {
+      "zh": "呢張相無法解碼（可能格式不支援）",
+      "en": "This photo cannot be decoded (format may not be supported)"
     },
     "error.readFile": {
       "zh": "讀取檔案失敗",
@@ -1068,9 +920,13 @@
       "zh": "讀取相片失敗",
       "en": "Failed to read photo"
     },
-    "error.photoDecode": {
-      "zh": "呢張相無法解碼（可能格式不支援）",
-      "en": "This photo cannot be decoded (format may not be supported)"
+    "error.tooManyImages": {
+      "zh": "最多只可上載 {MAX_IMAGES} 張圖片。",
+      "en": "You can only upload up to {MAX_IMAGES} images."
+    },
+    "error.videoDecode": {
+      "zh": "無法解碼影片",
+      "en": "Unable to decode video"
     },
     "error.videoTooLarge": {
       "zh": "影片不可超過 15MB（你揀嘅檔案 {size}MB）",
@@ -1080,33 +936,261 @@
       "zh": "影片不可超過 {MAX_SECONDS} 秒（你揀嘅 {duration} 秒）",
       "en": "Video must not exceed {MAX_SECONDS} seconds (yours is {duration} seconds)"
     },
-    "error.imageTooLarge": {
-      "zh": "每張圖片不可超過 50MB，已略過 {n} 張超大圖片。",
-      "en": "Each image must not exceed 50MB. {n} oversized images were skipped."
+    "media.addImage": {
+      "zh": "加圖片",
+      "en": "Add image"
     },
-    "error.tooManyImages": {
-      "zh": "最多只可上載 {MAX_IMAGES} 張圖片。",
-      "en": "You can only upload up to {MAX_IMAGES} images."
+    "media.addVideo": {
+      "zh": "▶ 加入商品影片（選填，最多 15 秒）",
+      "en": "▶ Add a product video (optional, max 15 sec)"
     },
-    "error.mixedLimits": {
-      "zh": "部分圖片超過 50MB，另有圖片超出 {MAX_IMAGES} 張上限，未能加入。",
-      "en": "Some images exceed 50MB, and others exceed the {MAX_IMAGES} limit. None were added."
+    "media.cardTitle": {
+      "zh": "商品相片 / 影片",
+      "en": "Photos / Video"
     },
-    "validation.priceRequired": {
-      "zh": "請輸入價格",
-      "en": "Please enter a price"
+    "media.coverBadge": {
+      "zh": "主圖",
+      "en": "Cover"
     },
-    "validation.imageRequired": {
-      "zh": "請至少上載一張商品圖片或一段影片",
-      "en": "Please upload at least one photo or a video"
+    "media.imageAlt": {
+      "zh": "商品圖片 {index}",
+      "en": "Product image {index}"
+    },
+    "media.maxLimit": {
+      "zh": "最多 {MAX_IMAGES} 張 · 支援 iPhone / Android 原相（會自動壓縮）· 第一張為主圖",
+      "en": "Up to {MAX_IMAGES} images · Supports iPhone / Android originals (auto-compressed) · The first image becomes the cover"
+    },
+    "media.removeAria": {
+      "zh": "移除",
+      "en": "Remove"
+    },
+    "media.removeVideo": {
+      "zh": "移除",
+      "en": "Remove"
+    },
+    "media.sortHint": {
+      "zh": "💡 拖拉圖片可改變次序；第一張自動成為主圖",
+      "en": "💡 Drag to reorder images. The first becomes the cover photo."
+    },
+    "media.videoAdded": {
+      "zh": "已加影片",
+      "en": "Video added"
+    },
+    "media.videoCover": {
+      "zh": "將影片作為主圖（browse card cover）",
+      "en": "Use video as cover (browse card cover)"
+    },
+    "media.videoSpecs": {
+      "zh": "≤ 15 秒 / ≤ 15MB · 自動截首幀做縮圖",
+      "en": "≤ 15 sec / ≤ 15MB · Auto-thumbnail from first frame"
+    },
+    "pageTitle.create": {
+      "zh": "刊登出售",
+      "en": "List item for sale"
+    },
+    "pageTitle.edit": {
+      "zh": "編輯商品",
+      "en": "Edit listing"
+    },
+    "photo.add": {
+      "zh": "加相",
+      "en": "Add photo"
+    },
+    "photo.counter": {
+      "zh": "已上載 {total} / {max} 張 · 最少 {min} 張",
+      "en": "{total} of {max} uploaded · {min} minimum"
+    },
+    "photo.error.canvas": {
+      "zh": "Canvas 2D context 不支援",
+      "en": "Canvas 2D context is not supported"
+    },
+    "photo.error.decode": {
+      "zh": "無法解碼呢張相",
+      "en": "Could not decode this photo"
+    },
+    "photo.error.oversize": {
+      "zh": "已略過 {n} 張超過 50MB 嘅相",
+      "en": "Skipped {n} photo(s) over 50MB"
+    },
+    "photo.error.process": {
+      "zh": "相片處理失敗",
+      "en": "Photo processing failed"
+    },
+    "photo.error.read": {
+      "zh": "讀取相片失敗",
+      "en": "Could not read the photo"
+    },
+    "photo.uploadedBadge": {
+      "zh": "已上載",
+      "en": "Uploaded"
+    },
+    "priceDrop.active": {
+      "zh": "🏷️ 已生效特價：HKD {price}",
+      "en": "🏷️ Active price drop: HKD {price}"
+    },
+    "priceDrop.backToOffers": {
+      "zh": "返回處理議價",
+      "en": "Back to negotiations"
+    },
+    "priceDrop.confirmDesc": {
+      "zh": "此商品有 {count} 個未處理嘅議價。減價會排程在 48 小時 後生效；期間買家仍會見原售價，你嘅議價對手亦可能會基於原價繼續傾。建議先處理議價再改價。",
+      "en": "This item has {count} pending negotiations. The price drop will be scheduled to take effect in 48 hours. Buyers will still see the original price during this period, and negotiation parties may continue bargaining based on the original price. We recommend handling negotiations before changing the price."
+    },
+    "priceDrop.confirmSchedule": {
+      "zh": "確認排程減價",
+      "en": "Confirm scheduled price drop"
+    },
+    "priceDrop.confirmTitle": {
+      "zh": "確認減價？",
+      "en": "Confirm price drop?"
+    },
+    "priceDrop.original": {
+      "zh": "原價 HKD {price}",
+      "en": "Original price HKD {price}"
+    },
+    "priceDrop.pending": {
+      "zh": "⏳ 待生效特價：HKD {price}",
+      "en": "⏳ Pending price drop: HKD {price}"
+    },
+    "priceDrop.pendingDate": {
+      "zh": "將於 {date} 自動生效。買家現在仍見到原售價。",
+      "en": "Will take effect on {date}. Buyers will still see the original price until then."
+    },
+    "priceDrop.toast": {
+      "zh": "✓ {dropToast}",
+      "en": "✓ {dropToast}"
+    },
+    "rail.authFeeBuyer": {
+      "zh": "鑑定費（買家付）",
+      "en": "Authentication fee (paid by buyer)"
+    },
+    "rail.disclaimer": {
+      "zh": "最終金額以成交時 server 計算為準。平台為資訊中介，真偽由具名鑑定師負責。",
+      "en": "Final amounts are determined by the server at transaction time. The platform is an information intermediary; authenticity is handled by the named authenticator."
+    },
+    "rail.feePreview": {
+      "zh": "費用預覽",
+      "en": "Fee preview"
+    },
+    "rail.netAmount": {
+      "zh": "預計實收",
+      "en": "Estimated net"
+    },
+    "rail.noPriceHint": {
+      "zh": "輸入售價後，系統會即時顯示鑑定分級。",
+      "en": "Enter a price to see the authentication tier."
+    },
+    "rail.platformFee": {
+      "zh": "平台費 1.5%",
+      "en": "Platform fee 1.5%"
+    },
+    "rail.salePrice": {
+      "zh": "售價",
+      "en": "Sale price"
+    },
+    "rail.tierDesc1": {
+      "zh": "售價 < HK$1,000，純撮合交易。",
+      "en": "Price < HK$1,000. Pure matchmaking transaction."
+    },
+    "rail.tierDesc2": {
+      "zh": "售價 HK$1,000–9,999，買家可選擇是否鑑定。",
+      "en": "Price HK$1,000–9,999. Buyer can choose whether to use authentication."
+    },
+    "rail.tierDesc3": {
+      "zh": "售價 ≥ HK$10,000，必須指定鑑定師，買家款項全程託管。",
+      "en": "Price ≥ HK$10,000. A specific authenticator is required. Buyer funds are held in escrow throughout."
+    },
+    "rail.tierPreview": {
+      "zh": "◆ Tier {n} · {label}",
+      "en": "◆ Tier {n} · {label}"
+    },
+    "station.addMore": {
+      "zh": "＋ 加候選站（{n}/{max}）",
+      "en": "+ Add a station ({n}/{max})"
+    },
+    "station.alreadyInLine": {
+      "zh": "已包含喺成條{line}內",
+      "en": "Already included in all of {line}"
+    },
+    "station.done": {
+      "zh": "完成",
+      "en": "Done"
+    },
+    "station.hint": {
+      "zh": "揀一條綫連續多選（撳一下加、再撳取消），或者直接打站名搜尋",
+      "en": "Tap along a line to select several stations (tap again to remove), or search by name"
+    },
+    "station.limitReached": {
+      "zh": "已達 {max} 個候選上限 — 想換站請先移除一個",
+      "en": "You have reached the limit of {max} — remove one to add another"
+    },
+    "station.noMatch": {
+      "zh": "搵唔到「{query}」— 請由港鐵站揀選（唔可以自由填寫）",
+      "en": "No match for “{query}” — pick an MTR station from the list (free text is not accepted)"
+    },
+    "station.placeholder": {
+      "zh": "＋ 選擇所在港鐵站（選填，最多 {max} 個候選）",
+      "en": "+ Pick your MTR station (optional, up to {max})"
+    },
+    "station.removeAria": {
+      "zh": "移除 {station}",
+      "en": "Remove {station}"
+    },
+    "station.searchPlaceholder": {
+      "zh": "打站名（例：旺角）— 只可以喺建議入面揀",
+      "en": "Type a station name — you can only pick from the suggestions"
+    },
+    "station.suffix": {
+      "zh": "站",
+      "en": "Station"
+    },
+    "station.wholeLine": {
+      "zh": "成條{line}",
+      "en": "All of {line}"
+    },
+    "submit.publish": {
+      "zh": "發佈刊登",
+      "en": "Publish listing"
+    },
+    "submit.publishing": {
+      "zh": "發佈中…",
+      "en": "Publishing…"
+    },
+    "submit.save": {
+      "zh": "儲存修改",
+      "en": "Save changes"
+    },
+    "submit.saving": {
+      "zh": "儲存中…",
+      "en": "Saving…"
+    },
+    "subtitle.create": {
+      "zh": "填寫貨品資料。系統會按售價自動判斷鑑定分級。",
+      "en": "Fill in your item details. The system will determine the authentication tier based on the price."
+    },
+    "subtitle.edit": {
+      "zh": "只可以在商品上架中（未有買家落單）時修改。被預訂或售出後就會 locked。",
+      "en": "You can only edit listings that are active (no buyer has placed an order yet). Listings become locked once reserved or sold."
+    },
+    "validation.conditionRequired": {
+      "zh": "請揀商品狀況",
+      "en": "Please select a condition"
     },
     "validation.deliveryRequired": {
       "zh": "請至少揀一種接受嘅交收方式",
       "en": "Please select at least one delivery method"
     },
-    "validation.conditionRequired": {
-      "zh": "請揀商品狀況",
-      "en": "Please select a condition"
+    "validation.imageOrVideo": {
+      "zh": "ⓘ 請先上載至少一張商品圖片或一段影片，先可以發佈上架。",
+      "en": "ⓘ Please upload at least one photo or a video before publishing."
+    },
+    "validation.imageRequired": {
+      "zh": "請至少上載一張商品圖片或一段影片",
+      "en": "Please upload at least one photo or a video"
+    },
+    "validation.priceRequired": {
+      "zh": "請輸入價格",
+      "en": "Please enter a price"
     }
   },
   "checkout": {
@@ -2358,6 +2442,46 @@
       "zh": "✓ 鑑定通過。請前往鑑定師店面取貨{name}。",
       "en": "✓ Authentication passed. Please pick up your item at {name}."
     },
+    "qr.afterDropoff": {
+      "zh": "正式接收件貨開始鑑定",
+      "en": "they formally take the item in and begin authentication"
+    },
+    "qr.afterPickup": {
+      "zh": "交收即完成",
+      "en": "the handover is complete"
+    },
+    "qr.copy": {
+      "zh": "複製",
+      "en": "Copy"
+    },
+    "qr.dropoffTitle": {
+      "zh": "到店交貨 — 出示此 QR 碼畀鑑定師 scan",
+      "en": "Dropping off in store — show this QR code to the authenticator"
+    },
+    "qr.error": {
+      "zh": "攞唔到 QR 碼，請重試",
+      "en": "Could not load the QR code — please try again"
+    },
+    "qr.imageAlt": {
+      "zh": "交收 QR 碼",
+      "en": "Handover QR code"
+    },
+    "qr.pickupTitle": {
+      "zh": "到店取貨 — 出示此 QR 碼畀鑑定師 scan",
+      "en": "Collecting in store — show this QR code to the authenticator"
+    },
+    "qr.refreshNotice": {
+      "zh": "每 60 秒自動更新（{seconds}s）· 一次性，截圖無效",
+      "en": "Refreshes every 60 seconds ({seconds}s) · single use, a screenshot will not work"
+    },
+    "qr.retry": {
+      "zh": "重試",
+      "en": "Retry"
+    },
+    "qr.scanNotice": {
+      "zh": "鑑定師 scan 完會核對訂單 + 商品，確認後",
+      "en": "After scanning, the authenticator checks the order and the item; once confirmed,"
+    },
     "raiseDispute": {
       "zh": "提出爭議",
       "en": "File a dispute"
@@ -2738,42 +2862,6 @@
     }
   },
   "homepage": {
-    "hero.tagline": {
-      "zh": "Search · Verify · Buy",
-      "en": "Search · Verify · Buy"
-    },
-    "hero.heading": {
-      "zh": "搵真貨，鑑定通過才成交",
-      "en": "Find Authentic Items — Verified Before Payment"
-    },
-    "hero.description": {
-      "zh": "逾一萬件正品貨源，每宗高價交易經具名鑑定師把關、款項託管。",
-      "en": "Over 10,000 authentic listings are available. Every high-value transaction is reviewed by a named authenticator, with payment held in escrow."
-    },
-    "search.placeholder": {
-      "zh": "搜尋品牌、型號…",
-      "en": "Search by brand or model…"
-    },
-    "search.button": {
-      "zh": "搜尋",
-      "en": "Search"
-    },
-    "section.viewAll": {
-      "zh": "查看全部",
-      "en": "View All"
-    },
-    "section.hotCategories": {
-      "zh": "熱門品類",
-      "en": "Popular Categories"
-    },
-    "section.allCategories": {
-      "zh": "全部品類",
-      "en": "All Categories"
-    },
-    "section.newest": {
-      "zh": "最新上架",
-      "en": "Newly Listed"
-    },
     "category.comingSoon": {
       "zh": "即將推出",
       "en": "Coming Soon"
@@ -2781,60 +2869,72 @@
     "category.itemCount": {
       "zh": "{count} 件",
       "en": "{count} items"
-    }
-  },
-  "layout": {
-    "meta.title": {
-      "zh": "Certifine — 認證二手交易平台",
-      "en": "Certifine — Certified Secondhand Marketplace"
     },
-    "meta.description": {
-      "zh": "香港首個按品類認證的 C2C 二手平台。每件 HKD 10,000 以上商品強制經第三方鑑定。",
-      "en": "Hong Kong's first category-certified C2C secondhand marketplace. Every item priced at HKD 10,000 or above requires mandatory third-party authentication."
+    "hero.description": {
+      "zh": "逾一萬件正品貨源，每宗高價交易經具名鑑定師把關、款項託管。",
+      "en": "Over 10,000 authentic listings are available. Every high-value transaction is reviewed by a named authenticator, with payment held in escrow."
     },
-    "nav.browse": {
-      "zh": "瀏覽",
-      "en": "Browse"
+    "hero.heading": {
+      "zh": "搵真貨，鑑定通過才成交",
+      "en": "Find Authentic Items — Verified Before Payment"
     },
-    "nav.sell": {
-      "zh": "出售",
-      "en": "Sell"
+    "hero.tagline": {
+      "zh": "Search · Verify · Buy",
+      "en": "Search · Verify · Buy"
     },
-    "nav.trust": {
-      "zh": "信任機制",
-      "en": "Trust & Safety"
-    },
-    "nav.ordersLabel": {
-      "zh": "訂單",
-      "en": "Orders"
-    },
-    "nav.login": {
-      "zh": "登入",
-      "en": "Log in"
-    },
-    "nav.sellCta": {
-      "zh": "刊登出售",
-      "en": "List an item"
-    },
-    "nav.searchAria": {
+    "search.button": {
       "zh": "搜尋",
       "en": "Search"
     },
-    "nav.messagesAria": {
-      "zh": "訊息",
-      "en": "Messages"
+    "search.placeholder": {
+      "zh": "搜尋品牌、型號…",
+      "en": "Search by brand or model…"
     },
-    "nav.ordersAria": {
-      "zh": "訂單",
-      "en": "Orders"
+    "section.allCategories": {
+      "zh": "全部品類",
+      "en": "All Categories"
     },
-    "nav.openMenu": {
-      "zh": "開啟主目錄",
-      "en": "Open menu"
+    "section.hotCategories": {
+      "zh": "熱門品類",
+      "en": "Popular Categories"
     },
-    "nav.closeMenu": {
-      "zh": "關閉主目錄",
-      "en": "Close menu"
+    "section.newest": {
+      "zh": "最新上架",
+      "en": "Newly Listed"
+    },
+    "section.viewAll": {
+      "zh": "查看全部",
+      "en": "View All"
+    },
+    "ticker.category.handbag": {
+      "zh": "手袋",
+      "en": "Handbags"
+    },
+    "ticker.category.sneaker": {
+      "zh": "球鞋",
+      "en": "Sneakers"
+    },
+    "ticker.category.watch": {
+      "zh": "名錶",
+      "en": "Watches"
+    },
+    "ticker.passed": {
+      "zh": "通過",
+      "en": "Passed"
+    },
+    "ticker.sample": {
+      "zh": "示例",
+      "en": "Sample"
+    },
+    "ticker.title": {
+      "zh": "實時鑑定",
+      "en": "Live authentications"
+    }
+  },
+  "layout": {
+    "account.logout": {
+      "zh": "登出",
+      "en": "Log out"
     },
     "account.myAccount": {
       "zh": "我的帳號",
@@ -2852,65 +2952,117 @@
       "zh": "我的錢包",
       "en": "My wallet"
     },
-    "account.logout": {
-      "zh": "登出",
-      "en": "Log out"
-    },
-    "footer.disclaimer": {
-      "zh": "資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。",
-      "en": "Information intermediary platform. Product authenticity is the responsibility of the named authenticator; the platform makes no authenticity guarantee."
-    },
-    "footer.colBuySell": {
-      "zh": "買賣",
-      "en": "Buy & Sell"
-    },
-    "footer.browse": {
-      "zh": "瀏覽商品",
-      "en": "Browse items"
-    },
-    "footer.sell": {
-      "zh": "刊登出售",
-      "en": "List an item"
-    },
-    "footer.authRegistry": {
-      "zh": "鑑定師名冊",
-      "en": "Authenticator registry"
-    },
-    "footer.colTrust": {
-      "zh": "信任",
-      "en": "Trust"
+    "banner.closeAria": {
+      "zh": "關閉此通知",
+      "en": "Dismiss this notice"
     },
     "footer.authMechanism": {
       "zh": "鑑定機制",
       "en": "Authentication"
     },
-    "footer.escrow": {
-      "zh": "款項託管",
-      "en": "Escrow"
+    "footer.authPortal": {
+      "zh": "鑑定家入口",
+      "en": "Authenticator portal"
     },
-    "footer.disputes": {
-      "zh": "爭議處理",
-      "en": "Dispute handling"
+    "footer.authRegistry": {
+      "zh": "鑑定師名冊",
+      "en": "Authenticator registry"
+    },
+    "footer.browse": {
+      "zh": "瀏覽商品",
+      "en": "Browse items"
     },
     "footer.colAbout": {
       "zh": "關於",
       "en": "About"
     },
-    "footer.terms": {
-      "zh": "服務條款",
-      "en": "Terms of Service"
+    "footer.colBuySell": {
+      "zh": "買賣",
+      "en": "Buy & Sell"
     },
-    "footer.privacy": {
-      "zh": "私隱政策",
-      "en": "Privacy Policy"
+    "footer.colTrust": {
+      "zh": "信任",
+      "en": "Trust"
     },
     "footer.contact": {
       "zh": "聯絡",
       "en": "Contact"
     },
-    "footer.authPortal": {
-      "zh": "鑑定家入口",
-      "en": "Authenticator portal"
+    "footer.disclaimer": {
+      "zh": "資訊中介平台。貨品真偽由具名鑑定師負責，平台不作真偽保證。",
+      "en": "Information intermediary platform. Product authenticity is the responsibility of the named authenticator; the platform makes no authenticity guarantee."
+    },
+    "footer.disputes": {
+      "zh": "爭議處理",
+      "en": "Dispute handling"
+    },
+    "footer.escrow": {
+      "zh": "款項託管",
+      "en": "Escrow"
+    },
+    "footer.privacy": {
+      "zh": "私隱政策",
+      "en": "Privacy Policy"
+    },
+    "footer.sell": {
+      "zh": "刊登出售",
+      "en": "List an item"
+    },
+    "footer.terms": {
+      "zh": "服務條款",
+      "en": "Terms of Service"
+    },
+    "meta.description": {
+      "zh": "香港首個按品類認證的 C2C 二手平台。每件 HKD 10,000 以上商品強制經第三方鑑定。",
+      "en": "Hong Kong's first category-certified C2C secondhand marketplace. Every item priced at HKD 10,000 or above requires mandatory third-party authentication."
+    },
+    "meta.title": {
+      "zh": "Certifine — 認證二手交易平台",
+      "en": "Certifine — Certified Secondhand Marketplace"
+    },
+    "nav.browse": {
+      "zh": "瀏覽",
+      "en": "Browse"
+    },
+    "nav.closeMenu": {
+      "zh": "關閉主目錄",
+      "en": "Close menu"
+    },
+    "nav.login": {
+      "zh": "登入",
+      "en": "Log in"
+    },
+    "nav.messagesAria": {
+      "zh": "訊息",
+      "en": "Messages"
+    },
+    "nav.openMenu": {
+      "zh": "開啟主目錄",
+      "en": "Open menu"
+    },
+    "nav.ordersAria": {
+      "zh": "訂單",
+      "en": "Orders"
+    },
+    "nav.ordersLabel": {
+      "zh": "訂單",
+      "en": "Orders"
+    },
+    "nav.searchAria": {
+      "zh": "搜尋",
+      "en": "Search"
+    },
+    "nav.sell": {
+      "zh": "出售",
+      "en": "Sell"
+    },
+    "nav.sellCta": {
+      "zh": "刊登出售",
+      "en": "List an item"
+    },
+    "nav.trust": {
+      "zh": "信任機制",
+      "en": "Trust & Safety"
     }
   },
   "messages": {
@@ -4210,13 +4362,49 @@
     }
   },
   "account.profile": {
-    "page.title": {
+    "authenticator.heading": {
+      "zh": "鑑定師 Portal",
+      "en": "Authenticator Portal"
+    },
+    "authenticator.hint": {
+      "zh": "你嘅鑑定師資料（店名、收費、分店等）在鑑定師專用 portal 管理。",
+      "en": "Your authenticator details (shop name, fees, branches, etc.) are managed in the dedicated Authenticator Portal."
+    },
+    "authenticator.portalLink": {
+      "zh": "前往鑑定師 Portal",
+      "en": "Go to Authenticator Portal"
+    },
+    "authenticator.statusLabel": {
+      "zh": "狀態",
+      "en": "Status"
+    },
+    "loading": {
+      "zh": "載入中…",
+      "en": "Loading…"
+    },
+    "nav.listings": {
+      "zh": "我的上架",
+      "en": "My listings"
+    },
+    "nav.logout": {
+      "zh": "登出",
+      "en": "Log out"
+    },
+    "nav.orders": {
+      "zh": "我的訂單",
+      "en": "My orders"
+    },
+    "nav.payoutMethods": {
+      "zh": "提現方式",
+      "en": "Payout methods"
+    },
+    "nav.profile": {
       "zh": "個人檔案",
       "en": "Profile"
     },
-    "page.subtitle": {
-      "zh": "管理你嘅個人資料、密碼同帳號設定。",
-      "en": "Manage your personal details, password, and account settings."
+    "nav.wallet": {
+      "zh": "錢包",
+      "en": "Wallet"
     },
     "page.sellerProfileLink": {
       "zh": "其他人在賣家頁見到嘅資料：",
@@ -4226,29 +4414,13 @@
       "zh": "查看公開頁面 →",
       "en": "View public page →"
     },
-    "tab.personal": {
-      "zh": "個人資料",
-      "en": "Personal Info"
+    "page.subtitle": {
+      "zh": "管理你嘅個人資料、密碼同帳號設定。",
+      "en": "Manage your personal details, password, and account settings."
     },
-    "tab.security": {
-      "zh": "帳號與安全",
-      "en": "Account & Security"
-    },
-    "tab.shop": {
-      "zh": "我的商店",
-      "en": "My Shop"
-    },
-    "tab.authenticator": {
-      "zh": "鑑定師 Portal",
-      "en": "Authenticator Portal"
-    },
-    "loading": {
-      "zh": "載入中…",
-      "en": "Loading…"
-    },
-    "personal.heading": {
-      "zh": "個人資料",
-      "en": "Personal Info"
+    "page.title": {
+      "zh": "個人檔案",
+      "en": "Profile"
     },
     "personal.avatar.ariaLabel": {
       "zh": "更換頭像",
@@ -4266,37 +4438,49 @@
       "zh": "移除頭像",
       "en": "Remove avatar"
     },
-    "personal.crop.heading": {
-      "zh": "調整頭像位置",
-      "en": "Adjust Avatar Crop"
-    },
-    "personal.crop.zoomLabel": {
-      "zh": "縮放",
-      "en": "Zoom"
-    },
-    "personal.crop.zoomHint": {
-      "zh": "拖拉頭像可微調位置",
-      "en": "Drag the avatar to fine-tune position"
-    },
-    "personal.crop.confirmButton": {
-      "zh": "確認",
-      "en": "Confirm"
+    "personal.avatarTooLarge": {
+      "zh": "Avatar 仍然太大，請揀細啲嘅圖",
+      "en": "Avatar is still too large. Please choose a smaller image."
     },
     "personal.crop.cancelButton": {
       "zh": "取消",
       "en": "Cancel"
     },
+    "personal.crop.confirmButton": {
+      "zh": "確認",
+      "en": "Confirm"
+    },
+    "personal.crop.heading": {
+      "zh": "調整頭像位置",
+      "en": "Adjust Avatar Crop"
+    },
     "personal.crop.resetButton": {
       "zh": "重設",
       "en": "Reset"
+    },
+    "personal.crop.zoomHint": {
+      "zh": "拖拉頭像可微調位置",
+      "en": "Drag the avatar to fine-tune position"
+    },
+    "personal.crop.zoomLabel": {
+      "zh": "縮放",
+      "en": "Zoom"
+    },
+    "personal.displayNameHint": {
+      "zh": "其他用戶在賣家頁 / 對話 / 評價會見到呢個名字。",
+      "en": "Other users will see this name on your seller page, in conversations, and in reviews."
     },
     "personal.displayNameLabel": {
       "zh": "顯示名稱",
       "en": "Display name"
     },
-    "personal.displayNameHint": {
-      "zh": "其他用戶在賣家頁 / 對話 / 評價會見到呢個名字。",
-      "en": "Other users will see this name on your seller page, in conversations, and in reviews."
+    "personal.heading": {
+      "zh": "個人資料",
+      "en": "Personal Info"
+    },
+    "personal.imageTypeError": {
+      "zh": "只接受圖片檔案",
+      "en": "Only image files are accepted"
     },
     "personal.placeholderSection": {
       "zh": "📌 電話、地區、自我介紹、頭像庫等功能即將推出。",
@@ -4306,141 +4490,13 @@
       "zh": "儲存變更",
       "en": "Save changes"
     },
-    "personal.savedIndicator": {
-      "zh": "已儲存",
-      "en": "Saved"
-    },
-    "personal.imageTypeError": {
-      "zh": "只接受圖片檔案",
-      "en": "Only image files are accepted"
-    },
-    "personal.avatarTooLarge": {
-      "zh": "Avatar 仍然太大，請揀細啲嘅圖",
-      "en": "Avatar is still too large. Please choose a smaller image."
-    },
     "personal.saveError": {
       "zh": "儲存失敗",
       "en": "Save failed"
     },
-    "security.email.heading": {
-      "zh": "電郵地址",
-      "en": "Email address"
-    },
-    "security.email.lockedHint": {
-      "zh": "Email 唔可以更改。如需更換，請聯絡",
-      "en": "Email cannot be changed. To update it, please contact"
-    },
-    "security.phone.heading": {
-      "zh": "手機號碼",
-      "en": "Phone number"
-    },
-    "security.phone.verifiedBadge": {
-      "zh": "已驗証",
-      "en": "Verified"
-    },
-    "security.phone.verifiedHint": {
-      "zh": "手機號碼唔可以在呢度更改。如需更換，請聯絡",
-      "en": "Phone number cannot be changed here. To update it, please contact"
-    },
-    "security.phone.notBound": {
-      "zh": "尚未綁定手機號碼",
-      "en": "No phone number linked"
-    },
-    "security.phone.notBoundHint": {
-      "zh": "綁定手機可以日後用作快速登入 + 接收重要交易通知。綁定功能稍後推出。",
-      "en": "Linking a phone number can be used for quick login and receiving important transaction notifications. This feature is coming soon."
-    },
-    "security.password.heading": {
-      "zh": "登入密碼",
-      "en": "Login password"
-    },
-    "security.password.hint": {
-      "zh": "為帳戶安全，建議定期更換密碼。",
-      "en": "For account security, we recommend changing your password regularly."
-    },
-    "security.password.changeButton": {
-      "zh": "修改密碼",
-      "en": "Change password"
-    },
-    "security.password.step1.label": {
-      "zh": "1. 驗證現有密碼",
-      "en": "1. Verify current password"
-    },
-    "security.password.step2.label": {
-      "zh": "2. 設定新密碼",
-      "en": "2. Set a new password"
-    },
-    "security.password.oldPasswordLabel": {
-      "zh": "現有密碼",
-      "en": "Current password"
-    },
-    "security.password.oldPasswordRequired": {
-      "zh": "請輸入現有密碼",
-      "en": "Please enter your current password"
-    },
-    "security.password.step1.cancelButton": {
-      "zh": "取消",
-      "en": "Cancel"
-    },
-    "security.password.step1.nextButton": {
-      "zh": "下一步",
-      "en": "Next"
-    },
-    "security.password.verifiedBanner": {
-      "zh": "✓ 已驗證現有密碼 — 請設定新密碼",
-      "en": "✓ Current password verified — please set a new password"
-    },
-    "security.password.newPasswordLabel": {
-      "zh": "新密碼",
-      "en": "New password"
-    },
-    "security.password.newPasswordHint": {
-      "zh": "至少 8 個字符。建議混合大小寫、數字。",
-      "en": "At least 8 characters. Mix of upper and lower case letters and numbers recommended."
-    },
-    "security.password.confirmLabel": {
-      "zh": "再次確認新密碼",
-      "en": "Confirm new password"
-    },
-    "security.password.tooShort": {
-      "zh": "新密碼至少 8 個字符",
-      "en": "New password must be at least 8 characters"
-    },
-    "security.password.mismatch": {
-      "zh": "兩次輸入嘅新密碼唔一致",
-      "en": "The two password entries do not match"
-    },
-    "security.password.sameAsOld": {
-      "zh": "新密碼不能同舊密碼一樣",
-      "en": "New password cannot be the same as the current password"
-    },
-    "security.password.backButton": {
-      "zh": "返回",
-      "en": "Back"
-    },
-    "security.password.updateButton": {
-      "zh": "更新密碼",
-      "en": "Update password"
-    },
-    "security.password.updateError": {
-      "zh": "密碼修改失敗",
-      "en": "Password change failed"
-    },
-    "security.password.postChange.title": {
-      "zh": "密碼已更新",
-      "en": "Password updated"
-    },
-    "security.password.postChange.body": {
-      "zh": "為咗安全起見，建議重新登入所有裝置。",
-      "en": "For security reasons, we recommend signing in again on all your devices."
-    },
-    "security.password.postChange.keepLogin": {
-      "zh": "保持登入",
-      "en": "Stay signed in"
-    },
-    "security.password.postChange.relogin": {
-      "zh": "重新登入",
-      "en": "Sign in again"
+    "personal.savedIndicator": {
+      "zh": "已儲存",
+      "en": "Saved"
     },
     "security.accountInfo.heading": {
       "zh": "帳戶資訊",
@@ -4458,57 +4514,177 @@
       "zh": "角色",
       "en": "Roles"
     },
+    "security.email.heading": {
+      "zh": "電郵地址",
+      "en": "Email address"
+    },
+    "security.email.lockedHint": {
+      "zh": "Email 唔可以更改。如需更換，請聯絡",
+      "en": "Email cannot be changed. To update it, please contact"
+    },
+    "security.password.backButton": {
+      "zh": "返回",
+      "en": "Back"
+    },
+    "security.password.changeButton": {
+      "zh": "修改密碼",
+      "en": "Change password"
+    },
+    "security.password.confirmLabel": {
+      "zh": "再次確認新密碼",
+      "en": "Confirm new password"
+    },
+    "security.password.heading": {
+      "zh": "登入密碼",
+      "en": "Login password"
+    },
+    "security.password.hint": {
+      "zh": "為帳戶安全，建議定期更換密碼。",
+      "en": "For account security, we recommend changing your password regularly."
+    },
+    "security.password.mismatch": {
+      "zh": "兩次輸入嘅新密碼唔一致",
+      "en": "The two password entries do not match"
+    },
+    "security.password.newPasswordHint": {
+      "zh": "至少 8 個字符。建議混合大小寫、數字。",
+      "en": "At least 8 characters. Mix of upper and lower case letters and numbers recommended."
+    },
+    "security.password.newPasswordLabel": {
+      "zh": "新密碼",
+      "en": "New password"
+    },
+    "security.password.oldPasswordLabel": {
+      "zh": "現有密碼",
+      "en": "Current password"
+    },
+    "security.password.oldPasswordRequired": {
+      "zh": "請輸入現有密碼",
+      "en": "Please enter your current password"
+    },
+    "security.password.postChange.body": {
+      "zh": "為咗安全起見，建議重新登入所有裝置。",
+      "en": "For security reasons, we recommend signing in again on all your devices."
+    },
+    "security.password.postChange.keepLogin": {
+      "zh": "保持登入",
+      "en": "Stay signed in"
+    },
+    "security.password.postChange.relogin": {
+      "zh": "重新登入",
+      "en": "Sign in again"
+    },
+    "security.password.postChange.title": {
+      "zh": "密碼已更新",
+      "en": "Password updated"
+    },
+    "security.password.sameAsOld": {
+      "zh": "新密碼不能同舊密碼一樣",
+      "en": "New password cannot be the same as the current password"
+    },
+    "security.password.step1.cancelButton": {
+      "zh": "取消",
+      "en": "Cancel"
+    },
+    "security.password.step1.label": {
+      "zh": "1. 驗證現有密碼",
+      "en": "1. Verify current password"
+    },
+    "security.password.step1.nextButton": {
+      "zh": "下一步",
+      "en": "Next"
+    },
+    "security.password.step2.label": {
+      "zh": "2. 設定新密碼",
+      "en": "2. Set a new password"
+    },
+    "security.password.tooShort": {
+      "zh": "新密碼至少 8 個字符",
+      "en": "New password must be at least 8 characters"
+    },
+    "security.password.updateButton": {
+      "zh": "更新密碼",
+      "en": "Update password"
+    },
+    "security.password.updateError": {
+      "zh": "密碼修改失敗",
+      "en": "Password change failed"
+    },
+    "security.password.verifiedBanner": {
+      "zh": "✓ 已驗證現有密碼 — 請設定新密碼",
+      "en": "✓ Current password verified — please set a new password"
+    },
+    "security.phone.heading": {
+      "zh": "手機號碼",
+      "en": "Phone number"
+    },
+    "security.phone.notBound": {
+      "zh": "尚未綁定手機號碼",
+      "en": "No phone number linked"
+    },
+    "security.phone.notBoundHint": {
+      "zh": "綁定手機可以日後用作快速登入 + 接收重要交易通知。綁定功能稍後推出。",
+      "en": "Linking a phone number can be used for quick login and receiving important transaction notifications. This feature is coming soon."
+    },
+    "security.phone.verifiedBadge": {
+      "zh": "已驗証",
+      "en": "Verified"
+    },
+    "security.phone.verifiedHint": {
+      "zh": "手機號碼唔可以在呢度更改。如需更換，請聯絡",
+      "en": "Phone number cannot be changed here. To update it, please contact"
+    },
     "shop.heading": {
       "zh": "我的商店",
       "en": "My Shop"
-    },
-    "shop.myListings.label": {
-      "zh": "我的商品",
-      "en": "My listings"
     },
     "shop.myListings.desc": {
       "zh": "管理上架商品、查看銷售統計",
       "en": "Manage your listings and view sales statistics"
     },
-    "shop.myOrders.label": {
-      "zh": "我的訂單",
-      "en": "My orders"
+    "shop.myListings.label": {
+      "zh": "我的商品",
+      "en": "My listings"
     },
     "shop.myOrders.desc": {
       "zh": "買入 / 賣出訂單",
       "en": "Buy / Sell Orders"
     },
-    "shop.myWallet.label": {
-      "zh": "我的錢包",
-      "en": "My Wallet"
+    "shop.myOrders.label": {
+      "zh": "我的訂單",
+      "en": "My orders"
     },
     "shop.myWallet.desc": {
       "zh": "提取銷售收入",
       "en": "Withdraw your sales proceeds"
     },
-    "shop.publicPage.label": {
-      "zh": "查看公開賣家頁面",
-      "en": "View public seller page"
+    "shop.myWallet.label": {
+      "zh": "我的錢包",
+      "en": "My Wallet"
     },
     "shop.publicPage.desc": {
       "zh": "其他用戶睇到嘅你",
       "en": "How other users see you"
     },
-    "authenticator.heading": {
+    "shop.publicPage.label": {
+      "zh": "查看公開賣家頁面",
+      "en": "View public seller page"
+    },
+    "tab.authenticator": {
       "zh": "鑑定師 Portal",
       "en": "Authenticator Portal"
     },
-    "authenticator.statusLabel": {
-      "zh": "狀態",
-      "en": "Status"
+    "tab.personal": {
+      "zh": "個人資料",
+      "en": "Personal Info"
     },
-    "authenticator.hint": {
-      "zh": "你嘅鑑定師資料（店名、收費、分店等）在鑑定師專用 portal 管理。",
-      "en": "Your authenticator details (shop name, fees, branches, etc.) are managed in the dedicated Authenticator Portal."
+    "tab.security": {
+      "zh": "帳號與安全",
+      "en": "Account & Security"
     },
-    "authenticator.portalLink": {
-      "zh": "前往鑑定師 Portal",
-      "en": "Go to Authenticator Portal"
+    "tab.shop": {
+      "zh": "我的商店",
+      "en": "My Shop"
     }
   },
   "account.wallet": {

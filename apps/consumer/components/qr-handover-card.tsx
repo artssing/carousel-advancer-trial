@@ -9,8 +9,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { api } from '@/lib/api';
+import { getClientLocale, createT } from '@authentik/utils';
 
 export function QrHandoverCard({ orderId, role }: { orderId: string; role: 'pickup' | 'dropoff' }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const [dataUrl, setDataUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [secondsLeft, setSecondsLeft] = useState(60);
@@ -29,7 +34,7 @@ export function QrHandoverCard({ orderId, role }: { orderId: string; role: 'pick
       setDataUrl(url);
       setSecondsLeft(60);
     } catch (e: any) {
-      setError(e?.message ?? '攞唔到 QR 碼，請重試');
+      setError(e?.message ?? _t('orderDetail.qr.error'));
     }
   }, [orderId]);
 
@@ -43,29 +48,29 @@ export function QrHandoverCard({ orderId, role }: { orderId: string; role: 'pick
   return (
     <div className="mt-3 rounded-xl border border-brand-200 bg-verify-soft p-4 text-center">
       <p className="text-sm font-bold text-brand-800">
-        {role === 'pickup' ? '到店取貨 — 出示此 QR 碼畀鑑定師 scan' : '到店交貨 — 出示此 QR 碼畀鑑定師 scan'}
+        {role === 'pickup' ? _t('orderDetail.qr.pickupTitle') : _t('orderDetail.qr.dropoffTitle')}
       </p>
       {error ? (
         <div className="mx-auto mt-3 flex h-[240px] w-[240px] items-center justify-center rounded-lg bg-white p-4">
           <div>
             <p className="text-xs text-danger">{error}</p>
             <button type="button" onClick={refresh} className="mt-2 text-xs font-semibold text-brand-700 hover:underline">
-              重試
+              {_t('orderDetail.qr.retry')}
             </button>
           </div>
         </div>
       ) : dataUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={dataUrl} alt="交收 QR 碼" className="mx-auto mt-3 h-[240px] w-[240px] rounded-lg bg-white" />
+        <img src={dataUrl} alt={_t('orderDetail.qr.imageAlt')} className="mx-auto mt-3 h-[240px] w-[240px] rounded-lg bg-white" />
       ) : (
         <div className="mx-auto mt-3 h-[240px] w-[240px] animate-pulse rounded-lg bg-white" />
       )}
       <p className="mt-2 text-[11px] text-brand-700">
-        每 60 秒自動更新（{secondsLeft}s）· 一次性，截圖無效
+        {_t('orderDetail.qr.refreshNotice', { seconds: secondsLeft })}
       </p>
       <p className="mt-1 text-[11px] text-neutral-text-muted">
-        鑑定師 scan 完會核對訂單 + 商品，確認後
-        {role === 'pickup' ? '交收即完成' : '正式接收件貨開始鑑定'}
+        {_t('orderDetail.qr.scanNotice')}
+        {role === 'pickup' ? _t('orderDetail.qr.afterPickup') : _t('orderDetail.qr.afterDropoff')}
       </p>
 
       {/* ── UAT/dev-only：copy token 畀桌面 /scan 貼 ── */}
@@ -79,7 +84,7 @@ export function QrHandoverCard({ orderId, role }: { orderId: string; role: 'pick
               onClick={() => void navigator.clipboard?.writeText(rawToken)}
               className="shrink-0 rounded bg-amber-500 px-2 py-1 text-[11px] font-semibold text-white hover:bg-amber-600"
             >
-              複製
+              {_t('orderDetail.qr.copy')}
             </button>
           </div>
         </div>

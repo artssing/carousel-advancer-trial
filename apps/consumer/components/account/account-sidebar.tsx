@@ -2,22 +2,28 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { clearToken, AUTH_CHANGE_EVENT } from '@/lib/api';
+import { getClientLocale, createT } from '@authentik/utils';
 
 /**
  * L3 shared account-area left navigation (220px sticky rail).
  * Matches design-samples/final-L3/account.html .side.
  * Used by account/profile, account/wallet, account/wallet/payouts.
  */
-const NAV: { href: string; label: string; match?: (p: string) => boolean }[] = [
-  { href: '/account/profile', label: '個人檔案' },
-  { href: '/account/wallet', label: '錢包', match: (p) => p === '/account/wallet' },
-  { href: '/account/wallet/methods', label: '提現方式' },
-  { href: '/orders', label: '我的訂單' },
-  { href: '/my-listings', label: '我的上架' },
+const NAV: { href: string; labelKey: string; match?: (p: string) => boolean }[] = [
+  { href: '/account/profile', labelKey: 'account.profile.nav.profile' },
+  { href: '/account/wallet', labelKey: 'account.profile.nav.wallet', match: (p: string) => p === '/account/wallet' },
+  { href: '/account/wallet/methods', labelKey: 'account.profile.nav.payoutMethods' },
+  { href: '/orders', labelKey: 'account.profile.nav.orders' },
+  { href: '/my-listings', labelKey: 'account.profile.nav.listings' },
 ];
 
 export function AccountSidebar() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const pathname = usePathname() ?? '';
   const router = useRouter();
 
@@ -43,7 +49,7 @@ export function AccountSidebar() {
                   : 'text-neutral-text-muted hover:bg-surface-2 hover:text-neutral-text'
               }`}
             >
-              {n.label}
+              {_t(n.labelKey)}
             </Link>
           );
         })}
@@ -52,7 +58,7 @@ export function AccountSidebar() {
           onClick={onLogout}
           className="block shrink-0 whitespace-nowrap rounded-lg px-3.5 py-2.5 text-left text-[14px] font-medium text-danger transition hover:bg-danger-soft"
         >
-          登出
+          {_t('account.profile.nav.logout')}
         </button>
       </nav>
     </aside>

@@ -16,8 +16,9 @@
  * via stationDisplayLabel(). Empty state renders a dashed "＋ 選擇" target —
  * no text input masquerading as free text (lesson #11: no fake affordances).
  */
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, MapPin, Search, X } from 'lucide-react';
+import { getClientLocale, createT } from '@authentik/utils';
 import {
   MTR_LINES,
   type MTRLineKey,
@@ -33,13 +34,18 @@ export function StationPicker({
   values,
   onChange,
   max = 3,
-  placeholder = '＋ 選擇所在港鐵站（選填，最多 3 個候選）',
+  placeholder,
 }: {
   values: string[];
   onChange: (codes: string[]) => void;
   max?: number;
   placeholder?: string;
 }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
+
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [activeLine, setActiveLine] = useState<MTRLineKey | null>(null);
@@ -99,7 +105,7 @@ export function StationPicker({
           <button
             type="button"
             onClick={() => onChange(values.filter((v) => v !== code))}
-            aria-label={`移除 ${stationDisplayLabel(code)}`}
+            aria-label={_t('sell.station.removeAria', { station: stationDisplayLabel(code) ?? code })}
             className="rounded-full p-0.5 text-brand-600 hover:bg-brand-100"
           >
             <X className="h-3 w-3" />
@@ -119,7 +125,7 @@ export function StationPicker({
           onClick={() => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 0); }}
           className="w-full rounded-lg border border-dashed border-line-2 px-3 py-2.5 text-left text-sm text-neutral-text-hint hover:border-brand-600 hover:text-brand-700"
         >
-          {values.length > 0 ? `＋ 加候選站（${values.length}/${max}）` : placeholder}
+          {values.length > 0 ? _t('sell.station.addMore', { n: values.length, max }) : (placeholder ?? _t('sell.station.placeholder', { max }))}
         </button>
       </div>
     );
@@ -139,7 +145,7 @@ export function StationPicker({
             ref={inputRef}
             value={query}
             onChange={(e) => { setQuery(e.target.value); setActiveLine(null); }}
-            placeholder="打站名（例：旺角）— 只可以喺建議入面揀"
+            placeholder={_t('sell.station.searchPlaceholder')}
             className="h-9 w-full rounded-lg border border-line bg-white pl-9 pr-3 text-sm outline-none placeholder:text-neutral-text-hint focus:border-brand-600"
           />
         </div>
@@ -148,13 +154,13 @@ export function StationPicker({
           onClick={close}
           className="shrink-0 rounded-lg bg-brand-600 px-3.5 py-1.5 text-sm font-semibold text-white hover:bg-brand-700"
         >
-          完成
+          {_t('sell.station.done')}
         </button>
       </div>
 
       {atCap && (
         <p className="mt-2 px-1 text-[11px] text-verdict-incon">
-          已達 {max} 個候選上限 — 想換站請先移除一個
+          {_t('sell.station.limitReached', { max })}
         </p>
       )}
 
@@ -163,7 +169,7 @@ export function StationPicker({
         <div className="mt-2">
           {suggestions.length === 0 ? (
             <p className="px-1 py-2 text-xs text-neutral-text-muted">
-              搵唔到「{query}」— 請由港鐵站揀選（唔可以自由填寫）
+              {_t('sell.station.noMatch', { query })}
             </p>
           ) : (
             <div className="flex flex-col">
@@ -180,7 +186,7 @@ export function StationPicker({
                     {selected
                       ? <Check className="h-3.5 w-3.5 shrink-0 text-brand-600" />
                       : <MapPin className="h-3.5 w-3.5 shrink-0 text-neutral-text-hint" />}
-                    <span className="font-medium">{s.label}站</span>
+                    <span className="font-medium">{s.label}{_t('sell.station.suffix')}</span>
                     <span className="ml-auto flex gap-1">
                       {linesForStation(s.code).map((l) => (
                         <span key={l.key} className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: l.color }} title={l.label} />
@@ -235,7 +241,7 @@ export function StationPicker({
                   }
                 >
                   {wholeLineSelected && <Check className="h-3 w-3" />}
-                  成條{lineCfg.label}
+                  {_t('sell.station.wholeLine', { line: lineCfg.label })}
                 </button>
                 {lineStations.map((s) => {
                   const selected = values.includes(s.code);
@@ -245,7 +251,7 @@ export function StationPicker({
                       type="button"
                       onClick={() => toggle(s.code)}
                       disabled={wholeLineSelected || (!selected && atCap)}
-                      title={wholeLineSelected ? `已包含喺成條${lineCfg.label}內` : undefined}
+                      title={wholeLineSelected ? _t('sell.station.alreadyInLine', { line: lineCfg.label }) : undefined}
                       className={`inline-flex items-center gap-1 rounded-full border px-3 py-1.5 text-xs font-medium transition disabled:opacity-40 ${
                         selected
                           ? 'border-brand-600 bg-verify-soft text-brand-700'
@@ -262,7 +268,7 @@ export function StationPicker({
           })()}
           {!activeLine && (
             <p className="mt-2 px-1 text-[11px] text-neutral-text-hint">
-              揀一條綫連續多選（撳一下加、再撳取消），或者直接打站名搜尋
+              {_t('sell.station.hint')}
             </p>
           )}
         </>

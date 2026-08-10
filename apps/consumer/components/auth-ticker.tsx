@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Check } from 'lucide-react';
 import { api } from '@/lib/api';
+import { getClientLocale, createT } from '@authentik/utils';
 
 /**
  * L3 「實時鑑定」 ticker — floating trust bar shown on the home page hero.
@@ -24,19 +25,26 @@ import { api } from '@/lib/api';
 interface Item {
   key: string;
   title: string;
-  category: string;
+  /** Live rows carry a category name from the API; the demo fallback carries a
+   *  t() key instead, so the sample rows follow the locale too. */
+  category?: string;
+  categoryKey?: string;
   brand: string | null;
   authenticatorName: string;
   passedAt: string;
 }
 
 const FALLBACK: Item[] = [
-  { key: 'demo-1', title: 'Chanel Classic Flap Medium', category: '手袋', brand: 'Chanel', authenticatorName: 'Milan Leung', passedAt: '' },
-  { key: 'demo-2', title: 'Rolex Submariner Date', category: '名錶', brand: 'Rolex', authenticatorName: 'ProCheck', passedAt: '' },
-  { key: 'demo-3', title: 'Air Jordan 1 Chicago', category: '球鞋', brand: 'Nike', authenticatorName: 'StepAuth', passedAt: '' },
+  { key: 'demo-1', title: 'Chanel Classic Flap Medium', categoryKey: 'homepage.ticker.category.handbag', brand: 'Chanel', authenticatorName: 'Milan Leung', passedAt: '' },
+  { key: 'demo-2', title: 'Rolex Submariner Date', categoryKey: 'homepage.ticker.category.watch', brand: 'Rolex', authenticatorName: 'ProCheck', passedAt: '' },
+  { key: 'demo-3', title: 'Air Jordan 1 Chicago', categoryKey: 'homepage.ticker.category.sneaker', brand: 'Nike', authenticatorName: 'StepAuth', passedAt: '' },
 ];
 
 export function AuthTicker() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const [items, setItems] = useState<Item[] | null>(null);
   const [isFallback, setIsFallback] = useState(false);
 
@@ -84,7 +92,7 @@ export function AuthTicker() {
             <span className="absolute inline-flex h-1.5 w-1.5 animate-ping rounded-full bg-brand-400 opacity-75" />
             <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-brand-400" />
           </span>
-          實時鑑定
+          {_t('homepage.ticker.title')}
         </div>
 
         {/* Marquee content */}
@@ -97,7 +105,7 @@ export function AuthTicker() {
                 <span>{it.authenticatorName}</span>
                 <span className="flex items-center gap-1 font-bold text-verify">
                   <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                  通過
+                  {_t('homepage.ticker.passed')}
                 </span>
                 <span className="mx-1 text-neutral-text-hint">•</span>
               </span>
@@ -107,7 +115,7 @@ export function AuthTicker() {
 
         {isFallback && (
           <span className="hidden shrink-0 rounded-full border border-line-2 bg-surface-2 px-2 py-0.5 text-[10px] font-medium text-neutral-text-hint md:inline-block">
-            示例
+            {_t('homepage.ticker.sample')}
           </span>
         )}
       </div>
