@@ -1110,29 +1110,77 @@
     }
   },
   "checkout": {
-    "loading": {
-      "zh": "載入中…",
-      "en": "Loading…"
+    "authenticator.feeLine": {
+      "zh": "鑑定費 {fee}",
+      "en": "Authentication fee {fee}"
     },
-    "offlineCash.title": {
-      "zh": "此訂單為線下現金交收",
-      "en": "This is an offline cash transaction"
+    "deadline.notice": {
+      "zh": "付款時限 — 過時訂單自動取消",
+      "en": "Payment window — the order is cancelled automatically once it passes"
     },
-    "offlineCash.directDesc": {
-      "zh": "直接面交訂單必須現金支付，冇網上付款步驟。同賣家約好時間地點，見面一手交錢一手交貨。",
-      "en": "Direct meetup orders must be paid in cash. There are no online payment steps. Arrange a time and place with the seller and exchange on the spot."
+    "deadline.remaining": {
+      "zh": "⏱ 剩餘 {mm}:{ss}",
+      "en": "⏱ {mm}:{ss} left"
     },
-    "offlineCash.genericDesc": {
-      "zh": "呢張單揀咗線下現金，冇網上付款步驟。",
-      "en": "This order uses offline cash payment with no online payment steps."
+    "deadline.warning": {
+      "zh": "⏰ 付款時限快到（剩 {mins} 分鐘）— 請盡快完成付款，否則訂單會自動取消。",
+      "en": "⏰ The payment window closes in {mins} min — pay soon or the order is cancelled automatically."
     },
-    "offlineCash.cta": {
-      "zh": "知道喇，去訂單頁跟進",
-      "en": "Understood. Proceed to order page."
+    "error.confirmTimeout": {
+      "zh": "付款確認超時 — 請稍後喺訂單頁檢查狀態，唔好重複付款",
+      "en": "Payment confirmation timed out — check the order page shortly. Do not pay again."
     },
-    "expired.title": {
-      "zh": "付款時限已過",
-      "en": "Payment deadline has expired"
+    "error.deadlinePassed": {
+      "zh": "付款時限已過 — 請重新落單",
+      "en": "The payment window has closed — please order again"
+    },
+    "error.expired": {
+      "zh": "付款時限已過，訂單已取消 — 請重新落單",
+      "en": "Payment deadline has passed. Order cancelled — please place a new order."
+    },
+    "error.loadOrder": {
+      "zh": "無法載入訂單",
+      "en": "Unable to load order"
+    },
+    "error.network": {
+      "zh": "網絡錯誤，請稍後重試",
+      "en": "Network error. Please try again later."
+    },
+    "error.paymentFailed": {
+      "zh": "付款失敗，請重試",
+      "en": "Payment failed. Please try again."
+    },
+    "error.reviewFailed": {
+      "zh": "確認失敗，請重試",
+      "en": "Confirmation failed. Please try again."
+    },
+    "error.timeout": {
+      "zh": "付款確認超時 — 請稍後在訂單頁檢查狀態，唔好重複付款",
+      "en": "Payment confirmation timed out — please check the order page shortly. Do not make a duplicate payment."
+    },
+    "escrow.chargedNotice": {
+      "zh": "平台已正式扣款 {amount}（Tier 1 即時 charge）。",
+      "en": "You have been charged {amount} (Tier 1 charges immediately)."
+    },
+    "escrow.explainerTier1": {
+      "zh": "Tier 1 訂單即時扣款，交收完成前平台託管，有問題可以開爭議。",
+      "en": "Tier 1 orders are charged immediately. The platform holds the funds until handover is complete, and you can raise a dispute if anything goes wrong."
+    },
+    "escrow.explainerTiered": {
+      "zh": "託管保障：確認付款後，平台會 hold 住呢筆錢（唔會即刻過數俾賣家）。鑑定師核實正貨後先正式扣款放行；鑑定唔過會全額退返俾你。",
+      "en": "Escrow protection: after you confirm, the platform holds the funds instead of passing them to the seller. They are released only once the authenticator verifies the item; if it fails authentication you are refunded in full."
+    },
+    "escrow.holdNotice": {
+      "zh": "平台已 hold 你嘅 {amount} 直至鑑定完成。鑑定師核實後先正式扣款。",
+      "en": "The platform is holding your {amount} until authentication finishes. It is charged only after the authenticator verifies the item."
+    },
+    "expired.body": {
+      "zh": "訂單超過 30 分鐘未完成付款，已自動取消，貨品已重新上架俾其他買家。如仍想購買，請返回商品頁重新落單。",
+      "en": "The order was not paid within 30 minutes, so it was cancelled automatically and the item is listed again for other buyers. To buy it, go back to the item page and order again."
+    },
+    "expired.browse": {
+      "zh": "瀏覽其他貨品",
+      "en": "Browse other items"
     },
     "expired.desc": {
       "zh": "訂單超過 30 分鐘未完成付款，已自動取消，貨品已重新上架俾其他買家。如仍想購買，請返回商品頁重新落單。",
@@ -1142,81 +1190,105 @@
       "zh": "返回商品頁重新落單",
       "en": "Return to listing and re-order"
     },
-    "expired.browse": {
-      "zh": "瀏覽其他貨品",
-      "en": "Browse other items"
-    },
-    "success.title": {
-      "zh": "付款成功",
-      "en": "Payment successful"
-    },
-    "success.descHold": {
-      "zh": "平台已 hold 你嘅 {total} 直至鑑定完成。鑑定師核實後先正式扣款。",
-      "en": "The platform is holding your {total} until authentication is complete. Payment will only be charged after the authenticator verifies the item."
-    },
-    "success.descNoHold": {
-      "zh": "平台已正式扣款 {total}（Tier 1 即時 charge）。",
-      "en": "Your {total} has been charged (Tier 1 instant charge)."
-    },
-    "success.redirecting": {
-      "zh": "正在跳轉去你嘅訂單… {countdown}",
-      "en": "Redirecting to your order… {countdown}"
-    },
-    "success.goToOrder": {
-      "zh": "立即前往訂單",
-      "en": "Go to order"
-    },
-    "steps.cart": {
-      "zh": "1 購物車",
-      "en": "1 Cart"
-    },
-    "steps.review": {
-      "zh": "2 確認訂單",
-      "en": "2 Review order"
-    },
-    "steps.pay": {
-      "zh": "3 付款",
-      "en": "3 Payment"
-    },
-    "steps.done": {
-      "zh": "4 完成",
-      "en": "4 Done"
-    },
-    "timer.label": {
-      "zh": "⏱ 剩餘 {time}",
-      "en": "⏱ {time} remaining"
-    },
-    "timer.secureLabel": {
-      "zh": "安全結帳 · #{id}",
-      "en": "Secure checkout · #{id}"
-    },
-    "timer.warning": {
-      "zh": "⏰ 付款時限快到（剩 {n} 分鐘）— 請盡快完成付款，否則訂單會自動取消。",
-      "en": "⏰ Payment deadline approaching ({n} minutes remaining) — please complete payment promptly, otherwise the order will be automatically cancelled."
-    },
-    "heading.review": {
-      "zh": "確認訂單",
-      "en": "Review order"
+    "expired.title": {
+      "zh": "付款時限已過",
+      "en": "Payment deadline has expired"
     },
     "heading.pay": {
       "zh": "付款",
       "en": "Payment"
     },
-    "tierDesc3": {
-      "zh": "Tier 3 高價貨品 · 需經第三方鑑定師鑑定後放款",
-      "en": "Tier 3 high-value item · Requires third-party authenticator verification before payment is released"
+    "heading.review": {
+      "zh": "確認訂單",
+      "en": "Review order"
     },
-    "tierDesc2": {
-      "zh": "Tier 2 · 買家可選鑑定師增加信心",
-      "en": "Tier 2 · Buyer can choose an authenticator for added confidence"
+    "loading": {
+      "zh": "載入中…",
+      "en": "Loading…"
     },
-    "tierDesc1": {
-      "zh": "Tier 1 · 純撮合",
-      "en": "Tier 1 · Pure matchmaking"
+    "offlineCash.cta": {
+      "zh": "知道喇，去訂單頁跟進",
+      "en": "Understood. Proceed to order page."
     },
-    "review.productSection": {
-      "zh": "商品",
-      "en": "Item"
+    "offlineCash.directDesc": {
+      "zh": "直接面交訂單必須現金支付，冇網上付款步驟。同賣家約好時間地點，見面一手交錢一手交貨。",
+      "en": "Direct meetup orders must be paid in cash. There are no online payment steps. Arrange a time and place with the seller and exchange on the spot."
+    },
+    "offlineCash.genericDesc": {
+      "zh": "呢張單揀咗線下現金，冇網上付款步驟。",
+      "en": "This order uses offline cash payment with no online payment steps."
+    },
+    "offlineCash.title": {
+      "zh": "此訂單為線下現金交收",
+      "en": "This is an offline cash transaction"
+    },
+    "pay.cardAuthorize": {
+      "zh": "授權 {total}",
+      "en": "Authorize {total}"
+    },
+    "pay.cardPay": {
+      "zh": "確認並付款 {total}",
+      "en": "Confirm and pay {total}"
+    },
+    "pay.cardSubmit": {
+      "zh": "處理中…",
+      "en": "Processing…"
+    },
+    "pay.errorCode": {
+      "zh": "code: {code}",
+      "en": "code: {code}"
+    },
+    "pay.errorTitle": {
+      "zh": "付款失敗",
+      "en": "Payment failed"
+    },
+    "pay.methodTitle": {
+      "zh": "揀付款方式",
+      "en": "Select payment method"
+    },
+    "pay.mobilePay": {
+      "zh": "付款 {total}",
+      "en": "Pay {total}"
+    },
+    "pay.retryCard": {
+      "zh": "重試同一張卡",
+      "en": "Retry same card"
+    },
+    "pay.submitAgree": {
+      "zh": "撳「{authLabel}」即表示你同意 Certifine 服務條款 + 鑑定流程",
+      "en": "By clicking \"{authLabel}\", you agree to Certifine's Terms of Service and authentication process."
+    },
+    "pay.switchCard": {
+      "zh": "換一張卡",
+      "en": "Use a different card"
+    },
+    "review.authSection": {
+      "zh": "鑑定",
+      "en": "Authentication"
+    },
+    "review.backToEdit": {
+      "zh": "返回上一頁修改",
+      "en": "Back to edit"
+    },
+    "review.backToListing": {
+      "zh": "返回商品頁",
+      "en": "Back to listing"
+    },
+    "review.confirmButton": {
+      "zh": "確認訂單，前往付款",
+      "en": "Confirm order and proceed to payment"
+    },
+    "review.deliveryMeetup3way": {
+      "zh": "🤝 三方同場面交 — 你、賣家、鑑定師約同一時間地點，即場鑑定即場交收",
+      "en": "🤝 Three-way meetup — you, seller, and authenticator meet at the same time and place for on-site authentication and handover"
+    },
+    "review.deliveryMeetupAuth": {
+      "zh": "🏬 鑑定師分店交收 — 賣家交貨去分店，鑑定通過後你去分店取貨",
+      "en": "🏬 Authenticator branch pickup — seller delivers to the branch; you pick up after verification"
+    },
+    "review.deliveryMeetupDirect": {
+      "zh": "🤝 同賣家直接面交",
+      "en": "🤝 Direct meetup with seller"
     },
     "review.deliverySection": {
       "zh": "交收方式",
@@ -1230,25 +1302,9 @@
       "zh": "📦 賣家直接寄俾你（SF Express）",
       "en": "📦 Seller ships directly to you (SF Express)"
     },
-    "review.deliveryMeetupAuth": {
-      "zh": "🏬 鑑定師分店交收 — 賣家交貨去分店，鑑定通過後你去分店取貨",
-      "en": "🏬 Authenticator branch pickup — seller delivers to the branch; you pick up after verification"
-    },
-    "review.deliveryMeetup3way": {
-      "zh": "🤝 三方同場面交 — 你、賣家、鑑定師約同一時間地點，即場鑑定即場交收",
-      "en": "🤝 Three-way meetup — you, seller, and authenticator meet at the same time and place for on-site authentication and handover"
-    },
-    "review.deliveryMeetupDirect": {
-      "zh": "🤝 同賣家直接面交",
-      "en": "🤝 Direct meetup with seller"
-    },
-    "review.authSection": {
-      "zh": "鑑定",
-      "en": "Authentication"
-    },
-    "review.noAuth": {
-      "zh": "無鑑定（Tier 1 純撮合）",
-      "en": "No authentication (Tier 1 matchmaking)"
+    "review.errorTitle": {
+      "zh": "⚠ {reviewError}",
+      "en": "⚠ {reviewError}"
     },
     "review.escrowHold": {
       "zh": "🛡️ 託管保障：確認付款後，平台會 hold 住呢筆錢（唔會即刻過數俾賣家）。鑑定師核實正貨後先正式扣款放行；鑑定唔過會全額退返俾你。",
@@ -1258,89 +1314,109 @@
       "zh": "🛡️ Tier 1 訂單即時扣款，交收完成前平台託管，有問題可以開爭議。",
       "en": "🛡️ Tier 1 orders are charged immediately. Funds are held by the platform until handover is complete. You can open a dispute if there are issues."
     },
-    "review.errorTitle": {
-      "zh": "⚠ {reviewError}",
-      "en": "⚠ {reviewError}"
-    },
-    "review.backToListing": {
-      "zh": "返回商品頁",
-      "en": "Back to listing"
-    },
-    "review.confirmButton": {
-      "zh": "確認訂單，前往付款",
-      "en": "Confirm order and proceed to payment"
-    },
     "review.hint": {
       "zh": "確認前貨品唔會為你保留，可以隨時返回上一頁修改；確認後貨品會為你鎖定 30 分鐘，超時未付款訂單自動取消。",
       "en": "The item is not reserved until you confirm. You may go back to edit at any time. Once confirmed, the item will be locked for you for 30 minutes. Orders that are not paid within this time will be automatically cancelled."
     },
-    "review.backToEdit": {
-      "zh": "返回上一頁修改",
-      "en": "Back to edit"
+    "review.holdAfter": {
+      "zh": "；確認後貨品會為你鎖定 30 分鐘，超時未付款訂單自動取消。",
+      "en": " — after you confirm, it is held for you for 30 minutes and the order is cancelled automatically if payment does not arrive."
     },
-    "pay.methodTitle": {
-      "zh": "揀付款方式",
-      "en": "Select payment method"
+    "review.noAuth": {
+      "zh": "無鑑定（Tier 1 純撮合）",
+      "en": "No authentication (Tier 1 matchmaking)"
     },
-    "pay.errorTitle": {
-      "zh": "付款失敗",
-      "en": "Payment failed"
+    "review.noHoldBefore": {
+      "zh": "確認前貨品唔會為你保留，可以隨時",
+      "en": "The item is not reserved for you until you confirm. You can"
     },
-    "pay.errorCode": {
-      "zh": "code: {code}",
-      "en": "code: {code}"
+    "review.productSection": {
+      "zh": "商品",
+      "en": "Item"
     },
-    "pay.switchCard": {
-      "zh": "換一張卡",
-      "en": "Use a different card"
+    "secureCheckout": {
+      "zh": "安全結帳",
+      "en": "Secure checkout"
     },
-    "pay.retryCard": {
-      "zh": "重試同一張卡",
-      "en": "Retry same card"
+    "steps.cart": {
+      "zh": "1 購物車",
+      "en": "1 Cart"
     },
-    "pay.cardSubmit": {
-      "zh": "處理中…",
-      "en": "Processing…"
+    "steps.done": {
+      "zh": "4 完成",
+      "en": "4 Done"
     },
-    "pay.cardAuthorize": {
-      "zh": "授權 {total}",
-      "en": "Authorize {total}"
+    "steps.pay": {
+      "zh": "3 付款",
+      "en": "3 Payment"
     },
-    "pay.cardPay": {
-      "zh": "確認並付款 {total}",
-      "en": "Confirm and pay {total}"
+    "steps.review": {
+      "zh": "2 確認訂單",
+      "en": "2 Review order"
     },
-    "pay.submitAgree": {
-      "zh": "撳「{authLabel}」即表示你同意 Certifine 服務條款 + 鑑定流程",
-      "en": "By clicking \"{authLabel}\", you agree to Certifine's Terms of Service and authentication process."
+    "submit.authorize": {
+      "zh": "授權",
+      "en": "Authorise"
     },
-    "pay.mobilePay": {
-      "zh": "付款 {total}",
-      "en": "Pay {total}"
+    "submit.authorizeAmount": {
+      "zh": "授權 {amount}",
+      "en": "Authorise {amount}"
     },
-    "error.reviewFailed": {
-      "zh": "確認失敗，請重試",
-      "en": "Confirmation failed. Please try again."
+    "submit.pay": {
+      "zh": "確認並付款",
+      "en": "Confirm and pay"
     },
-    "error.expired": {
-      "zh": "付款時限已過，訂單已取消 — 請重新落單",
-      "en": "Payment deadline has passed. Order cancelled — please place a new order."
+    "submit.payAmount": {
+      "zh": "確認並付款 {amount}",
+      "en": "Confirm and pay {amount}"
     },
-    "error.paymentFailed": {
-      "zh": "付款失敗，請重試",
-      "en": "Payment failed. Please try again."
+    "submit.payShort": {
+      "zh": "付款 {amount}",
+      "en": "Pay {amount}"
     },
-    "error.timeout": {
-      "zh": "付款確認超時 — 請稍後在訂單頁檢查狀態，唔好重複付款",
-      "en": "Payment confirmation timed out — please check the order page shortly. Do not make a duplicate payment."
+    "success.descHold": {
+      "zh": "平台已 hold 你嘅 {total} 直至鑑定完成。鑑定師核實後先正式扣款。",
+      "en": "The platform is holding your {total} until authentication is complete. Payment will only be charged after the authenticator verifies the item."
     },
-    "error.network": {
-      "zh": "網絡錯誤，請稍後重試",
-      "en": "Network error. Please try again later."
+    "success.descNoHold": {
+      "zh": "平台已正式扣款 {total}（Tier 1 即時 charge）。",
+      "en": "Your {total} has been charged (Tier 1 instant charge)."
     },
-    "error.loadOrder": {
-      "zh": "無法載入訂單",
-      "en": "Unable to load order"
+    "success.goToOrder": {
+      "zh": "立即前往訂單",
+      "en": "Go to order"
+    },
+    "success.redirecting": {
+      "zh": "正在跳轉去你嘅訂單… {countdown}",
+      "en": "Redirecting to your order… {countdown}"
+    },
+    "success.title": {
+      "zh": "付款成功",
+      "en": "Payment successful"
+    },
+    "tierDesc1": {
+      "zh": "Tier 1 · 純撮合",
+      "en": "Tier 1 · Pure matchmaking"
+    },
+    "tierDesc2": {
+      "zh": "Tier 2 · 買家可選鑑定師增加信心",
+      "en": "Tier 2 · Buyer can choose an authenticator for added confidence"
+    },
+    "tierDesc3": {
+      "zh": "Tier 3 高價貨品 · 需經第三方鑑定師鑑定後放款",
+      "en": "Tier 3 high-value item · Requires third-party authenticator verification before payment is released"
+    },
+    "timer.label": {
+      "zh": "⏱ 剩餘 {time}",
+      "en": "⏱ {time} remaining"
+    },
+    "timer.secureLabel": {
+      "zh": "安全結帳 · #{id}",
+      "en": "Secure checkout · #{id}"
+    },
+    "timer.warning": {
+      "zh": "⏰ 付款時限快到（剩 {n} 分鐘）— 請盡快完成付款，否則訂單會自動取消。",
+      "en": "⏰ Payment deadline approaching ({n} minutes remaining) — please complete payment promptly, otherwise the order will be automatically cancelled."
     }
   },
   "orders": {
@@ -1690,69 +1766,89 @@
     }
   },
   "orderDetail": {
-    "loading": {
-      "zh": "載入中…",
-      "en": "Loading…"
+    "action.cancelOrder": {
+      "zh": "取消交易",
+      "en": "Cancel the order"
     },
-    "backToOrders": {
-      "zh": "返回我的訂單",
-      "en": "Back to My Orders"
+    "action.confirmHandover": {
+      "zh": "確認交付",
+      "en": "Confirm handover"
+    },
+    "action.confirmPay": {
+      "zh": "確認交易",
+      "en": "Confirm payment"
+    },
+    "action.confirmReceived": {
+      "zh": "確認收到",
+      "en": "Confirm receipt"
+    },
+    "action.confirmReturn": {
+      "zh": "確認取回",
+      "en": "Confirm return"
+    },
+    "action.dispute": {
+      "zh": "提出爭議",
+      "en": "Raise a dispute"
+    },
+    "action.failed": {
+      "zh": "{name} 失敗：{reason}",
+      "en": "{name} failed: {reason}"
+    },
+    "action.rePhoto": {
+      "zh": "要求重拍",
+      "en": "Request new photos"
+    },
+    "action.reviewAuthenticator": {
+      "zh": "評鑑定師",
+      "en": "Review the authenticator"
+    },
+    "action.reviewSeller": {
+      "zh": "評賣家",
+      "en": "Review the seller"
+    },
+    "action.unknownError": {
+      "zh": "未知錯誤",
+      "en": "Unknown error"
+    },
+    "awaitingPayment.cashDesc": {
+      "zh": "線下現金：面交時付款，平台不代收。",
+      "en": "Offline cash: pay at meetup. The platform does not collect payment."
+    },
+    "awaitingPayment.escrowDesc": {
+      "zh": "線上託管：信用卡 hold（鑑定通過先正式扣款）。",
+      "en": "Online escrow: credit card hold (charged only after authentication passes)."
+    },
+    "awaitingPayment.title": {
+      "zh": "等待付款",
+      "en": "Awaiting payment"
     },
     "backToListing": {
       "zh": "← 返回商品頁",
       "en": "← Back to listing"
     },
-    "listingCategory": {
-      "zh": "商品分類 {category}",
-      "en": "Category: {category}"
+    "backToOrders": {
+      "zh": "返回我的訂單",
+      "en": "Back to My Orders"
     },
-    "card.parties": {
-      "zh": "交易參與方",
-      "en": "Transaction parties"
-    },
-    "label.buyer": {
-      "zh": "買家",
-      "en": "Buyer"
-    },
-    "label.seller": {
-      "zh": "賣家",
-      "en": "Seller"
-    },
-    "label.authenticator": {
-      "zh": "鑑定師",
-      "en": "Authenticator"
-    },
-    "you.self": {
-      "zh": "(你)",
-      "en": "(You)"
-    },
-    "card.deliveryPayment": {
-      "zh": "交收 + 付款",
-      "en": "Delivery and payment"
-    },
-    "delivery.label": {
-      "zh": "交收方式",
-      "en": "Delivery method"
-    },
-    "branch.label": {
-      "zh": "交收分店",
-      "en": "Pickup branch"
-    },
-    "branch.isPrimary": {
-      "zh": "主要",
-      "en": "Primary"
+    "branch.googleMaps": {
+      "zh": "📍 Google Maps",
+      "en": "📍 Google Maps"
     },
     "branch.hoursPrefix": {
       "zh": "營業：{hours}",
       "en": "Hours: {hours}"
     },
+    "branch.isPrimary": {
+      "zh": "主要",
+      "en": "Primary"
+    },
+    "branch.label": {
+      "zh": "交收分店",
+      "en": "Pickup branch"
+    },
     "branch.notesPrefix": {
       "zh": "⚠ {notes}",
       "en": "⚠ {notes}"
-    },
-    "branch.googleMaps": {
-      "zh": "📍 Google Maps",
-      "en": "📍 Google Maps"
     },
     "branch.phone": {
       "zh": "📞 {phone}",
@@ -1762,265 +1858,57 @@
       "zh": "💬 WhatsApp",
       "en": "💬 WhatsApp"
     },
-    "meetupLocation.label": {
-      "zh": "面交地點",
-      "en": "Meetup location"
+    "cancelLabel": {
+      "zh": "取消",
+      "en": "Cancel"
     },
-    "payment.label": {
-      "zh": "付款方式",
-      "en": "Payment method"
-    },
-    "payment.held": {
-      "zh": "已 hold",
-      "en": "Held"
+    "card.deliveryPayment": {
+      "zh": "交收 + 付款",
+      "en": "Delivery and payment"
     },
     "card.fees": {
       "zh": "費用明細",
       "en": "Fee breakdown"
     },
-    "fee.salePrice": {
-      "zh": "成交價",
-      "en": "Sale price"
+    "card.handoverHistory": {
+      "zh": "鑑定師接收記錄",
+      "en": "Authenticator handover record"
     },
-    "fee.authSeller": {
-      "zh": "鑑定費（賣家付）",
-      "en": "Authentication fee (seller pays)"
-    },
-    "fee.platformSeller": {
-      "zh": "平台費 1.5%（賣家付）",
-      "en": "Platform fee 1.5% (paid by seller)"
-    },
-    "fee.sellerNet": {
-      "zh": "賣家實收",
-      "en": "Seller net"
+    "card.parties": {
+      "zh": "交易參與方",
+      "en": "Transaction parties"
     },
     "card.timeline": {
       "zh": "進度",
       "en": "Timeline"
     },
-    "timeline.created": {
-      "zh": "落單",
-      "en": "Ordered"
+    "chat.readOnly.completed": {
+      "zh": "訂單已完成，對話存檔僅供查閱。",
+      "en": "This order is complete. The conversation is archived and read-only."
     },
-    "timeline.paid": {
-      "zh": "已付款",
-      "en": "Paid"
+    "chat.readOnly.disputed": {
+      "zh": "訂單爭議處理中，對話已鎖定。",
+      "en": "A dispute is in progress. The conversation is locked."
     },
-    "timeline.shippedToAuth": {
-      "zh": "寄至鑑定師",
-      "en": "Shipped to authenticator"
-    },
-    "timeline.receivedByAuth": {
-      "zh": "鑑定師簽收",
-      "en": "Received by authenticator"
-    },
-    "timeline.authCompleted": {
-      "zh": "鑑定完成",
-      "en": "Authentication complete"
-    },
-    "timeline.shippedToBuyer": {
-      "zh": "寄至買家",
-      "en": "Shipped to buyer"
-    },
-    "timeline.delivered": {
-      "zh": "買家確認收到",
-      "en": "Buyer confirmed receipt"
-    },
-    "timeline.completed": {
-      "zh": "交易完成",
-      "en": "Transaction complete"
-    },
-    "messageButton": {
-      "zh": "訊息",
-      "en": "Message"
-    },
-    "awaitingPayment.title": {
-      "zh": "等待付款",
-      "en": "Awaiting payment"
-    },
-    "awaitingPayment.escrowDesc": {
-      "zh": "線上託管：信用卡 hold（鑑定通過先正式扣款）。",
-      "en": "Online escrow: credit card hold (charged only after authentication passes)."
-    },
-    "awaitingPayment.cashDesc": {
-      "zh": "線下現金：面交時付款，平台不代收。",
-      "en": "Offline cash: pay at meetup. The platform does not collect payment."
-    },
-    "payNow": {
-      "zh": "立即付款 →",
-      "en": "Pay now →"
-    },
-    "confirmCash": {
-      "zh": "確認交易（面交現金）",
-      "en": "Confirm transaction (meetup cash)"
-    },
-    "delivered.title": {
-      "zh": "商品已送達？",
-      "en": "Item delivered?"
-    },
-    "delivered.desc": {
-      "zh": "確認收到貨後，款項即時釋放畀賣家，交易完成。如貨品有問題，請即撳「提出爭議」。",
-      "en": "After confirming receipt, funds are immediately released to the seller and the transaction is complete. If there is an issue with the item, please click \"File a dispute.\""
-    },
-    "confirmReceived": {
-      "zh": "確認已收到商品",
-      "en": "Confirm item received"
-    },
-    "deliveredFinal.title": {
-      "zh": "商品已送達 — 完成交易",
-      "en": "Item delivered — complete transaction"
+    "chat.readOnly.refunded": {
+      "zh": "訂單已退款，對話存檔僅供查閱。",
+      "en": "This order was refunded. The conversation is archived and read-only."
     },
     "completeTransaction": {
       "zh": "確認完成交易",
       "en": "Confirm transaction complete"
     },
-    "sellerAck.title": {
-      "zh": "鑑定師已收件並影 unboxing 相。請 view 後確認 condition match。",
-      "en": "The authenticator has received the item and taken unboxing photos. Please review and confirm the condition matches."
-    },
-    "sellerAck.hint": {
-      "zh": "確認後鑑定進入下一階段。如有問題請即撳「提出爭議」。",
-      "en": "Authentication will proceed to the next stage after confirmation. If there is an issue, please click \"File a dispute.\""
+    "confirmCash": {
+      "zh": "確認交易（面交現金）",
+      "en": "Confirm transaction (meetup cash)"
     },
     "confirmCondition": {
       "zh": "確認 condition 正確",
       "en": "Confirm condition is correct"
     },
-    "raiseDispute": {
-      "zh": "提出爭議",
-      "en": "File a dispute"
-    },
-    "meetupAuth.title": {
-      "zh": "鑑定師已上載商品狀況相片，請查閱後決定下一步。",
-      "en": "The authenticator has uploaded photos of the item's condition. Please review and decide on the next step."
-    },
-    "meetupAuth.hint": {
-      "zh": "已用重拍機會：{count} / {MAX_REPHOTO}。確認後鑑定師正式接管商品（E&O 保險）。逾 7 日唔 ack 訂單會自動取消、買家獲全額退款。",
-      "en": "Re-photo attempts used: {count} / {MAX_REPHOTO}. Upon confirmation, the authenticator formally takes custody of the item (E&O insurance applies). If not acknowledged within 7 days, the order will auto-cancel and the buyer will receive a full refund."
-    },
-    "meetupAuth.confirm": {
-      "zh": "✓ 確認相片正確 · 完成交付",
-      "en": "✓ Confirm photos correct · Complete handover"
-    },
-    "meetupAuth.requestRePhoto": {
-      "zh": "要求重拍相片（剩 {n} 次）",
-      "en": "Request re-photo ({n} remaining)"
-    },
-    "meetupAuth.exhausted": {
-      "zh": "⚠️ 已用盡重拍機會，請選擇確認交付或取消交易。",
-      "en": "⚠️ All re-photo attempts exhausted. Please choose to confirm handover or cancel the transaction."
-    },
-    "meetupAuth.cancel": {
-      "zh": "取消交易（不可撤回）",
-      "en": "Cancel transaction (irreversible)"
-    },
-    "rePhoto.title": {
-      "zh": "要求鑑定師重拍 — 請揀原因（可多選）",
-      "en": "Request authenticator re-photo — select reason(s) (multiple allowed)"
-    },
-    "rePhoto.commentPlaceholder": {
-      "zh": "（可選）補充細節，例如「請對住底部刮痕影 close-up」",
-      "en": "(Optional) Add details, e.g. \"Please take a close-up of the scratch on the bottom.\""
-    },
-    "rePhoto.submit": {
-      "zh": "提交重拍要求",
-      "en": "Submit re-photo request"
-    },
-    "rePhoto.cancel": {
-      "zh": "取消",
-      "en": "Cancel"
-    },
-    "pickup.title": {
-      "zh": "✓ 鑑定通過。請前往鑑定師店面取貨{name}。",
-      "en": "✓ Authentication passed. Please pick up your item at {name}."
-    },
-    "pickup.desc": {
-      "zh": "現場驗貨。確認後代表你親手收到並認可貨品狀況，款項即時釋放畀賣家，不可撤回。如貨品有問題，請唔好確認，撳「提出爭議」。",
-      "en": "Inspect the item on-site. Confirming means you have received and accepted the item's condition. Funds will be immediately released to the seller and cannot be undone. If there is an issue, do not confirm — click \"File a dispute.\""
-    },
-    "pickup.confirm": {
-      "zh": "我已在店 · 確認收到",
-      "en": "I am at the store · Confirm received"
-    },
-    "return.title": {
-      "zh": "鑑定不通過。買家已退款。請前往鑑定師店面取回商品，並 view 退貨相確認 condition。",
-      "en": "Authentication failed. Buyer has been refunded. Please pick up your item at the authenticator's store and review the return photos to confirm condition."
-    },
-    "return.warning": {
-      "zh": "⚠ 如逾期未取，鑑定師可能會收取寄存費（屬於你同鑑定師之間嘅安排，唔屬於 Certifine 平台責任）。",
-      "en": "⚠ If not collected on time, the authenticator may charge a storage fee (this is an arrangement between you and the authenticator, and falls outside Certifine's platform responsibility)."
-    },
-    "return.confirm": {
-      "zh": "已取回商品",
-      "en": "Item collected"
-    },
-    "disputed.title": {
-      "zh": "⚠ 交易已凍結（DISPUTED）",
-      "en": "⚠ Transaction frozen (DISPUTED)"
-    },
-    "disputed.desc": {
-      "zh": "Certifine 為資訊中介，唔裁決爭議。請拎相片 + 對話作為證據自行解決（包括法律途徑）。",
-      "en": "Certifine is an information intermediary and does not adjudicate disputes. Please use photos and conversations as evidence to resolve the matter yourselves (including legal channels)."
-    },
-    "review.rateAuth": {
-      "zh": "評價鑑定師",
-      "en": "Rate authenticator"
-    },
-    "review.commentAuth": {
-      "zh": "講下鑑定師服務（選填）",
-      "en": "Please share your experience with the authenticator's service (optional)."
-    },
-    "review.rateSeller": {
-      "zh": "評價賣家",
-      "en": "Rate seller"
-    },
-    "review.commentSeller": {
-      "zh": "貨品同描述相符？溝通如何？（選填）",
-      "en": "Please note whether the item matched the description and whether the communication was satisfactory (optional)."
-    },
-    "review.anonymous": {
-      "zh": "匿名留評（預設）：其他訪客只見「認證買家」。",
-      "en": "Leave anonymous review (default): other visitors will only see \"Verified Buyer.\""
-    },
-    "review.anonymousHint": {
-      "zh": "賣家、鑑定師同平台 admin 仍會見到你嘅名以便處理交易爭議。",
-      "en": "The seller, authenticator, and platform admin will still see your name for transaction dispute purposes."
-    },
-    "review.submitButton": {
-      "zh": "提交評價",
-      "en": "Submit review"
-    },
-    "starRating.aria": {
-      "zh": "{n} 星",
-      "en": "{n} stars"
-    },
-    "error.template": {
-      "zh": "{name} 失敗：{msg}",
-      "en": "{name} failed: {msg}"
-    },
-    "error.load": {
-      "zh": "無法載入訂單",
-      "en": "Unable to load order"
-    },
-    "card.handoverHistory": {
-      "zh": "鑑定師接收記錄",
-      "en": "Authenticator handover record"
-    },
-    "confirmDialog.receivedTitle": {
-      "zh": "確認已收到商品？",
-      "en": "Confirm item received?"
-    },
-    "confirmDialog.receivedConsequence": {
-      "zh": "呢個動作會即時釋放款項畀賣家，訂單轉為完成，不可撤回。貨品有問題請改用「提出爭議」。",
-      "en": "This will immediately release funds to the seller. The order will be marked as complete and cannot be undone. If there is an issue with the item, please use \"File a dispute.\""
-    },
-    "confirmDialog.receivedLabel": {
-      "zh": "確認收貨 + 放款",
-      "en": "Confirm receipt and release"
-    },
-    "confirmDialog.cancelTitle": {
-      "zh": "確認取消交易？",
-      "en": "Confirm transaction cancellation?"
+    "confirmDialog.cancelCancelLabel": {
+      "zh": "返回",
+      "en": "Back"
     },
     "confirmDialog.cancelConsequence": {
       "zh": "買家會即時獲全額退款，商品重新上架。鑑定師已影相 record 會保留作 audit。此操作不可撤回。",
@@ -2030,21 +1918,13 @@
       "zh": "確認取消",
       "en": "Confirm cancel"
     },
-    "confirmDialog.cancelCancelLabel": {
-      "zh": "返回",
-      "en": "Back"
+    "confirmDialog.cancelTitle": {
+      "zh": "確認取消交易？",
+      "en": "Confirm transaction cancellation?"
     },
-    "confirmDialog.reasonLabel": {
-      "zh": "取消原因",
-      "en": "Cancellation reason"
-    },
-    "confirmDialog.reasonPlaceholder": {
-      "zh": "例：賣家臨時唔賣 / 約唔到時間…",
-      "en": "e.g. Seller is no longer selling / Unable to arrange a meeting time."
-    },
-    "confirmDialog.disputeTitle": {
-      "zh": "提出爭議",
-      "en": "File a dispute"
+    "confirmDialog.disputeCancelLabel": {
+      "zh": "取消",
+      "en": "Cancel"
     },
     "confirmDialog.disputeDesc": {
       "zh": "提出爭議後，訂單會凍結，平台同鑑定師會介入處理。請清楚簡述問題（例如商品狀況不符 / 收唔到貨 / 收款異常）。",
@@ -2054,10 +1934,6 @@
       "zh": "提交爭議",
       "en": "Submit dispute"
     },
-    "confirmDialog.disputeCancelLabel": {
-      "zh": "取消",
-      "en": "Cancel"
-    },
     "confirmDialog.disputeReasonLabel": {
       "zh": "爭議原因",
       "en": "Dispute reason"
@@ -2065,6 +1941,334 @@
     "confirmDialog.disputeReasonPlaceholder": {
       "zh": "例：貨品同 listing 描述不符；外觀有刮花…",
       "en": "e.g. Item does not match the listing description; has visible scratches."
+    },
+    "confirmDialog.disputeTitle": {
+      "zh": "提出爭議",
+      "en": "File a dispute"
+    },
+    "confirmDialog.reasonLabel": {
+      "zh": "取消原因",
+      "en": "Cancellation reason"
+    },
+    "confirmDialog.reasonPlaceholder": {
+      "zh": "例：賣家臨時唔賣 / 約唔到時間…",
+      "en": "e.g. Seller is no longer selling / Unable to arrange a meeting time."
+    },
+    "confirmDialog.receivedConsequence": {
+      "zh": "呢個動作會即時釋放款項畀賣家，訂單轉為完成，不可撤回。貨品有問題請改用「提出爭議」。",
+      "en": "This will immediately release funds to the seller. The order will be marked as complete and cannot be undone. If there is an issue with the item, please use \"File a dispute.\""
+    },
+    "confirmDialog.receivedLabel": {
+      "zh": "確認收貨 + 放款",
+      "en": "Confirm receipt and release"
+    },
+    "confirmDialog.receivedTitle": {
+      "zh": "確認已收到商品？",
+      "en": "Confirm item received?"
+    },
+    "confirmReceived": {
+      "zh": "確認已收到商品",
+      "en": "Confirm item received"
+    },
+    "delivered.desc": {
+      "zh": "確認收到貨後，款項即時釋放畀賣家，交易完成。如貨品有問題，請即撳「提出爭議」。",
+      "en": "After confirming receipt, funds are immediately released to the seller and the transaction is complete. If there is an issue with the item, please click \"File a dispute.\""
+    },
+    "delivered.title": {
+      "zh": "商品已送達？",
+      "en": "Item delivered?"
+    },
+    "deliveredFinal.title": {
+      "zh": "商品已送達 — 完成交易",
+      "en": "Item delivered — complete transaction"
+    },
+    "delivery.label": {
+      "zh": "交收方式",
+      "en": "Delivery method"
+    },
+    "delivery.meetup3way": {
+      "zh": "三方面交",
+      "en": "Three-way meetup"
+    },
+    "delivery.meetupAuth": {
+      "zh": "鑑定師面交",
+      "en": "Authenticator meetup"
+    },
+    "delivery.meetupDirect": {
+      "zh": "雙方面交",
+      "en": "Direct meetup"
+    },
+    "delivery.ship": {
+      "zh": "物流寄送",
+      "en": "Shipping"
+    },
+    "disputed.desc": {
+      "zh": "Certifine 為資訊中介，唔裁決爭議。請拎相片 + 對話作為證據自行解決（包括法律途徑）。",
+      "en": "Certifine is an information intermediary and does not adjudicate disputes. Please use photos and conversations as evidence to resolve the matter yourselves (including legal channels)."
+    },
+    "disputed.title": {
+      "zh": "⚠ 交易已凍結（DISPUTED）",
+      "en": "⚠ Transaction frozen (DISPUTED)"
+    },
+    "error.load": {
+      "zh": "無法載入訂單",
+      "en": "Unable to load order"
+    },
+    "error.template": {
+      "zh": "{name} 失敗：{msg}",
+      "en": "{name} failed: {msg}"
+    },
+    "fee.authSeller": {
+      "zh": "鑑定費（賣家付）",
+      "en": "Authentication fee (seller pays)"
+    },
+    "fee.platformSeller": {
+      "zh": "平台費 1.5%（賣家付）",
+      "en": "Platform fee 1.5% (paid by seller)"
+    },
+    "fee.salePrice": {
+      "zh": "成交價",
+      "en": "Sale price"
+    },
+    "fee.sellerNet": {
+      "zh": "賣家實收",
+      "en": "Seller net"
+    },
+    "label.authenticator": {
+      "zh": "鑑定師",
+      "en": "Authenticator"
+    },
+    "label.buyer": {
+      "zh": "買家",
+      "en": "Buyer"
+    },
+    "label.buyerFallback": {
+      "zh": "買家",
+      "en": "Buyer"
+    },
+    "label.seller": {
+      "zh": "賣家",
+      "en": "Seller"
+    },
+    "label.sellerFallback": {
+      "zh": "賣家",
+      "en": "Seller"
+    },
+    "listing.categoryLabel": {
+      "zh": "商品分類",
+      "en": "Category"
+    },
+    "listingCategory": {
+      "zh": "商品分類 {category}",
+      "en": "Category: {category}"
+    },
+    "loading": {
+      "zh": "載入中…",
+      "en": "Loading…"
+    },
+    "meetupAuth.cancel": {
+      "zh": "取消交易（不可撤回）",
+      "en": "Cancel transaction (irreversible)"
+    },
+    "meetupAuth.confirm": {
+      "zh": "✓ 確認相片正確 · 完成交付",
+      "en": "✓ Confirm photos correct · Complete handover"
+    },
+    "meetupAuth.exhausted": {
+      "zh": "⚠️ 已用盡重拍機會，請選擇確認交付或取消交易。",
+      "en": "⚠️ All re-photo attempts exhausted. Please choose to confirm handover or cancel the transaction."
+    },
+    "meetupAuth.hint": {
+      "zh": "已用重拍機會：{count} / {MAX_REPHOTO}。確認後鑑定師正式接管商品（E&O 保險）。逾 7 日唔 ack 訂單會自動取消、買家獲全額退款。",
+      "en": "Re-photo attempts used: {count} / {MAX_REPHOTO}. Upon confirmation, the authenticator formally takes custody of the item (E&O insurance applies). If not acknowledged within 7 days, the order will auto-cancel and the buyer will receive a full refund."
+    },
+    "meetupAuth.rePhotoUsed": {
+      "zh": "已用重拍機會：{used} / {max}。確認後鑑定師正式接管商品（E&O 保險）。逾 7 日唔 ack 訂單會自動取消、買家獲全額退款。",
+      "en": "Re-photo requests used: {used} of {max}. Once you confirm, the authenticator formally takes custody (covered by E&O insurance). If the order is not acknowledged within 7 days it is cancelled automatically and the buyer is refunded in full."
+    },
+    "meetupAuth.requestRePhoto": {
+      "zh": "要求重拍相片（剩 {n} 次）",
+      "en": "Request re-photo ({n} remaining)"
+    },
+    "meetupAuth.title": {
+      "zh": "鑑定師已上載商品狀況相片，請查閱後決定下一步。",
+      "en": "The authenticator has uploaded photos of the item's condition. Please review and decide on the next step."
+    },
+    "meetupLocation.businessHours": {
+      "zh": "營業：{hours}",
+      "en": "Open: {hours}"
+    },
+    "meetupLocation.label": {
+      "zh": "面交地點",
+      "en": "Meetup location"
+    },
+    "messageButton": {
+      "zh": "訊息",
+      "en": "Message"
+    },
+    "payNow": {
+      "zh": "立即付款 →",
+      "en": "Pay now →"
+    },
+    "payment.cash": {
+      "zh": "線下現金",
+      "en": "Offline cash"
+    },
+    "payment.escrow": {
+      "zh": "線上託管 (Escrow)",
+      "en": "Online escrow"
+    },
+    "payment.held": {
+      "zh": "已 hold",
+      "en": "Held"
+    },
+    "payment.label": {
+      "zh": "付款方式",
+      "en": "Payment method"
+    },
+    "pickup.confirm": {
+      "zh": "我已在店 · 確認收到",
+      "en": "I am at the store · Confirm received"
+    },
+    "pickup.desc": {
+      "zh": "現場驗貨。確認後代表你親手收到並認可貨品狀況，款項即時釋放畀賣家，不可撤回。如貨品有問題，請唔好確認，撳「提出爭議」。",
+      "en": "Inspect the item on-site. Confirming means you have received and accepted the item's condition. Funds will be immediately released to the seller and cannot be undone. If there is an issue, do not confirm — click \"File a dispute.\""
+    },
+    "pickup.inspectNotice": {
+      "zh": "現場驗貨。確認後代表你親手收到並認可貨品狀況，款項即時釋放畀賣家，不可撤回。如貨品有問題，請唔好確認，撳「提出爭議」。",
+      "en": "Inspect it on the spot. Confirming means you have received the item and accept its condition; funds are released to the seller immediately and this cannot be undone. If something is wrong, do not confirm — raise a dispute instead."
+    },
+    "pickup.passed": {
+      "zh": "✓ 鑑定通過。請前往鑑定師店面取貨",
+      "en": "✓ Authentication passed. Collect the item at the authenticator’s shop"
+    },
+    "pickup.passedNamed": {
+      "zh": "（{name}）",
+      "en": "({name})"
+    },
+    "pickup.title": {
+      "zh": "✓ 鑑定通過。請前往鑑定師店面取貨{name}。",
+      "en": "✓ Authentication passed. Please pick up your item at {name}."
+    },
+    "raiseDispute": {
+      "zh": "提出爭議",
+      "en": "File a dispute"
+    },
+    "rePhoto.buttonWithCount": {
+      "zh": "要求重拍相片（剩 {left} 次）",
+      "en": "Request new photos ({left} left)"
+    },
+    "rePhoto.cancel": {
+      "zh": "取消",
+      "en": "Cancel"
+    },
+    "rePhoto.commentPlaceholder": {
+      "zh": "（可選）補充細節，例如「請對住底部刮痕影 close-up」",
+      "en": "(Optional) Add details, e.g. \"Please take a close-up of the scratch on the bottom.\""
+    },
+    "rePhoto.needReason": {
+      "zh": "請至少揀一個原因或填寫註釋",
+      "en": "Pick at least one reason, or write a note"
+    },
+    "rePhoto.submit": {
+      "zh": "提交重拍要求",
+      "en": "Submit re-photo request"
+    },
+    "rePhoto.title": {
+      "zh": "要求鑑定師重拍 — 請揀原因（可多選）",
+      "en": "Request authenticator re-photo — select reason(s) (multiple allowed)"
+    },
+    "return.confirm": {
+      "zh": "已取回商品",
+      "en": "Item collected"
+    },
+    "return.title": {
+      "zh": "鑑定不通過。買家已退款。請前往鑑定師店面取回商品，並 view 退貨相確認 condition。",
+      "en": "Authentication failed. Buyer has been refunded. Please pick up your item at the authenticator's store and review the return photos to confirm condition."
+    },
+    "return.warning": {
+      "zh": "⚠ 如逾期未取，鑑定師可能會收取寄存費（屬於你同鑑定師之間嘅安排，唔屬於 Certifine 平台責任）。",
+      "en": "⚠ If not collected on time, the authenticator may charge a storage fee (this is an arrangement between you and the authenticator, and falls outside Certifine's platform responsibility)."
+    },
+    "review.anonymous": {
+      "zh": "匿名留評（預設）：其他訪客只見「認證買家」。",
+      "en": "Leave anonymous review (default): other visitors will only see \"Verified Buyer.\""
+    },
+    "review.anonymousHint": {
+      "zh": "賣家、鑑定師同平台 admin 仍會見到你嘅名以便處理交易爭議。",
+      "en": "The seller, authenticator, and platform admin will still see your name for transaction dispute purposes."
+    },
+    "review.commentAuth": {
+      "zh": "講下鑑定師服務（選填）",
+      "en": "Please share your experience with the authenticator's service (optional)."
+    },
+    "review.commentSeller": {
+      "zh": "貨品同描述相符？溝通如何？（選填）",
+      "en": "Please note whether the item matched the description and whether the communication was satisfactory (optional)."
+    },
+    "review.rateAuth": {
+      "zh": "評價鑑定師",
+      "en": "Rate authenticator"
+    },
+    "review.rateSeller": {
+      "zh": "評價賣家",
+      "en": "Rate seller"
+    },
+    "review.starAria": {
+      "zh": "{n} 星",
+      "en": "{n} stars"
+    },
+    "review.submitButton": {
+      "zh": "提交評價",
+      "en": "Submit review"
+    },
+    "sellerAck.hint": {
+      "zh": "確認後鑑定進入下一階段。如有問題請即撳「提出爭議」。",
+      "en": "Authentication will proceed to the next stage after confirmation. If there is an issue, please click \"File a dispute.\""
+    },
+    "sellerAck.title": {
+      "zh": "鑑定師已收件並影 unboxing 相。請 view 後確認 condition match。",
+      "en": "The authenticator has received the item and taken unboxing photos. Please review and confirm the condition matches."
+    },
+    "starRating.aria": {
+      "zh": "{n} 星",
+      "en": "{n} stars"
+    },
+    "timeline.authCompleted": {
+      "zh": "鑑定完成",
+      "en": "Authentication complete"
+    },
+    "timeline.completed": {
+      "zh": "交易完成",
+      "en": "Transaction complete"
+    },
+    "timeline.created": {
+      "zh": "落單",
+      "en": "Ordered"
+    },
+    "timeline.delivered": {
+      "zh": "買家確認收到",
+      "en": "Buyer confirmed receipt"
+    },
+    "timeline.paid": {
+      "zh": "已付款",
+      "en": "Paid"
+    },
+    "timeline.receivedByAuth": {
+      "zh": "鑑定師簽收",
+      "en": "Received by authenticator"
+    },
+    "timeline.shippedToAuth": {
+      "zh": "寄至鑑定師",
+      "en": "Shipped to authenticator"
+    },
+    "timeline.shippedToBuyer": {
+      "zh": "寄至買家",
+      "en": "Shipped to buyer"
+    },
+    "you.self": {
+      "zh": "(你)",
+      "en": "(You)"
     }
   },
   "myListings": {

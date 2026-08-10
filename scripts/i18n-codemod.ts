@@ -52,8 +52,16 @@ function buildIndex(): Map<string, string[]> {
   return rev;
 }
 
-/** Namespace guess from the file path — `app/login/page.tsx` → `login`. */
-function preferredNamespace(file: string): string | null {
+/**
+ * Namespace guess from the file path — `app/login/page.tsx` → `login`.
+ *
+ * The guess is often wrong for nested routes: `app/orders/[id]/page.tsx` reads
+ * as `orders`, but its copy lives under `orderDetail`, which left a dozen keys
+ * looking ambiguous when one candidate was obviously right. Pass `--ns=<name>`
+ * to say so directly.
+ */
+function preferredNamespace(file: string, override: string | null): string | null {
+  if (override) return override;
   const m = file.match(/app\/(?:\(.*?\)\/)?([a-zA-Z0-9-]+)\//);
   return m ? m[1] : null;
 }
@@ -98,12 +106,12 @@ const BOILERPLATE = `  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
 
 `;
 
-function run(file: string, write: boolean) {
+function run(file: string, write: boolean, nsOverride: string | null) {
   const abs = path.resolve(ROOT, file);
   const src = fs.readFileSync(abs, 'utf8');
   const sf = ts.createSourceFile(abs, src, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
   const rev = buildIndex();
-  const prefer = preferredNamespace(file);
+  const prefer = preferredNamespace(file, nsOverride);
 
   if (/\bconst\s+_t\b/.test(src)) {
     console.log(`${file}: 已經 wire 咗（見到 _t），略過`);
@@ -281,9 +289,11 @@ function run(file: string, write: boolean) {
 
 const args = process.argv.slice(2);
 const write = args.includes('--write');
+const nsArg = args.find((a) => a.startsWith('--ns='));
+const nsOverride = nsArg ? nsArg.slice('--ns='.length) : null;
 const files = args.filter((a) => !a.startsWith('--'));
 if (files.length === 0) {
-  console.log('用法: npx tsx scripts/i18n-codemod.ts <file.tsx> [more.tsx] [--write]');
+  console.log('用法: npx tsx scripts/i18n-codemod.ts <file.tsx> [more.tsx] [--ns=<namespace>] [--write]');
   process.exit(1);
 }
-for (const f of files) run(f, write);
+for (const f of files) run(f, write, nsOverride);
