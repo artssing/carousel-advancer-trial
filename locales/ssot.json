@@ -590,6 +590,14 @@
       "zh": "ⓘ 協議價格屬 {tier}，與原 listing tier 不同。",
       "en": "ⓘ The agreed price falls under {tier}, which differs from the original listing tier."
     },
+    "redirect.going": {
+      "zh": "正在前往商品頁…",
+      "en": "Taking you to the item…"
+    },
+    "redirect.manual": {
+      "zh": "如未自動跳轉，按此",
+      "en": "If nothing happens, tap here"
+    },
     "related.title": {
       "zh": "同類商品",
       "en": "Similar items"
@@ -3026,6 +3034,54 @@
     }
   },
   "buyer": {
+    "completedOrders": {
+      "zh": "已完成購買訂單",
+      "en": "Completed purchase orders"
+    },
+    "disclaimer": {
+      "zh": "ⓘ 本檔案資料受限：僅顯示用戶選擇公開嘅基本資訊，唔包括聯絡方式、購買品項、評分等。Certifine 為資訊中介，以上資料由用戶提供，平台不擔保其準確性。",
+      "en": "ⓘ This profile is restricted: only shows basic information the user has chosen to make public. Contact details, purchased items, ratings, etc., are not included. Certifine is an information intermediary. The above information is provided by the user and the platform does not guarantee its accuracy."
+    },
+    "error.load": {
+      "zh": "無法載入買家資料",
+      "en": "Could not load this buyer"
+    },
+    "intermediaryNote": {
+      "zh": "Certifine 為資訊中介，以上資料由用戶提供，平台不擔保其準確性。",
+      "en": "Certifine is an information intermediary. The details above are supplied by the user; the platform does not guarantee their accuracy."
+    },
+    "joinedFormat": {
+      "zh": "{ym} 加入",
+      "en": "Joined {ym}"
+    },
+    "kycPending": {
+      "zh": "身份審核中",
+      "en": "Identity pending"
+    },
+    "kycVerified": {
+      "zh": "已驗證身份",
+      "en": "Identity verified"
+    },
+    "notFound": {
+      "zh": "找不到買家",
+      "en": "Buyer not found"
+    },
+    "orderUnit": {
+      "zh": "單",
+      "en": "orders"
+    },
+    "ordersUnit": {
+      "zh": "單",
+      "en": "orders"
+    },
+    "pendingReview": {
+      "zh": "身份審核中",
+      "en": "Identity under review"
+    },
+    "privacyNote": {
+      "zh": "ⓘ 本檔案資料受限：僅顯示用戶選擇公開嘅基本資訊，唔包括聯絡方式、購買品項、評分等。",
+      "en": "ⓘ This profile is limited to the basic information the user chose to make public. It excludes contact details, purchased items and ratings."
+    },
     "profileRestricted": {
       "zh": "買家檔案受限",
       "en": "Buyer profile restricted"
@@ -3034,99 +3090,91 @@
       "zh": "呢個買家檔案只開放畀同一宗 active 交易嘅買家、賣家、鑑定師。訂單完成或退款後 link 即時失效，符合 HK PDPO 資料最少使用原則。",
       "en": "This buyer profile is only accessible to parties in an active transaction (buyer, seller, authenticator). The link expires immediately after order completion or refund, in compliance with HK PDPO data minimization principles."
     },
-    "notFound": {
-      "zh": "找不到買家",
-      "en": "Buyer not found"
+    "restricted.body": {
+      "zh": "呢個買家檔案只開放畀同一宗 active 交易嘅買家、賣家、鑑定師。訂單完成或退款後 link 即時失效，符合 HK PDPO 資料最少使用原則。",
+      "en": "This profile is visible only to the buyer, seller and authenticator on the same active order. The link stops working as soon as the order completes or is refunded, in line with the HK PDPO data-minimisation principle."
     },
-    "kycVerified": {
+    "restricted.title": {
+      "zh": "買家檔案受限",
+      "en": "This buyer profile is restricted"
+    },
+    "verified": {
       "zh": "已驗證身份",
       "en": "Identity verified"
-    },
-    "kycPending": {
-      "zh": "身份審核中",
-      "en": "Identity pending"
-    },
-    "completedOrders": {
-      "zh": "已完成購買訂單",
-      "en": "Completed purchase orders"
-    },
-    "orderUnit": {
-      "zh": "單",
-      "en": "orders"
-    },
-    "disclaimer": {
-      "zh": "ⓘ 本檔案資料受限：僅顯示用戶選擇公開嘅基本資訊，唔包括聯絡方式、購買品項、評分等。Certifine 為資訊中介，以上資料由用戶提供，平台不擔保其準確性。",
-      "en": "ⓘ This profile is restricted: only shows basic information the user has chosen to make public. Contact details, purchased items, ratings, etc., are not included. Certifine is an information intermediary. The above information is provided by the user and the platform does not guarantee its accuracy."
     }
   },
   "seller": {
-    "sellerBadge": {
-      "zh": "賣家",
-      "en": "Seller"
-    },
-    "kycVerified": {
-      "zh": "KYC 驗證",
-      "en": "KYC verified"
-    },
     "alsoAuthenticator": {
       "zh": "亦為鑑定師 →",
       "en": "Also an authenticator →"
-    },
-    "joinLocation": {
-      "zh": "香港 · 加入於 {year}",
-      "en": "Hong Kong · Joined {year}"
-    },
-    "stat.sold": {
-      "zh": "成交",
-      "en": "Sold"
-    },
-    "stat.rating": {
-      "zh": "評分",
-      "en": "Rating"
-    },
-    "stat.active": {
-      "zh": "在售",
-      "en": "Active"
-    },
-    "disclaimer": {
-      "zh": "此為賣家公開檔案。評分與好評率由平台按實際成交演算派生，不可手改；平台為資訊中介，不對賣家或貨品作任何擔保。",
-      "en": "This is the seller's public profile. Ratings and positive feedback rates are algorithmically derived from actual transactions and cannot be manually edited. The platform is an information intermediary and makes no warranties regarding sellers or their items."
-    },
-    "listingsTitle": {
-      "zh": "在售貨品（{total}）",
-      "en": "Active listings ({total})"
-    },
-    "searchPlaceholder": {
-      "zh": "在呢位賣家嘅商品中搜尋…",
-      "en": "Search this seller's items…"
     },
     "clearSearch": {
       "zh": "清除搜尋",
       "en": "Clear search"
     },
-    "noResult": {
-      "zh": "搵唔到「{q}」相關嘅商品。",
-      "en": "No items found for \"{q}\"."
+    "clearSearchAria": {
+      "zh": "清除搜尋",
+      "en": "Clear search"
     },
-    "noListings": {
-      "zh": "呢個賣家暫時冇上架中嘅商品。",
-      "en": "This seller has no active listings."
+    "derivedNote": {
+      "zh": "此為賣家公開檔案。評分與好評率由平台按實際成交演算派生，不可手改；平台不對商品真偽作出保證。",
+      "en": "This is a public seller profile. Ratings and positive-feedback rates are derived by the platform from actual completed sales and cannot be edited; the platform makes no authenticity guarantee."
+    },
+    "disclaimer": {
+      "zh": "此為賣家公開檔案。評分與好評率由平台按實際成交演算派生，不可手改；平台為資訊中介，不對賣家或貨品作任何擔保。",
+      "en": "This is the seller's public profile. Ratings and positive feedback rates are algorithmically derived from actual transactions and cannot be manually edited. The platform is an information intermediary and makes no warranties regarding sellers or their items."
+    },
+    "error.load": {
+      "zh": "無法載入賣家資料",
+      "en": "Could not load this seller"
+    },
+    "joinLocation": {
+      "zh": "香港 · 加入於 {year}",
+      "en": "Hong Kong · Joined {year}"
+    },
+    "joinedLine": {
+      "zh": "香港 · 加入於 {year}",
+      "en": "Hong Kong · joined {year}"
+    },
+    "kycVerified": {
+      "zh": "KYC 驗證",
+      "en": "KYC verified"
+    },
+    "listingsHeading": {
+      "zh": "賣家貨品",
+      "en": "Seller’s items"
+    },
+    "listingsTitle": {
+      "zh": "在售貨品（{total}）",
+      "en": "Active listings ({total})"
     },
     "loadMore": {
       "zh": "載入更多（尚有 {n} 件）",
       "en": "Load more ({n} remaining)"
     },
+    "loadMoreWithCount": {
+      "zh": "載入更多（尚有 {n} 件）",
+      "en": "Load more ({n} left)"
+    },
     "loadingMore": {
       "zh": "載入中…",
       "en": "Loading…"
     },
-    "reviewsTitle": {
-      "zh": "買家評價",
-      "en": "Buyer reviews"
+    "noItems": {
+      "zh": "呢個賣家暫時冇任何貨品。",
+      "en": "This seller has no items right now."
     },
-    "reviewsSummary": {
-      "zh": "{avgRating} · {total} 個評價",
-      "en": "{avgRating} · {total} reviews"
+    "noListings": {
+      "zh": "呢個賣家暫時冇上架中嘅商品。",
+      "en": "This seller has no active listings."
+    },
+    "noMatch": {
+      "zh": "搵唔到「{q}」相關嘅商品。",
+      "en": "Nothing matches “{q}”."
+    },
+    "noResult": {
+      "zh": "搵唔到「{q}」相關嘅商品。",
+      "en": "No items found for \"{q}\"."
     },
     "noReviews": {
       "zh": "暫無買家評價",
@@ -3135,6 +3183,50 @@
     "notFound": {
       "zh": "找不到賣家",
       "en": "Seller not found"
+    },
+    "pill.alsoAuthenticator": {
+      "zh": "亦為鑑定師 →",
+      "en": "Also an authenticator →"
+    },
+    "pill.kyc": {
+      "zh": "KYC 驗證",
+      "en": "KYC verified"
+    },
+    "pill.seller": {
+      "zh": "賣家",
+      "en": "Seller"
+    },
+    "reviewsSummary": {
+      "zh": "{avgRating} · {total} 個評價",
+      "en": "{avgRating} · {total} reviews"
+    },
+    "reviewsTitle": {
+      "zh": "買家評價",
+      "en": "Buyer reviews"
+    },
+    "searchPlaceholder": {
+      "zh": "在呢位賣家嘅商品中搜尋…",
+      "en": "Search this seller's items…"
+    },
+    "sellerBadge": {
+      "zh": "賣家",
+      "en": "Seller"
+    },
+    "stat.active": {
+      "zh": "在售",
+      "en": "Active"
+    },
+    "stat.rating": {
+      "zh": "評分",
+      "en": "Rating"
+    },
+    "stat.sales": {
+      "zh": "成交",
+      "en": "Sales"
+    },
+    "stat.sold": {
+      "zh": "成交",
+      "en": "Sold"
     }
   },
   "homepage": {
@@ -3146,6 +3238,10 @@
       "zh": "{count} 件",
       "en": "{count} items"
     },
+    "chip.rolex": {
+      "zh": "Rolex 黑水鬼",
+      "en": "Rolex Submariner"
+    },
     "hero.description": {
       "zh": "逾一萬件正品貨源，每宗高價交易經具名鑑定師把關、款項託管。",
       "en": "Over 10,000 authentic listings are available. Every high-value transaction is reviewed by a named authenticator, with payment held in escrow."
@@ -3153,6 +3249,22 @@
     "hero.heading": {
       "zh": "搵真貨，鑑定通過才成交",
       "en": "Find Authentic Items — Verified Before Payment"
+    },
+    "hero.headline.highlight": {
+      "zh": "鑑定通過",
+      "en": "authenticated"
+    },
+    "hero.headline.prefix": {
+      "zh": "搵真貨，",
+      "en": "Find the real thing —"
+    },
+    "hero.headline.suffix": {
+      "zh": "才成交",
+      "en": "before the deal closes"
+    },
+    "hero.sub": {
+      "zh": "逾一萬件正品貨源，每宗高價交易經具名鑑定師把關、款項託管。",
+      "en": "Over ten thousand genuine items. Every high-value trade is checked by a named authenticator, with funds held in escrow."
     },
     "hero.tagline": {
       "zh": "Search · Verify · Buy",
@@ -3169,6 +3281,18 @@
     "section.allCategories": {
       "zh": "全部品類",
       "en": "All Categories"
+    },
+    "section.categories": {
+      "zh": "熱門品類",
+      "en": "Popular categories"
+    },
+    "section.comingSoon": {
+      "zh": "即將推出",
+      "en": "Coming soon"
+    },
+    "section.count": {
+      "zh": "{n} 件",
+      "en": "{n} items"
     },
     "section.hotCategories": {
       "zh": "熱門品類",
@@ -4650,6 +4774,10 @@
       "zh": "頭像",
       "en": "Avatar"
     },
+    "completeProfile.busy": {
+      "zh": "處理中…",
+      "en": "Working…"
+    },
     "completeProfile.displayNameHint": {
       "zh": "我哋從 Google 拎咗你嘅名做預設，可以改成你想用嘅花名。",
       "en": "We have used your Google name as a default. You may change it to any name of your choice."
@@ -4674,6 +4802,14 @@
       "zh": "請輸入顯示名稱",
       "en": "Please enter a display name"
     },
+    "completeProfile.error.failed": {
+      "zh": "完成資料失敗",
+      "en": "Could not save your details"
+    },
+    "completeProfile.error.nameRequired": {
+      "zh": "請輸入顯示名稱",
+      "en": "Enter a display name"
+    },
     "completeProfile.genericError": {
       "zh": "完成資料失敗",
       "en": "Failed to complete profile"
@@ -4686,9 +4822,25 @@
       "zh": "連結無效或已過期，請重新登入。",
       "en": "Link is invalid or has expired. Please sign in again."
     },
+    "completeProfile.nameHint": {
+      "zh": "我哋從 Google 拎咗你嘅名做預設，可以改成你想用嘅花名。",
+      "en": "We prefilled your name from Google — change it to whatever you want to go by."
+    },
+    "completeProfile.namePlaceholder": {
+      "zh": "呢個係其他用戶會見到嘅名",
+      "en": "This is the name other users see"
+    },
     "completeProfile.page.title": {
       "zh": "完善你嘅帳戶資料",
       "en": "Complete Your Account"
+    },
+    "completeProfile.required": {
+      "zh": "*",
+      "en": "*"
+    },
+    "completeProfile.submit": {
+      "zh": "完成註冊",
+      "en": "Finish sign-up"
     },
     "completeProfile.submitButton": {
       "zh": "完成註冊",
@@ -4725,6 +4877,58 @@
     "hero.subheading": {
       "zh": "每宗高價交易都有具名鑑定師把關、款項全程託管。買得安心，賣得放心。",
       "en": "Every high-value trade is checked by a named authenticator, with funds held in escrow throughout."
+    },
+    "link.afterNote": {
+      "zh": "確認連接之後，下次你可以用 {google} 或者 {email} 登入同一個帳戶。",
+      "en": "Once linked, you can sign in to the same account with {google} or with {email}."
+    },
+    "link.busy": {
+      "zh": "處理中…",
+      "en": "Working…"
+    },
+    "link.cancel": {
+      "zh": "取消",
+      "en": "Cancel"
+    },
+    "link.confirm": {
+      "zh": "確認連接",
+      "en": "Confirm and link"
+    },
+    "link.displayNameLabel": {
+      "zh": "顯示名稱：",
+      "en": "Display name: "
+    },
+    "link.emailIntro": {
+      "zh": "我哋發現你已經有 Certifine 帳戶用緊電郵：",
+      "en": "You already have a Certifine account with this email:"
+    },
+    "link.emailLogin": {
+      "zh": "原本嘅電郵 + 密碼",
+      "en": "your original email and password"
+    },
+    "link.error": {
+      "zh": "連接失敗",
+      "en": "Could not link the account"
+    },
+    "link.googleLogin": {
+      "zh": "Google 登入",
+      "en": "Google sign-in"
+    },
+    "link.intro": {
+      "zh": "我哋發現你已經有 Certifine 帳戶用緊電郵：",
+      "en": "You already have a Certifine account with this email:"
+    },
+    "link.invalidToken": {
+      "zh": "連結無效或已過期，請重新登入。",
+      "en": "That link is invalid or has expired — please sign in again."
+    },
+    "link.title": {
+      "zh": "連接 Google 帳戶",
+      "en": "Link your Google account"
+    },
+    "link.warning": {
+      "zh": "如果呢個 Google 帳戶唔係你嘅 — 請即刻撳「取消」並通知我哋。連接後 Google 帳戶可以完全存取呢個 Certifine 帳戶。",
+      "en": "If this Google account is not yours, tap Cancel now and tell us. Once linked, the Google account has full access to this Certifine account."
     },
     "linkConfirm.cancelButton": {
       "zh": "取消",
@@ -10643,6 +10847,76 @@
     "tab.register": {
       "zh": "註冊",
       "en": "Sign up"
+    }
+  },
+  "authenticatorProfile": {
+    "back": {
+      "zh": "返回",
+      "en": "Back"
+    },
+    "feeMin": {
+      "zh": "最低 {min}",
+      "en": "Minimum {min}"
+    },
+    "feeRate": {
+      "zh": "鑑定費率",
+      "en": "Fee rate"
+    },
+    "insurance": {
+      "zh": "已購 E&O 專業責任保險（有效期至 {date}）",
+      "en": "Errors & omissions insurance in force (until {date})"
+    },
+    "loading": {
+      "zh": "載入中…",
+      "en": "Loading…"
+    },
+    "noImage": {
+      "zh": "暫無圖片",
+      "en": "No image"
+    },
+    "noReviews": {
+      "zh": "暫無評價。",
+      "en": "No reviews yet."
+    },
+    "ratingWithCount": {
+      "zh": "{rating}（{n} 個評價）",
+      "en": "{rating} ({n} reviews)"
+    },
+    "reviewsTitle": {
+      "zh": "買家評價（{n}）",
+      "en": "Buyer reviews ({n})"
+    },
+    "stat.completed": {
+      "zh": "已鑑定",
+      "en": "Authenticated"
+    },
+    "stat.completedValue": {
+      "zh": "{n} 件",
+      "en": "{n} items"
+    },
+    "stat.disputeRate": {
+      "zh": "爭議率",
+      "en": "Dispute rate"
+    },
+    "stat.meetup": {
+      "zh": "面交",
+      "en": "Meetup"
+    },
+    "stat.meetupAccepted": {
+      "zh": "接受",
+      "en": "Accepted"
+    },
+    "stat.years": {
+      "zh": "年資",
+      "en": "Experience"
+    },
+    "stat.yearsValue": {
+      "zh": "{n} 年",
+      "en": "{n} years"
+    },
+    "theirListings": {
+      "zh": "佢賣緊嘅商品",
+      "en": "Items they are selling"
     }
   }
 }

@@ -3,7 +3,8 @@
 // useSearchParams needs dynamic rendering.
 export const dynamic = 'force-dynamic';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { getClientLocale, createT } from '@authentik/utils';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '@authentik/ui';
 import { setToken } from '@/lib/api';
@@ -12,6 +13,10 @@ import { UserCheck } from 'lucide-react';
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
 
 export default function CompleteProfilePage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const router = useRouter();
   const params = useSearchParams();
   const token = params.get('token') ?? '';
@@ -27,7 +32,7 @@ export default function CompleteProfilePage() {
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setErr(null);
-    if (!displayName.trim()) { setErr('請輸入顯示名稱'); return; }
+    if (!displayName.trim()) { setErr(_t('auth.completeProfile.error.nameRequired')); return; }
     setBusy(true);
     try {
       const r = await fetch(`${API_URL}/auth/google/complete-profile`, {
@@ -39,13 +44,13 @@ export default function CompleteProfilePage() {
           useSuggestedAvatar: useAvatar,
         }),
       });
-      if (!r.ok) throw new Error((await r.json()).message ?? '完成資料失敗');
+      if (!r.ok) throw new Error((await r.json()).message ?? _t('auth.completeProfile.error.failed'));
       const { accessToken } = await r.json();
       setToken(accessToken);
       router.push('/' as any);
       router.refresh();
     } catch (e: any) {
-      setErr(e?.message ?? '完成資料失敗');
+      setErr(e?.message ?? _t('auth.completeProfile.error.failed'));
     } finally {
       setBusy(false);
     }
@@ -54,7 +59,7 @@ export default function CompleteProfilePage() {
   if (!token) {
     return (
       <div className="mx-auto max-w-md p-6">
-        <p className="text-sm text-red-600">連結無效或已過期，請重新登入。</p>
+        <p className="text-sm text-red-600">{_t('auth.link.invalidToken')}</p>
       </div>
     );
   }
@@ -65,41 +70,41 @@ export default function CompleteProfilePage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <UserCheck className="h-5 w-5 text-brand-600" />
-            完善你嘅帳戶資料
+            {_t('auth.completeProfile.page.title')}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <p className="mb-4 text-sm text-slate-600">
-            用 Google 登入完成。請確認以下資料才完成註冊：
+            {_t('auth.completeProfile.intro')}
           </p>
 
           <form onSubmit={submit} className="space-y-4">
             <div>
-              <Label>電郵（不可更改）</Label>
+              <Label>{_t('auth.completeProfile.emailLabel')}</Label>
               <p className="mt-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-sm text-slate-700">
                 {email}
               </p>
             </div>
 
             <div>
-              <Label htmlFor="displayName">顯示名稱 <span className="text-red-500">*</span></Label>
+              <Label htmlFor="displayName">{_t('auth.completeProfile.displayNameLabel')} <span className="text-red-500">*</span></Label>
               <Input
                 id="displayName"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="呢個係其他用戶會見到嘅名"
+                placeholder={_t('auth.completeProfile.namePlaceholder')}
                 maxLength={40}
                 required
                 className="mt-1"
               />
               <p className="mt-1 text-xs text-slate-500">
-                我哋從 Google 拎咗你嘅名做預設，可以改成你想用嘅花名。
+                {_t('auth.completeProfile.nameHint')}
               </p>
             </div>
 
             {suggestedAvatar && (
               <div>
-                <Label>頭像</Label>
+                <Label>{_t('auth.completeProfile.avatarLabel')}</Label>
                 <div className="mt-1 flex items-center gap-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={suggestedAvatar} alt="" className="h-12 w-12 rounded-full" />
@@ -110,7 +115,7 @@ export default function CompleteProfilePage() {
                       onChange={(e) => setUseAvatar(e.target.checked)}
                       className="rounded border-slate-300"
                     />
-                    使用 Google 頭像
+                    {_t('auth.completeProfile.useGoogleAvatar')}
                   </label>
                 </div>
               </div>
@@ -119,7 +124,7 @@ export default function CompleteProfilePage() {
             {err && <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{err}</p>}
 
             <Button type="submit" className="w-full" disabled={busy}>
-              {busy ? '處理中…' : '完成註冊'}
+              {busy ? _t('auth.completeProfile.busy') : _t('auth.completeProfile.submit')}
             </Button>
           </form>
         </CardContent>

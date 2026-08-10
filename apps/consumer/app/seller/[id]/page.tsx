@@ -4,6 +4,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useRef, useState } from 'react';
+import { getClientLocale, createT } from '@authentik/utils';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Pill, StarRating } from '@authentik/ui';
@@ -31,6 +32,10 @@ function joinYear(iso: string): string {
 }
 
 export default function SellerPage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const params = useParams() as { id: string };
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -64,7 +69,7 @@ export default function SellerPage() {
       })
       .catch((e: any) => {
         if (e?.status === 401) { clearToken(); router.replace('/login'); return; }
-        setError(e?.message ?? '無法載入賣家資料');
+        setError(e?.message ?? _t('seller.error.load'));
       })
       .finally(() => setLoading(false));
   }, [id, router]);
@@ -126,7 +131,7 @@ export default function SellerPage() {
   if (error || !profile) {
     return (
       <div className="mx-auto max-w-container-l3 px-4 py-8 sm:px-6">
-        <p className="text-sm text-danger">{error ?? '找不到賣家'}</p>
+        <p className="text-sm text-danger">{error ?? _t('seller.notFound')}</p>
       </div>
     );
   }
@@ -143,26 +148,26 @@ export default function SellerPage() {
             <h1 className="font-display-serif text-[26px] font-bold leading-tight tracking-[-0.01em] text-ink">
               {profile.displayName}
             </h1>
-            <Pill variant="status" size="md">賣家</Pill>
+            <Pill variant="status" size="md">{_t('seller.pill.seller')}</Pill>
             {profile.kycVerified && (
               <Pill variant="verify" size="md">
-                <ShieldCheck className="h-3 w-3" /> KYC 驗證
+                <ShieldCheck className="h-3 w-3" /> {_t('seller.pill.kyc')}
               </Pill>
             )}
             {profile.authenticator && (
               <Link href={`/authenticator/${profile.authenticator.id}` as any}>
-                <Pill variant="gold" size="md" className="cursor-pointer">亦為鑑定師 →</Pill>
+                <Pill variant="gold" size="md" className="cursor-pointer">{_t('seller.pill.alsoAuthenticator')}</Pill>
               </Link>
             )}
           </div>
           <div className="mt-1.5 font-mono text-[12px] tracking-[0.04em] text-neutral-text-hint">
-            香港 · 加入於 {joinYear(profile.joinedAt)}
+            {_t('seller.joinedLine', { year: joinYear(profile.joinedAt) })}
           </div>
           {/* pstats row */}
           <div className="mt-3 flex flex-wrap gap-9">
             <div>
               <div className="text-[22px] font-extrabold text-ink">{profile.soldAsSellerCount}</div>
-              <div className="mt-0.5 text-[11px] uppercase tracking-[0.08em] text-neutral-text-hint">成交</div>
+              <div className="mt-0.5 text-[11px] uppercase tracking-[0.08em] text-neutral-text-hint">{_t('seller.stat.sales')}</div>
             </div>
             <div>
               <div className="flex items-center gap-1.5 text-[22px] font-extrabold text-ink">
@@ -171,11 +176,11 @@ export default function SellerPage() {
                   <StarRating value={profile.avgRating} size="sm" />
                 )}
               </div>
-              <div className="mt-0.5 text-[11px] uppercase tracking-[0.08em] text-neutral-text-hint">評分</div>
+              <div className="mt-0.5 text-[11px] uppercase tracking-[0.08em] text-neutral-text-hint">{_t('seller.stat.rating')}</div>
             </div>
             <div>
               <div className="text-[22px] font-extrabold text-ink">{profile.activeListingsCount}</div>
-              <div className="mt-0.5 text-[11px] uppercase tracking-[0.08em] text-neutral-text-hint">在售</div>
+              <div className="mt-0.5 text-[11px] uppercase tracking-[0.08em] text-neutral-text-hint">{_t('seller.stat.active')}</div>
             </div>
           </div>
         </div>
@@ -183,7 +188,7 @@ export default function SellerPage() {
 
       {/* Neutrality disclaimer */}
       <div className="max-w-[680px] rounded-lg border border-verify-border bg-verify-soft px-4 py-3 text-[12px] leading-relaxed text-verify">
-        此為賣家公開檔案。評分與好評率由平台按實際成交演算派生，不可手改；平台為資訊中介，不對賣家或貨品作任何擔保。
+        {_t('seller.disclaimer')}
       </div>
 
       {/* ═══ Listings ═══ */}
@@ -194,7 +199,7 @@ export default function SellerPage() {
               overstates what is actually buyable — 「賣家貨品（14）」 next to a
               「在售 0」 stat reads as 14 items for sale. The buyable count is
               already stated once, in the stat row above. */}
-          賣家貨品
+          {_t('seller.listingsHeading')}
         </h2>
         <div className="relative w-full sm:w-[300px]">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-neutral-text-hint" />
@@ -202,14 +207,14 @@ export default function SellerPage() {
             type="search"
             value={inputValue}
             onChange={(e) => onInputChange(e.target.value)}
-            placeholder="喺呢位賣家嘅商品中搜尋…"
+            placeholder={_t('seller.searchPlaceholder')}
             className="h-10 w-full rounded-lg border border-line bg-white pl-9 pr-9 text-sm text-ink shadow-sh1 outline-none placeholder:text-neutral-text-hint focus:border-brand-600 focus:ring-1 focus:ring-brand-600"
           />
           {inputValue && (
             <button
               type="button"
               onClick={clearSearch}
-              aria-label="清除搜尋"
+              aria-label={_t('seller.clearSearchAria')}
               className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-neutral-text-hint hover:bg-surface-2 hover:text-ink"
             >
               <X className="h-4 w-4" />
@@ -225,14 +230,14 @@ export default function SellerPage() {
       ) : listings.length === 0 ? (
         q ? (
           <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-neutral-text-muted shadow-sh1">
-            搵唔到「{q}」相關嘅商品。
+            {_t('seller.noMatch', { q })}
             <button type="button" onClick={clearSearch} className="ml-2 font-semibold text-brand-700 hover:underline">
-              清除搜尋
+              {_t('seller.clearSearch')}
             </button>
           </p>
         ) : (
           <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-neutral-text-muted shadow-sh1">
-            呢個賣家暫時冇任何貨品。
+            {_t('seller.noItems')}
           </p>
         )
       ) : (
@@ -248,7 +253,7 @@ export default function SellerPage() {
                 disabled={loadingMore}
                 className="rounded-lg border border-line bg-white px-6 py-2.5 text-sm font-semibold text-ink shadow-sh1 hover:bg-surface-2 disabled:opacity-50"
               >
-                {loadingMore ? '載入中…' : `載入更多（尚有 ${total - listings.length} 件）`}
+                {loadingMore ? _t('seller.loadingMore') : _t('seller.loadMoreWithCount', { n: total - listings.length })}
               </button>
             </div>
           )}
@@ -260,18 +265,18 @@ export default function SellerPage() {
         <section className="mt-14">
           <div className="mb-[18px] flex items-baseline gap-3">
             <h2 className="font-display-serif text-[27px] font-bold leading-tight tracking-[-0.01em] text-ink">
-              買家評價
+              {_t('seller.reviewsTitle')}
             </h2>
             {reviews.averageRating != null && (
               <span className="flex items-center gap-1.5 text-sm font-semibold text-neutral-text-muted">
                 <StarRating value={reviews.averageRating} size="sm" />
-                {reviews.averageRating.toFixed(1)} · {reviews.total} 個評價
+                {_t('seller.reviewsSummary', { rating: reviews.averageRating.toFixed(1), n: reviews.total })}
               </span>
             )}
           </div>
           {reviews.items.length === 0 ? (
             <p className="max-w-[760px] rounded-xl border border-line bg-white p-6 text-center text-sm text-neutral-text-muted shadow-sh1">
-              暫無買家評價
+              {_t('seller.noReviews')}
             </p>
           ) : (
             <div className="max-w-[760px] space-y-3">
