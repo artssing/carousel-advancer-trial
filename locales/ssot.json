@@ -3066,153 +3066,17 @@
     }
   },
   "messages": {
-    "pageTitle": {
-      "zh": "訊息",
-      "en": "Messages"
-    },
-    "convCount": {
-      "zh": "{count} 個對話",
-      "en": "{count} conversations"
-    },
-    "searchPlaceholder": {
-      "zh": "搜尋對話…",
-      "en": "Search conversations…"
-    },
-    "searchAria": {
-      "zh": "搜尋對話",
-      "en": "Search conversations"
-    },
     "clearSearch": {
       "zh": "清除搜尋",
       "en": "Clear search"
-    },
-    "unreadCount": {
-      "zh": "{n} 個未讀",
-      "en": "{n} unread"
-    },
-    "empty.title": {
-      "zh": "暫無對話",
-      "en": "No conversations yet"
-    },
-    "empty.desc": {
-      "zh": "去瀏覽商品，搵到心水撳「聯絡賣家」。",
-      "en": "Browse listings and select \"Contact Seller\" when you find an item of interest."
-    },
-    "empty.browse": {
-      "zh": "瀏覽商品",
-      "en": "Browse Items"
-    },
-    "noResult.title": {
-      "zh": "揾唔到符合「{q}」嘅對話",
-      "en": "No conversations matching \"{q}\""
-    },
-    "noResult.hint": {
-      "zh": "試對方名、商品名、品牌或訂單 ID 首 8 字。",
-      "en": "Try searching by the other party's name, item name, brand, or the first eight characters of the order ID."
-    },
-    "role.you": {
-      "zh": "你",
-      "en": "You"
-    },
-    "role.seller": {
-      "zh": "賣家",
-      "en": "Seller"
-    },
-    "role.auth": {
-      "zh": "鑑定師",
-      "en": "Authenticator"
-    },
-    "role.system": {
-      "zh": "系統",
-      "en": "System"
-    },
-    "onlineIndicator": {
-      "zh": "在線",
-      "en": "Online"
-    },
-    "groupAria": {
-      "zh": "{name} · {n} 個對話",
-      "en": "{name} · {n} conversations"
-    },
-    "newConversation": {
-      "zh": "新對話",
-      "en": "New Conversation"
-    },
-    "desktopEmpty.title": {
-      "zh": "揀選一個對話",
-      "en": "Select a conversation"
-    },
-    "desktopEmpty.desc": {
-      "zh": "或者去瀏覽商品，搵到心水就聯絡賣家。",
-      "en": "Alternatively, browse listings and contact a seller when you find an item of interest."
-    },
-    "readonlyCompleted": {
-      "zh": "訂單已完成，對話存檔僅供查閱。",
-      "en": "Order completed. This conversation is archived for reference only."
-    },
-    "readonlyRefunded": {
-      "zh": "訂單已退款，對話存檔僅供查閱。",
-      "en": "Order refunded. This conversation is archived for reference only."
-    },
-    "readonlyDisputed": {
-      "zh": "訂單爭議處理中，對話已鎖定。",
-      "en": "Order dispute in progress. This conversation has been locked."
-    },
-    "contextPane.productLabel": {
-      "zh": "此對話商品",
-      "en": "Item in this conversation"
-    },
-    "contextPane.pillAssigned": {
-      "zh": "◆ 已指派鑑定師",
-      "en": "◆ Authenticator assigned"
-    },
-    "contextPane.noListing": {
-      "zh": "此對話未關聯商品",
-      "en": "No item linked to this conversation"
     },
     "contextPane.asking": {
       "zh": "叫價",
       "en": "Asking price"
     },
-    "contextPane.quoted": {
-      "zh": "報價",
-      "en": "Quoted price"
-    },
-    "contextPane.negotiating": {
-      "zh": "議價中",
-      "en": "Negotiating"
-    },
-    "contextPane.category": {
-      "zh": "品類",
-      "en": "Category"
-    },
-    "contextPane.condition": {
-      "zh": "狀況",
-      "en": "Condition"
-    },
-    "contextPane.sellerAccepts": {
-      "zh": "賣家接受",
-      "en": "Seller accepts"
-    },
-    "contextPane.salePrice": {
-      "zh": "成交價",
-      "en": "Sale price"
-    },
     "contextPane.authFee": {
       "zh": "鑑定費",
       "en": "Authentication fee"
-    },
-    "contextPane.status": {
-      "zh": "狀態",
-      "en": "Status"
-    },
-    "contextPane.delivery": {
-      "zh": "交收",
-      "en": "Delivery"
-    },
-    "contextPane.payment": {
-      "zh": "付款",
-      "en": "Payment"
     },
     "contextPane.authenticator": {
       "zh": "鑑定師",
@@ -3222,57 +3086,313 @@
       "zh": "⚠ 現金面交唔受平台託管保障，請確認商品交收後再交錢。",
       "en": "⚠ Cash meetups are not protected by platform escrow. Please inspect the item before tendering payment."
     },
-    "contextPane.viewOrder": {
-      "zh": "查看訂單",
-      "en": "View order"
+    "contextPane.category": {
+      "zh": "品類",
+      "en": "Category"
     },
-    "contextPane.makeOffer": {
-      "zh": "提出議價",
-      "en": "Make an offer"
+    "contextPane.condition": {
+      "zh": "狀況",
+      "en": "Condition"
     },
-    "contextPane.viewOffer": {
-      "zh": "查看議價中 {price}",
-      "en": "View offer at {price}"
-    },
-    "contextPane.viewListing": {
-      "zh": "查看商品",
-      "en": "View item"
+    "contextPane.delivery": {
+      "zh": "交收",
+      "en": "Delivery"
     },
     "contextPane.disclaimer": {
       "zh": "款項受平台託管，鑑定通過並完成交收後方放款；平台為資訊中介，不擔保真偽。",
       "en": "Funds are held in escrow and released only after authentication has been passed and delivery has been completed. The platform acts as an information intermediary and does not guarantee authenticity."
     },
-    "delivery.shipNeutral": {
-      "zh": "郵寄",
-      "en": "Shipping"
+    "contextPane.makeOffer": {
+      "zh": "提出議價",
+      "en": "Make an offer"
+    },
+    "contextPane.negotiating": {
+      "zh": "議價中",
+      "en": "Negotiating"
+    },
+    "contextPane.noListing": {
+      "zh": "此對話未關聯商品",
+      "en": "No item linked to this conversation"
+    },
+    "contextPane.payment": {
+      "zh": "付款",
+      "en": "Payment"
+    },
+    "contextPane.pillAssigned": {
+      "zh": "◆ 已指派鑑定師",
+      "en": "◆ Authenticator assigned"
+    },
+    "contextPane.productLabel": {
+      "zh": "此對話商品",
+      "en": "Item in this conversation"
+    },
+    "contextPane.quoted": {
+      "zh": "報價",
+      "en": "Quoted price"
+    },
+    "contextPane.salePrice": {
+      "zh": "成交價",
+      "en": "Sale price"
+    },
+    "contextPane.sellerAccepts": {
+      "zh": "賣家接受",
+      "en": "Seller accepts"
+    },
+    "contextPane.status": {
+      "zh": "狀態",
+      "en": "Status"
+    },
+    "contextPane.viewListing": {
+      "zh": "查看商品",
+      "en": "View item"
+    },
+    "contextPane.viewOffer": {
+      "zh": "查看議價中 {price}",
+      "en": "View offer at {price}"
+    },
+    "contextPane.viewOrder": {
+      "zh": "查看訂單",
+      "en": "View order"
+    },
+    "convCount": {
+      "zh": "{count} 個對話",
+      "en": "{count} conversations"
     },
     "delivery.meetupAuthNeutral": {
       "zh": "鑑定師處面交",
       "en": "Meet at authenticator"
     },
-    "payment.escrowLabel": {
-      "zh": "線上託管",
-      "en": "Online escrow"
+    "delivery.shipNeutral": {
+      "zh": "郵寄",
+      "en": "Shipping"
+    },
+    "desktopEmpty.desc": {
+      "zh": "或者去瀏覽商品，搵到心水就聯絡賣家。",
+      "en": "Alternatively, browse listings and contact a seller when you find an item of interest."
+    },
+    "desktopEmpty.title": {
+      "zh": "揀選一個對話",
+      "en": "Select a conversation"
+    },
+    "empty.browse": {
+      "zh": "瀏覽商品",
+      "en": "Browse Items"
+    },
+    "empty.desc": {
+      "zh": "去瀏覽商品，搵到心水撳「聯絡賣家」。",
+      "en": "Browse listings and select \"Contact Seller\" when you find an item of interest."
+    },
+    "empty.title": {
+      "zh": "暫無對話",
+      "en": "No conversations yet"
+    },
+    "groupAria": {
+      "zh": "{name} · {n} 個對話",
+      "en": "{name} · {n} conversations"
+    },
+    "newConversation": {
+      "zh": "新對話",
+      "en": "New Conversation"
+    },
+    "noResult.hint": {
+      "zh": "試對方名、商品名、品牌或訂單 ID 首 8 字。",
+      "en": "Try searching by the other party's name, item name, brand, or the first eight characters of the order ID."
+    },
+    "noResult.title": {
+      "zh": "揾唔到符合「{q}」嘅對話",
+      "en": "No conversations matching \"{q}\""
+    },
+    "offer.accept": {
+      "zh": "接受",
+      "en": "Accept"
+    },
+    "offer.acceptedTitle": {
+      "zh": "✓ 議價成功",
+      "en": "✓ Offer accepted"
+    },
+    "offer.counter": {
+      "zh": "還價",
+      "en": "Counter"
+    },
+    "offer.counterNew": {
+      "zh": "另出價",
+      "en": "Offer another price"
+    },
+    "offer.error.action": {
+      "zh": "操作失敗",
+      "en": "That action failed"
+    },
+    "offer.error.load": {
+      "zh": "無法載入",
+      "en": "Could not load"
+    },
+    "offer.error.loadPrefix": {
+      "zh": "議價載入失敗：",
+      "en": "Could not load the offer: "
+    },
+    "offer.lowballWarning": {
+      "zh": "提議價格比原價低超過 50%，請確認此為你同意嘅成交價。",
+      "en": "This offer is more than 50% below the list price. Confirm that this is a price you accept."
+    },
+    "offer.orderNow": {
+      "zh": "立即落單（鎖定 {price}）→",
+      "en": "Order now (locks in {price}) →"
+    },
+    "offer.originalPrice": {
+      "zh": "原價",
+      "en": "List price"
+    },
+    "offer.paymentDeadline": {
+      "zh": "· 付款期限 {deadline}",
+      "en": "· pay by {deadline}"
+    },
+    "offer.proposedBy": {
+      "zh": "由 {name} 提出",
+      "en": "Offered by {name}"
+    },
+    "offer.proposedPrice": {
+      "zh": "提議價",
+      "en": "Offered"
+    },
+    "offer.reject": {
+      "zh": "拒絕",
+      "en": "Reject"
+    },
+    "offer.rejectConfirm.consequence": {
+      "zh": "拒絕後呢個出價會作廢。對方可以再出新價，你都可以還價代替直接拒絕。",
+      "en": "Rejecting voids the offer. They can still make a new one, and you can counter instead of rejecting."
+    },
+    "offer.rejectConfirm.label": {
+      "zh": "確認拒絕",
+      "en": "Reject"
+    },
+    "offer.rejectConfirm.title": {
+      "zh": "確認拒絕呢個出價？",
+      "en": "Reject this offer?"
+    },
+    "offer.roundTitle": {
+      "zh": "議價 · 第 {round} 輪",
+      "en": "Offer · round {round}"
+    },
+    "offer.saving": {
+      "zh": "節省",
+      "en": "Saving"
+    },
+    "offer.status.accepted": {
+      "zh": "已接受",
+      "en": "Accepted"
+    },
+    "offer.status.countered": {
+      "zh": "已還價",
+      "en": "Countered"
+    },
+    "offer.status.expired": {
+      "zh": "已過期",
+      "en": "Expired"
+    },
+    "offer.status.pending": {
+      "zh": "待回覆",
+      "en": "Awaiting reply"
+    },
+    "offer.status.rejected": {
+      "zh": "已拒絕",
+      "en": "Rejected"
+    },
+    "offer.status.withdrawn": {
+      "zh": "已撤回",
+      "en": "Withdrawn"
+    },
+    "offer.timeLeft.expired": {
+      "zh": "已過期",
+      "en": "Expired"
+    },
+    "offer.timeLeft.hours": {
+      "zh": "剩 {h} 小時 {m} 分",
+      "en": "{h}h {m}m left"
+    },
+    "offer.timeLeft.mins": {
+      "zh": "剩 {m} 分鐘",
+      "en": "{m}m left"
+    },
+    "offer.waiting": {
+      "zh": "等待對方回覆…",
+      "en": "Waiting for their reply…"
+    },
+    "offer.withdraw": {
+      "zh": "撤回出價",
+      "en": "Withdraw offer"
+    },
+    "offer.withdrawConfirm.consequence": {
+      "zh": "撤回後呢個出價會立即作廢，對方就再見唔到。想繼續傾可以等對方還價或者直接另出價。",
+      "en": "Withdrawing voids the offer immediately and the other side can no longer see it. To keep negotiating, wait for their counter or make a new offer."
+    },
+    "offer.withdrawConfirm.label": {
+      "zh": "確認撤回",
+      "en": "Withdraw"
+    },
+    "offer.withdrawConfirm.title": {
+      "zh": "確認撤回出價？",
+      "en": "Withdraw this offer?"
+    },
+    "offer.you": {
+      "zh": "你",
+      "en": "You"
+    },
+    "onlineIndicator": {
+      "zh": "在線",
+      "en": "Online"
+    },
+    "pageTitle": {
+      "zh": "訊息",
+      "en": "Messages"
     },
     "payment.cashLabel": {
       "zh": "現金面交",
       "en": "Cash on meetup"
     },
-    "threadPreview": {
-      "zh": "{senderRole}：{body}",
-      "en": "{senderRole}: {body}"
+    "payment.escrowLabel": {
+      "zh": "線上託管",
+      "en": "Online escrow"
     },
-    "statusLabel.pendingPayment": {
-      "zh": "待付款",
-      "en": "Pending payment"
+    "readonlyCompleted": {
+      "zh": "訂單已完成，對話存檔僅供查閱。",
+      "en": "Order completed. This conversation is archived for reference only."
     },
-    "statusLabel.paid": {
-      "zh": "款項託管中",
-      "en": "Funds in escrow"
+    "readonlyDisputed": {
+      "zh": "訂單爭議處理中，對話已鎖定。",
+      "en": "Order dispute in progress. This conversation has been locked."
     },
-    "statusLabel.shippedToAuth": {
-      "zh": "寄往鑑定",
-      "en": "Shipped to authenticator"
+    "readonlyRefunded": {
+      "zh": "訂單已退款，對話存檔僅供查閱。",
+      "en": "Order refunded. This conversation is archived for reference only."
+    },
+    "role.auth": {
+      "zh": "鑑定師",
+      "en": "Authenticator"
+    },
+    "role.seller": {
+      "zh": "賣家",
+      "en": "Seller"
+    },
+    "role.system": {
+      "zh": "系統",
+      "en": "System"
+    },
+    "role.you": {
+      "zh": "你",
+      "en": "You"
+    },
+    "searchAria": {
+      "zh": "搜尋對話",
+      "en": "Search conversations"
+    },
+    "searchPlaceholder": {
+      "zh": "搜尋對話…",
+      "en": "Search conversations…"
+    },
+    "statusLabel.authFailed": {
+      "zh": "鑑定不通過",
+      "en": "Authentication failed"
     },
     "statusLabel.authInProgress": {
       "zh": "鑑定中",
@@ -3282,29 +3402,45 @@
       "zh": "鑑定通過",
       "en": "Authentication passed"
     },
-    "statusLabel.authFailed": {
-      "zh": "鑑定不通過",
-      "en": "Authentication failed"
-    },
-    "statusLabel.shippedToBuyer": {
-      "zh": "寄往買家",
-      "en": "Shipped to buyer"
+    "statusLabel.completed": {
+      "zh": "已完成",
+      "en": "Completed"
     },
     "statusLabel.delivered": {
       "zh": "已送達",
       "en": "Delivered"
     },
-    "statusLabel.completed": {
-      "zh": "已完成",
-      "en": "Completed"
+    "statusLabel.disputed": {
+      "zh": "爭議處理中",
+      "en": "Dispute in progress"
+    },
+    "statusLabel.paid": {
+      "zh": "款項託管中",
+      "en": "Funds in escrow"
+    },
+    "statusLabel.pendingPayment": {
+      "zh": "待付款",
+      "en": "Pending payment"
     },
     "statusLabel.refunded": {
       "zh": "已退款",
       "en": "Refunded"
     },
-    "statusLabel.disputed": {
-      "zh": "爭議處理中",
-      "en": "Dispute in progress"
+    "statusLabel.shippedToAuth": {
+      "zh": "寄往鑑定",
+      "en": "Shipped to authenticator"
+    },
+    "statusLabel.shippedToBuyer": {
+      "zh": "寄往買家",
+      "en": "Shipped to buyer"
+    },
+    "threadPreview": {
+      "zh": "{senderRole}：{body}",
+      "en": "{senderRole}: {body}"
+    },
+    "unreadCount": {
+      "zh": "{n} 個未讀",
+      "en": "{n} unread"
     }
   },
   "notFound": {
