@@ -5640,10 +5640,6 @@
     }
   },
   "account.wallet": {
-    "page.title": {
-      "zh": "錢包",
-      "en": "Wallet"
-    },
     "balance.availableLabel": {
       "zh": "可提現餘額",
       "en": "Available balance"
@@ -5652,49 +5648,209 @@
       "zh": "另有 {formatHKD(heldTotal)} 託管中（待鑑定 / 交收完成後入賬）",
       "en": "{formatHKD(heldTotal)} in escrow (will be credited upon completion of authentication and delivery)"
     },
-    "balance.withdrawButton": {
-      "zh": "提現",
-      "en": "Withdraw"
-    },
-    "balance.transactionsLink": {
-      "zh": "交易紀錄",
-      "en": "Transaction History"
+    "balance.minWithdrawHint": {
+      "zh": "最低提款金額 HKD {balance.minHKD}。",
+      "en": "Minimum withdrawal amount is HKD {balance.minHKD}."
     },
     "balance.secureEscrowWatermark": {
       "zh": "SECURE ESCROW",
       "en": "SECURE ESCROW"
     },
-    "balance.minWithdrawHint": {
-      "zh": "最低提款金額 HKD {balance.minHKD}。",
-      "en": "Minimum withdrawal amount is HKD {balance.minHKD}."
+    "balance.transactionsLink": {
+      "zh": "交易紀錄",
+      "en": "Transaction History"
     },
-    "subcard.held.label": {
-      "zh": "託管中",
-      "en": "In escrow"
-    },
-    "subcard.earned.label": {
-      "zh": "累計收入",
-      "en": "Total Earned"
-    },
-    "breakdown.heading": {
-      "zh": "餘額來源",
-      "en": "Balance Breakdown"
-    },
-    "breakdown.role.seller": {
-      "zh": "銷售收入",
-      "en": "Sales Proceeds"
-    },
-    "breakdown.role.authenticator": {
-      "zh": "鑑定收入",
-      "en": "Authentication Income"
+    "balance.withdrawButton": {
+      "zh": "提現",
+      "en": "Withdraw"
     },
     "breakdown.eligibleDate": {
       "zh": "可提取於 {formattedDate}",
       "en": "Available for withdrawal on {formattedDate}"
     },
-    "recentPayouts.heading": {
-      "zh": "最近提款",
-      "en": "Recent Withdrawals"
+    "breakdown.heading": {
+      "zh": "餘額來源",
+      "en": "Balance Breakdown"
+    },
+    "breakdown.role.authenticator": {
+      "zh": "鑑定收入",
+      "en": "Authentication Income"
+    },
+    "breakdown.role.seller": {
+      "zh": "銷售收入",
+      "en": "Sales Proceeds"
+    },
+    "cashout.addAccount": {
+      "zh": "+ 新增提款帳戶",
+      "en": "+ Add a payout account"
+    },
+    "cashout.addOne": {
+      "zh": "去新增 →",
+      "en": "Add one →"
+    },
+    "cashout.amountLabel": {
+      "zh": "提款金額 (HKD)",
+      "en": "Amount (HKD)"
+    },
+    "cashout.available": {
+      "zh": "可提取餘額",
+      "en": "Available balance"
+    },
+    "cashout.cancel": {
+      "zh": "取消",
+      "en": "Cancel"
+    },
+    "cashout.close": {
+      "zh": "關閉",
+      "en": "Close"
+    },
+    "cashout.confirm": {
+      "zh": "確認提款",
+      "en": "Confirm withdrawal"
+    },
+    "cashout.done": {
+      "zh": "完成",
+      "en": "Done"
+    },
+    "cashout.doneBody": {
+      "zh": "預計 1–3 個工作天到帳。可喺「提款紀錄」追蹤狀態。",
+      "en": "Expect it in 1–3 working days. Track it under Payout history."
+    },
+    "cashout.doneTitle": {
+      "zh": "提款申請已提交",
+      "en": "Withdrawal requested"
+    },
+    "cashout.error.exceedsBalance": {
+      "zh": "超出可提取餘額 (HKD {available})",
+      "en": "That exceeds your available balance (HKD {available})"
+    },
+    "cashout.error.failed": {
+      "zh": "提款失敗，請稍後再試",
+      "en": "The withdrawal failed — please try again later"
+    },
+    "cashout.error.max": {
+      "zh": "單次上限 HKD {max}",
+      "en": "Maximum per withdrawal is HKD {max}"
+    },
+    "cashout.error.min": {
+      "zh": "最低提款 HKD {min}",
+      "en": "Minimum withdrawal is HKD {min}"
+    },
+    "cashout.etaValue": {
+      "zh": "1–3 個工作天",
+      "en": "1–3 working days"
+    },
+    "cashout.feeFree": {
+      "zh": "免費（目前）",
+      "en": "Free (for now)"
+    },
+    "cashout.irreversibleBody": {
+      "zh": "如帳戶資料有誤，款項或需 5–10 個工作天追回。請再次核對到帳帳戶。",
+      "en": "If the account details are wrong, recovering the funds can take 5–10 working days. Check the destination account again."
+    },
+    "cashout.irreversibleTitle": {
+      "zh": "⚠️ 提款一旦處理將不可撤回",
+      "en": "⚠️ Once processed, a withdrawal cannot be reversed"
+    },
+    "cashout.nameMismatch": {
+      "zh": "此帳戶持有人姓名 ({name}) 與你嘅 KYC 登記姓名唔同。如出現問題，平台難以協助追索。",
+      "en": "The account holder name ({name}) does not match your KYC name. If something goes wrong, the platform will have difficulty helping you recover the funds."
+    },
+    "cashout.next": {
+      "zh": "下一步",
+      "en": "Next"
+    },
+    "cashout.noAccount": {
+      "zh": "你仲未有提款帳戶。",
+      "en": "You have no payout account yet."
+    },
+    "cashout.otpSentTo": {
+      "zh": "驗證碼已發送至",
+      "en": "Code sent to"
+    },
+    "cashout.otpTitle": {
+      "zh": "輸入驗證碼",
+      "en": "Enter the verification code"
+    },
+    "cashout.pickAccount": {
+      "zh": "請揀提款帳戶",
+      "en": "Choose a payout account"
+    },
+    "cashout.processing": {
+      "zh": "處理中…",
+      "en": "Processing…"
+    },
+    "cashout.range": {
+      "zh": "每次提款 HKD {min} – HKD {max}",
+      "en": "HKD {min} – HKD {max} per withdrawal"
+    },
+    "cashout.refLabel": {
+      "zh": "查詢編號",
+      "en": "Reference"
+    },
+    "cashout.row.amount": {
+      "zh": "提款金額",
+      "en": "Amount"
+    },
+    "cashout.row.eta": {
+      "zh": "預計到帳",
+      "en": "Expected to arrive"
+    },
+    "cashout.row.fee": {
+      "zh": "平台手續費",
+      "en": "Platform fee"
+    },
+    "cashout.row.net": {
+      "zh": "實收金額",
+      "en": "You receive"
+    },
+    "cashout.title": {
+      "zh": "申請提款",
+      "en": "Request a withdrawal"
+    },
+    "cashout.understand": {
+      "zh": "我明白，發送驗證碼",
+      "en": "I understand — send the code"
+    },
+    "cashout.viewHistory": {
+      "zh": "查看紀錄",
+      "en": "View history"
+    },
+    "cashout.withdrawTo": {
+      "zh": "提款 {amount} 至",
+      "en": "Withdraw {amount} to"
+    },
+    "eligibleAt": {
+      "zh": " · 可提取於 {date}",
+      "en": " · available from {date}"
+    },
+    "error.load": {
+      "zh": "載入失敗",
+      "en": "Could not load"
+    },
+    "heading": {
+      "zh": "錢包",
+      "en": "Wallet"
+    },
+    "heldNote": {
+      "zh": "另有 {amount} 託管中（待鑑定 / 交收完成後入賬）",
+      "en": "A further {amount} is held in escrow (credited once authentication and handover finish)"
+    },
+    "loadingError": {
+      "zh": "載入失敗",
+      "en": "Failed to load"
+    },
+    "minWithdrawNote": {
+      "zh": "最低提款金額 HKD {min}",
+      "en": "Minimum withdrawal HKD {min}"
+    },
+    "page.title": {
+      "zh": "錢包",
+      "en": "Wallet"
+    },
+    "payoutTo": {
+      "zh": "提現至 {method}",
+      "en": "Payout to {method}"
     },
     "recentPayouts.allLink": {
       "zh": "全部紀錄 →",
@@ -5704,95 +5860,31 @@
       "zh": "尚未有提款紀錄",
       "en": "No withdrawals yet"
     },
+    "recentPayouts.heading": {
+      "zh": "最近提款",
+      "en": "Recent Withdrawals"
+    },
     "recentPayouts.toLabel": {
       "zh": "提現至 {displayLabel}",
       "en": "Withdrawn to {displayLabel}"
     },
-    "loadingError": {
-      "zh": "載入失敗",
-      "en": "Failed to load"
+    "subcard.earned.label": {
+      "zh": "累計收入",
+      "en": "Total Earned"
+    },
+    "subcard.held.label": {
+      "zh": "託管中",
+      "en": "In escrow"
     }
   },
   "account.walletMethods": {
-    "page.title": {
-      "zh": "提現方式",
-      "en": "Withdrawal Methods"
-    },
     "addButton": {
       "zh": "＋ 新增",
       "en": "+ Add"
     },
-    "empty": {
-      "zh": "你仲未有提款帳戶。撳「＋ 新增」開始。",
-      "en": "You do not have any withdrawal accounts yet. Click \"+ Add\" to get started."
-    },
-    "method.defaultPill": {
-      "zh": "預設",
-      "en": "Default"
-    },
-    "method.nameMismatch": {
-      "zh": "姓名與 KYC 唔同",
-      "en": "Name does not match KYC"
-    },
-    "method.setDefault": {
-      "zh": "設為預設",
-      "en": "Set as default"
-    },
-    "method.delete": {
-      "zh": "刪除",
-      "en": "Delete"
-    },
-    "otpPanel.heading": {
-      "zh": "驗證身份",
-      "en": "Verify identity"
-    },
-    "otpPanel.body": {
-      "zh": "為保障你嘅資金安全，新增收款戶口需要驗證。",
-      "en": "To protect your funds, verification is required to add a new withdrawal account."
-    },
-    "otpPanel.sentTo": {
-      "zh": "驗證碼已發送至 {otpMasked}",
-      "en": "Verification code sent to {otpMasked}"
-    },
-    "otpPanel.verifying": {
-      "zh": "驗證中…",
-      "en": "Verifying…"
-    },
-    "otpPanel.backLink": {
-      "zh": "← 返回修改",
-      "en": "← Back to edit"
-    },
-    "otpPanel.resendLink": {
-      "zh": "重新發送驗證碼",
-      "en": "Resend code"
-    },
-    "otpPanel.resendCountdown": {
-      "zh": "重新發送 ({seconds}s)",
-      "en": "Resend ({seconds}s)"
-    },
-    "addForm.heading": {
-      "zh": "新增提款帳戶",
-      "en": "Add Withdrawal Account"
-    },
-    "addForm.typeLabel": {
-      "zh": "提款方式",
-      "en": "Withdrawal Method"
-    },
-    "addForm.bankLabel": {
-      "zh": "銀行",
-      "en": "Bank"
-    },
-    "addForm.bankPlaceholder": {
-      "zh": "— 揀銀行 —",
-      "en": "— Select bank —"
-    },
     "addForm.accountLabel": {
       "zh": "戶口號碼",
       "en": "Account Number"
-    },
-    "addForm.identifierLabel": {
-      "zh": "帳號識別符",
-      "en": "Account Identifier"
     },
     "addForm.accountNameLabel": {
       "zh": "帳戶持有人姓名",
@@ -5802,41 +5894,53 @@
       "zh": "與銀行 / FPS 登記嘅姓名一致",
       "en": "Must match the name registered with your bank or FPS"
     },
-    "addForm.defaultCheckbox": {
-      "zh": "設為預設帳戶",
-      "en": "Set as default account"
+    "addForm.bankLabel": {
+      "zh": "銀行",
+      "en": "Bank"
+    },
+    "addForm.bankPlaceholder": {
+      "zh": "— 揀銀行 —",
+      "en": "— Select bank —"
     },
     "addForm.cancelButton": {
       "zh": "取消",
       "en": "Cancel"
     },
-    "addForm.submitButton": {
-      "zh": "傳送驗證碼",
-      "en": "Send verification code"
-    },
-    "addForm.nameRequired": {
-      "zh": "請輸入帳戶持有人姓名",
-      "en": "Please enter the account holder name"
-    },
-    "addForm.invalidAccount": {
-      "zh": "帳戶資料無效",
-      "en": "Invalid account details"
+    "addForm.defaultCheckbox": {
+      "zh": "設為預設帳戶",
+      "en": "Set as default account"
     },
     "addForm.genericError": {
       "zh": "新增失敗",
       "en": "Failed to add"
     },
-    "otp.verifyError": {
-      "zh": "驗證失敗，請稍後再試",
-      "en": "Verification failed. Please try again later."
+    "addForm.heading": {
+      "zh": "新增提款帳戶",
+      "en": "Add Withdrawal Account"
     },
-    "otp.resendError": {
-      "zh": "重新發送失敗，請稍後再試",
-      "en": "Resend failed. Please try again later."
+    "addForm.identifierLabel": {
+      "zh": "帳號識別符",
+      "en": "Account Identifier"
     },
-    "delete.confirmDialog.title": {
-      "zh": "刪除呢個收款方式？",
-      "en": "Delete this withdrawal method?"
+    "addForm.invalidAccount": {
+      "zh": "帳戶資料無效",
+      "en": "Invalid account details"
+    },
+    "addForm.nameRequired": {
+      "zh": "請輸入帳戶持有人姓名",
+      "en": "Please enter the account holder name"
+    },
+    "addForm.submitButton": {
+      "zh": "傳送驗證碼",
+      "en": "Send verification code"
+    },
+    "addForm.typeLabel": {
+      "zh": "提款方式",
+      "en": "Withdrawal Method"
+    },
+    "cancel": {
+      "zh": "取消",
+      "en": "Cancel"
     },
     "delete.confirmDialog.body": {
       "zh": "刪除後未完成嘅提款唔受影響（已凍結方式快照）。之後可以隨時重新加返。",
@@ -5846,20 +5950,212 @@
       "zh": "確認刪除",
       "en": "Confirm delete"
     },
+    "delete.confirmDialog.title": {
+      "zh": "刪除呢個收款方式？",
+      "en": "Delete this withdrawal method?"
+    },
+    "deleteError": {
+      "zh": "刪除失敗",
+      "en": "Delete failed"
+    },
+    "empty": {
+      "zh": "你仲未有提款帳戶。撳「＋ 新增」開始。",
+      "en": "You do not have any withdrawal accounts yet. Click \"+ Add\" to get started."
+    },
+    "error.invalidAccount": {
+      "zh": "帳戶資料無效",
+      "en": "Those account details are not valid"
+    },
+    "error.load": {
+      "zh": "載入失敗",
+      "en": "Could not load"
+    },
+    "heading": {
+      "zh": "提現方式",
+      "en": "Payout methods"
+    },
     "loadingError": {
       "zh": "載入失敗",
       "en": "Failed to load"
+    },
+    "method.defaultPill": {
+      "zh": "預設",
+      "en": "Default"
+    },
+    "method.delete": {
+      "zh": "刪除",
+      "en": "Delete"
+    },
+    "method.nameMismatch": {
+      "zh": "姓名與 KYC 唔同",
+      "en": "Name does not match KYC"
+    },
+    "method.setDefault": {
+      "zh": "設為預設",
+      "en": "Set as default"
     },
     "operationError": {
       "zh": "操作失敗",
       "en": "Operation failed"
     },
-    "deleteError": {
-      "zh": "刪除失敗",
-      "en": "Delete failed"
+    "otp.resendError": {
+      "zh": "重新發送失敗，請稍後再試",
+      "en": "Resend failed. Please try again later."
+    },
+    "otp.verifyError": {
+      "zh": "驗證失敗，請稍後再試",
+      "en": "Verification failed. Please try again later."
+    },
+    "otpPanel.backLink": {
+      "zh": "← 返回修改",
+      "en": "← Back to edit"
+    },
+    "otpPanel.body": {
+      "zh": "為保障你嘅資金安全，新增收款戶口需要驗證。",
+      "en": "To protect your funds, verification is required to add a new withdrawal account."
+    },
+    "otpPanel.heading": {
+      "zh": "驗證身份",
+      "en": "Verify identity"
+    },
+    "otpPanel.resendCountdown": {
+      "zh": "重新發送 ({seconds}s)",
+      "en": "Resend ({seconds}s)"
+    },
+    "otpPanel.resendLink": {
+      "zh": "重新發送驗證碼",
+      "en": "Resend code"
+    },
+    "otpPanel.sentTo": {
+      "zh": "驗證碼已發送至 {otpMasked}",
+      "en": "Verification code sent to {otpMasked}"
+    },
+    "otpPanel.verifying": {
+      "zh": "驗證中…",
+      "en": "Verifying…"
+    },
+    "otpSentTo": {
+      "zh": "驗證碼已發送至",
+      "en": "Code sent to"
+    },
+    "page.title": {
+      "zh": "提現方式",
+      "en": "Withdrawal Methods"
+    },
+    "resendIn": {
+      "zh": "重新發送 ({s}s)",
+      "en": "Resend in {s}s"
     }
   },
   "account.payouts": {
+    "detail.accountLabel": {
+      "zh": "到帳帳戶",
+      "en": "Destination Account"
+    },
+    "detail.feeFree": {
+      "zh": "免費",
+      "en": "Free"
+    },
+    "detail.netAmount": {
+      "zh": "實收 {formatHKD(r.netHKD)} · 手續費 {feeText}",
+      "en": "Net received {formatHKD(r.netHKD)} · Fee {feeText}"
+    },
+    "detail.processedAtLabel": {
+      "zh": "處理時間",
+      "en": "Processed at"
+    },
+    "detail.referenceLabel": {
+      "zh": "參考編號",
+      "en": "Reference Number"
+    },
+    "detail.submittedAtLabel": {
+      "zh": "提交時間",
+      "en": "Submitted at"
+    },
+    "empty": {
+      "zh": "尚未有任何提款紀錄",
+      "en": "No withdrawal history yet"
+    },
+    "error.load": {
+      "zh": "載入失敗",
+      "en": "Could not load"
+    },
+    "fail.bankRejected": {
+      "zh": "銀行拒收",
+      "en": "Rejected by the bank"
+    },
+    "fail.beneficiaryMismatch": {
+      "zh": "收款人姓名不符",
+      "en": "Beneficiary name mismatch"
+    },
+    "fail.invalidAccount": {
+      "zh": "帳戶資料無效",
+      "en": "Invalid account details"
+    },
+    "fail.kycRequired": {
+      "zh": "需要進階身份驗證",
+      "en": "Enhanced identity verification required"
+    },
+    "failReason.BANK_REJECTED": {
+      "zh": "銀行拒收",
+      "en": "Bank rejected"
+    },
+    "failReason.BENEFICIARY_MISMATCH": {
+      "zh": "收款人姓名不符",
+      "en": "Beneficiary name mismatch"
+    },
+    "failReason.INVALID_ACCOUNT": {
+      "zh": "帳戶資料無效",
+      "en": "Invalid account details"
+    },
+    "failReason.KYC_REQUIRED": {
+      "zh": "需要進階身份驗證",
+      "en": "Advanced identity verification required"
+    },
+    "failReasonPrefix": {
+      "zh": "失敗原因：",
+      "en": "Reason: "
+    },
+    "failure.instruction": {
+      "zh": "請在提款帳戶核對資料，或者重新申請提款。",
+      "en": "Please check your withdrawal account details or submit a new withdrawal request."
+    },
+    "failure.methodsLinkLabel": {
+      "zh": "提款帳戶",
+      "en": "Withdrawal Accounts"
+    },
+    "failure.reasonLabel": {
+      "zh": "失敗原因：{reason}",
+      "en": "Failure reason: {reason}"
+    },
+    "failure.retryLinkLabel": {
+      "zh": "重新申請提款",
+      "en": "Submit a new withdrawal request"
+    },
+    "failure.unknown": {
+      "zh": "未知",
+      "en": "Unknown"
+    },
+    "fixMiddle": {
+      "zh": "核對資料，或者",
+      "en": " to check the details, or go back to "
+    },
+    "fixPrefix": {
+      "zh": "請喺",
+      "en": "Please go to "
+    },
+    "fixSuffix": {
+      "zh": "。",
+      "en": "."
+    },
+    "loadingError": {
+      "zh": "載入失敗",
+      "en": "Failed to load"
+    },
+    "netAndFee": {
+      "zh": "實收 {net} · 手續費 {fee}",
+      "en": "You receive {net} · fee {fee}"
+    },
     "page.title": {
       "zh": "提款紀錄",
       "en": "Withdrawal History"
@@ -5867,6 +6163,10 @@
     "tab.all": {
       "zh": "全部",
       "en": "All"
+    },
+    "tab.failed": {
+      "zh": "失敗",
+      "en": "Failed"
     },
     "tab.pending": {
       "zh": "待處理",
@@ -5879,78 +6179,6 @@
     "tab.succeeded": {
       "zh": "已完成",
       "en": "Completed"
-    },
-    "tab.failed": {
-      "zh": "失敗",
-      "en": "Failed"
-    },
-    "empty": {
-      "zh": "尚未有任何提款紀錄",
-      "en": "No withdrawal history yet"
-    },
-    "detail.netAmount": {
-      "zh": "實收 {formatHKD(r.netHKD)} · 手續費 {feeText}",
-      "en": "Net received {formatHKD(r.netHKD)} · Fee {feeText}"
-    },
-    "detail.feeFree": {
-      "zh": "免費",
-      "en": "Free"
-    },
-    "detail.accountLabel": {
-      "zh": "到帳帳戶",
-      "en": "Destination Account"
-    },
-    "detail.referenceLabel": {
-      "zh": "參考編號",
-      "en": "Reference Number"
-    },
-    "detail.submittedAtLabel": {
-      "zh": "提交時間",
-      "en": "Submitted at"
-    },
-    "detail.processedAtLabel": {
-      "zh": "處理時間",
-      "en": "Processed at"
-    },
-    "failure.reasonLabel": {
-      "zh": "失敗原因：{reason}",
-      "en": "Failure reason: {reason}"
-    },
-    "failure.unknown": {
-      "zh": "未知",
-      "en": "Unknown"
-    },
-    "failure.instruction": {
-      "zh": "請在提款帳戶核對資料，或者重新申請提款。",
-      "en": "Please check your withdrawal account details or submit a new withdrawal request."
-    },
-    "failure.methodsLinkLabel": {
-      "zh": "提款帳戶",
-      "en": "Withdrawal Accounts"
-    },
-    "failure.retryLinkLabel": {
-      "zh": "重新申請提款",
-      "en": "Submit a new withdrawal request"
-    },
-    "failReason.BANK_REJECTED": {
-      "zh": "銀行拒收",
-      "en": "Bank rejected"
-    },
-    "failReason.INVALID_ACCOUNT": {
-      "zh": "帳戶資料無效",
-      "en": "Invalid account details"
-    },
-    "failReason.BENEFICIARY_MISMATCH": {
-      "zh": "收款人姓名不符",
-      "en": "Beneficiary name mismatch"
-    },
-    "failReason.KYC_REQUIRED": {
-      "zh": "需要進階身份驗證",
-      "en": "Advanced identity verification required"
-    },
-    "loadingError": {
-      "zh": "載入失敗",
-      "en": "Failed to load"
     }
   },
   "authenticator": {

@@ -4,7 +4,9 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PayoutDisclaimer } from '@authentik/ui';
-import { formatHKD, type PayoutStatusKey } from '@authentik/utils';
+import { formatHKD, type PayoutStatusKey,
+  getClientLocale, createT,
+} from '@authentik/utils';
 import { api, hasToken, ApiError } from '@/lib/api';
 import { Copy, Check } from 'lucide-react';
 import { StatusPill } from '@/components/wallet/status-pill';
@@ -13,13 +15,17 @@ import { AccountSidebar } from '@/components/account/account-sidebar';
 type Request = Awaited<ReturnType<typeof api.wallet.requests>>[number];
 
 const FAIL_REASON_LABEL: Record<string, string> = {
-  BANK_REJECTED: '銀行拒收',
-  INVALID_ACCOUNT: '帳戶資料無效',
-  BENEFICIARY_MISMATCH: '收款人姓名不符',
-  KYC_REQUIRED: '需要進階身份驗證',
+  BANK_REJECTED: 'account.payouts.fail.bankRejected',
+  INVALID_ACCOUNT: 'account.payouts.fail.invalidAccount',
+  BENEFICIARY_MISMATCH: 'account.payouts.fail.beneficiaryMismatch',
+  KYC_REQUIRED: 'account.payouts.fail.kycRequired',
 };
 
 export default function PayoutsHistoryPage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const router = useRouter();
   const [items, setItems] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +39,7 @@ export default function PayoutsHistoryPage() {
       const r = await api.wallet.requests();
       setItems(r);
     } catch (e) {
-      setError(e instanceof ApiError ? e.message : '載入失敗');
+      setError(e instanceof ApiError ? e.message : _t('account.payouts.error.load'));
     } finally {
       setLoading(false);
     }
@@ -64,11 +70,11 @@ export default function PayoutsHistoryPage() {
 
   const filtered = filter === 'ALL' ? items : items.filter((r) => r.status === filter);
   const tabs: Array<{ key: 'ALL' | PayoutStatusKey; label: string }> = [
-    { key: 'ALL', label: '全部' },
-    { key: 'PENDING', label: '待處理' },
-    { key: 'PROCESSING', label: '處理中' },
-    { key: 'SUCCEEDED', label: '已完成' },
-    { key: 'FAILED', label: '失敗' },
+    { key: 'ALL', label: _t('account.payouts.tab.all') },
+    { key: 'PENDING', label: _t('account.payouts.tab.pending') },
+    { key: 'PROCESSING', label: _t('account.payouts.tab.processing') },
+    { key: 'SUCCEEDED', label: _t('account.payouts.tab.succeeded') },
+    { key: 'FAILED', label: _t('account.payouts.tab.failed') },
   ];
 
   return (
@@ -78,7 +84,7 @@ export default function PayoutsHistoryPage() {
 
         <section className="max-w-[720px]">
           <h1 className="mb-5 font-display-serif text-[26px] font-bold leading-tight tracking-[-0.01em] text-ink">
-            提款紀錄
+            {_t('account.payouts.page.title')}
           </h1>
 
           {/* L3 underline tabs */}
@@ -107,7 +113,7 @@ export default function PayoutsHistoryPage() {
 
               {filtered.length === 0 ? (
                 <p className="rounded-xl border border-line bg-white p-8 text-center text-sm text-neutral-text-muted shadow-sh1">
-                  尚未有任何提款紀錄
+                  {_t('account.payouts.empty')}
                 </p>
               ) : (
                 <div className="space-y-3">
@@ -117,7 +123,7 @@ export default function PayoutsHistoryPage() {
                         <div className="min-w-0">
                           <p className="text-[18px] font-extrabold text-ink">{formatHKD(r.amountHKD)}</p>
                           <p className="mt-0.5 text-[12px] text-neutral-text-hint">
-                            實收 {formatHKD(r.netHKD)} · 手續費 {r.feeHKD === 0 ? '免費' : formatHKD(r.feeHKD)}
+                            {_t('account.payouts.netAndFee', { net: formatHKD(r.netHKD), fee: r.feeHKD === 0 ? _t('account.payouts.detail.feeFree') : formatHKD(r.feeHKD) })}
                           </p>
                         </div>
                         <StatusPill status={r.status} />
@@ -125,23 +131,23 @@ export default function PayoutsHistoryPage() {
 
                       <div className="mt-3 space-y-1.5 border-t border-line pt-3 text-[13px]">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-neutral-text-hint">到帳帳戶</span>
+                          <span className="text-neutral-text-hint">{_t('account.payouts.detail.accountLabel')}</span>
                           <span className="truncate text-right text-neutral-text-muted">{r.methodSnapshot?.displayLabel ?? '—'}</span>
                         </div>
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-neutral-text-hint">參考編號</span>
+                          <span className="text-neutral-text-hint">{_t('account.payouts.detail.referenceLabel')}</span>
                           <button onClick={() => copy(r.reference)} className="inline-flex items-center gap-1 font-mono text-neutral-text-muted hover:text-brand-600">
                             {r.reference}
                             {copied === r.reference ? <Check className="h-3 w-3 text-verify" /> : <Copy className="h-3 w-3" />}
                           </button>
                         </div>
                         <div className="flex items-center justify-between gap-2">
-                          <span className="text-neutral-text-hint">提交時間</span>
+                          <span className="text-neutral-text-hint">{_t('account.payouts.detail.submittedAtLabel')}</span>
                           <span className="text-neutral-text-muted">{new Date(r.createdAt).toLocaleString('zh-HK')}</span>
                         </div>
                         {r.processedAt && (
                           <div className="flex items-center justify-between gap-2">
-                            <span className="text-neutral-text-hint">處理時間</span>
+                            <span className="text-neutral-text-hint">{_t('account.payouts.detail.processedAtLabel')}</span>
                             <span className="text-neutral-text-muted">{new Date(r.processedAt).toLocaleString('zh-HK')}</span>
                           </div>
                         )}
@@ -150,11 +156,11 @@ export default function PayoutsHistoryPage() {
                       {r.status === 'FAILED' && (
                         <div className="mt-3 rounded-lg bg-danger-soft p-3 text-[12px] text-danger">
                           <p className="font-semibold">
-                            失敗原因：{FAIL_REASON_LABEL[r.failureReason ?? ''] ?? r.failureReason ?? '未知'}
+                            {_t('account.payouts.failReasonPrefix')}{FAIL_REASON_LABEL[r.failureReason ?? ''] ? _t(FAIL_REASON_LABEL[r.failureReason ?? '']!) : r.failureReason ?? _t('account.payouts.failure.unknown')}
                           </p>
                           <p className="mt-1">
-                            請喺<Link href="/account/wallet/methods" className="mx-1 underline">提款帳戶</Link>核對資料，或者
-                            <Link href="/account/wallet" className="mx-1 underline">重新申請提款</Link>。
+                            {_t('account.payouts.fixPrefix')}<Link href="/account/wallet/methods" className="mx-1 underline">{_t('account.payouts.failure.methodsLinkLabel')}</Link>{_t('account.payouts.fixMiddle')}
+                            <Link href="/account/wallet" className="mx-1 underline">{_t('account.payouts.failure.retryLinkLabel')}</Link>{_t('account.payouts.fixSuffix')}
                           </p>
                         </div>
                       )}
