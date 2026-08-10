@@ -26,7 +26,7 @@
 | `authenticator` | `backend/authenticator.md` | `frontend/authenticator-portal.md` | `apps/api/src/authenticators/**`, `apps/authenticator/**` |
 | `admin` | `backend/admin.md` | `frontend/admin-portal.md` | `apps/api/src/admin/**`, `apps/admin/**` |
 | `rules` | `static/rules.md` | — | `apps/**`, `packages/**` |
-| `i18n` | — | `frontend/i18n.md` | `locales/**`, `packages/utils/src/locales/**`, `apps/*/app/api/locale/**` |
+| `i18n` | — | `frontend/i18n.md` | `locales/**`, `packages/utils/src/locales/**`, `apps/*/app/api/locale/**`, `packages/ui/src/components/{language-switcher,conversation-pane}.tsx`, `apps/*/components/conversation-pane.tsx`, `scripts/i18n-*.ts`, `scripts/compile-locales.ts` |
 
 ## 跨 feature 嘅嘢
 
