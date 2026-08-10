@@ -43,7 +43,13 @@ Founder 2026-07-30：「consumer 個 locale 其實好樣衰，先幫我放係 fo
 
 ## 3. Consumer 仲未 wire 嘅頁
 
-`sell` / `checkout` / `orders` / `account/*` / `listing/[id]` / `about` / `terms` / `privacy` / `messages` / `my-listings` / `seller/[id]`
+2026-08-10 數過（`grep -L createT` 掃晒 `apps/consumer/app/**/page.tsx`）：**24 個 page 得 `browse` 一個 import `createT`**。原本呢張清單漏咗 6 個，補返：
+
+`page.tsx`（首頁）· **`login`** · **`register`** · `sell` · `checkout/[orderId]` · `orders` · `orders/[id]` · `my-listings` · `messages` · `listing/[id]` · `seller/[id]` · `buyer/[id]` · `authenticator/[id]` · `s/[id]` · `auth/link-confirm` · `auth/complete-profile` · `account/profile` · `account/wallet` · `account/wallet/methods` · `account/wallet/payouts` · `about` · `terms` · `privacy`
+
+**`login` / `register` 應該排第一。** 英文用戶撞到嘅第一版 UI 就係佢哋 —— 而家由「建立你的帳戶」到「我哋會寄驗証碼到你嘅電郵。」全部 hardcode 中文。
+
+（`top-nav` / `footer` 入面個 `createT` 收成 `_t`，underscore = 而家未真用，只係 wire 好咗個線頭。）
 
 ---
 
@@ -53,6 +59,18 @@ Admin 係內部 ops 工具，優先度最低。要唔要做英文版由 founder 
 
 ---
 
-## 5. `zh-copy-extraction.json`
+## 5. `zh-copy-extraction.json` — 對完賬（2026-08-10）
 
-Repo root 有個未 track 嘅 `zh-copy-extraction.json`，係早期抽 copy 嘅產物。決定 keep（放入 `scripts/` 或 `docs/`）定刪。
+Repo root 個未 track 檔，749 條 `{namespace, key, zh, context}`，係早期抽 hardcode 中文嘅產物。同 `locales/ssot.json` 對完：
+
+| | 條數 |
+|---|---:|
+| 已入 ssot，字一模一樣 | 638（85%） |
+| 已入，但 ssot 之後改過字（**ssot 為準**） | 14 |
+| 從來冇入過 ssot | 97 |
+
+嗰 97 條再掃 source（跳過 `.next`／`node_modules`）：**14 條字串已經冇咗**（嗰段 UI 刪咗）· **42 條係「取消」「登入」咁短嘅通用字**，grep 命中唔可信 · **41 條係真漏網**，而且幾乎全部集中喺 `register/page.tsx` 同 `login/page.tsx`。
+
+即係話：**呢 41 條唔係要逐條補 key，係整個 `login`／`register` 未 wire**（見上面第 3 項）。清單價值已經收喺呢度。
+
+**待 founder 決定：** 檔案本身（92K）可以刪。
