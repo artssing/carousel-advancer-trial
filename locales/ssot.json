@@ -206,6 +206,34 @@
     }
   },
   "listing": {
+    "auth.loginFirst": {
+      "zh": "先登入",
+      "en": "Sign in"
+    },
+    "auth.notLoggedIn": {
+      "zh": "未登入？",
+      "en": "Not signed in?"
+    },
+    "authenticator.businessHours": {
+      "zh": "營業時間：{hours}",
+      "en": "Opening hours: {hours}"
+    },
+    "authenticator.completedCount": {
+      "zh": "已鑑定 {n} 件",
+      "en": "{n} authenticated"
+    },
+    "authenticator.feeRateNote": {
+      "zh": "（{pct}%，最低 {min}）",
+      "en": "({pct}%, minimum {min})"
+    },
+    "authenticator.noneInCategory": {
+      "zh": "（此品類暫無註冊鑑定師，不可選）",
+      "en": " (no authenticator registered for this category yet)"
+    },
+    "authenticator.requiredSuffix": {
+      "zh": "需要鑑定師{suffix}",
+      "en": "Authenticator required{suffix}"
+    },
     "branch.businessHours": {
       "zh": "營業時間：{hours}",
       "en": "Business hours: {hours}"
@@ -270,6 +298,14 @@
       "zh": "如果你已經係呢張訂單嘅買家，可以在「我的訂單」追蹤進度。",
       "en": "If you are the buyer for this order, you can track progress in \"My Orders\"."
     },
+    "buyer.relistNote": {
+      "zh": " 如果交易最終取消或退款，商品會重新上架。",
+      "en": " If the order is cancelled or refunded, the item is listed again."
+    },
+    "buyer.trackInOrders": {
+      "zh": "如果你已經係呢張訂單嘅買家，可以喺「我的訂單」追蹤進度。",
+      "en": "If you are the buyer on this order, you can follow it in My orders."
+    },
     "buyer.trackOrder": {
       "zh": "追蹤進度 →",
       "en": "Track progress →"
@@ -301,6 +337,18 @@
     "chat.readonlyRefunded": {
       "zh": "訂單已退款，對話存檔僅供查閱。",
       "en": "Order refunded. Conversation archived for reference."
+    },
+    "condition.sellerStated": {
+      "zh": "賣家申報：{cond}",
+      "en": "Seller states: {cond}"
+    },
+    "conversations.authenticatorPrefix": {
+      "zh": "鑑定師 {name}",
+      "en": "Authenticator {name}"
+    },
+    "conversations.counterpartyFallback": {
+      "zh": "對方",
+      "en": "The other party"
     },
     "conversations.hint": {
       "zh": "任何狀態都可以同對方傾偈；對話完成 / 退款 / 爭議後變 read-only 存檔。",
@@ -378,6 +426,14 @@
       "zh": "鑑定費（賣家付{name}）",
       "en": "Authentication fee (seller pays {name})"
     },
+    "fee.authFeeSellerPays": {
+      "zh": "鑑定費（賣家付{who}）",
+      "en": "Authentication fee (paid by seller{who})"
+    },
+    "fee.authFeeWho": {
+      "zh": "，{name}",
+      "en": ", {name}"
+    },
     "fee.itemPrice": {
       "zh": "商品價",
       "en": "Item price"
@@ -389,6 +445,10 @@
     "fee.title": {
       "zh": "費用明細",
       "en": "Fee breakdown"
+    },
+    "lightbox.close": {
+      "zh": "關閉",
+      "en": "Close"
     },
     "lightbox.closeAria": {
       "zh": "關閉",
@@ -418,13 +478,53 @@
       "zh": "面交地點",
       "en": "Meetup location"
     },
+    "meetupDirect.locationPlaceholder": {
+      "zh": "請填寫你建議嘅面交地點",
+      "en": "Enter the meetup location you are proposing"
+    },
+    "meetupDirect.locationRequired": {
+      "zh": "請填寫你建議嘅面交地點",
+      "en": "Enter the meetup location you are proposing"
+    },
     "meetupDirect.other": {
       "zh": "其他地點",
       "en": "Other location"
     },
+    "offer.paymentDeadline": {
+      "zh": "付款期限：{deadline}",
+      "en": "Pay by: {deadline}"
+    },
+    "offer.tier1": {
+      "zh": "Tier 1（純撮合）",
+      "en": "Tier 1 (matchmaking only)"
+    },
+    "offer.tier2": {
+      "zh": "Tier 2（鑑定可選）",
+      "en": "Tier 2 (authentication optional)"
+    },
+    "offer.tier3": {
+      "zh": "Tier 3（強制鑑定）",
+      "en": "Tier 3 (authentication required)"
+    },
+    "offer.tierNotice": {
+      "zh": "ⓘ 協議價格屬 {tier}，與原 listing tier 不同。",
+      "en": "ⓘ The agreed price falls in {tier}, which differs from the listing’s tier."
+    },
+    "order.boughtBy": {
+      "zh": "{name} 買入",
+      "en": "Bought by {name}"
+    },
+    "order.number": {
+      "zh": "訂單",
+      "en": "Order"
+    },
     "owner.banner": {
       "zh": "這是你上架嘅商品",
       "en": "This is your listing"
+    },
+    "owner.buyerViewNote": {
+      "zh": "買家會喺呢度見到揀鑑定師、交收同付款嘅選項。你唔可以購買自己嘅商品。",
+      "en": "Buyers see the authenticator, handover and payment options here. You cannot buy your own item."
     },
     "owner.status": {
       "zh": "狀態：{status}",
@@ -437,6 +537,14 @@
     "payment.cashDirectDesc": {
       "zh": "買家自行付款畀賣家 (FPS / 銀行轉帳 / 現金)，平台不託管",
       "en": "The buyer pays the seller directly (FPS / bank transfer / cash). The platform does not hold the payment."
+    },
+    "payment.cashWarningBody": {
+      "zh": "平台唔會託管款項，買賣雙方需要自行協議付款方式 (FPS / 銀行轉帳 / 現金)。如出現爭議，平台冇方法協助處理，請自行解決。",
+      "en": "The platform does not hold the funds; buyer and seller arrange payment between themselves. If a dispute arises the platform cannot step in."
+    },
+    "payment.cashWarningTitle": {
+      "zh": "物流寄送（無鑑定師）：",
+      "en": "Shipping without an authenticator:"
     },
     "payment.escrow": {
       "zh": "線上託管",
@@ -502,6 +610,10 @@
       "zh": "編輯商品",
       "en": "Edit listing"
     },
+    "seller.fallback": {
+      "zh": "賣家",
+      "en": "Seller"
+    },
     "seller.label": {
       "zh": "賣家：{name}",
       "en": "Seller: {name}"
@@ -517,6 +629,10 @@
     "seller.ownerHint": {
       "zh": "買家會在呢度見到揀鑑定師、交收同付款嘅選項。你唔可以購買自己嘅商品。",
       "en": "Buyers will see authenticator, delivery, and payment options here. You cannot purchase your own items."
+    },
+    "seller.prefix": {
+      "zh": "賣家：",
+      "en": "Seller: "
     },
     "seller.viewProfile": {
       "zh": "睇賣家檔案 →",
@@ -849,6 +965,14 @@
     "time.justNow": {
       "zh": "剛剛",
       "en": "Just now"
+    },
+    "time.listedPrefix": {
+      "zh": "上架：",
+      "en": "Listed: "
+    },
+    "time.minsAgo": {
+      "zh": "{n} 分鐘前",
+      "en": "{n} min ago"
     },
     "time.minutesAgo": {
       "zh": "{n} 分鐘前",
