@@ -12,6 +12,7 @@ import {
   STATUS_LABEL_BASE, getStatusLabel, needsMyAction, isMeetupOrder, TERMINAL_STATUSES,
   sfTrackingUrl,
   type TabRole,
+  getClientLocale, createT,
 } from '@authentik/utils';
 import { api, hasToken, clearToken, ApiError, getToken } from '@/lib/api';
 import { ConversationDrawer } from '@/components/conversation-drawer';
@@ -29,16 +30,18 @@ import { QrHandoverCard } from '@/components/qr-handover-card';
 /** One page of orders. Most accounts never need a second one. */
 const ORDERS_PAGE_SIZE = 20;
 
-const DELIVERY_LABEL: Record<string, string> = {
-  SHIP: '物流寄送',
-  MEETUP_AUTH: '鑑定師面交',
-  MEETUP_3WAY: '三方面交',
-  MEETUP_DIRECT: '雙方面交',
+// Values are t() keys — these maps live outside the component, where _t does
+// not exist, so the lookup happens at the use site.
+const DELIVERY_LABEL_KEY: Record<string, string> = {
+  SHIP: 'orders.deliveryLabel.ship',
+  MEETUP_AUTH: 'orders.deliveryLabel.meetupAuth',
+  MEETUP_3WAY: 'orders.deliveryLabel.meetup3way',
+  MEETUP_DIRECT: 'orders.deliveryLabel.meetupDirect',
 };
 
-const PAYMENT_LABEL: Record<string, string> = {
-  ONLINE_ESCROW: '線上託管',
-  OFFLINE_CASH: '線下現金',
+const PAYMENT_LABEL_KEY: Record<string, string> = {
+  ONLINE_ESCROW: 'orders.paymentLabel.escrow',
+  OFFLINE_CASH: 'orders.paymentLabel.cash',
 };
 
 const STATUS_VARIANT = (s: string): 'success' | 'warning' | 'brand' | 'danger' | 'default' => {
@@ -73,10 +76,10 @@ function getFlowType(delivery: string | null, hasAuth: boolean): FlowType {
 }
 
 const FLOW_STEPS: Record<FlowType, string[]> = {
-  ship_auth:     ['付款', '寄至鑑定師', '鑑定中', '寄至買家', '完成'],
-  ship_noauth:   ['付款', '賣家寄出', '確認收貨', '完成'],
-  meetup_auth:   ['落單', '面交鑑定', '完成'],
-  meetup_direct: ['落單', '面交', '完成'],
+  ship_auth:     ['orders.timeline.pay', 'orderDetail.timeline.shippedToAuth', 'orders.timeline.authenticating', 'orderDetail.timeline.shippedToBuyer', 'orders.timeline.done'],
+  ship_noauth:   ['orders.timeline.pay', 'orders.timeline.sellerShipped', 'orders.timeline.confirmReceipt', 'orders.timeline.done'],
+  meetup_auth:   ['orderDetail.timeline.created', 'orders.timeline.meetupAuth', 'orders.timeline.done'],
+  meetup_direct: ['orderDetail.timeline.created', 'orders.timeline.meetup', 'orders.timeline.done'],
 };
 
 function getCompletedStep(status: string, flow: FlowType): number {
@@ -121,10 +124,10 @@ function getCompletedStep(status: string, flow: FlowType): number {
 }
 
 /** Terminal-fail 狀態用紅色橫額取代步驟條 */
-const TERMINAL_BANNER: Record<string, { icon: string; label: string; desc: string }> = {
-  AUTH_FAILED: { icon: '✗', label: '鑑定不通過', desc: '商品將退回賣家，買家獲全額退款。' },
-  REFUNDED:    { icon: '↩', label: '已退款',     desc: '款項已退回買家帳戶。' },
-  DISPUTED:    { icon: '⚠', label: '爭議處理中', desc: '平台正在跟進，請留意通知。' },
+const TERMINAL_BANNER: Record<string, { icon: string; labelKey: string; descKey: string }> = {
+  AUTH_FAILED: { icon: '✗', labelKey: 'orders.constant.terminalAuthFailed', descKey: 'orders.constant.terminalAuthFailedDesc' },
+  REFUNDED:    { icon: '↩', labelKey: 'orders.constant.terminalRefunded',    descKey: 'orders.constant.terminalRefundedDesc' },
+  DISPUTED:    { icon: '⚠', labelKey: 'orders.constant.terminalDisputed',    descKey: 'orders.constant.terminalDisputedDesc' },
 };
 
 function ProgressBar({ status, deliveryMethod, hasAuth }: {
@@ -132,6 +135,10 @@ function ProgressBar({ status, deliveryMethod, hasAuth }: {
   deliveryMethod: string | null;
   hasAuth: boolean;
 }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   // Terminal-fail 狀態：顯示橫額而非步驟條
   const banner = TERMINAL_BANNER[status];
   if (banner) {
@@ -141,8 +148,8 @@ function ProgressBar({ status, deliveryMethod, hasAuth }: {
           {banner.icon}
         </span>
         <div>
-          <span className="font-semibold text-red-700">{banner.label}</span>
-          <span className="ml-1 text-red-600">{banner.desc}</span>
+          <span className="font-semibold text-red-700">{_t(banner.labelKey)}</span>
+          <span className="ml-1 text-red-600">{_t(banner.descKey)}</span>
         </div>
       </div>
     );
@@ -154,11 +161,11 @@ function ProgressBar({ status, deliveryMethod, hasAuth }: {
 
   return (
     <div className="flex items-start gap-0">
-      {steps.map((label, i) => {
+      {steps.map((stepKey, i) => {
         const done    = i <= completedThrough;
         const current = i === completedThrough + 1;
         return (
-          <div key={label} className="flex flex-1 flex-col items-center">
+          <div key={stepKey} className="flex flex-1 flex-col items-center">
             <div className="flex w-full items-center">
               <div className={`h-0.5 flex-1 ${i === 0 ? 'invisible' : done ? 'bg-verify' : 'bg-line'}`} />
               <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold transition-all
@@ -171,7 +178,7 @@ function ProgressBar({ status, deliveryMethod, hasAuth }: {
               <div className={`h-0.5 flex-1 ${i === steps.length - 1 ? 'invisible' : done ? 'bg-verify' : 'bg-line'}`} />
             </div>
             <span className={`mt-1 text-[9px] font-medium ${done ? 'text-verify' : current ? 'text-brand-600' : 'text-neutral-text-hint'}`}>
-              {label}
+              {_t(stepKey)}
             </span>
           </div>
         );
@@ -217,6 +224,10 @@ function sortOrders(orders: any[], userId: string, tab: TabRole): any[] {
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function OrdersPage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialRole = (searchParams.get('role') as TabRole) ?? 'buyer';
@@ -297,7 +308,7 @@ export default function OrdersPage() {
     setActionBusy(orderId);
     setActionError(null);
     try { await action(); await fetchData(); }
-    catch (e: any) { setActionError(e instanceof ApiError ? e.message : '操作失敗，請重試'); }
+    catch (e: any) { setActionError(e instanceof ApiError ? e.message : _t('orders.error.generic')); }
     finally { setActionBusy(null); }
   }
 
@@ -330,16 +341,16 @@ export default function OrdersPage() {
       // Pay (both SHIP and meetup ONLINE_ESCROW)
       if (o.status === 'AWAITING_PAYMENT') {
         const label = o.paymentMethod === 'OFFLINE_CASH'
-          ? '確認準備面交'
-          : '確認付款（模擬）';
+          ? _t('orders.action.confirmMeetup')
+          : _t('orders.action.pay');
         btns.push({ label, action: () => api.orders.pay(o.id), primary: true });
       }
       // Ack v2 (A4/B, founder 2026-07-10): SHIPPED_TO_BUYER 唔使買家 confirm —
       // T+3 自動完成。買家喺窗口內只有「提出爭議」（下面 renderShipWindow 處理）。
       if (!meetup && o.status === 'DELIVERED')
-        btns.push({ label: '確認完成交易', action: async () => setMoneyConfirm({
-          orderId: o.id, title: '確認完成交易？', label: '確認完成 + 放款',
-          consequence: '呢個動作會即時釋放款項畀賣家，訂單轉為完成，不可撤回。',
+        btns.push({ label: _t('orders.action.complete'), action: async () => setMoneyConfirm({
+          orderId: o.id, title: _t('orders.confirmDialog.completeTitle'), label: _t('orders.confirmDialog.completeLabel'),
+          consequence: _t('orders.confirmDialog.completeConsequence'),
           run: () => api.orders.complete(o.id),
         }), primary: true });
       // MEETUP_AUTH dual-ack: buyer pickup → detail page (single ack at store)
@@ -347,21 +358,21 @@ export default function OrdersPage() {
       // MEETUP_3WAY: confirm meetup complete after auth passed
       if (o.deliveryMethod === 'MEETUP_3WAY' && o.status === 'AUTH_PASSED') {
         const label = o.escrowHeld
-          ? '確認面交完成（放款畀賣家+鑑定師）'
-          : '確認面交完成';
+          ? _t('orders.action.completeMeetupRelease')
+          : _t('orders.action.completeMeetup');
         btns.push({ label, action: async () => setMoneyConfirm({
-          orderId: o.id, title: '確認面交完成？', label: '確認完成',
+          orderId: o.id, title: _t('orders.confirmDialog.meetupTitle'), label: _t('orders.confirmDialog.meetupLabel'),
           consequence: o.escrowHeld
-            ? '呢個動作會即時放款畀賣家同鑑定師，訂單轉為完成，不可撤回。'
-            : '訂單會轉為完成，不可撤回。',
+            ? _t('orders.confirmDialog.meetupConsequenceRelease')
+            : _t('orders.confirmDialog.meetupConsequence'),
           run: () => api.orders.completeMeetup(o.id),
         }), primary: true });
       }
       // Ack v2 (E): MEETUP_DIRECT 零 ack — 平台唔 hold 錢唔收佣。
       // 只有 legacy escrow 單先需要買家放款 click。
       if (o.deliveryMethod === 'MEETUP_DIRECT' && o.status === 'PAID' && o.escrowHeld) {
-        btns.push({ label: '確認面交完成（放款畀賣家）', action: async () => setMoneyConfirm({
-          orderId: o.id, title: '確認面交完成？', label: '確認完成 + 放款',
+        btns.push({ label: _t('orders.action.completeMeetupDirect'), action: async () => setMoneyConfirm({
+          orderId: o.id, title: _t('orders.confirmDialog.meetupTitle'), label: _t('orders.confirmDialog.completeLabel'),
           consequence: '呢個動作會即時放款畀賣家，訂單轉為完成，不可撤回。',
           run: () => api.orders.completeMeetup(o.id),
         }), primary: true });
@@ -372,14 +383,14 @@ export default function OrdersPage() {
     if (activeTab === 'auth') {
       // Meetup: start authentication directly from PAID
       if (meetup && o.status === 'PAID')
-        btns.push({ label: '開始面交鑑定', action: () => api.orders.startMeetupAuth(o.id), primary: true });
+        btns.push({ label: _t('orders.action.startMeetupAuth'), action: () => api.orders.startMeetupAuth(o.id), primary: true });
     }
 
     // ── Seller actions (SHIP only — meetup 唔需要 seller ship) ─────────────
     if (activeTab === 'seller' || (activeTab !== 'auth' && isSeller)) {
       // Ack v2 (A2): 寄出必須提供 SF 單號 — 開 inline prompt，唔係齋 click
       if (!meetup && o.status === 'PAID' && o.authenticatorId)
-        btns.push({ label: '已寄出至鑑定師（入 SF 單號）', action: async () => { setTrackingPrompt({ orderId: o.id, kind: 'toAuth' }); setTrackingNo(''); }, primary: true });
+        btns.push({ label: _t('orders.action.shipToAuth'), action: async () => { setTrackingPrompt({ orderId: o.id, kind: 'toAuth' }); setTrackingNo(''); }, primary: true });
       if (!meetup && o.status === 'PAID' && !o.authenticatorId)
         btns.push({ label: '已寄出至買家（入 SF 單號）', action: async () => { setTrackingPrompt({ orderId: o.id, kind: 'toBuyerDirect' }); setTrackingNo(''); }, primary: true });
       if (!meetup && o.status === 'AUTH_PASSED')
@@ -394,11 +405,11 @@ export default function OrdersPage() {
       const kind = trackingPrompt.kind;
       extras.push(
         <div key="tracking" className="rounded-xl border border-brand-200 bg-brand-50 p-3">
-          <p className="text-xs font-semibold text-brand-800">輸入 SF Express 運單編號（必填）</p>
+          <p className="text-xs font-semibold text-brand-800">{_t('orders.tracking.title')}</p>
           <input
             value={trackingNo}
             onChange={(e) => setTrackingNo(e.target.value)}
-            placeholder="例：SF1234567890123"
+            placeholder={_t('orders.tracking.placeholder')}
             className="mt-2 w-full rounded-lg border border-brand-200 bg-white px-3 py-2 text-sm outline-none focus:border-brand-600"
           />
           <div className="mt-2 flex gap-2">
@@ -414,7 +425,7 @@ export default function OrdersPage() {
               })}
               className="flex-1 rounded-lg bg-brand-600 py-2 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
             >
-              確認寄出
+              {_t('orders.action.shipConfirm')}
             </button>
             <button type="button" onClick={() => setTrackingPrompt(null)} className="rounded-lg border border-brand-200 px-4 text-sm text-brand-700 hover:bg-brand-100">
               取消
@@ -431,7 +442,7 @@ export default function OrdersPage() {
       extras.push(
         <div key="shipwindow" className="rounded-xl border border-amber-300 bg-amber-50 p-3">
           <p className="text-xs font-semibold text-amber-900">
-            📦 貨物已寄出
+            {_t('orders.shipWindow.title')}
             {(o.authShipTrackingNo || o.sellerShipTrackingNo) && (
               <>
                 （SF{' '}
@@ -450,7 +461,7 @@ export default function OrdersPage() {
           <p className="mt-1 text-[11px] leading-relaxed text-amber-800">
             {eta
               ? `如無異議，訂單將於 ${eta.toLocaleDateString('zh-HK')}（約 ${daysLeft} 日後）自動完成並放款。收到貨有問題請即提出爭議。`
-              : '如無異議，訂單將於寄出後 3 日自動完成並放款。'}
+              : _t('orders.shipWindow.autoCompleteDefault')}
           </p>
           {disputePrompt === o.id ? (
             <div className="mt-2">
@@ -458,7 +469,7 @@ export default function OrdersPage() {
                 value={disputeReason}
                 onChange={(e) => setDisputeReason(e.target.value)}
                 rows={2}
-                placeholder="講低問題（必填）— 例：收到嘅唔係訂單商品 / 有損壞"
+                placeholder={_t('orders.dispute.placeholder')}
                 className="w-full rounded-lg border border-amber-300 bg-white px-3 py-2 text-xs outline-none focus:border-amber-500"
               />
               <div className="mt-2 flex gap-2">
@@ -472,7 +483,7 @@ export default function OrdersPage() {
                   })}
                   className="flex-1 rounded-lg bg-amber-600 py-2 text-xs font-semibold text-white hover:bg-amber-700 disabled:opacity-50"
                 >
-                  確認提出爭議
+                  {_t('orders.dispute.confirm')}
                 </button>
                 <button type="button" onClick={() => setDisputePrompt(null)} className="rounded-lg border border-amber-300 px-3 text-xs text-amber-800 hover:bg-amber-100">
                   取消
@@ -485,7 +496,7 @@ export default function OrdersPage() {
               onClick={() => { setDisputePrompt(o.id); setDisputeReason(''); }}
               className="mt-2 w-full rounded-lg border border-amber-400 py-2 text-xs font-semibold text-amber-900 hover:bg-amber-100"
             >
-              收到貨有問題 — 提出爭議
+              {_t('orders.shipWindow.disputeButton')}
             </button>
           )}
         </div>,
@@ -550,11 +561,11 @@ export default function OrdersPage() {
     const isSeller = o.sellerId === currentUserId;
     let label: string | null = null;
     if (isSeller && o.status === 'AUTH_RECEIVED_PENDING_SELLER_ACK') {
-      label = '睇鑑定師收件相 + 確認 →';
+      label = _t('orders.dualAck.sellerAck');
     } else if (isSeller && o.status === 'SELLER_ACK_PENDING') {
-      label = '睇鑑定師接收相 + 確認交付 →';
+      label = _t('orders.dualAck.sellerAckPending');
     } else if (isSeller && o.status === 'REFUNDED' && o.returnPhotosUploadedAt && !o.returnSellerAckAt) {
-      label = '睇退貨相 + 確認取回 →';
+      label = _t('orders.dualAck.returnAck');
     }
     if (!label) return null;
     return (
@@ -587,7 +598,7 @@ export default function OrdersPage() {
       setReviewingOrderId(null);
       await fetchData();
     } catch (e: any) {
-      setActionError(e instanceof ApiError ? e.message : '提交評價失敗，請重試');
+      setActionError(e instanceof ApiError ? e.message : _t('orders.error.review'));
     } finally {
       setReviewBusy(false);
     }
@@ -597,9 +608,9 @@ export default function OrdersPage() {
   if (!authed && !loading) {
     return (
       <div className="mx-auto max-w-md px-4 py-16 text-center">
-        <p className="text-sm text-slate-600">請先登入查看訂單。</p>
+        <p className="text-sm text-slate-600">{_t('orders.empty.notLoggedIn')}</p>
         <Link href="/login">
-          <Button className="mt-4">前往登入</Button>
+          <Button className="mt-4">{_t('orders.empty.goToLogin')}</Button>
         </Link>
       </div>
     );
@@ -607,10 +618,10 @@ export default function OrdersPage() {
 
   // ── Tab definition ─────────────────────────────────────────────────────────
   const tabs: { id: TabRole; label: string; count: number; actionCount: number }[] = [
-    { id: 'buyer',  label: '我買入', count: buyerOrders.length,  actionCount: buyerActionCount },
-    { id: 'seller', label: '我賣出', count: sellerOrders.length, actionCount: sellerActionCount },
+    { id: 'buyer',  label: _t('orders.tab.buyer'), count: buyerOrders.length,  actionCount: buyerActionCount },
+    { id: 'seller', label: _t('orders.tab.seller'), count: sellerOrders.length, actionCount: sellerActionCount },
     ...(isAuthenticator
-      ? [{ id: 'auth' as TabRole, label: '我鑑定', count: authOrders.length, actionCount: authActionCount }]
+      ? [{ id: 'auth' as TabRole, label: _t('orders.tab.auth'), count: authOrders.length, actionCount: authActionCount }]
       : []),
   ];
 
@@ -657,9 +668,9 @@ export default function OrdersPage() {
       {/* ═══ L3 Header — serif big title + tagline ═══ */}
       <div className="mb-5">
         <h1 className="font-display-serif text-[28px] font-bold leading-tight tracking-[-0.01em] text-ink">
-          我的訂單
+          {_t('orders.pageTitle')}
         </h1>
-        <p className="mt-1.5 text-[13px] text-neutral-text-hint">追蹤買入、賣出及鑑定進度</p>
+        <p className="mt-1.5 text-[13px] text-neutral-text-hint">{_t('orders.pageSubtitle')}</p>
       </div>
 
       {/* ═══ L3 Tabs — bottom-border underline ═══ */}
@@ -704,14 +715,14 @@ export default function OrdersPage() {
           <p className="text-3xl">{activeTab === 'seller' ? '🏪' : activeTab === 'auth' ? '🔍' : '📦'}</p>
           {activeTab === 'buyer' && (
             <>
-              <p className="mt-3 font-medium text-slate-700">未有買入訂單</p>
-              <p className="mt-1 text-sm text-slate-400">去瀏覽商品，找到心水就落單吧！</p>
-              <Link href="/browse"><Button className="mt-4">瀏覽商品</Button></Link>
+              <p className="mt-3 font-medium text-slate-700">{_t('orders.empty.buyerTitle')}</p>
+              <p className="mt-1 text-sm text-slate-400">{_t('orders.empty.buyerDesc')}</p>
+              <Link href="/browse"><Button className="mt-4">{_t('orders.empty.browse')}</Button></Link>
             </>
           )}
           {activeTab === 'seller' && (
             <>
-              <p className="mt-3 font-medium text-slate-700">未有賣出訂單</p>
+              <p className="mt-3 font-medium text-slate-700">{_t('orders.empty.sellerTitle')}</p>
               <p className="mt-1 text-sm text-slate-400">
                 當買家購買你上架嘅商品後，訂單會出現喺呢度。
               </p>
@@ -719,12 +730,12 @@ export default function OrdersPage() {
                 想睇你上架嘅商品？去
                 <Link href="/my-listings" className="text-brand-600 hover:underline">「我的商品」</Link>。
               </p>
-              <Link href="/sell"><Button className="mt-4">上架商品</Button></Link>
+              <Link href="/sell"><Button className="mt-4">{_t('orders.empty.sellButton')}</Button></Link>
             </>
           )}
           {activeTab === 'auth' && (
             <>
-              <p className="mt-3 font-medium text-slate-700">暫無鑑定訂單</p>
+              <p className="mt-3 font-medium text-slate-700">{_t('orders.empty.authTitle')}</p>
               <p className="mt-1 text-sm text-slate-400">
                 當買家揀你做鑑定師後，訂單會出現喺呢度。
               </p>
@@ -757,7 +768,7 @@ export default function OrdersPage() {
                   {isAction && (
                     <div className="mb-3 flex items-center gap-2 rounded-lg bg-verify-soft px-3 py-1.5 text-xs font-medium text-verify">
                       <span className="inline-block h-1.5 w-1.5 rounded-full bg-verify" />
-                      需要你處理
+                      {_t('orders.actionNeeded')}
                     </div>
                   )}
 
@@ -811,12 +822,12 @@ export default function OrdersPage() {
                     <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
                       {o.deliveryMethod && (
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
-                          🚚 {DELIVERY_LABEL[o.deliveryMethod] ?? o.deliveryMethod}
+                          🚚 {_t(DELIVERY_LABEL_KEY[o.deliveryMethod] ?? o.deliveryMethod)}
                         </span>
                       )}
                       {o.paymentMethod && (
                         <span className="rounded-full bg-slate-100 px-2 py-0.5 font-medium text-slate-600">
-                          💳 {PAYMENT_LABEL[o.paymentMethod] ?? o.paymentMethod}
+                          💳 {_t(PAYMENT_LABEL_KEY[o.paymentMethod] ?? o.paymentMethod)}
                         </span>
                       )}
                       {o.meetupLocation && (
@@ -848,7 +859,7 @@ export default function OrdersPage() {
                   {o.authVerdict && (
                     <div className={`mt-2 rounded-lg px-3 py-2 text-xs font-medium
                       ${o.authVerdict === 'PASSED' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
-                      {o.authVerdict === 'PASSED' ? '✓ 鑑定結果：真品' : '✗ 鑑定結果：假貨'}
+                      {o.authVerdict === 'PASSED' ? _t('orders.verdictPassed') : _t('orders.verdictFailed')}
                       {o.authNotes && <span className="ml-1 font-normal">· {o.authNotes}</span>}
                     </div>
                   )}
@@ -860,7 +871,7 @@ export default function OrdersPage() {
                         /* Already reviewed — show it */
                         <div className="rounded-lg bg-amber-50 px-3 py-2.5">
                           <div className="flex items-center gap-1.5">
-                            <span className="text-xs font-medium text-slate-600">你的評價</span>
+                            <span className="text-xs font-medium text-slate-600">{_t('orders.review.title')}</span>
                             <span className="text-amber-500">
                               {'★'.repeat(o.review.rating)}{'☆'.repeat(5 - o.review.rating)}
                             </span>
@@ -872,7 +883,7 @@ export default function OrdersPage() {
                       ) : reviewingOrderId === o.id ? (
                         /* Review form */
                         <div className="rounded-lg border border-brand-200 bg-brand-50/50 p-3">
-                          <p className="text-xs font-medium text-slate-700">評價鑑定師</p>
+                          <p className="text-xs font-medium text-slate-700">{_t('orders.review.rateAuth')}</p>
                           {/* Star picker */}
                           <div className="mt-2 flex gap-1">
                             {[1, 2, 3, 4, 5].map((star) => (
@@ -892,7 +903,7 @@ export default function OrdersPage() {
                           <textarea
                             value={reviewComment}
                             onChange={(e) => setReviewComment(e.target.value)}
-                            placeholder="分享你對鑑定服務嘅體驗（可選）"
+                            placeholder={_t('orders.review.placeholder')}
                             rows={2}
                             className="mt-2 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-400 focus:ring-1 focus:ring-brand-200"
                           />
@@ -902,7 +913,7 @@ export default function OrdersPage() {
                               disabled={reviewBusy}
                               className="rounded-lg bg-brand-600 px-4 py-1.5 text-xs font-medium text-white transition hover:bg-brand-700 disabled:opacity-50"
                             >
-                              {reviewBusy ? '提交中…' : '提交評價'}
+                              {reviewBusy ? _t('orders.review.submitting') : _t('orders.review.submit')}
                             </button>
                             <button
                               onClick={() => setReviewingOrderId(null)}
@@ -919,7 +930,7 @@ export default function OrdersPage() {
                           onClick={() => openReview(o.id)}
                           className="w-full rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700 transition hover:bg-amber-100"
                         >
-                          ⭐ 評價鑑定師
+                          {_t('orders.review.rateButton')}
                         </button>
                       )}
                     </div>
@@ -945,7 +956,7 @@ export default function OrdersPage() {
                         type="button"
                         className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-slate-200 py-2 text-sm text-slate-600 transition hover:bg-slate-50"
                       >
-                        訂單詳情 →
+                        {_t('orders.detailLink')}
                       </button>
                     </Link>
                     <button
@@ -953,7 +964,7 @@ export default function OrdersPage() {
                       className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-slate-200 py-2 text-sm text-slate-600 transition hover:bg-slate-50"
                     >
                       <MessageCircle className="h-4 w-4" />
-                      {['COMPLETED', 'REFUNDED', 'DISPUTED'].includes(o.status) ? '查閱訊息存檔' : '訊息'}
+                      {['COMPLETED', 'REFUNDED', 'DISPUTED'].includes(o.status) ? _t('orders.messageArchived') : _t('orders.messageButton')}
                     </button>
                   </div>
                 </div>
@@ -969,7 +980,7 @@ export default function OrdersPage() {
         if (!o) return null;
         const cpName =
           activeTab === 'buyer'  ? (o.seller?.displayName ?? '賣家') :
-          activeTab === 'seller' ? (o.buyer?.displayName ?? '買家') :
+          activeTab === 'seller' ? (o.buyer?.displayName ?? _t('orderDetail.label.buyer')) :
           `${o.buyer?.displayName ?? '買家'} / ${o.seller?.displayName ?? '賣家'}`;
         return (
           <ConversationDrawer

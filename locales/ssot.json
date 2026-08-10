@@ -1344,161 +1344,13 @@
     }
   },
   "orders": {
-    "deliveryLabel.ship": {
-      "zh": "物流寄送",
-      "en": "Shipping"
-    },
-    "deliveryLabel.meetupAuth": {
-      "zh": "鑑定師面交",
-      "en": "Authenticator meetup"
-    },
-    "deliveryLabel.meetup3way": {
-      "zh": "三方面交",
-      "en": "Three-way meetup"
-    },
-    "deliveryLabel.meetupDirect": {
-      "zh": "雙方面交",
-      "en": "Direct meetup"
-    },
-    "paymentLabel.escrow": {
-      "zh": "線上託管",
-      "en": "Online escrow"
-    },
-    "paymentLabel.cash": {
-      "zh": "線下現金",
-      "en": "Offline cash"
-    },
-    "empty.notLoggedIn": {
-      "zh": "請先登入查看訂單。",
-      "en": "Please log in to view your orders."
-    },
-    "empty.goToLogin": {
-      "zh": "前往登入",
-      "en": "Go to login"
-    },
-    "pageTitle": {
-      "zh": "我的訂單",
-      "en": "My Orders"
-    },
-    "pageSubtitle": {
-      "zh": "追蹤買入、賣出及鑑定進度",
-      "en": "Track your purchases, sales, and authentication progress"
-    },
-    "tab.buyer": {
-      "zh": "我買入",
-      "en": "Buying"
-    },
-    "tab.seller": {
-      "zh": "我賣出",
-      "en": "Selling"
-    },
-    "tab.auth": {
-      "zh": "我鑑定",
-      "en": "Authenticating"
-    },
-    "actionNeeded": {
-      "zh": "需要你處理",
-      "en": "Action needed"
-    },
-    "detailLink": {
-      "zh": "訂單詳情 →",
-      "en": "Order details →"
-    },
-    "messageButton": {
-      "zh": "訊息",
-      "en": "Message"
-    },
-    "messageArchived": {
-      "zh": "查閱訊息存檔",
-      "en": "View message archive"
-    },
-    "verdictPassed": {
-      "zh": "✓ 鑑定結果：真品",
-      "en": "✓ Verdict: Authentic"
-    },
-    "verdictFailed": {
-      "zh": "✗ 鑑定結果：假貨",
-      "en": "✗ Verdict: Counterfeit"
-    },
-    "review.title": {
-      "zh": "你的評價",
-      "en": "Your review"
-    },
-    "review.rateAuth": {
-      "zh": "評價鑑定師",
-      "en": "Rate authenticator"
-    },
-    "review.placeholder": {
-      "zh": "分享你對鑑定服務嘅體驗（可選）",
-      "en": "Share your experience with the authentication service (optional)"
-    },
-    "review.submit": {
-      "zh": "提交評價",
-      "en": "Submit review"
-    },
-    "review.cancel": {
+    "action.cancel": {
       "zh": "取消",
       "en": "Cancel"
-    },
-    "review.submitting": {
-      "zh": "提交中…",
-      "en": "Submitting…"
-    },
-    "review.rateButton": {
-      "zh": "⭐ 評價鑑定師",
-      "en": "⭐ Rate authenticator"
-    },
-    "empty.buyerTitle": {
-      "zh": "未有買入訂單",
-      "en": "No purchase orders yet"
-    },
-    "empty.buyerDesc": {
-      "zh": "去瀏覽商品，找到心水就落單吧！",
-      "en": "Browse listings and place an order when you find an item of interest."
-    },
-    "empty.browse": {
-      "zh": "瀏覽商品",
-      "en": "Browse listings"
-    },
-    "empty.sellerTitle": {
-      "zh": "未有賣出訂單",
-      "en": "No sales orders yet"
-    },
-    "empty.sellerDesc": {
-      "zh": "當買家購買你上架嘅商品後，訂單會出現在呢度。",
-      "en": "Orders will appear here when a buyer purchases your listings."
-    },
-    "empty.sellerLink": {
-      "zh": "想睇你上架嘅商品？去「我的商品」。",
-      "en": "To view your listings, go to \"My Listings.\""
-    },
-    "empty.sellButton": {
-      "zh": "上架商品",
-      "en": "List an item"
-    },
-    "empty.authTitle": {
-      "zh": "暫無鑑定訂單",
-      "en": "No authentication orders yet"
-    },
-    "empty.authDesc": {
-      "zh": "當買家揀你做鑑定師後，訂單會出現在呢度。",
-      "en": "Orders will appear here when a buyer chooses you as their authenticator."
-    },
-    "action.pay": {
-      "zh": "確認付款（模擬）",
-      "en": "Confirm payment (simulated)"
-    },
-    "action.confirmMeetup": {
-      "zh": "確認準備面交",
-      "en": "Confirm ready for meetup"
     },
     "action.complete": {
       "zh": "確認完成交易",
       "en": "Confirm transaction complete"
-    },
-    "action.completeMeetupRelease": {
-      "zh": "確認面交完成（放款畀賣家+鑑定師）",
-      "en": "Confirm meetup complete (release funds to seller and authenticator)"
     },
     "action.completeMeetup": {
       "zh": "確認面交完成",
@@ -1508,49 +1360,261 @@
       "zh": "確認面交完成（放款畀賣家）",
       "en": "Confirm meetup complete (release funds to seller)"
     },
-    "action.startMeetupAuth": {
-      "zh": "開始面交鑑定",
-      "en": "Start meetup authentication"
+    "action.completeMeetupRelease": {
+      "zh": "確認面交完成（放款畀賣家+鑑定師）",
+      "en": "Confirm meetup complete (release funds to seller and authenticator)"
     },
-    "action.shipToAuth": {
-      "zh": "已寄出至鑑定師（入 SF 單號）",
-      "en": "Shipped to authenticator (enter SF tracking)"
+    "action.confirmMeetup": {
+      "zh": "確認準備面交",
+      "en": "Confirm ready for meetup"
     },
-    "action.shipToBuyerDirect": {
-      "zh": "已寄出至買家（入 SF 單號）",
-      "en": "Shipped to buyer (enter SF tracking)"
-    },
-    "action.shipToBuyer": {
-      "zh": "已寄出至買家（入 SF 單號）",
-      "en": "Shipped to buyer (enter SF tracking)"
+    "action.pay": {
+      "zh": "確認付款（模擬）",
+      "en": "Confirm payment (simulated)"
     },
     "action.shipConfirm": {
       "zh": "確認寄出",
       "en": "Confirm shipped"
     },
-    "action.cancel": {
-      "zh": "取消",
-      "en": "Cancel"
+    "action.shipToAuth": {
+      "zh": "已寄出至鑑定師（入 SF 單號）",
+      "en": "Shipped to authenticator (enter SF tracking)"
     },
-    "tracking.title": {
-      "zh": "輸入 SF Express 運單編號（必填）",
-      "en": "Enter SF Express tracking number (required)"
+    "action.shipToBuyer": {
+      "zh": "已寄出至買家（入 SF 單號）",
+      "en": "Shipped to buyer (enter SF tracking)"
     },
-    "tracking.placeholder": {
-      "zh": "例：SF1234567890123",
-      "en": "e.g. SF1234567890123"
+    "action.shipToBuyerDirect": {
+      "zh": "已寄出至買家（入 SF 單號）",
+      "en": "Shipped to buyer (enter SF tracking)"
     },
-    "dispute.placeholder": {
-      "zh": "講低問題（必填）— 例：收到嘅唔係訂單商品 / 有損壞",
-      "en": "Describe the issue (required) — e.g. received wrong item / item is damaged"
+    "action.startMeetupAuth": {
+      "zh": "開始面交鑑定",
+      "en": "Start meetup authentication"
+    },
+    "actionNeeded": {
+      "zh": "需要你處理",
+      "en": "Action needed"
+    },
+    "authInfo": {
+      "zh": "鑑定師：{name}",
+      "en": "Authenticator: {name}"
+    },
+    "confirmDialog.completeConsequence": {
+      "zh": "呢個動作會即時釋放款項畀賣家，訂單轉為完成，不可撤回。",
+      "en": "This will immediately release funds to the seller. The order will be marked as complete and cannot be undone."
+    },
+    "confirmDialog.completeLabel": {
+      "zh": "確認完成 + 放款",
+      "en": "Confirm complete and release"
+    },
+    "confirmDialog.completeTitle": {
+      "zh": "確認完成交易？",
+      "en": "Confirm transaction complete?"
+    },
+    "confirmDialog.meetupConsequence": {
+      "zh": "訂單會轉為完成，不可撤回。",
+      "en": "The order will be marked as complete and cannot be undone."
+    },
+    "confirmDialog.meetupConsequenceRelease": {
+      "zh": "呢個動作會即時放款畀賣家同鑑定師，訂單轉為完成，不可撤回。",
+      "en": "This will immediately release funds to the seller and authenticator. The order will be marked as complete and cannot be undone."
+    },
+    "confirmDialog.meetupLabel": {
+      "zh": "確認完成",
+      "en": "Confirm complete"
+    },
+    "confirmDialog.meetupTitle": {
+      "zh": "確認面交完成？",
+      "en": "Confirm meetup complete?"
+    },
+    "constant.terminalAuthFailed": {
+      "zh": "鑑定不通過",
+      "en": "Authentication failed"
+    },
+    "constant.terminalAuthFailedDesc": {
+      "zh": "商品將退回賣家，買家獲全額退款。",
+      "en": "Item will be returned to seller. Buyer will receive a full refund."
+    },
+    "constant.terminalDisputed": {
+      "zh": "爭議處理中",
+      "en": "Dispute in progress"
+    },
+    "constant.terminalDisputedDesc": {
+      "zh": "平台正在跟進，請留意通知。",
+      "en": "The platform is reviewing the case. Please watch for updates."
+    },
+    "constant.terminalRefunded": {
+      "zh": "已退款",
+      "en": "Refunded"
+    },
+    "constant.terminalRefundedDesc": {
+      "zh": "款項已退回買家帳戶。",
+      "en": "Funds have been returned to the buyer's account."
+    },
+    "deliveryLabel.meetup3way": {
+      "zh": "三方面交",
+      "en": "Three-way meetup"
+    },
+    "deliveryLabel.meetupAuth": {
+      "zh": "鑑定師面交",
+      "en": "Authenticator meetup"
+    },
+    "deliveryLabel.meetupDirect": {
+      "zh": "雙方面交",
+      "en": "Direct meetup"
+    },
+    "deliveryLabel.ship": {
+      "zh": "物流寄送",
+      "en": "Shipping"
+    },
+    "detailLink": {
+      "zh": "訂單詳情 →",
+      "en": "Order details →"
     },
     "dispute.confirm": {
       "zh": "確認提出爭議",
       "en": "Confirm dispute"
     },
-    "shipWindow.title": {
-      "zh": "📦 貨物已寄出",
-      "en": "📦 Item shipped"
+    "dispute.placeholder": {
+      "zh": "講低問題（必填）— 例：收到嘅唔係訂單商品 / 有損壞",
+      "en": "Describe the issue (required) — e.g. received wrong item / item is damaged"
+    },
+    "dualAck.returnAck": {
+      "zh": "睇退貨相 + 確認取回 →",
+      "en": "View return photos and confirm retrieval →"
+    },
+    "dualAck.sellerAck": {
+      "zh": "睇鑑定師收件相 + 確認 →",
+      "en": "View the authenticator's receiving photos and confirm →"
+    },
+    "dualAck.sellerAckPending": {
+      "zh": "睇鑑定師接收相 + 確認交付 →",
+      "en": "View the authenticator's receiving photos and confirm delivery →"
+    },
+    "empty.authDesc": {
+      "zh": "當買家揀你做鑑定師後，訂單會出現在呢度。",
+      "en": "Orders will appear here when a buyer chooses you as their authenticator."
+    },
+    "empty.authTitle": {
+      "zh": "暫無鑑定訂單",
+      "en": "No authentication orders yet"
+    },
+    "empty.browse": {
+      "zh": "瀏覽商品",
+      "en": "Browse listings"
+    },
+    "empty.buyerDesc": {
+      "zh": "去瀏覽商品，找到心水就落單吧！",
+      "en": "Browse listings and place an order when you find an item of interest."
+    },
+    "empty.buyerTitle": {
+      "zh": "未有買入訂單",
+      "en": "No purchase orders yet"
+    },
+    "empty.goToLogin": {
+      "zh": "前往登入",
+      "en": "Go to login"
+    },
+    "empty.notLoggedIn": {
+      "zh": "請先登入查看訂單。",
+      "en": "Please log in to view your orders."
+    },
+    "empty.sellButton": {
+      "zh": "上架商品",
+      "en": "List an item"
+    },
+    "empty.sellerDesc": {
+      "zh": "當買家購買你上架嘅商品後，訂單會出現在呢度。",
+      "en": "Orders will appear here when a buyer purchases your listings."
+    },
+    "empty.sellerLink": {
+      "zh": "想睇你上架嘅商品？去「我的商品」。",
+      "en": "To view your listings, go to \"My Listings.\""
+    },
+    "empty.sellerTitle": {
+      "zh": "未有賣出訂單",
+      "en": "No sales orders yet"
+    },
+    "error.generic": {
+      "zh": "操作失敗，請重試",
+      "en": "Operation failed. Please try again."
+    },
+    "error.review": {
+      "zh": "提交評價失敗，請重試",
+      "en": "Failed to submit review. Please try again."
+    },
+    "flow.meetupAuth": {
+      "zh": "落單,面交鑑定,完成",
+      "en": "Ordered,Meetup authentication,Completed"
+    },
+    "flow.meetupDirect": {
+      "zh": "落單,面交,完成",
+      "en": "Ordered,Meetup,Completed"
+    },
+    "flow.shipAuth": {
+      "zh": "付款,寄至鑑定師,鑑定中,寄至買家,完成",
+      "en": "Paid,Ship to authenticator,Authenticating,Ship to buyer,Completed"
+    },
+    "flow.shipNoAuth": {
+      "zh": "付款,賣家寄出,確認收貨,完成",
+      "en": "Paid,Seller ships,Confirm receipt,Completed"
+    },
+    "messageArchived": {
+      "zh": "查閱訊息存檔",
+      "en": "View message archive"
+    },
+    "messageButton": {
+      "zh": "訊息",
+      "en": "Message"
+    },
+    "pageSubtitle": {
+      "zh": "追蹤買入、賣出及鑑定進度",
+      "en": "Track your purchases, sales, and authentication progress"
+    },
+    "pageTitle": {
+      "zh": "我的訂單",
+      "en": "My Orders"
+    },
+    "paymentLabel.cash": {
+      "zh": "線下現金",
+      "en": "Offline cash"
+    },
+    "paymentLabel.escrow": {
+      "zh": "線上託管",
+      "en": "Online escrow"
+    },
+    "review.cancel": {
+      "zh": "取消",
+      "en": "Cancel"
+    },
+    "review.placeholder": {
+      "zh": "分享你對鑑定服務嘅體驗（可選）",
+      "en": "Share your experience with the authentication service (optional)"
+    },
+    "review.rateAuth": {
+      "zh": "評價鑑定師",
+      "en": "Rate authenticator"
+    },
+    "review.rateButton": {
+      "zh": "⭐ 評價鑑定師",
+      "en": "⭐ Rate authenticator"
+    },
+    "review.submit": {
+      "zh": "提交評價",
+      "en": "Submit review"
+    },
+    "review.submitting": {
+      "zh": "提交中…",
+      "en": "Submitting…"
+    },
+    "review.title": {
+      "zh": "你的評價",
+      "en": "Your review"
+    },
+    "sfTracking": {
+      "zh": "📦 SF 追蹤：{no} ↗",
+      "en": "📦 SF Tracking: {no} ↗"
     },
     "shipWindow.autoComplete": {
       "zh": "如無異議，訂單將於 {date}（約 {n} 日後）自動完成並放款。收到貨有問題請即提出爭議。",
@@ -1564,101 +1628,65 @@
       "zh": "收到貨有問題 — 提出爭議",
       "en": "Problem with the item received? File a dispute."
     },
-    "sfTracking": {
-      "zh": "📦 SF 追蹤：{no} ↗",
-      "en": "📦 SF Tracking: {no} ↗"
+    "shipWindow.title": {
+      "zh": "📦 貨物已寄出",
+      "en": "📦 Item shipped"
     },
-    "constant.terminalAuthFailed": {
-      "zh": "鑑定不通過",
-      "en": "Authentication failed"
+    "tab.auth": {
+      "zh": "我鑑定",
+      "en": "Authenticating"
     },
-    "constant.terminalRefunded": {
-      "zh": "已退款",
-      "en": "Refunded"
+    "tab.buyer": {
+      "zh": "我買入",
+      "en": "Buying"
     },
-    "constant.terminalDisputed": {
-      "zh": "爭議處理中",
-      "en": "Dispute in progress"
+    "tab.seller": {
+      "zh": "我賣出",
+      "en": "Selling"
     },
-    "constant.terminalAuthFailedDesc": {
-      "zh": "商品將退回賣家，買家獲全額退款。",
-      "en": "Item will be returned to seller. Buyer will receive a full refund."
+    "timeline.authenticating": {
+      "zh": "鑑定中",
+      "en": "Authenticating"
     },
-    "constant.terminalRefundedDesc": {
-      "zh": "款項已退回買家帳戶。",
-      "en": "Funds have been returned to the buyer's account."
+    "timeline.confirmReceipt": {
+      "zh": "確認收貨",
+      "en": "Confirm receipt"
     },
-    "constant.terminalDisputedDesc": {
-      "zh": "平台正在跟進，請留意通知。",
-      "en": "The platform is reviewing the case. Please watch for updates."
+    "timeline.done": {
+      "zh": "完成",
+      "en": "Done"
     },
-    "authInfo": {
-      "zh": "鑑定師：{name}",
-      "en": "Authenticator: {name}"
+    "timeline.meetup": {
+      "zh": "面交",
+      "en": "Meetup"
     },
-    "error.generic": {
-      "zh": "操作失敗，請重試",
-      "en": "Operation failed. Please try again."
+    "timeline.meetupAuth": {
+      "zh": "面交鑑定",
+      "en": "Meetup authentication"
     },
-    "error.review": {
-      "zh": "提交評價失敗，請重試",
-      "en": "Failed to submit review. Please try again."
+    "timeline.pay": {
+      "zh": "付款",
+      "en": "Payment"
     },
-    "confirmDialog.completeTitle": {
-      "zh": "確認完成交易？",
-      "en": "Confirm transaction complete?"
+    "timeline.sellerShipped": {
+      "zh": "賣家寄出",
+      "en": "Seller shipped"
     },
-    "confirmDialog.completeLabel": {
-      "zh": "確認完成 + 放款",
-      "en": "Confirm complete and release"
+    "tracking.placeholder": {
+      "zh": "例：SF1234567890123",
+      "en": "e.g. SF1234567890123"
     },
-    "confirmDialog.completeConsequence": {
-      "zh": "呢個動作會即時釋放款項畀賣家，訂單轉為完成，不可撤回。",
-      "en": "This will immediately release funds to the seller. The order will be marked as complete and cannot be undone."
+    "tracking.title": {
+      "zh": "輸入 SF Express 運單編號（必填）",
+      "en": "Enter SF Express tracking number (required)"
     },
-    "confirmDialog.meetupTitle": {
-      "zh": "確認面交完成？",
-      "en": "Confirm meetup complete?"
+    "verdictFailed": {
+      "zh": "✗ 鑑定結果：假貨",
+      "en": "✗ Verdict: Counterfeit"
     },
-    "confirmDialog.meetupLabel": {
-      "zh": "確認完成",
-      "en": "Confirm complete"
-    },
-    "confirmDialog.meetupConsequenceRelease": {
-      "zh": "呢個動作會即時放款畀賣家同鑑定師，訂單轉為完成，不可撤回。",
-      "en": "This will immediately release funds to the seller and authenticator. The order will be marked as complete and cannot be undone."
-    },
-    "dualAck.sellerAck": {
-      "zh": "睇鑑定師收件相 + 確認 →",
-      "en": "View the authenticator's receiving photos and confirm →"
-    },
-    "dualAck.sellerAckPending": {
-      "zh": "睇鑑定師接收相 + 確認交付 →",
-      "en": "View the authenticator's receiving photos and confirm delivery →"
-    },
-    "dualAck.returnAck": {
-      "zh": "睇退貨相 + 確認取回 →",
-      "en": "View return photos and confirm retrieval →"
-    },
-    "confirmDialog.meetupConsequence": {
-      "zh": "訂單會轉為完成，不可撤回。",
-      "en": "The order will be marked as complete and cannot be undone."
-    },
-    "flow.shipAuth": {
-      "zh": "付款,寄至鑑定師,鑑定中,寄至買家,完成",
-      "en": "Paid,Ship to authenticator,Authenticating,Ship to buyer,Completed"
-    },
-    "flow.shipNoAuth": {
-      "zh": "付款,賣家寄出,確認收貨,完成",
-      "en": "Paid,Seller ships,Confirm receipt,Completed"
-    },
-    "flow.meetupAuth": {
-      "zh": "落單,面交鑑定,完成",
-      "en": "Ordered,Meetup authentication,Completed"
-    },
-    "flow.meetupDirect": {
-      "zh": "落單,面交,完成",
-      "en": "Ordered,Meetup,Completed"
+    "verdictPassed": {
+      "zh": "✓ 鑑定結果：真品",
+      "en": "✓ Verdict: Authentic"
     }
   },
   "orderDetail": {

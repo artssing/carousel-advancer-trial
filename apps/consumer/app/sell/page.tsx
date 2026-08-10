@@ -21,6 +21,7 @@ import {
   sellCategories, categoryById, categoryByApiEnum, tierForPrice,
   brandsForCategory, hasBrandPicker, brandFieldLabel, matchBrandFromTitle,
   CONDITION_GRADES, formatHKD, stationDisplayLabel, stationCodesFromValue,
+  getClientLocale, createT,
 } from '@authentik/utils';
 import { api, hasToken, ApiError } from '@/lib/api';
 import { StationPicker } from '@/components/station-picker';
@@ -47,11 +48,12 @@ const COMPRESS_QUALITY = 0.82;
 
 type DeliveryMethod = 'SHIP' | 'MEETUP_AUTH' | 'MEETUP_3WAY' | 'MEETUP_DIRECT';
 
-const DELIVERY_OPTIONS: { value: DeliveryMethod; label: string; desc: string }[] = [
-  { value: 'SHIP', label: '物流寄送', desc: '有鑑定：你寄→鑑定師→買家；無鑑定：直寄買家' },
-  { value: 'MEETUP_AUTH', label: '鑑定師面交', desc: '買家去鑑定師地點，當場鑑定 + 交收' },
-  { value: 'MEETUP_3WAY', label: '三方面交', desc: '你、買家、鑑定師同場，當場鑑定 + 交收' },
-  { value: 'MEETUP_DIRECT', label: '買賣雙方面交', desc: '純撮合、無鑑定，你同買家直接見面' },
+// labelKey/descKey, not text — this list lives outside the component.
+const DELIVERY_OPTIONS: { value: DeliveryMethod; labelKey: string; descKey: string }[] = [
+  { value: 'SHIP', labelKey: 'sell.delivery.ship', descKey: 'sell.delivery.shipDesc' },
+  { value: 'MEETUP_AUTH', labelKey: 'sell.delivery.meetupAuth', descKey: 'sell.delivery.meetupAuthDesc' },
+  { value: 'MEETUP_3WAY', labelKey: 'sell.delivery.meetup3way', descKey: 'sell.delivery.meetup3wayDesc' },
+  { value: 'MEETUP_DIRECT', labelKey: 'sell.delivery.meetupDirect', descKey: 'sell.delivery.meetupDirectDesc' },
 ];
 
 /**
@@ -142,6 +144,10 @@ async function compressImageToDataURL(file: File): Promise<string> {
 }
 
 export default function SellPage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const editId = searchParams?.get('edit') ?? null;
@@ -287,12 +293,12 @@ export default function SellPage() {
         if (!active) return;
         // Authorization: must be seller + listing must be ACTIVE
         if (listing.seller?.id !== me.id) {
-          setError('唔可以修改其他賣家嘅商品');
+          setError(_t('sell.error.notOwner'));
           setLoading(false);
           return;
         }
         if (listing.status !== 'ACTIVE') {
-          setError('商品已被預訂或售出，唔可以修改');
+          setError(_t('sell.error.notActive'));
           setLoading(false);
           return;
         }
@@ -322,7 +328,7 @@ export default function SellPage() {
           if (!preset) setBrandCustomMode(true);
         }
       } catch (e: any) {
-        setError(e instanceof ApiError ? e.message : '載入商品失敗');
+        setError(e instanceof ApiError ? e.message : _t('sell.error.loadListing'));
       } finally {
         if (active) setLoading(false);
       }
@@ -439,11 +445,11 @@ export default function SellPage() {
     e.preventDefault();
     setError(null);
     if (!hasToken()) { router.push('/login'); return; }
-    if (typeof price !== 'number') { setError('請輸入價格'); return; }
+    if (typeof price !== 'number') { setError(_t('sell.validation.priceRequired')); return; }
     // Founder ruling 2026-06-21: 強制至少一張圖片或一段影片先可以上架
-    if (totalImages === 0 && !video) { setError('請至少上載一張商品圖片或一段影片'); return; }
-    if (deliveryMethods.length === 0) { setError('請至少揀一種接受嘅交收方式'); return; }
-    if (!condition) { setError('請揀商品狀況'); return; }
+    if (totalImages === 0 && !video) { setError(_t('sell.validation.imageRequired')); return; }
+    if (deliveryMethods.length === 0) { setError(_t('sell.validation.deliveryRequired')); return; }
+    if (!condition) { setError(_t('sell.validation.conditionRequired')); return; }
 
     setBusy(true);
     try {
@@ -544,12 +550,12 @@ export default function SellPage() {
      <div className="grid items-start gap-8 lg:grid-cols-[1fr_320px]">
       <div className="min-w-0">
       <h1 className="font-display-serif text-[28px] font-bold leading-tight tracking-[-0.01em] text-ink">
-        {isEditMode ? '編輯商品' : '刊登出售'}
+        {isEditMode ? _t('sell.pageTitle.edit') : _t('sell.pageTitle.create')}
       </h1>
       <p className="mt-1.5 text-[13px] text-neutral-text-hint">
         {isEditMode
           ? '只可以喺商品上架中（未有買家落單）時修改。被預訂或售出後就會 locked。'
-          : '填寫貨品資料。系統會按售價自動判斷鑑定分級。'}
+          : _t('sell.subtitle.create')}
       </p>
 
       {/* Price-drop info banners (edit mode only) */}
@@ -578,7 +584,7 @@ export default function SellPage() {
       {pendingOffersDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="w-full max-w-md rounded-xl bg-white p-5 shadow-lg">
-            <h3 className="text-base font-semibold text-ink">確認減價？</h3>
+            <h3 className="text-base font-semibold text-ink">{_t('sell.priceDrop.confirmTitle')}</h3>
             <p className="mt-2 text-sm text-neutral-text-muted">
               此商品有 <span className="font-semibold text-brand-700">{pendingOffersDialog.count}</span> 個未處理嘅議價。
               減價會排程喺 <span className="font-semibold">48 小時</span> 後生效；期間買家仍會見原售價，
@@ -586,7 +592,7 @@ export default function SellPage() {
             </p>
             <div className="mt-4 flex gap-2">
               <Button type="button" variant="outline" className="flex-1" onClick={() => setPendingOffersDialog(null)}>
-                返回處理議價
+                {_t('sell.priceDrop.backToOffers')}
               </Button>
               <Button
                 type="button"
@@ -597,7 +603,7 @@ export default function SellPage() {
                   if (form) (form as HTMLFormElement).requestSubmit();
                 }}
               >
-                確認排程減價
+                {_t('sell.priceDrop.confirmSchedule')}
               </Button>
             </div>
           </div>
@@ -632,7 +638,7 @@ export default function SellPage() {
                 Cover badge auto-updates because it's derived from `i === 0`. */}
             {mediaItems.length > 1 && (
               <p className="mb-2 text-[11px] text-neutral-text-hint">
-                💡 拖拉圖片可改變次序；第一張自動成為主圖
+                {_t('sell.media.sortHint')}
               </p>
             )}
             <DndContext
@@ -661,7 +667,7 @@ export default function SellPage() {
                       className="flex aspect-square flex-col items-center justify-center gap-1 rounded-lg border-2 border-dashed border-line-2 text-neutral-text-hint hover:border-brand-400 hover:text-brand-500"
                     >
                       <ImagePlus className="h-6 w-6" />
-                      <span className="text-xs">加圖片</span>
+                      <span className="text-xs">{_t('sell.media.addImage')}</span>
                     </button>
                   )}
                 </div>
@@ -685,8 +691,8 @@ export default function SellPage() {
                         <span className="absolute inset-0 flex items-center justify-center text-2xl text-white drop-shadow">▶</span>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium">已加影片</p>
-                        <p className="text-xs text-neutral-text-muted">≤ 15 秒 / ≤ 15MB · 自動截首幀做縮圖</p>
+                        <p className="text-sm font-medium">{_t('sell.media.videoAdded')}</p>
+                        <p className="text-xs text-neutral-text-muted">{_t('sell.media.videoSpecs')}</p>
                         <label className="mt-1 flex items-center gap-2 text-xs text-neutral-text">
                           <input
                             type="checkbox"
@@ -694,7 +700,7 @@ export default function SellPage() {
                             onChange={(e) => setVideoIsCover(e.target.checked)}
                             className="rounded border-line-2"
                           />
-                          將影片作為主圖（browse card cover）
+                          {_t('sell.media.videoCover')}
                         </label>
                       </div>
                       <button
@@ -710,7 +716,7 @@ export default function SellPage() {
                     onClick={() => videoInputRef.current?.click()}
                     className="flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-line-2 px-4 py-3 text-sm text-neutral-text-muted hover:border-brand-400 hover:text-brand-500"
                   >
-                    ▶ 加入商品影片（選填，最多 15 秒）
+                    {_t('sell.media.addVideo')}
                   </button>
                 )}
               </div>
@@ -721,16 +727,16 @@ export default function SellPage() {
         {/* ── Basic info ────────────────────────────────────────────────── */}
         <Card className="mt-4">
           <CardHeader>
-            <CardTitle>商品基本資料</CardTitle>
+            <CardTitle>{_t('sell.basic.cardTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="title">商品標題</Label>
+              <Label htmlFor="title">{_t('sell.basic.title')}</Label>
               <Input
                 id="title"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="例：Chanel Classic Flap Medium Caviar Black"
+                placeholder={_t('sell.basic.titlePlaceholder')}
                 className="mt-1"
                 required
                 minLength={3}
@@ -738,7 +744,7 @@ export default function SellPage() {
             </div>
             <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <Label htmlFor="cat">品類</Label>
+                <Label htmlFor="cat">{_t('sell.basic.category')}</Label>
                 <select
                   id="cat"
                   value={categoryId}
@@ -753,7 +759,7 @@ export default function SellPage() {
                 </select>
               </div>
               <div>
-                <Label htmlFor="price">要價（HKD）</Label>
+                <Label htmlFor="price">{_t('sell.basic.price')}</Label>
                 <Input
                   id="price"
                   type="number"
@@ -790,7 +796,7 @@ export default function SellPage() {
               return (
                 <div>
                   <Label>
-                    {fieldLabel} <span className="text-xs font-normal text-neutral-text-hint">（選填）</span>
+                    {fieldLabel} <span className="text-xs font-normal text-neutral-text-hint">{_t('sell.basic.brandOptional')}</span>
                   </Label>
 
                   {/* Mode A: user picked 「其他」 → free-text input */}
@@ -808,7 +814,7 @@ export default function SellPage() {
                         onClick={() => { setBrandCustomMode(false); setBrand(''); setBrandTouchedManually(true); setBrandAutoDetected(false); }}
                         className="text-xs text-neutral-text-muted hover:underline"
                       >
-                        返回揀預設
+                        {_t('sell.basic.brandBackToPreset')}
                       </button>
                     </div>
                   ) : (
@@ -828,7 +834,7 @@ export default function SellPage() {
                           )}
                           {brandAutoDetected && !isFreeText && selectedLabel && (
                             <span className="ml-1 rounded bg-emerald-100 px-1 py-0.5 text-[9px] text-emerald-700">
-                              自動偵測
+                              {_t('sell.basic.brandAutoDetected')}
                             </span>
                           )}
                         </span>
@@ -843,10 +849,10 @@ export default function SellPage() {
                                 setBrandAutoDetected(false);
                               }}
                               className="text-xs text-rose-500 hover:underline"
-                              title="清除"
+                              title={_t('sell.basic.brandClear')}
                               role="button"
                             >
-                              清除
+                              {_t('sell.basic.brandClear')}
                             </span>
                           )}
                           <span className="text-xs text-neutral-text-hint">{brandOpen ? '▲' : '▼'}</span>
@@ -950,25 +956,25 @@ export default function SellPage() {
                 ))}
               </div>
               <p className="mt-1 text-[10px] text-neutral-text-hint">
-                成色由你申報，Certifine 不驗證。Tier 2/3 商品鑑定時以鑑定師意見為準。
+                {_t('sell.basic.conditionDisclaimer')}
               </p>
             </div>
 
             <div>
-              <Label htmlFor="desc">商品描述</Label>
+              <Label htmlFor="desc">{_t('sell.basic.description')}</Label>
               <textarea
                 id="desc"
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 rows={4}
                 className="mt-1 w-full rounded-lg border border-line-2 bg-white px-3 py-2 text-sm"
-                placeholder="購入日期、配件齊全度、瑕疵說明、購入地點 / 單據…"
+                placeholder={_t('sell.basic.descPlaceholder')}
                 required
               />
             </div>
             {previewTier && (
               <div className="rounded-lg bg-surface-2 p-3 text-sm">
-                <span className="text-neutral-text-muted">此價格對應：</span>
+                <span className="text-neutral-text-muted">{_t('sell.basic.pricePreview')}</span>
                 <span className="ml-2 inline-block">
                   <TierPill tier={previewTier} showDescription />
                 </span>
@@ -980,7 +986,7 @@ export default function SellPage() {
         {/* ── 交收方式 ──────────────────────────────────────────────────── */}
         <Card className="mt-4">
           <CardHeader>
-            <CardTitle>接受嘅交收方式</CardTitle>
+            <CardTitle>{_t('sell.delivery.cardTitle')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-neutral-text-muted">
@@ -1001,15 +1007,15 @@ export default function SellPage() {
                       className="mt-0.5 h-4 w-4"
                     />
                     <div>
-                      <p className="text-sm font-medium">{opt.label}</p>
-                      <p className="text-xs text-neutral-text-muted">{opt.desc}</p>
+                      <p className="text-sm font-medium">{_t(opt.labelKey)}</p>
+                      <p className="text-xs text-neutral-text-muted">{_t(opt.descKey)}</p>
                     </div>
                   </label>
                 );
               })}
             </div>
             <div>
-              <Label htmlFor="district">你所在區域（面交配對用，選填，可揀多個候選）</Label>
+              <Label htmlFor="district">{_t('sell.delivery.district')}</Label>
               {/* Structured MTR pick only — free text never lands (founder 2026-07-08) */}
               <StationPicker
                 values={sellerStations}
@@ -1031,15 +1037,15 @@ export default function SellPage() {
             </div>
             {deliveryMethods.includes('MEETUP_DIRECT') && (
               <div className="mt-4">
-                <Label>面交地點（買家落單時揀選）</Label>
-                <p className="mb-2 text-xs text-neutral-text-muted">請提供至少一個建議面交地點，買家可揀選或填寫其他地點。</p>
+                <Label>{_t('sell.delivery.meetupLocations')}</Label>
+                <p className="mb-2 text-xs text-neutral-text-muted">{_t('sell.delivery.meetupLocationsHint')}</p>
                 <div className="space-y-2">
                   {sellerMeetupLocations.map((loc, i) => (
                     <div key={i} className="flex gap-2">
                       <Input
                         value={loc}
                         onChange={(e) => updateMeetupLocation(i, e.target.value)}
-                        placeholder="例：旺角港鐵站 E 出口"
+                        placeholder={_t('sell.delivery.meetupLocationPlaceholder')}
                         className="flex-1"
                       />
                       {sellerMeetupLocations.length > 1 && (
@@ -1059,7 +1065,7 @@ export default function SellPage() {
                   onClick={addMeetupLocation}
                   className="mt-2 text-xs text-brand-600 hover:underline"
                 >
-                  + 加多一個地點
+                  {_t('sell.delivery.addLocation')}
                 </button>
               </div>
             )}
@@ -1073,18 +1079,18 @@ export default function SellPage() {
         {/* Founder ruling 2026-06-21: 強制至少 1 張圖或 1 段影片，否則 button disable */}
         {(totalImages === 0 && !video) && (
           <p className="mt-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-            ⓘ 請先上載至少一張商品圖片或一段影片，先可以發佈上架。
+            {_t('sell.validation.imageOrVideo')}
           </p>
         )}
 
         <div className="mt-6 flex items-center gap-3 border-t border-line pt-6">
           <Link href={isEditMode && editId ? `/listing/${editId}` : '/browse'}>
-            <Button type="button" variant="ghost">取消</Button>
+            <Button type="button" variant="ghost">{_t('sell.cancel')}</Button>
           </Link>
           <Button type="submit" size="lg" className="flex-1" disabled={busy || (totalImages === 0 && !video)}>
             {busy
-              ? (isEditMode ? '儲存中…' : '發佈中…')
-              : (isEditMode ? '儲存修改' : '發佈刊登')}
+              ? (isEditMode ? _t('sell.submit.saving') : _t('sell.submit.publishing'))
+              : (isEditMode ? _t('sell.submit.save') : _t('sell.submit.publish'))}
           </Button>
         </div>
 
@@ -1096,16 +1102,16 @@ export default function SellPage() {
               onClick={() => setDeleteConfirm(true)}
               className="mt-4 w-full rounded-xl border border-red-200 bg-white py-2.5 text-sm font-medium text-red-600 transition hover:border-red-400 hover:bg-red-50"
             >
-              刪除呢件商品
+              {_t('sell.delete.button')}
             </button>
             {deleteError && <p className="mt-2 text-xs font-medium text-red-700">{deleteError}</p>}
             <ConfirmDialog
               open={deleteConfirm}
               severity="danger"
-              title="刪除呢件商品？"
+              title={_t('sell.delete.confirmTitle')}
               description={title}
               consequence="商品會即時落架，買家搵唔到。刪錯咗可以隨時喺「我的上架」還原。"
-              confirmLabel="確認刪除"
+              confirmLabel={_t('sell.delete.confirmLabel')}
               busy={deleting}
               onConfirm={async () => {
                 setDeleting(true);
@@ -1114,7 +1120,7 @@ export default function SellPage() {
                   await api.listings.softDelete(editId);
                   router.push('/my-listings');
                 } catch (err: any) {
-                  setDeleteError(err instanceof ApiError ? err.message : '刪除失敗');
+                  setDeleteError(err instanceof ApiError ? err.message : _t('sell.delete.error'));
                   setDeleting(false);
                   setDeleteConfirm(false);
                 }
@@ -1131,25 +1137,25 @@ export default function SellPage() {
         {previewTier ? (
           <div className="mb-4 rounded-[10px] border border-verify-border bg-verify-soft p-4">
             <div className="text-[15px] font-bold text-verify">
-              ◆ Tier {previewTier} · {previewTier === 3 ? '強制鑑定' : previewTier === 2 ? '可選鑑定' : '純撮合'}
+              ◆ Tier {previewTier} · {previewTier === 3 ? _t('ui.tierPill.tier3.description') : previewTier === 2 ? _t('ui.tierPill.tier2.description') : _t('ui.tierPill.tier1.description')}
             </div>
             <p className="mt-1.5 text-[12px] leading-relaxed text-neutral-text-muted">
               {previewTier === 3
-                ? '售價 ≥ HK$10,000，必須指定鑑定師，買家款項全程託管。'
+                ? _t('sell.rail.tierDesc3')
                 : previewTier === 2
-                  ? '售價 HK$1,000–9,999，買家可選擇是否鑑定。'
-                  : '售價 < HK$1,000，純撮合交易。'}
+                  ? _t('sell.rail.tierDesc2')
+                  : _t('sell.rail.tierDesc1')}
             </p>
           </div>
         ) : (
           <div className="mb-4 rounded-[10px] border border-line bg-surface-2 p-4 text-[12px] text-neutral-text-hint">
-            輸入售價後，系統會即時顯示鑑定分級。
+            {_t('sell.rail.noPriceHint')}
           </div>
         )}
 
         <div className="rounded-xl border border-line bg-white p-5 shadow-sh1">
           <div className="mb-3 text-[12px] font-bold uppercase tracking-[0.12em] text-neutral-text-hint">
-            費用預覽
+            {_t('sell.rail.feePreview')}
           </div>
           {(() => {
             const p = typeof price === 'number' ? price : 0;
@@ -1158,17 +1164,17 @@ export default function SellPage() {
             return (
               <>
                 <div className="flex justify-between py-1.5 text-[13px] text-neutral-text-muted">
-                  <span>售價</span><b className="font-semibold text-neutral-text">{formatHKD(p)}</b>
+                  <span>{_t('sell.rail.salePrice')}</span><b className="font-semibold text-neutral-text">{formatHKD(p)}</b>
                 </div>
                 <div className="flex justify-between py-1.5 text-[13px] text-neutral-text-muted">
-                  <span>平台費 1.5%</span><b className="font-semibold text-neutral-text">−{formatHKD(platformFee)}</b>
+                  <span>{_t('sell.rail.platformFee')}</span><b className="font-semibold text-neutral-text">−{formatHKD(platformFee)}</b>
                 </div>
                 <div className="flex justify-between py-1.5 text-[13px] text-neutral-text-muted">
-                  <span>鑑定費（買家付）</span><b className="font-semibold text-neutral-text">$0</b>
+                  <span>{_t('sell.rail.authFeeBuyer')}</span><b className="font-semibold text-neutral-text">$0</b>
                 </div>
                 <hr className="my-2.5 border-t border-line" />
                 <div className="flex items-baseline justify-between font-bold">
-                  <span className="text-[14px] text-neutral-text">預計實收</span>
+                  <span className="text-[14px] text-neutral-text">{_t('sell.rail.netAmount')}</span>
                   <span className="text-[18px] text-brand-700">{formatHKD(net)}</span>
                 </div>
               </>
@@ -1176,7 +1182,7 @@ export default function SellPage() {
           })()}
         </div>
         <p className="mt-3.5 text-[11px] leading-relaxed text-neutral-text-hint">
-          最終金額以成交時 server 計算為準。平台為資訊中介，真偽由具名鑑定師負責。
+          {_t('sell.rail.disclaimer')}
         </p>
       </aside>
      </div>

@@ -11,6 +11,7 @@ import {
   categoryByApiEnum, brandLabel, brandFieldLabel,
   needsMyAction, sellerActionCta, getStatusLabel,
   districtLabel, conditionLabel, stationDisplayLabel,
+  getClientLocale, createT,
 } from '@authentik/utils';
 import { ShieldCheck, MapPin, Truck, Users, UserCheck, Wallet, Lock, AlertTriangle } from 'lucide-react';
 import { api, hasToken, ApiError } from '@/lib/api';
@@ -24,25 +25,26 @@ type PaymentMethod = 'ONLINE_ESCROW' | 'OFFLINE_CASH';
 
 const DELIVERY_META: Record<
   DeliveryMethod,
-  { label: string; desc: string; icon: typeof Truck; meetup: boolean; needsAuth: boolean }
+  { labelKey: string; descKey: string; icon: typeof Truck; meetup: boolean; needsAuth: boolean }
 > = {
-  SHIP: { label: '物流寄送', desc: '有鑑定：賣家寄→鑑定師→你；無鑑定：賣家直寄你', icon: Truck, meetup: false, needsAuth: false },
-  MEETUP_AUTH: { label: '鑑定師面交', desc: '你去鑑定師地點，當場鑑定 + 交收', icon: UserCheck, meetup: true, needsAuth: true },
-  MEETUP_3WAY: { label: '三方面交', desc: '你、賣家、鑑定師同場，當場鑑定 + 交收', icon: Users, meetup: true, needsAuth: true },
-  MEETUP_DIRECT: { label: '買賣雙方面交', desc: '純撮合、無鑑定，你同賣家直接見面', icon: Users, meetup: true, needsAuth: false },
+  SHIP: { labelKey: 'listing.delivery.ship', descKey: 'listing.delivery.shipDesc', icon: Truck, meetup: false, needsAuth: false },
+  MEETUP_AUTH: { labelKey: 'listing.delivery.meetupAuth', descKey: 'listing.delivery.meetupAuthDesc', icon: UserCheck, meetup: true, needsAuth: true },
+  MEETUP_3WAY: { labelKey: 'listing.delivery.meetup3way', descKey: 'listing.delivery.meetup3wayDesc', icon: Users, meetup: true, needsAuth: true },
+  MEETUP_DIRECT: { labelKey: 'listing.delivery.meetupDirect', descKey: 'listing.delivery.meetupDirectDesc', icon: Users, meetup: true, needsAuth: false },
 };
 
-const PAYMENT_META: Record<PaymentMethod, { label: string; desc: string; icon: typeof Wallet }> = {
-  ONLINE_ESCROW: { label: '線上託管', desc: '平台代收款項，交易完成後派款畀賣家 + 鑑定師', icon: Lock },
-  OFFLINE_CASH: { label: '賣家直收', desc: '買家自行付款畀賣家 (FPS / 銀行轉帳 / 現金)，平台不託管', icon: Wallet },
+const PAYMENT_META: Record<PaymentMethod, { labelKey: string; descKey: string; icon: typeof Wallet }> = {
+  ONLINE_ESCROW: { labelKey: 'listing.payment.escrow', descKey: 'listing.payment.escrowDesc', icon: Lock },
+  OFFLINE_CASH: { labelKey: 'listing.payment.cashDirect', descKey: 'listing.payment.cashDirectDesc', icon: Wallet },
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: '草稿',
-  ACTIVE: '上架中',
-  RESERVED: '已預留',
-  SOLD: '已售出',
-  REMOVED: '已下架',
+// Values are t() keys, not text — this map lives outside the component.
+const STATUS_LABEL_KEY: Record<string, string> = {
+  DRAFT: 'listing.status.draft',
+  ACTIVE: 'listing.status.active',
+  RESERVED: 'listing.status.reserved',
+  SOLD: 'listing.status.sold',
+  REMOVED: 'listing.status.removed',
 };
 
 type GallerySlide = { kind: 'image' | 'video'; src: string; poster?: string };
@@ -198,6 +200,10 @@ function ListingDetailSkeleton() {
 }
 
 export default function ListingPage({ params }: { params: { id: string } }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const { id } = params;
   const router = useRouter();
   // Reactive URL param — `?offerId=<id>` activates locked-price checkout
@@ -486,24 +492,24 @@ export default function ListingPage({ params }: { params: { id: string } }) {
     }
     if (!listing) return;
     if (!deliveryMethod) {
-      setError('請揀一種交收方式');
+      setError(_t('listing.error.chooseDelivery'));
       return;
     }
     if (authRequired && !selectedAuth) {
-      setError('此交收方式需要鑑定，請先揀一位鑑定師');
+      setError(_t('listing.error.chooseAuth'));
       return;
     }
     if (!paymentMethod) {
-      setError('請揀一種付款方式');
+      setError(_t('listing.error.choosePayment'));
       return;
     }
     const needsBranch = deliveryMethod === 'MEETUP_AUTH' || deliveryMethod === 'MEETUP_3WAY';
     if (needsBranch && !selectedBranchId) {
-      setError('請揀鑑定師嘅交收分店');
+      setError(_t('listing.error.chooseBranch'));
       return;
     }
     if (deliveryMethod === 'MEETUP_DIRECT' && !meetupLocation) {
-      setError('請揀選面交地點');
+      setError(_t('listing.error.chooseMeetupLocation'));
       return;
     }
     if (deliveryMethod === 'MEETUP_DIRECT' && meetupLocation === 'OTHER' && !meetupCustomLocation.trim()) {
@@ -560,7 +566,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
     <div className="mx-auto max-w-container-l3 px-4 pb-16 pt-2 sm:px-6">
       {/* ═══ Breadcrumb ═══════════════════════════════════════════════════════ */}
       <nav className="py-5 text-[12px] text-neutral-text-hint">
-        <Link href="/" className="transition hover:text-ink">首頁</Link>
+        <Link href="/" className="transition hover:text-ink">{_t('listing.breadcrumb.home')}</Link>
         <span className="mx-1.5">/</span>
         {(() => {
           const cat = categoryByApiEnum(listing.category);
@@ -641,7 +647,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                       />
                       {/* 放大提示 */}
                       <span className="pointer-events-none absolute right-3 top-3 flex items-center gap-1 rounded-full bg-black/45 px-2 py-1 text-[11px] font-medium text-white">
-                        <ZoomIn className="h-3.5 w-3.5" /> 放大
+                        <ZoomIn className="h-3.5 w-3.5" /> {_t('listing.lightbox.zoom')}
                       </span>
                     </>
                   )
@@ -710,7 +716,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
           <div className="flex flex-wrap items-center gap-2">
             <TierPill tier={tier} showDescription className="!py-1 text-[11px]" />
             {tier === 3 && (
-              <Pill variant="verify" size="md">◆ 強制鑑定</Pill>
+              <Pill variant="verify" size="md">{_t('listing.mandatoryAuthBadge')}</Pill>
             )}
             {/* Share — 人人可見（founder 2026-07-12），唔止 owner */}
             {(listing.images?.length ?? 0) > 0 && (
@@ -719,7 +725,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                 onClick={() => setShareOpen(true)}
                 className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-line bg-white px-3.5 py-1.5 text-[12px] font-semibold text-ink shadow-sh1 transition hover:border-brand-600 hover:text-brand-700"
               >
-                <Share2 className="h-3.5 w-3.5" /> 分享
+                <Share2 className="h-3.5 w-3.5" /> {_t('listing.share')}
               </button>
             )}
           </div>
@@ -728,17 +734,17 @@ export default function ListingPage({ params }: { params: { id: string } }) {
           {isOwner && (
             <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-brand-200 bg-verify-soft px-3 py-2 text-xs">
               <UserCheck className="h-4 w-4 shrink-0 text-brand-600" />
-              <span className="font-medium text-brand-800">這是你上架嘅商品</span>
+              <span className="font-medium text-brand-800">{_t('listing.owner.banner')}</span>
               <span className="text-brand-600">·</span>
-              <span className="text-brand-700">狀態：{STATUS_LABEL[listing.status] ?? listing.status}</span>
+              <span className="text-brand-700">{_t('listing.owner.status', { status: _t(STATUS_LABEL_KEY[listing.status] ?? listing.status) })}</span>
             </div>
           )}
           {!isOwner && listing.status === 'RESERVED' && (
             <div className="mt-3 flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-xs">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
               <div>
-                <p className="font-medium text-amber-900">此商品交易進行中</p>
-                <p className="mt-0.5 text-amber-800">已有買家落單，暫時唔可以購買。</p>
+                <p className="font-medium text-amber-900">{_t('listing.reserved.bannerTitle')}</p>
+                <p className="mt-0.5 text-amber-800">{_t('listing.reserved.bannerDesc')}</p>
               </div>
             </div>
           )}
@@ -746,9 +752,9 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             <div className="mt-3 flex items-start gap-2 rounded-lg border border-line-2 bg-surface-2 px-3 py-2 text-xs">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-neutral-text-hint" />
               <div>
-                <p className="font-medium text-neutral-text">此商品已售出</p>
+                <p className="font-medium text-neutral-text">{_t('listing.sold.bannerTitle')}</p>
                 <p className="mt-0.5 text-neutral-text-muted">
-                  交易已完成，呢件商品唔可以再買入。可以睇下面類似商品 ↓
+                  {_t('listing.sold.bannerDesc')}
                 </p>
               </div>
             </div>
@@ -786,15 +792,15 @@ export default function ListingPage({ params }: { params: { id: string } }) {
               <p className="mt-0.5 text-xs text-slate-400">
                 <span className="line-through">原價 {formatHKD(listing.priceHKD)}</span>
                 <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-brand-50 px-2 py-0.5 text-[10px] font-medium text-brand-700">
-                  ✓ 議價成交價
+                  {_t('listing.price.negotiatedBadge')}
                 </span>
               </p>
               <div className="mt-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
-                <p className="font-medium">議價已確認，請完成落單</p>
+                <p className="font-medium">{_t('listing.price.negotiatedConfirm')}</p>
                 <p className="mt-0.5 text-amber-800">
                   {lockedOffer.paymentDeadlineAt
                     ? `付款期限：${new Date(lockedOffer.paymentDeadlineAt).toLocaleString('zh-HK', { hour12: false })}`
-                    : '請盡快完成落單，否則預留會自動取消。'}
+                    : _t('listing.price.deadlineSoon')}
                 </p>
                 {effectivePrice < listing.priceHKD && tier !== tierForPrice(listing.priceHKD) && (
                   <p className="mt-1 text-amber-800">
@@ -810,7 +816,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             <div className="mt-4">
               <p className="text-[32px] font-extrabold leading-none text-neutral-text">{formatHKD(listing.actualSalePriceHKD)}</p>
               <p className="mt-0.5 text-xs text-slate-500">
-                成交價
+                {_t('listing.price.soldPrice')}
                 {listing.originalPriceHKD && listing.originalPriceHKD > listing.actualSalePriceHKD && (
                   <span className="ml-2 line-through text-slate-400">原價 {formatHKD(listing.originalPriceHKD)}</span>
                 )}
@@ -847,10 +853,10 @@ export default function ListingPage({ params }: { params: { id: string } }) {
               // Attribution is not decoration: an unattributed 「狀況」 reads as a
               // fact the platform verified. Condition is the seller's claim and
               // has to say so, in the same words everywhere (founder 2026-08-02).
-              { k: '狀況（賣家申報）', v: listing.condition ? conditionLabel(listing.condition) : '—' },
-              { k: '品類', v: cat?.labelZh ?? '—' },
-              { k: '品牌', v: listing.brand ? (cat ? brandLabel(cat.id as any, listing.brand) : listing.brand) : '—' },
-              { k: '地區', v: districtLabelStr },
+              { k: _t('listing.specConditionLabel'), v: listing.condition ? conditionLabel(listing.condition) : '—' },
+              { k: _t('listing.spec.category'), v: cat?.labelZh ?? '—' },
+              { k: _t('listing.spec.brand'), v: listing.brand ? (cat ? brandLabel(cat.id as any, listing.brand) : listing.brand) : '—' },
+              { k: _t('listing.spec.district'), v: districtLabelStr },
             ];
             return (
               <div className="mt-6 grid grid-cols-2 overflow-hidden rounded-xl border border-line bg-white shadow-sh1">
@@ -874,17 +880,17 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             tier === 3 ? 'border-verify-border bg-verify-soft/40' : 'border-line bg-white'
           }`}>
             <div className="text-[11px] font-bold uppercase tracking-[0.16em] text-brand-600">
-              {tier === 3 ? '強制鑑定 · Tier 3' : tier === 2 ? '可選鑑定 · Tier 2' : '純撮合 · Tier 1'}
+              {tier === 3 ? _t('listing.tier.trustPanelT3') : tier === 2 ? _t('listing.tier.trustPanelT2') : _t('listing.tier.trustPanelT1')}
             </div>
             <p className="mt-2 text-[14px] leading-relaxed text-neutral-text">
               {tier === 3
-                ? '此商品成交價 ≥ HKD 10,000，落單時必須由具名鑑定師鑑定通過方可完成交易。真偽責任由該鑑定師按合約及 E&O 保險承擔。'
+                ? _t('listing.tier.descT3')
                 : tier === 2
-                  ? '此商品可選鑑定。買家可於落單時揀鑑定師增加信心，鑑定費由買家承擔。'
-                  : '此商品屬純撮合，成交前建議自行核實真偽及成色。平台不承擔真偽責任。'}
+                  ? _t('listing.tier.descT2')
+                  : _t('listing.tier.descT1')}
             </p>
             <p className="mt-3 text-[11px] leading-relaxed text-neutral-text-hint">
-              平台為資訊中介，真偽由具名鑑定師負責，Certifine 不作真偽保證。
+              {_t('listing.tier.disclaimer')}
             </p>
           </div>
 
@@ -896,7 +902,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
               上架：{(() => {
                 const diff = Date.now() - new Date(listing.createdAt).getTime();
                 const mins = Math.floor(diff / 60000);
-                if (mins < 1) return '剛剛';
+                if (mins < 1) return _t('listing.time.justNow');
                 if (mins < 60) return `${mins} 分鐘前`;
                 const hours = Math.floor(mins / 60);
                 if (hours < 24) return `${hours} 小時前`;
@@ -922,7 +928,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   {listing.seller.displayName}
                 </span>
                 <span className="text-[10px] text-slate-400 group-hover:text-brand-600">
-                  睇賣家檔案 →
+                  {_t('listing.seller.viewProfile')}
                 </span>
               </Link>
             ) : (
@@ -935,10 +941,10 @@ export default function ListingPage({ params }: { params: { id: string } }) {
               >
                 <MessageCircle className="h-3.5 w-3.5" />
                 {listing.status === 'SOLD'
-                  ? '問賣家有冇同類貨或補貨計劃'
+                  ? _t('listing.chat.askSimilarSold')
                   : listing.status === 'RESERVED'
-                    ? '問賣家有冇同類貨'
-                    : '聯絡賣家'}
+                    ? _t('listing.chat.askSimilarReserved')
+                    : _t('listing.chat.contactSeller')}
               </button>
             )}
           </div>
@@ -952,12 +958,13 @@ export default function ListingPage({ params }: { params: { id: string } }) {
               {activeOrder && me && needsMyAction(activeOrder, me.id, 'seller') && (() => {
                 const cta = sellerActionCta(activeOrder);
                 if (!cta) return null;
-                const buyerName = activeOrder.buyer?.displayName ?? '買家';
-                const deliveryLabel = DELIVERY_META[activeOrder.deliveryMethod as DeliveryMethod]?.label ?? activeOrder.deliveryMethod;
+                const buyerName = activeOrder.buyer?.displayName ?? _t('orderDetail.label.buyer');
+                const deliveryMetaForOrder = DELIVERY_META[activeOrder.deliveryMethod as DeliveryMethod];
+                const deliveryLabel = deliveryMetaForOrder ? _t(deliveryMetaForOrder.labelKey) : activeOrder.deliveryMethod;
                 return (
                   <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-4 shadow-sm">
                     <p className="text-xs font-semibold uppercase tracking-wide text-amber-700">
-                      ⚠ 需要你處理
+                      {_t('listing.sellerAction.urgent')}
                     </p>
                     <p className="mt-1 text-base font-semibold text-amber-900">{cta.heading}</p>
                     <p className="mt-1 text-[11px] text-amber-800/80">
@@ -987,15 +994,15 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm transition hover:bg-slate-100"
                 >
                   <span className="min-w-0">
-                    <span className="font-medium text-slate-800">訂單進行中</span>
+                    <span className="font-medium text-slate-800">{_t('listing.sellerAction.inProgress')}</span>
                     <span className="ml-1.5 text-[11px] text-slate-600">
                       · {getStatusLabel(activeOrder.status, activeOrder.deliveryMethod)}
                     </span>
                     <span className="ml-1.5 text-[10px] text-slate-400">
-                      #{activeOrder.id.slice(0, 8)} · {activeOrder.buyer?.displayName ?? '買家'}
+                      #{activeOrder.id.slice(0, 8)} · {activeOrder.buyer?.displayName ?? _t('orderDetail.label.buyer')}
                     </span>
                   </span>
-                  <span className="shrink-0 text-xs font-medium text-slate-600">查看訂單 →</span>
+                  <span className="shrink-0 text-xs font-medium text-slate-600">{_t('listing.sellerAction.viewOrder')}</span>
                 </a>
               )}
 
@@ -1020,10 +1027,10 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                         : c.counterparty?.displayName ?? '對方';
                       // Kind badge distinguishes channels with overlapping people
                       const kindBadge =
-                        c.kind === 'THREE_WAY' ? { text: '三方', cls: 'bg-slate-200 text-slate-700' }
-                        : c.kind === 'BUYER_SELLER' ? { text: '私', cls: 'bg-amber-200 text-amber-800' }
-                        : c.kind === 'BUYER_AUTH' ? { text: '私', cls: 'bg-amber-200 text-amber-800' }
-                        : c.kind === 'SELLER_AUTH' ? { text: '私', cls: 'bg-amber-200 text-amber-800' }
+                        c.kind === 'THREE_WAY' ? { text: _t('listing.conversations.threeWay'), cls: 'bg-slate-200 text-slate-700' }
+                        : c.kind === 'BUYER_SELLER' ? { text: _t('listing.conversations.private'), cls: 'bg-amber-200 text-amber-800' }
+                        : c.kind === 'BUYER_AUTH' ? { text: _t('listing.conversations.private'), cls: 'bg-amber-200 text-amber-800' }
+                        : c.kind === 'SELLER_AUTH' ? { text: _t('listing.conversations.private'), cls: 'bg-amber-200 text-amber-800' }
                         : null;
                       const previewBody =
                         c.lastMessage?.body
@@ -1077,17 +1084,17 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                     })}
                   </div>
                   <p className="mt-2 text-[10px] text-brand-700/80">
-                    任何狀態都可以同對方傾偈；對話完成 / 退款 / 爭議後變 read-only 存檔。
+                    {_t('listing.conversations.hint')}
                   </p>
                 </div>
               )}
 
               <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm">
-                <h4 className="mb-2 font-semibold">你接受嘅交收方式</h4>
+                <h4 className="mb-2 font-semibold">{_t('listing.seller.acceptedDelivery')}</h4>
                 <div className="flex flex-wrap gap-2">
                   {allowedMethods.map((m) => (
                     <Badge key={m} variant="default">
-                      {DELIVERY_META[m].label}
+                      {_t(DELIVERY_META[m].labelKey)}
                     </Badge>
                   ))}
                   {listing.sellerDistrict && (
@@ -1105,19 +1112,19 @@ export default function ListingPage({ params }: { params: { id: string } }) {
               {/* Primary action: edit (only while ACTIVE) */}
               {listing.status === 'ACTIVE' && (
                 <Link href={`/sell?edit=${listing.id}`} className="block">
-                  <Button className="w-full">編輯商品</Button>
+                  <Button className="w-full">{_t('listing.seller.editListing')}</Button>
                 </Link>
               )}
 
               <div className="flex gap-2">
                 <Link href="/my-listings" className="flex-1">
                   <Button variant="outline" className="w-full">
-                    我的商品
+                    {_t('listing.seller.myListings')}
                   </Button>
                 </Link>
                 <Link href="/orders?role=seller" className="flex-1">
                   <Button variant="outline" className="w-full">
-                    我賣出嘅訂單
+                    {_t('listing.seller.mySoldOrders')}
                   </Button>
                 </Link>
               </div>
@@ -1133,17 +1140,17 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   className="flex items-center justify-between gap-3 rounded-lg border border-brand-300 bg-brand-50 px-3 py-2 text-sm transition hover:bg-brand-100"
                 >
                   <span className="min-w-0">
-                    <span className="font-medium text-brand-900">你係這個訂單嘅買家</span>
+                    <span className="font-medium text-brand-900">{_t('listing.buyer.trackOrderTitle')}</span>
                     <span className="ml-1.5 text-[11px] text-brand-700">
                       · {getStatusLabel(activeOrder.status, activeOrder.deliveryMethod)}
                     </span>
                   </span>
-                  <span className="shrink-0 text-xs font-medium text-brand-700">追蹤進度 →</span>
+                  <span className="shrink-0 text-xs font-medium text-brand-700">{_t('listing.buyer.trackOrder')}</span>
                 </a>
               )}
               <p className="text-xs text-slate-500">
                 {activeOrder && me && activeOrder.buyerId === me.id
-                  ? '如果交易最終取消或退款，商品會重新上架。'
+                  ? _t('listing.buyer.cancelReleaseNote')
                   : <>如果你已經係呢張訂單嘅買家，可以喺「我的訂單」追蹤進度。
                       {listing.status === 'RESERVED' && ' 如果交易最終取消或退款，商品會重新上架。'}</>}
               </p>
@@ -1153,10 +1160,10 @@ export default function ListingPage({ params }: { params: { id: string } }) {
               {tier === 3 && (
                 <div className="mt-6 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
                   <p className="flex items-center gap-2 font-medium">
-                    <ShieldCheck className="h-4 w-4" /> Tier 3 強制鑑定
+                    <ShieldCheck className="h-4 w-4" /> {_t('listing.t3Banner.title')}
                   </p>
                   <p className="mt-1 text-emerald-800">
-                    此商品價格 ≥ HKD 10,000，必須揀一位平台註冊鑑定師驗證後才會放款。
+                    {_t('listing.t3Banner.desc')}
                   </p>
                 </div>
               )}
@@ -1165,7 +1172,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
               <section className="mt-6">
                 <h3 className="mb-2 text-sm font-semibold text-slate-700">
                   <span className="mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">1</span>
-                  交收方式
+                  {_t('listing.step1.delivery')}
                 </h3>
                 <div className="space-y-2">
                   {allowedMethods.map((m) => {
@@ -1191,8 +1198,8 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                         <CardContent className="flex items-start gap-3 p-3 text-sm">
                           <Icon className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
                           <div>
-                            <p className="font-medium">{meta.label}</p>
-                            <p className="text-xs text-slate-500">{meta.desc}</p>
+                            <p className="font-medium">{_t(meta.labelKey)}</p>
+                            <p className="text-xs text-slate-500">{_t(meta.descKey)}</p>
                             {meta.needsAuth && (
                               <p className="mt-0.5 text-xs font-medium text-brand-600">
                                 需要鑑定師{disabledNoAuth ? '（此品類暫無註冊鑑定師，不可選）' : ''}
@@ -1205,7 +1212,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   })}
                   {authenticators.length === 0 && (
                     <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800">
-                      ⚠️ 此品類暫時冇平台註冊鑑定師。需要鑑定師嘅交收方式暫時不可選。
+                      {_t('listing.step2.noAuthWarning')}
                     </p>
                   )}
                 </div>
@@ -1216,11 +1223,11 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                 <section className="mt-6">
                   <h3 className="mb-2 text-sm font-semibold text-slate-700">
                     <span className="mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">2</span>
-                    {authRequired ? '揀鑑定師（必選 1）' : '揀鑑定師（可選）'}
+                    {authRequired ? _t('listing.step2.authRequired') : _t('listing.step2.authOptional')}
                   </h3>
                   <div className="space-y-2">
                     {authenticators.length === 0 && (
-                      <p className="text-xs text-slate-500">此品類暫無註冊鑑定師。</p>
+                      <p className="text-xs text-slate-500">{_t('listing.step2.noAuthCategory')}</p>
                     )}
                     {authOptional && (
                       <Card
@@ -1228,8 +1235,8 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                         className={`cursor-pointer transition ${selectedAuth === null ? 'border-brand-500 ring-2 ring-brand-200' : ''}`}
                       >
                         <CardContent className="p-3 text-sm">
-                          <p className="font-medium">唔使鑑定</p>
-                          <p className="text-xs text-slate-500">自行承擔風險、無鑑定費</p>
+                          <p className="font-medium">{_t('listing.step2.noAuth')}</p>
+                          <p className="text-xs text-slate-500">{_t('listing.step2.noAuthDesc')}</p>
                         </CardContent>
                       </Card>
                     )}
@@ -1262,11 +1269,11 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                                   {a.district}
                                 </Badge>
                               )}
-                              {a.acceptsMeetup && <Badge variant="default">接受面交</Badge>}
+                              {a.acceptsMeetup && <Badge variant="default">{_t('listing.step2.acceptsMeetup')}</Badge>}
                             </div>
                             <div className="mt-2 flex items-center justify-between">
                               <span className="text-sm font-semibold text-brand-700">
-                                鑑定費 {formatHKD(fee)}
+                                {_t('messages.contextPane.authFee')} {formatHKD(fee)}
                                 <span className="ml-1 text-xs font-normal text-slate-400">
                                   （{Math.round(a.feeRatePct * 1000) / 10}%，最低 {formatHKD(a.feeMinHKD)}）
                                 </span>
@@ -1276,7 +1283,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                                 onClick={(e) => e.stopPropagation()}
                                 className="text-xs text-brand-600 hover:underline"
                               >
-                                睇檔案 →
+                                {_t('listing.step2.viewProfile')}
                               </Link>
                             </div>
                           </CardContent>
@@ -1291,15 +1298,15 @@ export default function ListingPage({ params }: { params: { id: string } }) {
               {(deliveryMethod === 'MEETUP_AUTH' || deliveryMethod === 'MEETUP_3WAY') && (
                 <div className="mt-4">
                   <label className="mb-1 block text-xs font-medium text-slate-600">
-                    交收分店（由鑑定師提供）
+                    {_t('listing.branch.selectLabel')}
                   </label>
                   {!selectedAuth ? (
                     <p className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-3 py-2 text-xs text-slate-500">
-                      請先揀鑑定師，先會顯示佢嘅分店列表。
+                      {_t('listing.branch.pickAuthFirst')}
                     </p>
                   ) : branches.length === 0 ? (
                     <p className="rounded-md border border-rose-300 bg-rose-50 px-3 py-2 text-xs text-rose-700">
-                      呢位鑑定師暫時冇可用分店，請揀其他鑑定師或交收方式。
+                      {_t('listing.branch.noBranches')}
                     </p>
                   ) : (
                     <div className="space-y-2">
@@ -1327,7 +1334,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                                 {b.name}
                                 {b.isPrimary && (
                                   <span className="rounded bg-brand-100 px-1.5 py-0.5 text-[10px] font-semibold text-brand-700">
-                                    主要
+                                    {_t('listing.branch.primary')}
                                   </span>
                                 )}
                                 {district && (
@@ -1380,7 +1387,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                         );
                       })}
                       <p className="text-[10px] text-slate-400">
-                        交收地點由鑑定師提供，平台中立 — 請依時到場。
+                        {_t('listing.branch.disclaimer')}
                       </p>
                     </div>
                   )}
@@ -1390,7 +1397,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
               {/* MEETUP_DIRECT — 買家揀賣家建議地點，或填「其他」 */}
               {deliveryMethod === 'MEETUP_DIRECT' && (
                 <div className="mt-4">
-                  <label className="mb-2 block text-xs font-medium text-slate-600">面交地點</label>
+                  <label className="mb-2 block text-xs font-medium text-slate-600">{_t('listing.meetupDirect.locationLabel')}</label>
                   <div className="space-y-2">
                     {(listing.sellerMeetupLocations ?? []).map((loc: string, i: number) => (
                       <label key={i} className="flex cursor-pointer items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm hover:border-brand-400 has-[:checked]:border-brand-500 has-[:checked]:bg-brand-50">
@@ -1414,7 +1421,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                         onChange={() => setMeetupLocation('OTHER')}
                         className="h-4 w-4 accent-brand-600"
                       />
-                      其他地點
+                      {_t('listing.meetupDirect.other')}
                     </label>
                   </div>
                   {meetupLocation === 'OTHER' && (
@@ -1427,7 +1434,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                     />
                   )}
                   <p className="mt-1 text-[10px] text-slate-400">
-                    賣家建議地點供參考，如需更改可揀「其他」並填寫。
+                    {_t('listing.meetupDirect.hint')}
                   </p>
                 </div>
               )}
@@ -1438,7 +1445,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   <span className="mr-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-brand-100 text-xs font-bold text-brand-700">
                     {showAuthStep ? 3 : 2}
                   </span>
-                  付款方式
+                  {_t('listing.step3.payment')}
                 </h3>
                 {/* Payment-method × delivery × auth matrix:
                     - SHIP + no-auth → 只准 OFFLINE_CASH (founder ruling 2026-06-11)
@@ -1465,8 +1472,8 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                               <CardContent className="flex items-start gap-3 p-3 text-sm">
                                 <Icon className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
                                 <div>
-                                  <p className="font-medium">{meta.label}</p>
-                                  <p className="text-xs text-slate-500">{meta.desc}</p>
+                                  <p className="font-medium">{_t(meta.labelKey)}</p>
+                                  <p className="text-xs text-slate-500">{_t(meta.descKey)}</p>
                                 </div>
                               </CardContent>
                             </Card>
@@ -1486,7 +1493,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                       {paymentMethod === 'OFFLINE_CASH' && !isShipNoAuth && (
                         <p className="mt-2 flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-xs text-amber-800">
                           <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                          線下現金交收平台不會託管款項，未能提供款項保障，請自行注意交收安全。
+                          {_t('listing.payment.offlineCashWarning')}
                         </p>
                       )}
                     </>
@@ -1496,10 +1503,10 @@ export default function ListingPage({ params }: { params: { id: string } }) {
 
               {/* 費用明細 */}
               <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4 text-sm">
-                <h4 className="mb-2 font-semibold">費用明細</h4>
+                <h4 className="mb-2 font-semibold">{_t('listing.fee.title')}</h4>
                 <div className="space-y-1 text-slate-700">
                   <p className="flex justify-between">
-                    <span>商品價</span>
+                    <span>{_t('listing.fee.itemPrice')}</span>
                     <span>{formatHKD(fees.total)}</span>
                   </p>
                   <p className="flex justify-between">
@@ -1507,7 +1514,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                     <span className="text-slate-500">-{formatHKD(fees.authFee)}</span>
                   </p>
                   <p className="flex justify-between">
-                    <span>平台撮合費 1.5%（賣家付）</span>
+                    <span>{_t('listing.fee.platformFee')}</span>
                     <span className="text-slate-500">-{formatHKD(fees.platformFee)}</span>
                   </p>
                 </div>
@@ -1519,10 +1526,10 @@ export default function ListingPage({ params }: { params: { id: string } }) {
 
               <Button size="lg" className="mt-6 w-full" onClick={onBuy} disabled={busy}>
                 {busy
-                  ? '處理中…'
+                  ? _t('listing.buyButton.busy')
                   : paymentMethod === 'OFFLINE_CASH'
-                    ? '確認落單（面交付款）'
-                    : '付款並啟動交易'}
+                    ? _t('listing.buyButton.offlineCash')
+                    : _t('listing.buyButton.onlineEscrow')}
               </Button>
 
               {!me && (
@@ -1539,7 +1546,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
       {/* ── Recommendations — same-category listings, 8 items ── */}
       {relatedListings.length > 0 && (
         <div className="mt-10 border-t border-slate-100 pt-8">
-          <h3 className="mb-3 text-sm font-semibold text-slate-700">同類商品</h3>
+          <h3 className="mb-3 text-sm font-semibold text-slate-700">{_t('listing.related.title')}</h3>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
             {relatedListings.map((other) => (
               <Link key={other.id} href={`/listing/${other.id}`} className="flex">
@@ -1596,9 +1603,9 @@ export default function ListingPage({ params }: { params: { id: string } }) {
           onClose={() => setActiveConv(null)}
           readOnly={['COMPLETED', 'REFUNDED', 'DISPUTED'].includes(activeConv.orderStatus ?? '')}
           readOnlyReason={
-            activeConv.orderStatus === 'COMPLETED' ? '訂單已完成，對話存檔僅供查閱。'
-            : activeConv.orderStatus === 'REFUNDED' ? '訂單已退款，對話存檔僅供查閱。'
-            : activeConv.orderStatus === 'DISPUTED' ? '訂單爭議處理中，對話已鎖定。'
+            activeConv.orderStatus === 'COMPLETED' ? _t('listing.chat.readonlyCompleted')
+            : activeConv.orderStatus === 'REFUNDED' ? _t('listing.chat.readonlyRefunded')
+            : activeConv.orderStatus === 'DISPUTED' ? _t('listing.chat.readonlyDisputed')
             : undefined
           }
         />
