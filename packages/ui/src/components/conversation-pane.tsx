@@ -220,24 +220,41 @@ function DateDivider({ date, _t, locale }: { date: Date; _t: Translate; locale: 
   );
 }
 
-/** Order statuses this pane shows as a chip. Short forms — `utils.orderStatus`
- *  carries the long sentence versions used on the orders pages, which do not
- *  fit here. Values are ssot keys, resolved through `_t` at render time. */
+/**
+ * Order statuses this pane shows as a chip. Short forms — `utils.orderStatus`
+ * carries the long sentence versions used on the orders pages, which do not
+ * fit here. Values are ssot keys, resolved through `_t` at render time.
+ *
+ * Every caller passes `Order.status` straight from the API, so the incoming
+ * value is always an `OrderStatus` enum member. **All 18 must be listed**: an
+ * unlisted status falls through and prints the raw enum name to the user.
+ * Until 2026-08-10 four entries here named statuses that had been renamed out
+ * of the schema (`PENDING_PAYMENT`, `RECEIVED_BY_AUTHENTICATOR`,
+ * `AWAITING_MEETUP`, `MEETUP_AUTHENTICATING`) while eight real ones were
+ * missing. Keep this in step with `enum OrderStatus` in schema.prisma.
+ */
 const STATUS_KEY: Record<string, string> = {
-  PENDING_PAYMENT: 'ui.conversation.status.PENDING_PAYMENT',
+  AWAITING_PAYMENT: 'ui.conversation.status.AWAITING_PAYMENT',
   PAID: 'ui.conversation.status.PAID',
+  // MEETUP_AUTH dual-ack flow
+  HANDOVER_TO_AUTH: 'ui.conversation.status.HANDOVER_TO_AUTH',
+  SELLER_ACK_PENDING: 'ui.conversation.status.SELLER_ACK_PENDING',
+  CUSTODY: 'ui.conversation.status.CUSTODY',
+  // SHIP photo-evidence flow
   SHIPPED_TO_AUTHENTICATOR: 'ui.conversation.status.SHIPPED_TO_AUTHENTICATOR',
-  RECEIVED_BY_AUTHENTICATOR: 'ui.conversation.status.RECEIVED_BY_AUTHENTICATOR',
+  AUTH_RECEIVED_PENDING_SELLER_ACK: 'ui.conversation.status.AUTH_RECEIVED_PENDING_SELLER_ACK',
+  // Common
   AUTHENTICATING: 'ui.conversation.status.AUTHENTICATING',
   AUTH_PASSED: 'ui.conversation.status.AUTH_PASSED',
   AUTH_FAILED: 'ui.conversation.status.AUTH_FAILED',
+  AWAITING_BUYER_PICKUP: 'ui.conversation.status.AWAITING_BUYER_PICKUP',
   SHIPPED_TO_BUYER: 'ui.conversation.status.SHIPPED_TO_BUYER',
+  DELIVERED_PENDING_AUTH_ACK: 'ui.conversation.status.DELIVERED_PENDING_AUTH_ACK',
   DELIVERED: 'ui.conversation.status.DELIVERED',
   COMPLETED: 'ui.conversation.status.COMPLETED',
   DISPUTED: 'ui.conversation.status.DISPUTED',
   REFUNDED: 'ui.conversation.status.REFUNDED',
-  AWAITING_MEETUP: 'ui.conversation.status.AWAITING_MEETUP',
-  MEETUP_AUTHENTICATING: 'ui.conversation.status.MEETUP_AUTHENTICATING',
+  PAYMENT_EXPIRED: 'ui.conversation.status.PAYMENT_EXPIRED',
 };
 
 const OFFER_STATUS_KEY: Record<string, string> = {
@@ -249,14 +266,21 @@ const OFFER_STATUS_KEY: Record<string, string> = {
   WITHDRAWN: 'ui.conversation.offer.status.WITHDRAWN',
 };
 
+/** Same 18 keys as STATUS_KEY. Amber = waiting on a person, blue = in transit
+ *  or in custody, emerald = passed, red = failed, grey = terminal. */
 const STATUS_COLOR: Record<string, string> = {
-  PENDING_PAYMENT: 'bg-amber-100 text-amber-700', PAID: 'bg-blue-100 text-blue-700',
-  SHIPPED_TO_AUTHENTICATOR: 'bg-blue-100 text-blue-700', RECEIVED_BY_AUTHENTICATOR: 'bg-blue-100 text-blue-700',
+  AWAITING_PAYMENT: 'bg-amber-100 text-amber-700', PAID: 'bg-blue-100 text-blue-700',
+  HANDOVER_TO_AUTH: 'bg-amber-100 text-amber-700', SELLER_ACK_PENDING: 'bg-amber-100 text-amber-700',
+  CUSTODY: 'bg-blue-100 text-blue-700',
+  SHIPPED_TO_AUTHENTICATOR: 'bg-blue-100 text-blue-700',
+  AUTH_RECEIVED_PENDING_SELLER_ACK: 'bg-amber-100 text-amber-700',
   AUTHENTICATING: 'bg-amber-100 text-amber-700', AUTH_PASSED: 'bg-emerald-100 text-emerald-700',
-  AUTH_FAILED: 'bg-red-100 text-red-700', SHIPPED_TO_BUYER: 'bg-blue-100 text-blue-700',
+  AUTH_FAILED: 'bg-red-100 text-red-700',
+  AWAITING_BUYER_PICKUP: 'bg-amber-100 text-amber-700', SHIPPED_TO_BUYER: 'bg-blue-100 text-blue-700',
+  DELIVERED_PENDING_AUTH_ACK: 'bg-amber-100 text-amber-700',
   DELIVERED: 'bg-blue-100 text-blue-700', COMPLETED: 'bg-surface-2 text-neutral-text-muted',
   DISPUTED: 'bg-red-100 text-red-700', REFUNDED: 'bg-surface-2 text-neutral-text-muted',
-  AWAITING_MEETUP: 'bg-amber-100 text-amber-700', MEETUP_AUTHENTICATING: 'bg-amber-100 text-amber-700',
+  PAYMENT_EXPIRED: 'bg-surface-2 text-neutral-text-muted',
 };
 
 export interface ConversationPaneProps {

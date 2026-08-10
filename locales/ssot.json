@@ -11544,33 +11544,41 @@
     }
   },
   "ui.conversation": {
-    "presence.online": {
-      "zh": "在線",
-      "en": "Online"
+    "composer.placeholder": {
+      "zh": "輸入訊息…",
+      "en": "Type a message…"
     },
-    "presence.lastSeen": {
-      "zh": "最後上線：{time}",
-      "en": "Last seen {time}"
+    "composer.retry": {
+      "zh": "重試",
+      "en": "Retry"
     },
-    "time.todayAt": {
-      "zh": "今日 {time}",
-      "en": "Today {time}"
+    "crossSell.close": {
+      "zh": "關閉",
+      "en": "Close"
     },
-    "time.yesterdayAt": {
-      "zh": "昨日 {time}",
-      "en": "Yesterday {time}"
+    "crossSell.empty": {
+      "zh": "你冇其他在售 listing",
+      "en": "You have no other active listings"
     },
-    "time.dateAt": {
-      "zh": "{date} {time}",
-      "en": "{date} {time}"
+    "crossSell.loading": {
+      "zh": "載入中…",
+      "en": "Loading…"
+    },
+    "crossSell.note": {
+      "zh": "揀完會放入訊息框，你確認後先 send。平台唔代發。",
+      "en": "Your selection is placed in the message box; nothing is sent until you confirm. The platform does not send on your behalf."
+    },
+    "crossSell.shareText": {
+      "zh": "👉 我仲有呢件貨：{title}（HK${price}）",
+      "en": "👉 I also have this item: {title} (HK${price})"
+    },
+    "crossSell.title": {
+      "zh": "分享我嘅其他 listing",
+      "en": "Share my other listings"
     },
     "divider.today": {
       "zh": "今日",
       "en": "Today"
-    },
-    "divider.yesterday": {
-      "zh": "昨日",
-      "en": "Yesterday"
     },
     "divider.weekday.0": {
       "zh": "星期日",
@@ -11600,105 +11608,21 @@
       "zh": "星期六",
       "en": "Saturday"
     },
-    "tick.sending": {
-      "zh": "傳送中",
-      "en": "Sending"
+    "divider.yesterday": {
+      "zh": "昨日",
+      "en": "Yesterday"
     },
-    "tick.failed": {
-      "zh": "傳送失敗",
-      "en": "Failed to send"
+    "error.offerFailed": {
+      "zh": "提出議價失敗",
+      "en": "Unable to submit the offer"
     },
-    "tick.read": {
-      "zh": "已讀",
-      "en": "Read"
+    "error.sendFailed": {
+      "zh": "訊息未能發出，請重試",
+      "en": "The message could not be sent. Please try again."
     },
-    "tick.delivered": {
-      "zh": "已送達",
-      "en": "Delivered"
-    },
-    "role.BUYER": {
-      "zh": "買家",
-      "en": "Buyer"
-    },
-    "role.SELLER": {
-      "zh": "賣家",
-      "en": "Seller"
-    },
-    "role.AUTHENTICATOR": {
-      "zh": "鑑定師",
-      "en": "Authenticator"
-    },
-    "role.SYSTEM": {
-      "zh": "系統",
-      "en": "System"
-    },
-    "role.unknown": {
-      "zh": "對方",
-      "en": "The other party"
-    },
-    "status.PENDING_PAYMENT": {
-      "zh": "待付款",
-      "en": "Pending payment"
-    },
-    "status.PAID": {
-      "zh": "已付款",
-      "en": "Paid"
-    },
-    "status.SHIPPED_TO_AUTHENTICATOR": {
-      "zh": "已寄鑑定師",
-      "en": "Shipped to authenticator"
-    },
-    "status.RECEIVED_BY_AUTHENTICATOR": {
-      "zh": "鑑定師簽收",
-      "en": "Received by authenticator"
-    },
-    "status.AUTHENTICATING": {
-      "zh": "鑑定中",
-      "en": "Authenticating"
-    },
-    "status.AUTH_PASSED": {
-      "zh": "鑑定通過",
-      "en": "Authentication passed"
-    },
-    "status.AUTH_FAILED": {
-      "zh": "鑑定不通過",
-      "en": "Authentication failed"
-    },
-    "status.SHIPPED_TO_BUYER": {
-      "zh": "已寄買家",
-      "en": "Shipped to buyer"
-    },
-    "status.DELIVERED": {
-      "zh": "已送達",
-      "en": "Delivered"
-    },
-    "status.COMPLETED": {
-      "zh": "已完成",
-      "en": "Completed"
-    },
-    "status.DISPUTED": {
-      "zh": "爭議處理中",
-      "en": "Dispute in progress"
-    },
-    "status.REFUNDED": {
-      "zh": "已退款",
-      "en": "Refunded"
-    },
-    "status.AWAITING_MEETUP": {
-      "zh": "等待面交",
-      "en": "Awaiting meetup"
-    },
-    "status.MEETUP_AUTHENTICATING": {
-      "zh": "面交鑑定中",
-      "en": "Authenticating at meetup"
-    },
-    "status.listingInquiry": {
-      "zh": "商品查詢（未落單）",
-      "en": "Item enquiry (no order yet)"
-    },
-    "typing.label": {
-      "zh": "{role}正在輸入…",
-      "en": "{role} is typing…"
+    "error.switchTab": {
+      "zh": "無法切換對話",
+      "en": "Unable to switch conversation"
     },
     "header.back": {
       "zh": "返回對話列表",
@@ -11716,101 +11640,57 @@
       "zh": "查看{role}：{name}",
       "en": "View {role}: {name}"
     },
-    "tabs.threeWay": {
-      "zh": "三方對話",
-      "en": "3-way chat"
-    },
-    "tabs.with": {
-      "zh": "同{role} {name}",
-      "en": "With {role} {name}"
-    },
-    "tabs.threeWayTitle": {
-      "zh": "所有 3 方都可以見到，包括 SYSTEM 通知",
-      "en": "Visible to all three parties, including system notices"
-    },
-    "tabs.pairTitle": {
-      "zh": "私密對話，只有呢兩方睇得到；平台會保留 log 供爭議仲裁",
-      "en": "Private thread visible only to these two parties. The platform retains a log for dispute arbitration."
-    },
     "listingCard.view": {
       "zh": "睇商品詳情 →",
       "en": "View item details →"
-    },
-    "sellerCard.stats": {
-      "zh": "已售 {sold} 件 · 上架中 {active} 件",
-      "en": "{sold} sold · {active} listed"
     },
     "offer.accepted": {
       "zh": "✓ 議價成功",
       "en": "✓ Offer accepted"
     },
-    "offer.inProgress": {
-      "zh": "議價進行中",
-      "en": "Offer in progress"
+    "offer.byRole": {
+      "zh": "由 {role}",
+      "en": "By {role}"
     },
-    "offer.timeLeft": {
-      "zh": "剩 {hours}h {minutes}m",
-      "en": "{hours}h {minutes}m left"
+    "offer.form.amountPlaceholder": {
+      "zh": "輸入金額",
+      "en": "Enter an amount"
     },
-    "offer.orderNow": {
-      "zh": "立即落單 →",
-      "en": "Order now →"
+    "offer.form.close": {
+      "zh": "取消",
+      "en": "Cancel"
+    },
+    "offer.form.currentPlaceholder": {
+      "zh": "當前 HK${price}",
+      "en": "Current HK${price}"
+    },
+    "offer.form.label": {
+      "zh": "議價 HK$",
+      "en": "Offer HK$"
+    },
+    "offer.form.note": {
+      "zh": "出價有效期 24 小時。對方接受後商品會預留，買家須喺 12 小時內完成落單。",
+      "en": "Offers are valid for 24 hours. Once accepted, the item is reserved and the buyer must complete the order within 12 hours."
+    },
+    "offer.form.submit": {
+      "zh": "提出",
+      "en": "Submit"
+    },
+    "offer.form.update": {
+      "zh": "更新出價",
+      "en": "Update offer"
     },
     "offer.historyToggle": {
       "zh": "議價過往（{rounds} 輪）",
       "en": "Offer history ({rounds} rounds)"
     },
-    "offer.round": {
-      "zh": "第 {n} 輪",
-      "en": "Round {n}"
+    "offer.inProgress": {
+      "zh": "議價進行中",
+      "en": "Offer in progress"
     },
-    "offer.byRole": {
-      "zh": "由 {role}",
-      "en": "By {role}"
-    },
-    "offer.status.PENDING": {
-      "zh": "待回覆",
-      "en": "Awaiting reply"
-    },
-    "offer.status.ACCEPTED": {
-      "zh": "✓ 已接受",
-      "en": "✓ Accepted"
-    },
-    "offer.status.REJECTED": {
-      "zh": "✗ 已拒絕",
-      "en": "✗ Rejected"
-    },
-    "offer.status.COUNTERED": {
-      "zh": "已還價",
-      "en": "Countered"
-    },
-    "offer.status.EXPIRED": {
-      "zh": "已過期",
-      "en": "Expired"
-    },
-    "offer.status.WITHDRAWN": {
-      "zh": "已撤回",
-      "en": "Withdrawn"
-    },
-    "offer.replace.title": {
-      "zh": "取代而家嘅議價？",
-      "en": "Replace the current offer?"
-    },
-    "offer.replace.current": {
-      "zh": "當前議價：",
-      "en": "Current offer:"
-    },
-    "offer.replace.proposedBy": {
-      "zh": "（由 {role} 提出）",
-      "en": "(proposed by {role})"
-    },
-    "offer.replace.newPrice": {
-      "zh": "新出價：",
-      "en": "New offer:"
-    },
-    "offer.replace.note": {
-      "zh": "確認後，舊嘅議價會被撤回，新出價會通知對方。",
-      "en": "Once confirmed, the previous offer is withdrawn and the other party is notified of the new one."
+    "offer.orderNow": {
+      "zh": "立即落單 →",
+      "en": "Order now →"
     },
     "offer.replace.cancel": {
       "zh": "取消",
@@ -11820,33 +11700,57 @@
       "zh": "確認取代",
       "en": "Confirm replacement"
     },
-    "offer.form.label": {
-      "zh": "議價 HK$",
-      "en": "Offer HK$"
+    "offer.replace.current": {
+      "zh": "當前議價：",
+      "en": "Current offer:"
     },
-    "offer.form.currentPlaceholder": {
-      "zh": "當前 HK${price}",
-      "en": "Current HK${price}"
+    "offer.replace.newPrice": {
+      "zh": "新出價：",
+      "en": "New offer:"
     },
-    "offer.form.amountPlaceholder": {
-      "zh": "輸入金額",
-      "en": "Enter an amount"
+    "offer.replace.note": {
+      "zh": "確認後，舊嘅議價會被撤回，新出價會通知對方。",
+      "en": "Once confirmed, the previous offer is withdrawn and the other party is notified of the new one."
     },
-    "offer.form.update": {
-      "zh": "更新出價",
-      "en": "Update offer"
+    "offer.replace.proposedBy": {
+      "zh": "（由 {role} 提出）",
+      "en": "(proposed by {role})"
     },
-    "offer.form.submit": {
-      "zh": "提出",
-      "en": "Submit"
+    "offer.replace.title": {
+      "zh": "取代而家嘅議價？",
+      "en": "Replace the current offer?"
     },
-    "offer.form.close": {
-      "zh": "取消",
-      "en": "Cancel"
+    "offer.round": {
+      "zh": "第 {n} 輪",
+      "en": "Round {n}"
     },
-    "offer.form.note": {
-      "zh": "出價有效期 24 小時。對方接受後商品會預留，買家須喺 12 小時內完成落單。",
-      "en": "Offers are valid for 24 hours. Once accepted, the item is reserved and the buyer must complete the order within 12 hours."
+    "offer.status.ACCEPTED": {
+      "zh": "✓ 已接受",
+      "en": "✓ Accepted"
+    },
+    "offer.status.COUNTERED": {
+      "zh": "已還價",
+      "en": "Countered"
+    },
+    "offer.status.EXPIRED": {
+      "zh": "已過期",
+      "en": "Expired"
+    },
+    "offer.status.PENDING": {
+      "zh": "待回覆",
+      "en": "Awaiting reply"
+    },
+    "offer.status.REJECTED": {
+      "zh": "✗ 已拒絕",
+      "en": "✗ Rejected"
+    },
+    "offer.status.WITHDRAWN": {
+      "zh": "已撤回",
+      "en": "Withdrawn"
+    },
+    "offer.timeLeft": {
+      "zh": "剩 {hours}h {minutes}m",
+      "en": "{hours}h {minutes}m left"
     },
     "offer.trigger": {
       "zh": "提出議價",
@@ -11856,53 +11760,165 @@
       "zh": "而家議價 HK${price}（撳開更新）",
       "en": "Current offer HK${price} (tap to update)"
     },
-    "crossSell.title": {
-      "zh": "分享我嘅其他 listing",
-      "en": "Share my other listings"
+    "presence.lastSeen": {
+      "zh": "最後上線：{time}",
+      "en": "Last seen {time}"
     },
-    "crossSell.close": {
-      "zh": "關閉",
-      "en": "Close"
-    },
-    "crossSell.loading": {
-      "zh": "載入中…",
-      "en": "Loading…"
-    },
-    "crossSell.empty": {
-      "zh": "你冇其他在售 listing",
-      "en": "You have no other active listings"
-    },
-    "crossSell.shareText": {
-      "zh": "👉 我仲有呢件貨：{title}（HK${price}）",
-      "en": "👉 I also have this item: {title} (HK${price})"
-    },
-    "crossSell.note": {
-      "zh": "揀完會放入訊息框，你確認後先 send。平台唔代發。",
-      "en": "Your selection is placed in the message box; nothing is sent until you confirm. The platform does not send on your behalf."
-    },
-    "composer.placeholder": {
-      "zh": "輸入訊息…",
-      "en": "Type a message…"
-    },
-    "composer.retry": {
-      "zh": "重試",
-      "en": "Retry"
+    "presence.online": {
+      "zh": "在線",
+      "en": "Online"
     },
     "readOnly.default": {
       "zh": "此對話已存檔，僅供查閱，無法發送新訊息。",
       "en": "This conversation has been archived. It is available for reference only and new messages cannot be sent."
     },
-    "error.switchTab": {
-      "zh": "無法切換對話",
-      "en": "Unable to switch conversation"
+    "role.AUTHENTICATOR": {
+      "zh": "鑑定師",
+      "en": "Authenticator"
     },
-    "error.offerFailed": {
-      "zh": "提出議價失敗",
-      "en": "Unable to submit the offer"
+    "role.BUYER": {
+      "zh": "買家",
+      "en": "Buyer"
     },
-    "error.sendFailed": {
-      "zh": "訊息未能發出，請重試",
-      "en": "The message could not be sent. Please try again."
+    "role.SELLER": {
+      "zh": "賣家",
+      "en": "Seller"
+    },
+    "role.SYSTEM": {
+      "zh": "系統",
+      "en": "System"
+    },
+    "role.unknown": {
+      "zh": "對方",
+      "en": "The other party"
+    },
+    "sellerCard.stats": {
+      "zh": "已售 {sold} 件 · 上架中 {active} 件",
+      "en": "{sold} sold · {active} listed"
+    },
+    "status.AUTHENTICATING": {
+      "zh": "鑑定中",
+      "en": "Authenticating"
+    },
+    "status.AUTH_FAILED": {
+      "zh": "鑑定不通過",
+      "en": "Authentication failed"
+    },
+    "status.AUTH_PASSED": {
+      "zh": "鑑定通過",
+      "en": "Authentication passed"
+    },
+    "status.AUTH_RECEIVED_PENDING_SELLER_ACK": {
+      "zh": "鑑定師簽收",
+      "en": "Received by authenticator"
+    },
+    "status.AWAITING_BUYER_PICKUP": {
+      "zh": "等買家取貨",
+      "en": "Awaiting buyer pickup"
+    },
+    "status.AWAITING_PAYMENT": {
+      "zh": "待付款",
+      "en": "Pending payment"
+    },
+    "status.COMPLETED": {
+      "zh": "已完成",
+      "en": "Completed"
+    },
+    "status.CUSTODY": {
+      "zh": "鑑定師持貨",
+      "en": "In authenticator custody"
+    },
+    "status.DELIVERED": {
+      "zh": "已送達",
+      "en": "Delivered"
+    },
+    "status.DELIVERED_PENDING_AUTH_ACK": {
+      "zh": "等鑑定師確認",
+      "en": "Awaiting authenticator confirmation"
+    },
+    "status.DISPUTED": {
+      "zh": "爭議處理中",
+      "en": "Dispute in progress"
+    },
+    "status.HANDOVER_TO_AUTH": {
+      "zh": "等賣家到店",
+      "en": "Awaiting seller drop-off"
+    },
+    "status.PAID": {
+      "zh": "已付款",
+      "en": "Paid"
+    },
+    "status.PAYMENT_EXPIRED": {
+      "zh": "付款逾時",
+      "en": "Payment expired"
+    },
+    "status.REFUNDED": {
+      "zh": "已退款",
+      "en": "Refunded"
+    },
+    "status.SELLER_ACK_PENDING": {
+      "zh": "等賣家確認",
+      "en": "Awaiting seller confirmation"
+    },
+    "status.SHIPPED_TO_AUTHENTICATOR": {
+      "zh": "已寄鑑定師",
+      "en": "Shipped to authenticator"
+    },
+    "status.SHIPPED_TO_BUYER": {
+      "zh": "已寄買家",
+      "en": "Shipped to buyer"
+    },
+    "status.listingInquiry": {
+      "zh": "商品查詢（未落單）",
+      "en": "Item enquiry (no order yet)"
+    },
+    "tabs.pairTitle": {
+      "zh": "私密對話，只有呢兩方睇得到；平台會保留 log 供爭議仲裁",
+      "en": "Private thread visible only to these two parties. The platform retains a log for dispute arbitration."
+    },
+    "tabs.threeWay": {
+      "zh": "三方對話",
+      "en": "3-way chat"
+    },
+    "tabs.threeWayTitle": {
+      "zh": "所有 3 方都可以見到，包括 SYSTEM 通知",
+      "en": "Visible to all three parties, including system notices"
+    },
+    "tabs.with": {
+      "zh": "同{role} {name}",
+      "en": "With {role} {name}"
+    },
+    "tick.delivered": {
+      "zh": "已送達",
+      "en": "Delivered"
+    },
+    "tick.failed": {
+      "zh": "傳送失敗",
+      "en": "Failed to send"
+    },
+    "tick.read": {
+      "zh": "已讀",
+      "en": "Read"
+    },
+    "tick.sending": {
+      "zh": "傳送中",
+      "en": "Sending"
+    },
+    "time.dateAt": {
+      "zh": "{date} {time}",
+      "en": "{date} {time}"
+    },
+    "time.todayAt": {
+      "zh": "今日 {time}",
+      "en": "Today {time}"
+    },
+    "time.yesterdayAt": {
+      "zh": "昨日 {time}",
+      "en": "Yesterday {time}"
+    },
+    "typing.label": {
+      "zh": "{role}正在輸入…",
+      "en": "{role} is typing…"
     }
   }
 }

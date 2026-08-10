@@ -53,18 +53,28 @@ const ROLE_LABEL: Record<string, string> = {
   BUYER: '你', SELLER: '賣家', AUTHENTICATOR: '鑑定師', SYSTEM: '系統',
 };
 
+/** Keyed by `OrderStatus` — all 18, or the chip prints the raw enum name.
+ *  `PENDING_PAYMENT` and `AUTH_IN_PROGRESS` sat here until 2026-08-10 and
+ *  matched nothing; the schema calls them AWAITING_PAYMENT / AUTHENTICATING. */
 const STATUS_LABEL: Record<string, string> = {
-  PENDING_PAYMENT: '待付款',
+  AWAITING_PAYMENT: '待付款',
   PAID: '款項託管中',
+  HANDOVER_TO_AUTH: '等賣家到店',
+  SELLER_ACK_PENDING: '等賣家確認',
+  CUSTODY: '鑑定師持貨',
   SHIPPED_TO_AUTHENTICATOR: '寄往鑑定',
-  AUTH_IN_PROGRESS: '鑑定中',
+  AUTH_RECEIVED_PENDING_SELLER_ACK: '鑑定師簽收',
+  AUTHENTICATING: '鑑定中',
   AUTH_PASSED: '鑑定通過',
   AUTH_FAILED: '鑑定不通過',
+  AWAITING_BUYER_PICKUP: '等買家取貨',
   SHIPPED_TO_BUYER: '寄往買家',
+  DELIVERED_PENDING_AUTH_ACK: '等鑑定師確認',
   DELIVERED: '已送達',
   COMPLETED: '已完成',
   REFUNDED: '已退款',
   DISPUTED: '爭議處理中',
+  PAYMENT_EXPIRED: '付款逾時',
 };
 
 /** Thread pane loading skeleton（founder 2026-07-21）：頂 bar + 交錯左右氣泡，
