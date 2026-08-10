@@ -217,11 +217,12 @@ function run(file: string, write: boolean) {
   console.log(`可自動替換: ${edits.length}   要人手: ${skips.length}`);
   if (skips.length) {
     console.log('\n-- 冇郁，要你決定 --');
-    for (const s of skips.slice(0, 40)) {
-      console.log(`  L${s.line}  ${s.why}  「${s.zh.slice(0, 40)}」`);
+    const cap = process.env.I18N_LIST_ALL ? skips.length : 40;
+    for (const s of skips.slice(0, cap)) {
+      console.log(`  L${s.line}  ${s.why}  「${s.zh.slice(0, 60)}」`);
       if (s.candidates) console.log(`        候選: ${s.candidates.join(' , ')}`);
     }
-    if (skips.length > 40) console.log(`  … 仲有 ${skips.length - 40} 條`);
+    if (skips.length > cap) console.log(`  … 仲有 ${skips.length - cap} 條（I18N_LIST_ALL=1 睇晒）`);
   }
 
   if (!write) {
