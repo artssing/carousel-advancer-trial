@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { Search } from 'lucide-react';
 import {
   browseCategories, type CategoryConfig,
+  getClientLocale, createT,
 } from '@authentik/utils';
 import { api } from '@/lib/api';
 import { AuthTicker } from '@/components/auth-ticker';
@@ -14,9 +15,10 @@ import { ProductCard, ProductCardSkeleton } from '@/components/product-card';
 // ─── Category meta ────────────────────────────────────────────────────────────
 const CATEGORY_SECTIONS = browseCategories();
 
-const HOT_SEARCHES = [
+// Brand names stay literal; anything translatable carries a key instead.
+const HOT_SEARCHES: { label?: string; labelKey?: string; cat: string }[] = [
   { label: 'Chanel Classic Flap', cat: 'handbag' },
-  { label: 'Rolex 黑水鬼',         cat: 'watch'   },
+  { labelKey: 'homepage.chip.rolex',  cat: 'watch'   },
   { label: 'Air Jordan 1',          cat: 'sneaker' },
   { label: 'Hermès Birkin',         cat: 'handbag' },
   { label: 'Pokémon PSA',           cat: 'pokemon_card' },
@@ -29,6 +31,10 @@ const HOT_SEARCHES = [
 // ─── L3 Section header ─────────────────────────────────────────────────────
 
 function SectionHead({ title, href, linkLabel }: { title: string; href?: string; linkLabel?: string }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   return (
     <div className="mt-14 mb-5 flex items-baseline justify-between">
       <h2 className="font-display-serif text-[27px] font-bold leading-tight tracking-[-0.01em] text-ink">
@@ -36,7 +42,7 @@ function SectionHead({ title, href, linkLabel }: { title: string; href?: string;
       </h2>
       {href && (
         <Link href={href as any} className="text-sm font-semibold text-brand-600 hover:text-brand-700">
-          {linkLabel ?? '查看全部'} →
+          {linkLabel ?? _t('homepage.section.viewAll')} →
         </Link>
       )}
     </div>
@@ -46,6 +52,10 @@ function SectionHead({ title, href, linkLabel }: { title: string; href?: string;
 // ─── L3 Category tile ─────────────────────────────────────────────────────
 
 function CategoryTile({ cat, count }: { cat: CategoryConfig; count: number | null }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const disabled = !cat.enabledInSell;
   const hasImg = !!cat.bgImage;
   return (
@@ -77,7 +87,7 @@ function CategoryTile({ cat, count }: { cat: CategoryConfig; count: number | nul
           hasImg ? 'rounded-full bg-black/35 px-2 py-0.5 text-white backdrop-blur-sm' : 'text-neutral-text-hint'
         }`}
       >
-        {count === null ? '' : `${count} 件`}
+        {count === null ? '' : _t('homepage.section.count', { n: count })}
       </span>
       {/* Category name bottom-left */}
       <div className="relative">
@@ -86,7 +96,7 @@ function CategoryTile({ cat, count }: { cat: CategoryConfig; count: number | nul
         </div>
         {disabled && (
           <div className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
-            即將推出
+            {_t('homepage.section.comingSoon')}
           </div>
         )}
       </div>
@@ -97,6 +107,10 @@ function CategoryTile({ cat, count }: { cat: CategoryConfig; count: number | nul
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
 export default function HomePage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [categoryListings, setCategoryListings] = useState<Record<string, any[]>>({});
@@ -142,10 +156,10 @@ export default function HomePage() {
           Search · Verify · Buy
         </p>
         <h1 className="mx-auto mt-4 max-w-[760px] font-display-serif text-[36px] font-bold leading-[1.15] tracking-[-0.01em] text-ink sm:text-[46px]">
-          搵真貨，<span className="text-brand-600">鑑定通過</span>才成交
+          {_t('homepage.hero.headline.prefix')}<span className="text-brand-600">{_t('homepage.hero.headline.highlight')}</span>{_t('homepage.hero.headline.suffix')}
         </h1>
         <p className="mx-auto mt-4 max-w-[520px] text-[15px] leading-relaxed text-neutral-text-muted">
-          逾一萬件正品貨源，每宗高價交易經具名鑑定師把關、款項託管。
+          {_t('homepage.hero.sub')}
         </p>
 
         {/* Search bar — L3 sh-3 heavy floating */}
@@ -160,7 +174,7 @@ export default function HomePage() {
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="搜尋品牌、型號…"
+              placeholder={_t('homepage.search.placeholder')}
               className="w-full min-w-0 border-0 py-[15px] text-[15px] text-neutral-text outline-none placeholder:text-neutral-text-hint sm:py-[17px]"
             />
           </div>
@@ -168,7 +182,7 @@ export default function HomePage() {
             type="submit"
             className="shrink-0 bg-brand-600 px-5 text-[15px] font-bold text-white transition hover:bg-brand-400 sm:px-8"
           >
-            搜尋
+            {_t('homepage.search.button')}
           </button>
         </form>
 
@@ -176,11 +190,11 @@ export default function HomePage() {
         <div className="mx-auto mt-4 flex flex-wrap justify-center gap-2">
           {HOT_SEARCHES.map((h) => (
             <Link
-              key={h.label}
+              key={h.cat + (h.labelKey ?? h.label)}
               href={`/browse?cat=${h.cat}` as any}
               className="rounded-full border border-line bg-white px-3.5 py-1.5 text-[13px] text-neutral-text-muted shadow-sh1 transition hover:border-brand-600 hover:text-brand-600"
             >
-              {h.label}
+              {h.labelKey ? _t(h.labelKey) : h.label}
             </Link>
           ))}
         </div>
@@ -190,7 +204,7 @@ export default function HomePage() {
       <AuthTicker />
 
       {/* ═══ 熱門品類 ═══════════════════════════════════════════════════════ */}
-      <SectionHead title="熱門品類" href="/browse" linkLabel="全部品類" />
+      <SectionHead title={_t('homepage.section.categories')} href="/browse" linkLabel={_t('homepage.section.allCategories')} />
       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
         {CATEGORY_SECTIONS.map((cat) => (
           <CategoryTile
@@ -204,7 +218,7 @@ export default function HomePage() {
       {/* ═══ 最新上架 4-col grid ═══════════════════════════════════════════ */}
       {(loading || recent.length > 0) && (
         <>
-          <SectionHead title="最新上架" href="/browse?sort=newest" />
+          <SectionHead title={_t('homepage.section.newest')} href="/browse?sort=newest" />
           <div className="grid grid-cols-2 gap-[18px] md:grid-cols-3 lg:grid-cols-4">
             {loading
               ? Array.from({ length: 8 }).map((_, i) => <ProductCardSkeleton key={i} />)
