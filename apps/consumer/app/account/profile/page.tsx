@@ -9,7 +9,9 @@ import {
   User as UserIcon, Lock, Store, ShieldCheck, ExternalLink, Camera,
   Check, AlertTriangle, Loader2, Mail, Eye, EyeOff, Phone,
 } from 'lucide-react';
-import { formatHKPhoneDisplay } from '@authentik/utils';
+import { formatHKPhoneDisplay,
+  getClientLocale, createT,
+} from '@authentik/utils';
 import { AccountSidebar } from '@/components/account/account-sidebar';
 
 const AUTHENTICATOR_URL = process.env.NEXT_PUBLIC_AUTHENTICATOR_URL ?? 'http://localhost:3001';
@@ -19,6 +21,10 @@ type Section = 'personal' | 'security' | 'shop' | 'authenticator';
 type Me = Awaited<ReturnType<typeof api.me>>;
 
 export default function ProfilePage() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const router = useRouter();
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(true);
@@ -29,11 +35,11 @@ export default function ProfilePage() {
     if (!hasToken()) { router.replace('/login?next=/account/profile'); return; }
     api.me().then(setMe).catch((e: any) => {
       if (e?.status === 401) { clearToken(); router.replace('/login'); }
-      else setError(e?.message ?? '載入失敗');
+      else setError(e?.message ?? _t('account.profile.error.load'));
     }).finally(() => setLoading(false));
   }, [router]);
 
-  if (loading) return <div className="mx-auto max-w-5xl p-6 text-sm text-slate-500">載入中…</div>;
+  if (loading) return <div className="mx-auto max-w-5xl p-6 text-sm text-slate-500">{_t('account.profile.loading')}</div>;
   if (error) return <div className="mx-auto max-w-5xl p-6 text-sm text-red-600">{error}</div>;
   if (!me) return null;
 
@@ -41,10 +47,10 @@ export default function ProfilePage() {
   const isAuth = !!me.authenticator;
 
   const sections: Array<{ key: Section; label: string; icon: React.ReactNode; show: boolean }> = [
-    { key: 'personal', label: '個人資料', icon: <UserIcon className="h-4 w-4" />, show: true },
-    { key: 'security', label: '帳號與安全', icon: <Lock className="h-4 w-4" />, show: true },
-    { key: 'shop', label: '我的商店', icon: <Store className="h-4 w-4" />, show: isSeller },
-    { key: 'authenticator', label: '鑑定師 Portal', icon: <ShieldCheck className="h-4 w-4" />, show: isAuth },
+    { key: 'personal', label: _t('account.profile.tab.personal'), icon: <UserIcon className="h-4 w-4" />, show: true },
+    { key: 'security', label: _t('account.profile.tab.security'), icon: <Lock className="h-4 w-4" />, show: true },
+    { key: 'shop', label: _t('account.profile.tab.shop'), icon: <Store className="h-4 w-4" />, show: isSeller },
+    { key: 'authenticator', label: _t('account.profile.tab.authenticator'), icon: <ShieldCheck className="h-4 w-4" />, show: isAuth },
   ];
 
   return (
@@ -55,14 +61,14 @@ export default function ProfilePage() {
         <section>
           <header className="mb-5">
             <h1 className="font-display-serif text-[26px] font-bold leading-tight tracking-[-0.01em] text-ink">
-              個人檔案
+              {_t('account.profile.heading')}
             </h1>
             <p className="mt-1.5 text-[13px] text-neutral-text-hint">
-              管理你嘅個人資料、密碼同帳號設定。
+              {_t('account.profile.page.subtitle')}
               {isSeller && (
                 <>
-                  {' '}其他人喺賣家頁見到嘅資料：
-                  <Link href={`/seller/${me.id}`} className="ml-1 font-semibold text-brand-600 hover:underline">查看公開頁面 →</Link>
+                  {' '}{_t('account.profile.publicIntro')}
+                  <Link href={`/seller/${me.id}`} className="ml-1 font-semibold text-brand-600 hover:underline">{_t('account.profile.page.sellerProfileLinkLabel')}</Link>
                 </>
               )}
             </p>
@@ -101,6 +107,10 @@ export default function ProfilePage() {
 // ─── Personal ───────────────────────────────────────────────────────────────
 
 function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const [displayName, setDisplayName] = useState(me.displayName);
   const [avatarUrl, setAvatarUrl] = useState<string | null>(me.avatarUrl);
   // Persisted uncompressed source — kept so the customer can re-crop without re-uploading.
@@ -134,7 +144,7 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
     const f = e.target.files?.[0];
     if (!f) return;
     if (!f.type.startsWith('image/')) {
-      setErr('只接受圖片檔案'); return;
+      setErr(_t('account.profile.avatar.onlyImages')); return;
     }
     const reader = new FileReader();
     reader.onload = () => {
@@ -221,7 +231,7 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
     ctx.drawImage(cropImg, (size - w) / 2 + ctx2, (size - h) / 2 + cty, w, h);
     const data = c.toDataURL('image/jpeg', 0.85);
     if (data.length > 256 * 1024) {
-      setErr('Avatar 仍然太大，請揀細啲嘅圖');
+      setErr(_t('account.profile.avatar.stillTooLarge'));
       return;
     }
     setAvatarUrl(data);
@@ -294,7 +304,7 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {
-      setErr(e instanceof ApiError ? e.message : '儲存失敗');
+      setErr(e instanceof ApiError ? e.message : _t('account.profile.save.failed'));
     } finally {
       setSaving(false);
     }
@@ -305,7 +315,7 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
   return (
     <Card>
       <CardContent className="space-y-5 p-5">
-        <h2 className="text-base font-semibold">個人資料</h2>
+        <h2 className="text-base font-semibold">{_t('account.profile.personal.heading')}</h2>
 
         {/* Avatar */}
         <div className="flex items-center gap-4">
@@ -320,18 +330,18 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
               type="button"
               onClick={() => fileRef.current?.click()}
               className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-brand-600 text-white shadow hover:bg-brand-700"
-              aria-label="更換頭像"
+              aria-label={_t('account.profile.avatar.changeAria')}
             >
               <Camera className="h-3.5 w-3.5" />
             </button>
             <input ref={fileRef} type="file" accept="image/*" onChange={onFile} className="hidden" />
           </div>
           <div className="text-xs text-slate-500">
-            <p>JPG / PNG · 自動壓縮成 200×200</p>
+            <p>{_t('account.profile.avatar.note')}</p>
             <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
               {avatarOriginalUrl && !cropSrc && (
                 <button onClick={recropExisting} className="text-brand-600 hover:underline">
-                  再次調整位置
+                  {_t('account.profile.avatar.adjustAgain')}
                 </button>
               )}
               {avatarUrl && (
@@ -345,7 +355,7 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
                   }}
                   className="text-red-600 hover:underline"
                 >
-                  移除頭像
+                  {_t('account.profile.avatar.remove')}
                 </button>
               )}
             </div>
@@ -355,7 +365,7 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
         {/* Crop editor — opens after picking a file. Drag to reposition + zoom slider. */}
         {cropSrc && cropImg && (
           <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-            <p className="mb-2 text-xs font-medium text-slate-700">調整頭像位置</p>
+            <p className="mb-2 text-xs font-medium text-slate-700">{_t('account.profile.crop.heading')}</p>
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:items-start">
               <div
                 className="relative h-[200px] w-[200px] shrink-0 overflow-hidden rounded-full bg-white ring-2 ring-brand-200 touch-none select-none"
@@ -387,7 +397,7 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
               </div>
               <div className="flex w-full flex-1 flex-col gap-3">
                 <label className="block text-xs text-slate-700">
-                  <span className="block">縮放</span>
+                  <span className="block">{_t('account.profile.crop.zoom')}</span>
                   <input
                     type="range"
                     min={1}
@@ -397,12 +407,12 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
                     onChange={(e) => onZoomChange(parseFloat(e.target.value))}
                     className="mt-1 w-full"
                   />
-                  <span className="mt-0.5 block text-[10px] text-slate-400">拖拉頭像可微調位置</span>
+                  <span className="mt-0.5 block text-[10px] text-slate-400">{_t('account.profile.crop.dragHint')}</span>
                 </label>
                 <div className="flex gap-2">
-                  <Button size="sm" onClick={applyCrop}>確認</Button>
-                  <Button size="sm" variant="outline" onClick={cancelCrop}>取消</Button>
-                  <Button size="sm" variant="outline" onClick={() => { setZoom(1); setTx(0); setTy(0); }}>重設</Button>
+                  <Button size="sm" onClick={applyCrop}>{_t('account.profile.crop.confirm')}</Button>
+                  <Button size="sm" variant="outline" onClick={cancelCrop}>{_t('account.profile.crop.cancel')}</Button>
+                  <Button size="sm" variant="outline" onClick={() => { setZoom(1); setTx(0); setTy(0); }}>{_t('account.profile.crop.reset')}</Button>
                 </div>
               </div>
             </div>
@@ -411,7 +421,7 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
 
         {/* DisplayName */}
         <label className="block text-sm">
-          <span className="block text-slate-700">顯示名稱</span>
+          <span className="block text-slate-700">{_t('account.profile.displayName')}</span>
           <input
             type="text"
             value={displayName}
@@ -420,13 +430,13 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
             className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-brand-500"
           />
           <span className="mt-1 block text-xs text-slate-500">
-            其他用戶喺賣家頁 / 對話 / 評價會見到呢個名字。
+            {_t('account.profile.displayNameHint')}
           </span>
         </label>
 
         {/* Other fields P1 placeholder */}
         <div className="rounded-md border border-dashed border-slate-200 bg-slate-50 p-3 text-xs text-slate-500">
-          📌 電話、地區、自我介紹、頭像庫等功能即將推出。
+          {_t('account.profile.comingSoon')}
         </div>
 
         {err && (
@@ -434,11 +444,11 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
         )}
         <div className="flex items-center gap-2">
           <Button onClick={save} disabled={!dirty || saving}>
-            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : '儲存變更'}
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : _t('account.profile.save')}
           </Button>
           {saved && (
             <span className="flex items-center gap-1 text-xs text-emerald-700">
-              <Check className="h-3 w-3" /> 已儲存
+              <Check className="h-3 w-3" /> {_t('account.profile.saved')}
             </span>
           )}
         </div>
@@ -450,18 +460,22 @@ function PersonalSection({ me, onChange }: { me: Me; onChange: (m: Me) => void }
 // ─── Security ──────────────────────────────────────────────────────────────
 
 function SecuritySection({ me }: { me: Me }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   return (
     <div className="space-y-4">
       <Card>
         <CardContent className="space-y-4 p-5">
-          <h2 className="text-base font-semibold">電郵地址</h2>
+          <h2 className="text-base font-semibold">{_t('account.profile.email.heading')}</h2>
           <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
             <Mail className="h-4 w-4 text-slate-400" />
             <span className="flex-1">{me.email}</span>
             <Lock className="h-3.5 w-3.5 text-slate-400" />
           </div>
           <p className="text-xs text-slate-500">
-            Email 唔可以更改。如需更換，請聯絡 <a className="text-brand-600 hover:underline" href="mailto:support@certifine.hk">support@certifine.hk</a>。
+            {_t('account.profile.email.note')}<a className="text-brand-600 hover:underline" href="mailto:support@certifine.hk">support@certifine.hk</a>{_t('account.profile.supportEmailSuffix')}
           </p>
         </CardContent>
       </Card>
@@ -470,27 +484,27 @@ function SecuritySection({ me }: { me: Me }) {
           顯示 phone，但唔可以喺呢度更改（管理 phone 嘅 UI 屬 backlog）。 */}
       <Card>
         <CardContent className="space-y-3 p-5">
-          <h2 className="text-base font-semibold">手機號碼</h2>
+          <h2 className="text-base font-semibold">{_t('account.profile.phone.heading')}</h2>
           {me.phone && me.phoneVerified ? (
             <>
               <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
                 <Phone className="h-4 w-4 text-slate-400" />
                 <span className="flex-1 font-mono">{formatHKPhoneDisplay(me.phone)}</span>
-                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">已驗証</span>
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-medium text-emerald-700">{_t('account.profile.phone.verifiedBadge')}</span>
                 <Lock className="h-3.5 w-3.5 text-slate-400" />
               </div>
               <p className="text-xs text-slate-500">
-                手機號碼唔可以喺呢度更改。如需更換，請聯絡 <a className="text-brand-600 hover:underline" href="mailto:support@certifine.hk">support@certifine.hk</a>。
+                {_t('account.profile.phone.note')}<a className="text-brand-600 hover:underline" href="mailto:support@certifine.hk">support@certifine.hk</a>{_t('account.profile.supportEmailSuffix')}
               </p>
             </>
           ) : (
             <>
               <div className="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
                 <Phone className="h-4 w-4 text-amber-500" />
-                <span className="flex-1">尚未綁定手機號碼</span>
+                <span className="flex-1">{_t('account.profile.phone.none')}</span>
               </div>
               <p className="text-xs text-slate-500">
-                綁定手機可以日後用作快速登入 + 接收重要交易通知。綁定功能稍後推出。
+                {_t('account.profile.phone.comingSoon')}
               </p>
             </>
           )}
@@ -501,11 +515,11 @@ function SecuritySection({ me }: { me: Me }) {
 
       <Card>
         <CardContent className="p-5">
-          <h2 className="text-base font-semibold">帳戶資訊</h2>
+          <h2 className="text-base font-semibold">{_t('account.profile.account.heading')}</h2>
           <dl className="mt-2 space-y-1 text-sm text-slate-700">
-            <div className="flex justify-between"><dt className="text-slate-500">帳戶 ID</dt><dd className="font-mono text-xs">{me.id}</dd></div>
-            <div className="flex justify-between"><dt className="text-slate-500">加入日期</dt><dd>{new Date(me.createdAt).toLocaleDateString('zh-HK')}</dd></div>
-            <div className="flex justify-between"><dt className="text-slate-500">角色</dt><dd className="text-xs">{me.roles.join(' · ')}</dd></div>
+            <div className="flex justify-between"><dt className="text-slate-500">{_t('account.profile.account.id')}</dt><dd className="font-mono text-xs">{me.id}</dd></div>
+            <div className="flex justify-between"><dt className="text-slate-500">{_t('account.profile.account.joined')}</dt><dd>{new Date(me.createdAt).toLocaleDateString(locale === 'en' ? 'en-HK' : 'zh-HK')}</dd></div>
+            <div className="flex justify-between"><dt className="text-slate-500">{_t('account.profile.account.role')}</dt><dd className="text-xs">{me.roles.join(' · ')}</dd></div>
           </dl>
         </CardContent>
       </Card>
@@ -514,6 +528,10 @@ function SecuritySection({ me }: { me: Me }) {
 }
 
 function PasswordCard() {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const router = useRouter();
   const [open, setOpen] = useState(false);
   // 2-step flow (Founder ruling 2026-06-21): 先入舊密碼 → 確認之後先見新密碼欄
@@ -531,16 +549,16 @@ function PasswordCard() {
 
   function onNextFromOld() {
     setErr(null);
-    if (!cur) { setErr('請輸入現有密碼'); return; }
+    if (!cur) { setErr(_t('account.profile.password.error.currentRequired')); return; }
     // Server validates correctness on final submit; if wrong, returns to OLD step.
     setStep('NEW');
   }
 
   async function submit() {
     setErr(null);
-    if (next1.length < 8) { setErr('新密碼至少 8 個字符'); return; }
-    if (next1 !== next2) { setErr('兩次輸入嘅新密碼唔一致'); return; }
-    if (next1 === cur) { setErr('新密碼不能同舊密碼一樣'); return; }
+    if (next1.length < 8) { setErr(_t('account.profile.password.error.min')); return; }
+    if (next1 !== next2) { setErr(_t('account.profile.password.error.mismatch')); return; }
+    if (next1 === cur) { setErr(_t('account.profile.password.error.sameAsOld')); return; }
     setBusy(true);
     try {
       await api.changePassword(cur, next1);
@@ -548,9 +566,10 @@ function PasswordCard() {
       setOpen(false);
       setPostChange(true); // Show Q1 prompt
     } catch (e) {
-      const msg = e instanceof ApiError ? e.message : '密碼修改失敗';
+      const msg = e instanceof ApiError ? e.message : _t('account.profile.password.error.failed');
       setErr(msg);
-      // Old-password wrong → bounce back to step 1 so user re-enters
+      // Old-password wrong → bounce back to step 1 so user re-enters.
+      // These compare against the API's message, not UI copy — do not translate.
       if (msg.includes('舊密碼') || msg.includes('Old password') || msg.includes('Invalid')) {
         setStep('OLD');
         setNext1(''); setNext2('');
@@ -568,27 +587,27 @@ function PasswordCard() {
   return (
     <Card>
       <CardContent className="space-y-3 p-5">
-        <h2 className="text-base font-semibold">登入密碼</h2>
+        <h2 className="text-base font-semibold">{_t('account.profile.password.heading')}</h2>
         {!open ? (
           <>
-            <p className="text-sm text-slate-600">為帳戶安全，建議定期更換密碼。</p>
-            <Button variant="secondary" onClick={() => setOpen(true)}>修改密碼</Button>
+            <p className="text-sm text-slate-600">{_t('account.profile.password.intro')}</p>
+            <Button variant="secondary" onClick={() => setOpen(true)}>{_t('account.profile.password.change')}</Button>
           </>
         ) : (
           <div className="space-y-3">
             {/* Step indicator */}
             <div className="flex items-center gap-2 text-[10px] font-medium text-slate-500">
               <span className={step === 'OLD' ? 'text-brand-700' : 'text-emerald-600'}>
-                {step === 'NEW' && <Check className="mr-0.5 inline h-3 w-3" />}1. 驗證現有密碼
+                {step === 'NEW' && <Check className="mr-0.5 inline h-3 w-3" />}{_t('account.profile.password.step1')}
               </span>
               <span className="text-slate-300">›</span>
-              <span className={step === 'NEW' ? 'text-brand-700' : 'text-slate-400'}>2. 設定新密碼</span>
+              <span className={step === 'NEW' ? 'text-brand-700' : 'text-slate-400'}>{_t('account.profile.password.step2')}</span>
             </div>
 
             {step === 'OLD' ? (
               <>
                 <label className="block text-sm">
-                  <span className="block text-slate-700">現有密碼</span>
+                  <span className="block text-slate-700">{_t('account.profile.password.current')}</span>
                   <div className="relative mt-1">
                     <input
                       type={showCur ? 'text' : 'password'}
@@ -605,17 +624,17 @@ function PasswordCard() {
                 </label>
                 {err && <p className="rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-700">{err}</p>}
                 <div className="flex gap-2">
-                  <Button variant="secondary" onClick={() => { reset(); setOpen(false); }} className="flex-1">取消</Button>
-                  <Button onClick={onNextFromOld} disabled={!cur} className="flex-1">下一步</Button>
+                  <Button variant="secondary" onClick={() => { reset(); setOpen(false); }} className="flex-1">{_t('account.profile.password.cancel')}</Button>
+                  <Button onClick={onNextFromOld} disabled={!cur} className="flex-1">{_t('account.profile.password.next')}</Button>
                 </div>
               </>
             ) : (
               <>
                 <p className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-700">
-                  ✓ 已驗證現有密碼 — 請設定新密碼
+                  {_t('account.profile.password.verified')}
                 </p>
                 <label className="block text-sm">
-                  <span className="block text-slate-700">新密碼</span>
+                  <span className="block text-slate-700">{_t('account.profile.password.new')}</span>
                   <div className="relative mt-1">
                     <input
                       type={showNew ? 'text' : 'password'}
@@ -628,10 +647,10 @@ function PasswordCard() {
                       {showNew ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <span className="mt-1 block text-xs text-slate-500">至少 8 個字符。建議混合大小寫、數字。</span>
+                  <span className="mt-1 block text-xs text-slate-500">{_t('account.profile.password.newHint')}</span>
                 </label>
                 <label className="block text-sm">
-                  <span className="block text-slate-700">再次確認新密碼</span>
+                  <span className="block text-slate-700">{_t('account.profile.password.confirm')}</span>
                   <input
                     type={showNew ? 'text' : 'password'}
                     value={next2}
@@ -641,9 +660,9 @@ function PasswordCard() {
                 </label>
                 {err && <p className="rounded-md border border-red-200 bg-red-50 p-2 text-xs text-red-700">{err}</p>}
                 <div className="flex gap-2">
-                  <Button variant="secondary" onClick={() => setStep('OLD')} className="flex-1">返回</Button>
+                  <Button variant="secondary" onClick={() => setStep('OLD')} className="flex-1">{_t('account.profile.password.back')}</Button>
                   <Button onClick={submit} disabled={busy || !next1 || !next2} className="flex-1">
-                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : '更新密碼'}
+                    {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : _t('account.profile.password.update')}
                   </Button>
                 </div>
               </>
@@ -659,14 +678,14 @@ function PasswordCard() {
                 <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-100">
                   <Check className="h-5 w-5 text-emerald-600" />
                 </div>
-                <h3 className="text-base font-semibold">密碼已更新</h3>
+                <h3 className="text-base font-semibold">{_t('account.profile.password.doneTitle')}</h3>
               </div>
               <p className="text-sm text-slate-600">
-                為咗安全起見，建議重新登入所有裝置。
+                {_t('account.profile.password.doneBody')}
               </p>
               <div className="mt-4 flex gap-2">
-                <Button variant="secondary" onClick={() => setPostChange(false)} className="flex-1">保持登入</Button>
-                <Button onClick={logoutAndRedirect} className="flex-1">重新登入</Button>
+                <Button variant="secondary" onClick={() => setPostChange(false)} className="flex-1">{_t('account.profile.password.stayLoggedIn')}</Button>
+                <Button onClick={logoutAndRedirect} className="flex-1">{_t('account.profile.password.reLogin')}</Button>
               </div>
             </div>
           </div>
@@ -679,16 +698,20 @@ function PasswordCard() {
 // ─── Shop (SELLER) ─────────────────────────────────────────────────────────
 
 function ShopSection({ me }: { me: Me }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const links = [
-    { href: '/my-listings', label: '我的商品', desc: '管理上架商品、查看銷售統計' },
-    { href: '/orders', label: '我的訂單', desc: '買入 / 賣出訂單' },
-    { href: '/account/wallet', label: '我的錢包', desc: '提取銷售收入' },
-    { href: `/seller/${me.id}`, label: '查看公開賣家頁面', desc: '其他用戶睇到嘅你', external: true },
+    { href: '/my-listings', label: _t('account.profile.shop.link.listings'), desc: _t('account.profile.shop.link.listingsDesc') },
+    { href: '/orders', label: _t('account.profile.shop.link.orders'), desc: _t('account.profile.shop.link.ordersDesc') },
+    { href: '/account/wallet', label: _t('account.profile.shop.link.wallet'), desc: _t('account.profile.shop.link.walletDesc') },
+    { href: `/seller/${me.id}`, label: _t('account.profile.shop.link.public'), desc: _t('account.profile.shop.link.publicDesc'), external: true },
   ];
   return (
     <Card>
       <CardContent className="space-y-3 p-5">
-        <h2 className="text-base font-semibold">我的商店</h2>
+        <h2 className="text-base font-semibold">{_t('account.profile.shop.heading')}</h2>
         <ul className="space-y-2">
           {links.map((l) => (
             <li key={l.href}>
@@ -715,6 +738,10 @@ function ShopSection({ me }: { me: Me }) {
 // ─── Authenticator ─────────────────────────────────────────────────────────
 
 function AuthenticatorSection({ me }: { me: Me }) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   if (!me.authenticator) return null;
   const a = me.authenticator;
   const statusTone =
@@ -724,15 +751,15 @@ function AuthenticatorSection({ me }: { me: Me }) {
   return (
     <Card>
       <CardContent className="space-y-3 p-5">
-        <h2 className="text-base font-semibold">鑑定師 Portal</h2>
+        <h2 className="text-base font-semibold">{_t('account.profile.auth.heading')}</h2>
         <div className="flex items-center gap-2 text-sm">
-          <span className="text-slate-500">狀態</span>
+          <span className="text-slate-500">{_t('account.profile.auth.status')}</span>
           <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusTone}`}>
             {a.status}
           </span>
         </div>
         <p className="text-xs text-slate-500">
-          你嘅鑑定師資料（店名、收費、分店等）喺鑑定師專用 portal 管理。
+          {_t('account.profile.auth.note')}
         </p>
         <a
           href={`${AUTHENTICATOR_URL}/profile`}
@@ -740,7 +767,7 @@ function AuthenticatorSection({ me }: { me: Me }) {
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1.5 rounded-md bg-brand-600 px-3 py-2 text-sm font-medium text-white hover:bg-brand-700"
         >
-          前往鑑定師 Portal <ExternalLink className="h-3.5 w-3.5" />
+          {_t('account.profile.auth.goToPortal')} <ExternalLink className="h-3.5 w-3.5" />
         </a>
       </CardContent>
     </Card>

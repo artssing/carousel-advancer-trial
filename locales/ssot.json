@@ -2888,105 +2888,61 @@
     }
   },
   "myListings": {
-    "pageTitle": {
-      "zh": "我的上架",
-      "en": "My Listings"
-    },
-    "pageSubtitle": {
-      "zh": "管理你刊登的貨品",
-      "en": "Manage your listed items"
-    },
-    "newListing": {
-      "zh": "＋ 刊登新貨品",
-      "en": "+ List a new item"
-    },
-    "stat.active": {
-      "zh": "在售中",
-      "en": "Active"
-    },
-    "stat.inProgress": {
-      "zh": "進行中",
-      "en": "In progress"
-    },
-    "stat.sold": {
-      "zh": "已售出",
-      "en": "Sold"
-    },
-    "stat.earnings": {
-      "zh": "累計成交",
-      "en": "Total earnings"
-    },
-    "tab.all": {
-      "zh": "全部",
-      "en": "All"
-    },
-    "tab.active": {
-      "zh": "在售中",
-      "en": "Active"
-    },
-    "tab.reserved": {
-      "zh": "進行中",
-      "en": "In progress"
-    },
-    "tab.sold": {
-      "zh": "已售出",
-      "en": "Sold"
-    },
-    "pill.active": {
-      "zh": "上架中",
-      "en": "Active"
-    },
-    "pill.draft": {
-      "zh": "草稿",
-      "en": "Draft"
-    },
-    "pill.reserved": {
-      "zh": "待鑑定配對",
-      "en": "Awaiting auth matching"
-    },
-    "pill.sold": {
-      "zh": "已售出",
-      "en": "Sold"
-    },
-    "pill.removed": {
-      "zh": "已下架",
-      "en": "Removed"
-    },
     "age": {
       "zh": "已刊登 {n} 日",
       "en": "Listed {n} days ago"
-    },
-    "pendingSale": {
-      "zh": "⏳ 待生效特價 HKD {price} · {date}",
-      "en": "⏳ Pending price drop HKD {price} · {date}"
-    },
-    "edit": {
-      "zh": "編輯",
-      "en": "Edit"
-    },
-    "share": {
-      "zh": "分享",
-      "en": "Share"
-    },
-    "view": {
-      "zh": "查看",
-      "en": "View"
     },
     "delete": {
       "zh": "刪除",
       "en": "Delete"
     },
-    "removedByAdmin": {
-      "zh": "已被平台下架 · 請聯絡客服",
-      "en": "Removed by platform · Please contact support"
+    "deleteDialog.confirm": {
+      "zh": "確認刪除",
+      "en": "Confirm delete"
     },
-    "restore": {
-      "zh": "還原",
-      "en": "Restore"
+    "deleteDialog.consequence": {
+      "zh": "商品會即時落架，買家搵唔到。刪錯咗可以隨時在呢度撳「還原」。",
+      "en": "The item will be taken down immediately and will not be visible to buyers. You can click \"Restore\" at any time to undo this action."
     },
-    "empty.title": {
-      "zh": "你未有上架任何商品",
-      "en": "You have not listed any items yet"
+    "deleteDialog.title": {
+      "zh": "刪除呢件商品？",
+      "en": "Delete this listing?"
+    },
+    "delivery.meetup3way": {
+      "zh": "三方面交",
+      "en": "Three-way meetup"
+    },
+    "delivery.meetupAuth": {
+      "zh": "鑑定師面交",
+      "en": "Authenticator meetup"
+    },
+    "delivery.meetupDirect": {
+      "zh": "雙方面交",
+      "en": "Direct meetup"
+    },
+    "delivery.ship": {
+      "zh": "寄送",
+      "en": "Shipping"
+    },
+    "deliveryLabel.meetup3way": {
+      "zh": "三方面交",
+      "en": "Three-way meetup"
+    },
+    "deliveryLabel.meetupAuth": {
+      "zh": "鑑定師面交",
+      "en": "Authenticator meetup"
+    },
+    "deliveryLabel.meetupDirect": {
+      "zh": "雙方面交",
+      "en": "Direct meetup"
+    },
+    "deliveryLabel.ship": {
+      "zh": "寄送",
+      "en": "Shipping"
+    },
+    "edit": {
+      "zh": "編輯",
+      "en": "Edit"
     },
     "empty.desc": {
       "zh": "上架商品後會在呢度管理。",
@@ -2996,33 +2952,13 @@
       "zh": "上架商品",
       "en": "List an item"
     },
-    "deleteDialog.title": {
-      "zh": "刪除呢件商品？",
-      "en": "Delete this listing?"
+    "empty.title": {
+      "zh": "你未有上架任何商品",
+      "en": "You have not listed any items yet"
     },
-    "deleteDialog.consequence": {
-      "zh": "商品會即時落架，買家搵唔到。刪錯咗可以隨時在呢度撳「還原」。",
-      "en": "The item will be taken down immediately and will not be visible to buyers. You can click \"Restore\" at any time to undo this action."
-    },
-    "deleteDialog.confirm": {
-      "zh": "確認刪除",
-      "en": "Confirm delete"
-    },
-    "delivery.ship": {
-      "zh": "寄送",
-      "en": "Shipping"
-    },
-    "delivery.meetupAuth": {
-      "zh": "鑑定師面交",
-      "en": "Authenticator meetup"
-    },
-    "delivery.meetup3way": {
-      "zh": "三方面交",
-      "en": "Three-way meetup"
-    },
-    "delivery.meetupDirect": {
-      "zh": "雙方面交",
-      "en": "Direct meetup"
+    "emptyHint": {
+      "zh": "上架商品後會喺呢度管理。",
+      "en": "Items you list are managed here."
     },
     "error.delete": {
       "zh": "刪除失敗",
@@ -3031,6 +2967,134 @@
     "error.restore": {
       "zh": "還原失敗",
       "en": "Restore failed"
+    },
+    "listedDays": {
+      "zh": "已刊登 {n} 日",
+      "en": "Listed {n} days"
+    },
+    "newListing": {
+      "zh": "＋ 刊登新貨品",
+      "en": "+ List a new item"
+    },
+    "pageSubtitle": {
+      "zh": "管理你刊登的貨品",
+      "en": "Manage your listed items"
+    },
+    "pageTitle": {
+      "zh": "我的上架",
+      "en": "My Listings"
+    },
+    "pendingPrice": {
+      "zh": "⏳ 待生效特價 HKD {price} · {date}",
+      "en": "⏳ Scheduled price HKD {price} · {date}"
+    },
+    "pendingSale": {
+      "zh": "⏳ 待生效特價 HKD {price} · {date}",
+      "en": "⏳ Pending price drop HKD {price} · {date}"
+    },
+    "pill.active": {
+      "zh": "上架中",
+      "en": "Active"
+    },
+    "pill.draft": {
+      "zh": "草稿",
+      "en": "Draft"
+    },
+    "pill.removed": {
+      "zh": "已下架",
+      "en": "Removed"
+    },
+    "pill.reserved": {
+      "zh": "待鑑定配對",
+      "en": "Awaiting auth matching"
+    },
+    "pill.sold": {
+      "zh": "已售出",
+      "en": "Sold"
+    },
+    "pillText.active": {
+      "zh": "上架中",
+      "en": "Active"
+    },
+    "pillText.draft": {
+      "zh": "草稿",
+      "en": "Draft"
+    },
+    "pillText.removed": {
+      "zh": "已下架",
+      "en": "Removed"
+    },
+    "pillText.reserved": {
+      "zh": "待鑑定配對",
+      "en": "Awaiting authenticator"
+    },
+    "pillText.sold": {
+      "zh": "已售出",
+      "en": "Sold"
+    },
+    "removeConsequence": {
+      "zh": "商品會即時落架，買家搵唔到。刪錯咗可以隨時喺呢度撳「還原」。",
+      "en": "The item goes offline immediately and buyers cannot find it. If you remove one by mistake, restore it from here at any time."
+    },
+    "removedByAdmin": {
+      "zh": "已被平台下架 · 請聯絡客服",
+      "en": "Removed by platform · Please contact support"
+    },
+    "restore": {
+      "zh": "還原",
+      "en": "Restore"
+    },
+    "share": {
+      "zh": "分享",
+      "en": "Share"
+    },
+    "stat.active": {
+      "zh": "在售中",
+      "en": "Active"
+    },
+    "stat.earnings": {
+      "zh": "累計成交",
+      "en": "Total earnings"
+    },
+    "stat.inProgress": {
+      "zh": "進行中",
+      "en": "In progress"
+    },
+    "stat.sold": {
+      "zh": "已售出",
+      "en": "Sold"
+    },
+    "statLabel.active": {
+      "zh": "在售中",
+      "en": "For sale"
+    },
+    "statLabel.inProgress": {
+      "zh": "進行中",
+      "en": "In progress"
+    },
+    "statLabel.sold": {
+      "zh": "已售出",
+      "en": "Sold"
+    },
+    "tab.active": {
+      "zh": "在售中",
+      "en": "Active"
+    },
+    "tab.all": {
+      "zh": "全部",
+      "en": "All"
+    },
+    "tab.reserved": {
+      "zh": "進行中",
+      "en": "In progress"
+    },
+    "tab.sold": {
+      "zh": "已售出",
+      "en": "Sold"
+    },
+    "view": {
+      "zh": "查看",
+      "en": "View"
     }
   },
   "buyer": {
@@ -4978,6 +5042,38 @@
     }
   },
   "account.profile": {
+    "account.heading": {
+      "zh": "帳戶資訊",
+      "en": "Account details"
+    },
+    "account.id": {
+      "zh": "帳戶 ID",
+      "en": "Account ID"
+    },
+    "account.joined": {
+      "zh": "加入日期",
+      "en": "Joined"
+    },
+    "account.role": {
+      "zh": "角色",
+      "en": "Role"
+    },
+    "auth.goToPortal": {
+      "zh": "前往鑑定師 Portal",
+      "en": "Go to the authenticator portal"
+    },
+    "auth.heading": {
+      "zh": "鑑定師 Portal",
+      "en": "Authenticator portal"
+    },
+    "auth.note": {
+      "zh": "你嘅鑑定師資料（店名、收費、分店等）喺鑑定師專用 portal 管理。",
+      "en": "Your authenticator details — shop name, fees, branches — are managed in the authenticator portal."
+    },
+    "auth.status": {
+      "zh": "狀態",
+      "en": "Status"
+    },
     "authenticator.heading": {
       "zh": "鑑定師 Portal",
       "en": "Authenticator Portal"
@@ -4993,6 +5089,82 @@
     "authenticator.statusLabel": {
       "zh": "狀態",
       "en": "Status"
+    },
+    "avatar.adjustAgain": {
+      "zh": "再次調整位置",
+      "en": "Reposition again"
+    },
+    "avatar.changeAria": {
+      "zh": "更換頭像",
+      "en": "Change profile photo"
+    },
+    "avatar.note": {
+      "zh": "JPG / PNG · 自動壓縮成 200×200",
+      "en": "JPG / PNG · automatically resized to 200×200"
+    },
+    "avatar.onlyImages": {
+      "zh": "只接受圖片檔案",
+      "en": "Image files only"
+    },
+    "avatar.remove": {
+      "zh": "移除頭像",
+      "en": "Remove photo"
+    },
+    "avatar.stillTooLarge": {
+      "zh": "Avatar 仍然太大，請揀細啲嘅圖",
+      "en": "That avatar is still too large — pick a smaller image"
+    },
+    "comingSoon": {
+      "zh": "📌 電話、地區、自我介紹、頭像庫等功能即將推出。",
+      "en": "📌 Phone, district, bio and an avatar library are coming soon."
+    },
+    "crop.cancel": {
+      "zh": "取消",
+      "en": "Cancel"
+    },
+    "crop.confirm": {
+      "zh": "確認",
+      "en": "Apply"
+    },
+    "crop.dragHint": {
+      "zh": "拖拉頭像可微調位置",
+      "en": "Drag the photo to fine-tune"
+    },
+    "crop.heading": {
+      "zh": "調整頭像位置",
+      "en": "Reposition your photo"
+    },
+    "crop.reset": {
+      "zh": "重設",
+      "en": "Reset"
+    },
+    "crop.zoom": {
+      "zh": "縮放",
+      "en": "Zoom"
+    },
+    "displayName": {
+      "zh": "顯示名稱",
+      "en": "Display name"
+    },
+    "displayNameHint": {
+      "zh": "其他用戶喺賣家頁 / 對話 / 評價會見到呢個名字。",
+      "en": "Other users see this name on your seller page, in chats and on reviews."
+    },
+    "email.heading": {
+      "zh": "電郵地址",
+      "en": "Email address"
+    },
+    "email.note": {
+      "zh": "Email 唔可以更改。如需更換，請聯絡 ",
+      "en": "Email cannot be changed. To change it, contact "
+    },
+    "error.load": {
+      "zh": "載入失敗",
+      "en": "Could not load"
+    },
+    "heading": {
+      "zh": "個人檔案",
+      "en": "Profile"
     },
     "loading": {
       "zh": "載入中…",
@@ -5037,6 +5209,98 @@
     "page.title": {
       "zh": "個人檔案",
       "en": "Profile"
+    },
+    "password.back": {
+      "zh": "返回",
+      "en": "Back"
+    },
+    "password.cancel": {
+      "zh": "取消",
+      "en": "Cancel"
+    },
+    "password.change": {
+      "zh": "修改密碼",
+      "en": "Change password"
+    },
+    "password.confirm": {
+      "zh": "再次確認新密碼",
+      "en": "Confirm the new password"
+    },
+    "password.current": {
+      "zh": "現有密碼",
+      "en": "Current password"
+    },
+    "password.doneBody": {
+      "zh": "為咗安全起見，建議重新登入所有裝置。",
+      "en": "For safety, sign in again on all your devices."
+    },
+    "password.doneTitle": {
+      "zh": "密碼已更新",
+      "en": "Password updated"
+    },
+    "password.error.currentRequired": {
+      "zh": "請輸入現有密碼",
+      "en": "Enter your current password"
+    },
+    "password.error.failed": {
+      "zh": "密碼修改失敗",
+      "en": "Could not change the password"
+    },
+    "password.error.min": {
+      "zh": "新密碼至少 8 個字符",
+      "en": "The new password must be at least 8 characters"
+    },
+    "password.error.mismatch": {
+      "zh": "兩次輸入嘅新密碼唔一致",
+      "en": "The two new passwords do not match"
+    },
+    "password.error.sameAsOld": {
+      "zh": "新密碼不能同舊密碼一樣",
+      "en": "The new password cannot be the same as the old one"
+    },
+    "password.heading": {
+      "zh": "登入密碼",
+      "en": "Password"
+    },
+    "password.intro": {
+      "zh": "為帳戶安全，建議定期更換密碼。",
+      "en": "Change your password from time to time to keep the account secure."
+    },
+    "password.new": {
+      "zh": "新密碼",
+      "en": "New password"
+    },
+    "password.newHint": {
+      "zh": "至少 8 個字符。建議混合大小寫、數字。",
+      "en": "At least 8 characters. Mixing upper and lower case, numbers and symbols is safer."
+    },
+    "password.next": {
+      "zh": "下一步",
+      "en": "Next"
+    },
+    "password.reLogin": {
+      "zh": "重新登入",
+      "en": "Sign in again"
+    },
+    "password.stayLoggedIn": {
+      "zh": "保持登入",
+      "en": "Stay signed in"
+    },
+    "password.step1": {
+      "zh": "1. 驗證現有密碼",
+      "en": "1. Verify your current password"
+    },
+    "password.step2": {
+      "zh": "2. 設定新密碼",
+      "en": "2. Set a new password"
+    },
+    "password.update": {
+      "zh": "更新密碼",
+      "en": "Update password"
+    },
+    "password.verified": {
+      "zh": "✓ 已驗證現有密碼 — 請設定新密碼",
+      "en": "✓ Current password verified — now set a new one"
     },
     "personal.avatar.ariaLabel": {
       "zh": "更換頭像",
@@ -5111,6 +5375,42 @@
       "en": "Save failed"
     },
     "personal.savedIndicator": {
+      "zh": "已儲存",
+      "en": "Saved"
+    },
+    "phone.comingSoon": {
+      "zh": "綁定手機可以日後用作快速登入 + 接收重要交易通知。綁定功能稍後推出。",
+      "en": "Linking a mobile number will let you sign in quickly and receive important order notifications. Linking is coming soon."
+    },
+    "phone.heading": {
+      "zh": "手機號碼",
+      "en": "Mobile number"
+    },
+    "phone.none": {
+      "zh": "尚未綁定手機號碼",
+      "en": "No mobile number linked"
+    },
+    "phone.note": {
+      "zh": "手機號碼唔可以喺呢度更改。如需更換，請聯絡 ",
+      "en": "Your mobile number cannot be changed here. To change it, contact "
+    },
+    "phone.verifiedBadge": {
+      "zh": "已驗証",
+      "en": "Verified"
+    },
+    "publicIntro": {
+      "zh": "其他人喺賣家頁見到嘅資料：",
+      "en": "What others see on your seller page:"
+    },
+    "save": {
+      "zh": "儲存變更",
+      "en": "Save changes"
+    },
+    "save.failed": {
+      "zh": "儲存失敗",
+      "en": "Could not save"
+    },
+    "saved": {
       "zh": "已儲存",
       "en": "Saved"
     },
@@ -5254,6 +5554,38 @@
       "zh": "我的商店",
       "en": "My Shop"
     },
+    "shop.link.listings": {
+      "zh": "我的商品",
+      "en": "My items"
+    },
+    "shop.link.listingsDesc": {
+      "zh": "管理上架商品、查看銷售統計",
+      "en": "Manage listings and see your sales stats"
+    },
+    "shop.link.orders": {
+      "zh": "我的訂單",
+      "en": "My orders"
+    },
+    "shop.link.ordersDesc": {
+      "zh": "買入 / 賣出訂單",
+      "en": "Orders you have bought and sold"
+    },
+    "shop.link.public": {
+      "zh": "查看公開賣家頁面",
+      "en": "View your public seller page"
+    },
+    "shop.link.publicDesc": {
+      "zh": "其他用戶睇到嘅你",
+      "en": "How other users see you"
+    },
+    "shop.link.wallet": {
+      "zh": "我的錢包",
+      "en": "My wallet"
+    },
+    "shop.link.walletDesc": {
+      "zh": "提取銷售收入",
+      "en": "Withdraw your sales income"
+    },
     "shop.myListings.desc": {
       "zh": "管理上架商品、查看銷售統計",
       "en": "Manage your listings and view sales statistics"
@@ -5285,6 +5617,10 @@
     "shop.publicPage.label": {
       "zh": "查看公開賣家頁面",
       "en": "View public seller page"
+    },
+    "supportEmailSuffix": {
+      "zh": "。",
+      "en": "."
     },
     "tab.authenticator": {
       "zh": "鑑定師 Portal",
