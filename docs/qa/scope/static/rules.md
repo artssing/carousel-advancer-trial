@@ -58,6 +58,27 @@ last_synced_commit: bc2a357
   - `grep -rn "'HANDBAG'\|'SNEAKER'\|'WATCH'\|中西區\|灣仔區" apps/*/app --include=*.tsx`
   - category / district / status / event 名一律出自 `packages/utils`
 
+- [RS-09] `static` `unverified` — **已經 wire 咗 i18n 嘅檔唔准再有中文字面值**
+  - ```
+    for f in $(grep -rl createT apps/*/app apps/*/components --include=*.tsx); do
+      grep -nP '[一-鿿。、「」！？：；]' "$f" | grep -vP '^\s*\d+:\s*(//|\*|/\*)' | sed "s|^|$f:|"
+    done
+    ```
+  - 應該係零命中（註解除外）。有 `createT` = 已經 wire，之後再喺同一個檔 hardcode 中文，
+    英文用戶就會見到一版半中半英 —— 而呢種倒退唔會令 build 炸，冇人查就會一路蝕
+  - **標點一定要包埋**：`。` `、` 唔喺 `一-鿿` 範圍。2026-08-10 codemod 就係咁漏咗
+    法律行尾嗰粒 `。`，英文版變咗 `Privacy Policy .`。淨係 grep 漢字係唔夠嘅
+  - 未 wire 嘅頁**唔算違反**（清單見 `docs/backlog/i18n-backlog.md` 第 3 項）——
+    呢條 rule 守嘅係「做完唔好倒退」，唔係「全部要即刻做完」
+  - **註解係預期噪音**：條 grep 濾走 `//` 同 `*` 開頭嘅行，但濾唔到 `{/* … */}` 同
+    多行註解入面嘅中文。睇報告嗰陣自己跳過，唔好為咗清零而改條 grep
+  - 已知違反（2026-08-10 第一次跑）：
+    - `apps/authenticator/app/scan/page.tsx`（8 處）、`app/page.tsx:162`、`inbox/page.tsx` ——
+      呢幾個檔用 `locale === 'en' ? 'Seller' : '賣家'` 嘅 inline ternary 而唔係 ssot key。
+      **翻譯散落喺 page,唔喺 SSOT**,語言切換行得但改字要入 code 搵。應該收返入 `locales/ssot.json`
+    - `apps/consumer/app/login/page.tsx:198` —— `Dev demo：` 用全形冒號,英文版都係全形。
+      Dev-only 面板,優先度最低
+
 ---
 
 ## False positive 點處理

@@ -2886,6 +2886,10 @@
       "zh": "已寄 6 位數字到",
       "en": "We sent a 6-digit code to"
     },
+    "otpSentTo.suffix": {
+      "zh": "。",
+      "en": "."
+    },
     "passwordHint": {
       "zh": "最少 8 字元；混合字母、數字、符號更安全",
       "en": "At least 8 characters. Mixing letters, numbers and symbols is safer."
@@ -3005,6 +3009,10 @@
     "welcomePrefix": {
       "zh": "歡迎加入，",
       "en": "Welcome, "
+    },
+    "welcomeSuffix": {
+      "zh": "！",
+      "en": "!"
     }
   },
   "about": {

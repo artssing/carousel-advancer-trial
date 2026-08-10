@@ -403,7 +403,7 @@ export default function RegisterPage() {
                 {_t('register.step.otpTitle')}
               </h1>
               <p className="mt-1.5 text-[14px] text-neutral-text-muted">
-                {_t('register.otpSentTo')} <span className="font-semibold text-neutral-text">{email}</span>。
+                {_t('register.otpSentTo')} <span className="font-semibold text-neutral-text">{email}</span>{_t('register.otpSentTo.suffix')}
               </p>
 
               {/* Dev mode banner — Lesson #11 pattern */}
@@ -517,7 +517,7 @@ export default function RegisterPage() {
                 <Check className="h-[34px] w-[34px] text-brand-600" strokeWidth={2.5} />
               </div>
               <h1 className="text-[24px] font-extrabold tracking-[-0.01em] text-ink">
-                {_t('register.welcomePrefix')}{displayName || _t('register.friend')}！
+                {_t('register.welcomePrefix')}{displayName || _t('register.friend')}{_t('register.welcomeSuffix')}
               </h1>
               <p className="mt-2 text-[14px] text-neutral-text-muted">
                 {_t('register.doneDesc')}
