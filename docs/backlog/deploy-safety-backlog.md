@@ -5,9 +5,44 @@
 
 ---
 
-## P1 — `api-prod` 同 `api-uat` 共用 `certifine-api:latest`
+## ✅ 已修 2026-08-11 — `api-prod` 同 `api-uat` 共用 `certifine-api:latest`
 
-**嚴重度：P1（founder 2026-08-11 拍板）。任何 PROD 重啟 = 一次冇人決定過嘅 PROD deploy。**
+**原本嚴重度 P1（founder 2026-08-11 拍板）。已經結構性解決，記錄留住做將來嘅前車之鑑。**
+
+### 點修（founder 2026-08-11：「PROD同UAT既deploy唔可以係同一件事」）
+
+```yaml
+api-prod:  build → certifine-api:prod   # PROD 專用
+api-uat:   build → certifine-api:uat    # 自己 build，唔再借
+           depends_on: api-prod          # ← 刪走
+```
+
+`ci/ci-run.sh` 個 UAT `BUILD_SVCS` 由 `api-prod` 改做 `api-uat` —— 之前 UAT build
+嘅係 PROD 嗰個 service，所以一次 UAT build 就改到 PROD 個 tag。三個前端本來就
+`:prod` / `:uat` 分開，只有 API 共用，而家對齊。代價：API build 兩次。
+
+加埋每次 build 落一個釘死嘅 sha tag（`certifine-api:uat-bf05931`）。浮動 tag 答
+「呢個 env 最新係邊個」，sha tag 答「嗰次 build 去咗邊」—— rollback 要後者，而
+佢唔會被下次 build 蓋走。
+
+**驗證方法（唯一可信嗰個）**：deploy 前後對 `docker inspect certifine-api-prod
+--format '{{.State.StartedAt}}'`。實測 before = after，PROD 完全冇被郁。
+**唔好信 `docker compose --dry-run`** —— 佢喺呢件事上面連續報錯兩次，兩次都話
+`api-prod Running`，兩次都 recreate 咗。
+
+### 仲有兩件事
+
+1. `certifine-api:latest` 個 tag 仲喺度，而且 PROD 容器嘅 config 仍然寫住佢
+   （個容器係改 compose 之前起嘅）。內容上 `:latest`、`:prod` 同容器行緊嗰個
+   係同一個 image id，所以下次 PROD recreate 會平順轉去 `:prod`。之後可以清走
+   `:latest`，避免有人再手動用佢。
+2. **PROD API 而家行緊 `96e8599`**（今日兩次意外重啟造成）。founder 2026-08-11：
+   「PROD可以唔郁住，因為未真係有人用」。要揀返舊版就用
+   `certifine-api:rollback-2026-08-11`。
+
+---
+
+## 原本嘅記錄（root cause 分析）
 
 ### 症狀（2026-08-11 實際發生）
 

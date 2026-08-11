@@ -38,7 +38,7 @@ services:
       args:
         GIT_COMMIT: "${GIT_COMMIT:-unknown}"
         BUILT_AT: "${BUILT_AT:-unknown}"
-    image: certifine-api:latest
+    image: certifine-api:prod
     container_name: certifine-api-prod
     restart: unless-stopped
     depends_on:
@@ -109,14 +109,31 @@ services:
 
   # ═══ UAT ════════════════════════════════════════════════════════════════
   api-uat:
-    image: certifine-api:latest      # 同 prod 同一個 API image（差在 env）
+    # 自己 build、自己 tag（2026-08-11 修）。以前係 `image: certifine-api:latest`
+    # 加 `depends_on: api-prod`，即係同 PROD 共用一個 mutable tag：UAT build 一
+    # run，個 tag 就指向新 image，PROD 容器下次因為任何原因重啟（機器重開、
+    # crash 自動拉起、被 dependency 拖住）就會食咗 UAT 嘅 code。2026-08-11
+    # 一日之內中咗兩次。
+    #
+    # 代價係 API 要 build 兩次（prod 一次、uat 一次），換返嚟嘅係兩個環境嘅
+    # deploy 完全獨立 —— 同三個前端一直以來嘅做法一致（佢哋本來就 :prod / :uat
+    # 分開，只有 API 共用）。
+    #
+    # `depends_on: api-prod` 一併刪走：UAT 唔再借 PROD 個 image，冇任何理由
+    # 等 PROD 起身，而正正係嗰條 depends_on 令 `up --force-recreate` 連 PROD
+    # 一齊 recreate。
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+      args:
+        GIT_COMMIT: "${GIT_COMMIT:-unknown}"
+        BUILT_AT: "${BUILT_AT:-unknown}"
+    image: certifine-api:uat
     container_name: certifine-api-uat
     restart: unless-stopped
     depends_on:
       postgres:
         condition: service_healthy
-      api-prod:
-        condition: service_started    # 借 prod build 好個 image
     env_file:
       - apps/api/.env.uat
     environment:

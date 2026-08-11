@@ -21,13 +21,15 @@ ENVIRONMENT="${2:-uat}"
 COMPOSE="-f docker-compose.yml -f docker-compose.deploy.yml"
 PROJECT="carousel-advancer-trial"
 NETWORK="${PROJECT}_default"
+# 兩個 env 完全獨立：各自 build、各自 tag（certifine-api:prod / :uat）。
+# 2026-08-11 之前 UAT build 嘅係 `api-prod`（因為 API image 共用），所以一次
+# UAT deploy 會改到 PROD 嗰個 tag。而家 UAT build `api-uat`，掂唔到 PROD。
 if [ "$ENVIRONMENT" = "prod" ]; then
-  # api-prod = shared API image 嘅 builder service
   BUILD_SVCS="api-prod consumer-prod authenticator-prod admin-prod"
   DEPLOY_SVCS="api-prod consumer-prod authenticator-prod admin-prod"
   SMOKE_API="api-prod:4000"; SMOKE_FRONTS="consumer-prod:3008 authenticator-prod:3001 admin-prod:3003"
 else
-  BUILD_SVCS="api-prod consumer-uat authenticator-uat admin-uat"
+  BUILD_SVCS="api-uat consumer-uat authenticator-uat admin-uat"
   DEPLOY_SVCS="api-uat consumer-uat authenticator-uat admin-uat"
   SMOKE_API="api-uat:4000"; SMOKE_FRONTS="consumer-uat:3008 authenticator-uat:3001 admin-uat:3003"
 fi
@@ -69,6 +71,19 @@ case "$STEP" in
     export GIT_COMMIT BUILT_AT
     echo "▸ stamping image: commit=$GIT_COMMIT builtAt=$BUILT_AT"
     docker compose $COMPOSE -p "$PROJECT" build $BUILD_SVCS
+
+    # 除咗浮動 tag（:prod / :uat），每個 build 再落一個釘死嘅 sha tag。
+    # 浮動 tag 答「呢個 env 最新係邊個」，sha tag 答「嗰次 build 去咗邊」——
+    # rollback 要嘅係後者，而佢唔會被下次 build 蓋走。
+    SHORT="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+    for svc in $BUILD_SVCS; do
+      # service 名 → image 名：api-uat → certifine-api:uat
+      app="${svc%-*}"; env_suffix="${svc##*-}"
+      src="certifine-${app}:${env_suffix}"
+      docker image inspect "$src" >/dev/null 2>&1 || continue
+      docker tag "$src" "certifine-${app}:${env_suffix}-${SHORT}"
+      echo "  釘死 $src → certifine-${app}:${env_suffix}-${SHORT}"
+    done
     ;;
 
   deploy)
