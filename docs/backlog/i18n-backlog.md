@@ -98,3 +98,44 @@ Repo root 個未 track 檔，749 條 `{namespace, key, zh, context}`，係早期
 即係話：**呢 41 條唔係要逐條補 key，係整個 `login`／`register` 未 wire**（見上面第 3 項）。清單價值已經收喺呢度。
 
 **待 founder 決定：** 檔案本身（92K）可以刪。
+
+---
+
+## 6. `setError(_t(…))` —— 譯完存落 state，之後唔會再譯（2026-08-11 發現）
+
+**33 處，橫跨 12 個檔**（`grep -rn "setError(.*_t(" apps/*/app --include='*.tsx'`）。
+
+```tsx
+setError(e instanceof ApiError ? e.message : _t('account.wallet.error.load'));
+```
+
+`locale` 喺 `useEffect` 之後先到。Error 通常喺 mount 嗰陣發生 —— 嗰刻 `_t` 仍然
+係中文，句子譯完**存咗落 state**，之後 locale 到咗都唔會重譯。英文用戶一撞到
+錯誤就見中文。
+
+同一個 bug 喺 `ConversationPane` 個 typing indicator 出現過，`f92e7de` 修法係
+**存 role，唔存句子**，render 先譯。呢度同理：存 key（或者 error code），
+render 先 `_t()`。
+
+由 QA browser case IN-03 喺 wallet 三頁撞到（container 連唔到 API → error path
+被觸發 → `載入失敗` 喺英文版出現）。
+
+## 7. IN-03 分唔開「UI copy」同「用戶寫嘅字」（2026-08-11）
+
+`docs/qa/browser/tests/screens-en.spec.ts` 掃成個 `body.innerText` 搵漢字。喺
+有 listing 嘅頁（`/`、`/listing/[id]`）會撈到：
+
+```
+[TEST-COND] Chanel Classic 幾乎全新     ← 賣家寫嘅商品標題
+Milan Station 旺角                      ← 鑑定師自己改嘅名
+```
+
+**呢啲喺任何語言都應該原樣顯示。** 而家 `/listing/[id]` 濾走 API 返嘅
+`title` / `seller.displayName`，但首頁有成打 listing + ticker，濾唔切。
+
+正路修法：唔好掃 `body`，改成只掃 **chrome 區域**（top-nav / footer / 特定
+component container）。未做，所以呢兩條 case 而家係紅。**唔好用「放鬆漢字檢查」
+嚟令佢綠** —— 咁等於閹咗成條 case。
+
+`docs/qa/browser/README.md` 寫住「連續 flaky 兩次即刻 skip 咗佢再查」——
+呢兩條而家就係嗰種狀態。

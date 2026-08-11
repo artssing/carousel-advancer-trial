@@ -68,3 +68,24 @@ DATABASE_URL="postgresql://…/authentik_uat?schema=public" npx prisma db push
 
 **PROD DB 連 `SharePreview` 張 table 都未有**(從來未 push 過)—— 上 PROD 前要補,
 見 `prod-not-live-backlog.md`。
+
+---
+
+## Playwright fixtures 用緊 demo 帳號（2026-08-11 發現）
+
+`docs/qa/browser/tests/fixtures.ts` 個 `ACCOUNTS` 寫死 `alice@demo.hk` /
+`tom@demo.hk` —— 直接違反 2026-08-02「QA 唔准掂 demo 帳號」嘅 ruling，而且
+買賣雙方明明有 `qa-buyer` / `qa-seller` 替身，冇任何理由借。
+
+影響三個舊 spec：`browse-mobile` / `seller-profile` / `share-modal`。
+新寫嘅 i18n spec 已經用 `docs/qa/browser/tests/i18n-helpers.ts` 嘅 `qa-*`。
+
+改咗要重跑嗰三條驗返，所以未順手改。
+
+## 動態 Tailwind class 全 repo scan（founder 2026-08-10 要求，未做）
+
+`bg-${theme}-600` 呢種寫法 Tailwind 掃唔到（佢掃 source 文字），class 會被 purge。
+`RS-10` 而家只守住 `packages/ui/src/components/conversation-pane.tsx` 一個檔。
+
+Founder：「之後要搵機會 code scan 睇下邊個係咁樣寫，要全部執過」。
+建議做成 `static` rule，grep pattern 大概係 `` `[a-z-]+-\$\{ `` 落 `className` 入面。
