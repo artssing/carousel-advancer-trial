@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 import {
-  browseCategories, type CategoryConfig,
+  browseCategories, categoryLabel, type CategoryConfig,
   getClientLocale, createT,
 } from '@authentik/utils';
 import { api } from '@/lib/api';
@@ -92,7 +92,7 @@ function CategoryTile({ cat, count }: { cat: CategoryConfig; count: number | nul
       {/* Category name bottom-left */}
       <div className="relative">
         <div className={`text-base font-extrabold ${hasImg ? 'text-white drop-shadow-sm' : 'text-ink'}`}>
-          {cat.labelZh}
+          {categoryLabel(cat.id, locale)}
         </div>
         {disabled && (
           <div className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-medium text-amber-700">
@@ -233,7 +233,7 @@ export default function HomePage() {
         if (!loading && items.length === 0) return null;
         return (
           <div key={cat.id}>
-            <SectionHead title={`${cat.emoji} ${cat.labelZh}`} href={`/browse?cat=${cat.id}`} />
+            <SectionHead title={`${cat.emoji} ${categoryLabel(cat.id, locale)}`} href={`/browse?cat=${cat.id}`} />
             <div className="grid grid-cols-2 gap-[18px] md:grid-cols-3 lg:grid-cols-4">
               {loading
                 ? Array.from({ length: 4 }).map((_, i) => <ProductCardSkeleton key={i} />)

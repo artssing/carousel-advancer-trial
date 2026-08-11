@@ -10340,47 +10340,7 @@
     }
   },
   "utils.categories": {
-    "handbag.labelZh": {
-      "zh": "奢侈品手袋 / 銀包",
-      "en": "Luxury Handbags / Wallets"
-    },
-    "handbag.shortLabel": {
-      "zh": "手袋",
-      "en": "Handbags"
-    },
-    "iphone.labelZh": {
-      "zh": "iPhone / iPad / MacBook",
-      "en": "iPhone / iPad / MacBook"
-    },
-    "iphone.shortLabel": {
-      "zh": "iPhone",
-      "en": "iPhone"
-    },
-    "pokemon_card.labelZh": {
-      "zh": "Pokemon Card / TCG",
-      "en": "Pokemon Card / TCG"
-    },
-    "pokemon_card.shortLabel": {
-      "zh": "Pokemon Card",
-      "en": "Pokemon Card"
-    },
-    "watch.labelZh": {
-      "zh": "名錶",
-      "en": "Luxury Watches"
-    },
-    "watch.shortLabel": {
-      "zh": "名錶",
-      "en": "Watches"
-    },
-    "sneaker.labelZh": {
-      "zh": "球鞋",
-      "en": "Sneakers"
-    },
-    "sneaker.shortLabel": {
-      "zh": "球鞋",
-      "en": "Sneakers"
-    },
-    "designer_toy.labelZh": {
+    "designer_toy.label": {
       "zh": "潮玩",
       "en": "Designer Toys"
     },
@@ -10388,13 +10348,53 @@
       "zh": "潮玩",
       "en": "Toys"
     },
-    "other.labelZh": {
+    "handbag.label": {
+      "zh": "奢侈品手袋 / 銀包",
+      "en": "Luxury Handbags / Wallets"
+    },
+    "handbag.shortLabel": {
+      "zh": "手袋",
+      "en": "Handbags"
+    },
+    "iphone.label": {
+      "zh": "iPhone / iPad / MacBook",
+      "en": "iPhone / iPad / MacBook"
+    },
+    "iphone.shortLabel": {
+      "zh": "iPhone",
+      "en": "iPhone"
+    },
+    "other.label": {
       "zh": "其他",
       "en": "Other"
     },
     "other.shortLabel": {
       "zh": "其他",
       "en": "Other"
+    },
+    "pokemon_card.label": {
+      "zh": "Pokemon Card / TCG",
+      "en": "Pokemon Card / TCG"
+    },
+    "pokemon_card.shortLabel": {
+      "zh": "Pokemon Card",
+      "en": "Pokemon Card"
+    },
+    "sneaker.label": {
+      "zh": "球鞋",
+      "en": "Sneakers"
+    },
+    "sneaker.shortLabel": {
+      "zh": "球鞋",
+      "en": "Sneakers"
+    },
+    "watch.label": {
+      "zh": "名錶",
+      "en": "Luxury Watches"
+    },
+    "watch.shortLabel": {
+      "zh": "名錶",
+      "en": "Watches"
     }
   },
   "utils.conditions": {

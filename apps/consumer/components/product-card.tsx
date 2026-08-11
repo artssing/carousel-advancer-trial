@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { TierPill } from '@authentik/ui';
-import { formatHKD, tierForPrice, categoryByApiEnum, getClientLocale, createT } from '@authentik/utils';
+import { formatHKD, tierForPrice, categoryByApiEnum, categoryShortLabel, getClientLocale, createT } from '@authentik/utils';
 
 /**
  * L3 Product card — the `.p-card` primitive from design-samples/final-L3.
@@ -72,10 +72,13 @@ function CornerRibbon({ status }: { status?: string | null }) {
 }
 
 export function ProductCard({ listing: l, meta }: ProductCardProps) {
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+
   const tier = tierForPrice(l.priceHKD) as 1 | 2 | 3;
   const cat = categoryByApiEnum(l.category);
   const cover = l.coverUrl ?? l.images?.[0] ?? null;
-  const brandLabel = l.brand ?? cat?.shortLabel ?? '';
+  const brandLabel = l.brand ?? categoryShortLabel(cat?.id, locale);
   const isSold = l.status === 'SOLD';
   return (
     <Link
@@ -102,7 +105,7 @@ export function ProductCard({ listing: l, meta }: ProductCardProps) {
           {l.title}
         </h3>
         <p className="text-xs text-neutral-text-hint">
-          {meta ?? cat?.shortLabel ?? ''}
+          {meta ?? categoryShortLabel(cat?.id, locale)}
         </p>
         {/* 價錢 + tier 直度 stack：窄卡（mobile 2-col）一行放唔到會撞，
             stack 之後任何闊度都唔撞（founder 2026-07-20 mobile bug #2）。

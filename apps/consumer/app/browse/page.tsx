@@ -11,7 +11,7 @@ import { Chip } from '@authentik/ui';
 import {
   browseCategories, categoryById,
   brandsForCategory, hasBrandPicker, brandFieldLabel, brandLabel, parseSearchQuery,
-  CONDITION_GRADES, conditionLabel, stationDisplayLabel,
+  CONDITION_GRADES, conditionLabel, categoryLabel, stationDisplayLabel,
   getClientLocale, createT,
 } from '@authentik/utils';
 import { api } from '@/lib/api';
@@ -439,7 +439,7 @@ export default function BrowsePage() {
         {BROWSE_CATEGORIES.map((c) => (
           <FilterItem
             key={c.id}
-            label={c.labelZh}
+            label={categoryLabel(c.id, locale)}
             selected={effCat === c.id}
             onClick={() => handleCategoryChange(c.id)}
             suffix={!c.enabledInSell ? _t('browse.filter.comingSoon') : undefined}
@@ -498,7 +498,7 @@ export default function BrowsePage() {
         {CONDITION_GRADES.map((g) => (
           <FilterItem
             key={g.id}
-            label={g.label}
+            label={conditionLabel(g.id, locale)}
             selected={effCond === g.id}
             onClick={() => handleConditionChange(g.id)}
           />
@@ -579,7 +579,7 @@ export default function BrowsePage() {
               onRemove={() => navigate(buildUrl(null, searchQuery, { brands: null }))}
               removeLabel={_t('browse.chip.removeCategory')}
             >
-              {_t('browse.chip.category', { labelZh: categoryById(category)?.labelZh ?? category })}
+              {_t('browse.chip.category', { labelZh: categoryLabel(category as any, locale) || category })}
             </Chip>
           )}
           {/* One chip PER selected brand — each independently removable. */}
@@ -598,7 +598,7 @@ export default function BrowsePage() {
           })}
           {conditionMin && (
             <Chip onRemove={() => handleConditionChange(null)} removeLabel={_t('browse.chip.removeCondition')}>
-              {_t('browse.chip.condition', { conditionLabel: conditionLabel(conditionMin as any) })}
+              {_t('browse.chip.condition', { conditionLabel: conditionLabel(conditionMin as any, locale) })}
             </Chip>
           )}
           {(minPriceStr || maxPriceStr) && (
@@ -691,7 +691,7 @@ export default function BrowsePage() {
                       listing={l}
                       meta={
                         [
-                          l.condition ? conditionLabel(l.condition) : null,
+                          l.condition ? conditionLabel(l.condition, locale) : null,
                           stationDisplayLabel(l.sellerDistrict),
                         ].filter(Boolean).join(' · ') || undefined
                       }
@@ -711,7 +711,7 @@ export default function BrowsePage() {
                 {isComingSoon ? (
                   <>
                     <p className="font-display-serif text-lg font-bold text-ink">
-                      {_t('browse.empty.comingSoon', { emoji: activeCat.emoji, labelZh: activeCat.labelZh })}
+                      {_t('browse.empty.comingSoon', { emoji: activeCat.emoji, labelZh: categoryLabel(activeCat.id, locale) })}
                     </p>
                     <p className="mt-2 text-sm text-neutral-text-muted">
                       {_t('browse.empty.comingSoonDesc')}
