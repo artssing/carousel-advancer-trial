@@ -1,3 +1,5 @@
+import { t, type TLocale } from './locales';
+
 export type CategoryId =
   | 'handbag'
   | 'iphone'
@@ -218,4 +220,34 @@ export function calculateOrderFees(salePriceHKD: number, authQuote?: AuthFeeQuot
 /** 預覽某鑑定師收呢件貨幾多（買家 checkout 用）。 */
 export function quoteAuthFee(salePriceHKD: number, authQuote: AuthFeeQuote): number {
   return Math.round(Math.max(salePriceHKD * authQuote.feeRatePct, authQuote.feeMinHKD));
+}
+
+// ─── Locale-aware labels ─────────────────────────────────────────────────────
+//
+// `CategoryConfig.labelZh` / `.shortLabel` are the registry's own data and stay
+// Chinese. Anything rendered to a user must go through these instead: the
+// registry is imported by every portal, so a page that reads `.labelZh`
+// directly shows Chinese to an English reader no matter how well that page
+// itself is translated. QA case IN-03 caught exactly that on home and browse —
+// both files hold zero Chinese literals and both rendered 「奢侈品手袋 / 銀包」.
+//
+// Omitting `locale` keeps the previous behaviour (zh), so callers on pages that
+// are not wired for i18n yet are unchanged rather than half-migrated.
+
+/** Full category label, e.g. 「奢侈品手袋 / 銀包」 / "Luxury Handbags / Wallets". */
+export function categoryLabel(id: CategoryId | null | undefined, locale?: TLocale): string {
+  if (!id || !CATEGORIES[id]) return '';
+  return t(`utils.categories.${id}.label`, undefined, locale);
+}
+
+/** Short label for space-constrained UI (top-nav, chips, product cards). */
+export function categoryShortLabel(id: CategoryId | null | undefined, locale?: TLocale): string {
+  if (!id || !CATEGORIES[id]) return '';
+  return t(`utils.categories.${id}.shortLabel`, undefined, locale);
+}
+
+/** Same, keyed by the Prisma enum value the API returns (e.g. 'HANDBAG'). */
+export function categoryLabelByApiEnum(apiEnum: string | null | undefined, locale?: TLocale): string {
+  const cfg = apiEnum ? categoryByApiEnum(apiEnum) : undefined;
+  return cfg ? categoryLabel(cfg.id, locale) : (apiEnum ?? '');
 }

@@ -22,9 +22,26 @@
 點解：08-02 一次 full run 喺 tom 個錢包整咗個 HK$100 PROCESSING 提款出嚟，
 又喺佢名下開咗幾件 listing。跑多幾次，demo 帳號就唔再適合 demo。
 
-Demo 帳號（**唔好用嚟做 QA**）：買家 alice / bob / carol / dave@demo.hk；
-賣家 tom / jenny@demo.hk；鑑定師 milan / procheck / cardlab@authentik.hk。
-鑑定師 flow 暫時仍然要借 milan —— 未有 QA 專用鑑定師帳號（要 admin 開通）。
+**完整 demo 帳號清單：`docs/demo-accounts.md`**（password 全部 `password123`）。
+QA 要知邊啲係 demo 帳號先避得開佢哋 —— 所以呢張 list 係 QA 要讀嘅嘢，
+唔係淨係 demo 用。
+
+### 鑑定師：借 `milan@authentik.hk`（founder 2026-08-10）
+
+冇 QA 專用鑑定師帳號 —— `qa-auth@authentik.hk` 喺呢份 runbook 出現過，但
+**從來冇 seed 落 `authentik_uat`**（login 返 401）。Founder 2026-08-10 拍板：
+**鑑定師 portal 嘅 case 借 `milan@authentik.hk`**，唔使等開新帳號。
+
+呢個係 08-02 「唔准掂 demo 帳號」嘅**明文例外**，唔係推翻佢。條界線係：
+
+- 買家 / 賣家 flow —— 照用 `qa-*`，milan 唔關事
+- 鑑定師 flow —— 借 milan，但**只做讀，唔好留低嘢**。要落單、改狀態、
+  提款嗰啲，做完自己清乾淨，並喺報告寫低整咗乜、刪咗乜
+- 唔准借 alice / tom / jenny —— 佢哋有 QA 專用替身，冇理由借
+
+點解要寫明：scope 檔同呢份 runbook 之前一句叫「借 milan」、一句叫「唔准掂
+demo 帳號」，2026-08-10 一次 run 就係喺度停低問人。規矩自己打架，agent 就
+會卡住或者亂估，兩樣都差。
 
 註冊個 body key 係 `displayName`，**唔係** `name`。
 
@@ -39,16 +56,46 @@ Demo 帳號（**唔好用嚟做 QA**）：買家 alice / bob / carol / dave@demo
 
 跑之前驗證：
 
-```bash
-# 睇 image 幾時建
-docker images | grep certifine
+**由 2026-08-10 起，一條 curl 答到：**
 
-# 確認新 code 真係喺 container 入面（<新函數名> 換做今次改動嘅識別字）
-docker exec certifine-api-uat grep -rl "<新函數名>" dist/
-docker exec certifine-consumer-uat grep -rl "<新字串>" .next/ | head -1
+```bash
+docker run --rm --network carousel-advancer-trial_default curlimages/curl:latest \
+  -fsS http://api-uat:4000/api/version
 ```
 
-對唔上就**停低講**，唔好照跑 —— 跑出嚟嘅嘢係垃圾。
+```json
+{"commit":"eb19c41…","builtAt":"2026-08-11T04:12:00Z","env":"uat","startedAt":"…"}
+```
+
+`commit` 同你想測嗰個 SHA 唔一樣 → **停低講**，跑出嚟嘅嘢係垃圾。
+
+| 收到 | 意思 |
+|---|---|
+| `404` | 個 image 舊過 2026-08-10（`/api/version` 嗰陣先加）→ deploy 一定未生效 |
+| `commit: "dev"` | 你打緊 host 上跑 source 嘅 dev server，唔係 container |
+| `commit: "unknown"` | 有人喺 `ci/ci-run.sh` 以外 build，冇蓋章 → 驗唔到，當佢未知 |
+
+**⚠️ 分清楚兩個「UAT」**（2026-08-10 撞到）：Docker stack（`api-uat:4000`，行 tunnel
+`uat.certifinehk.com`）同 founder 部機上嘅 dev server（`localhost:4010`，直接 serve
+working tree）係兩樣嘢，可以差好多日 code。報告寫「UAT 綠」之前，講清楚係邊個。
+
+**四個容器都要查,唔係淨係 API。** 四個獨立 image 獨立 tag：2026-08-10 實測
+四個 UAT image 嘅 build 時間**橫跨 18 個鐘 41 分**。而且呢個 repo 大部分改動
+喺前端 —— 淨係查 API 會話你知「deploy 生效」，但你今次改嗰啲一行都冇上到。
+
+```bash
+for s in api-uat:4000 consumer-uat:3008 authenticator-uat:3001 admin-uat:3003; do
+  printf '%s ' "$s"
+  docker run --rm --network carousel-advancer-trial_default curlimages/curl:latest \
+    -fsS --max-time 5 "http://$s/api/version" || echo '(冇回應／冇呢個 endpoint)'
+  echo
+done
+```
+
+四個 `commit` 要**一模一樣**,而且等於你想測嗰個 SHA。有一個唔同 = 部分 deploy，
+一樣係垃圾數據。
+
+（`ci/ci-run.sh smoke` 已經內置同一個 loop，deploy 完會自己 fail，唔使人手行。）
 
 ---
 

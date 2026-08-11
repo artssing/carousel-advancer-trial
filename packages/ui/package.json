@@ -7,17 +7,20 @@
   "exports": {
     ".": "./src/index.ts",
     "./language-switcher": "./src/components/language-switcher.tsx",
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./src/styles.css",
+    "./conversation-pane": "./src/components/conversation-pane.tsx"
   },
   "scripts": {
     "lint": "eslint src --max-warnings 0",
     "type-check": "tsc --noEmit"
   },
   "dependencies": {
+    "@authentik/utils": "*",
     "clsx": "^2.1.0",
     "tailwind-merge": "^2.2.2",
     "class-variance-authority": "^0.7.0",
-    "lucide-react": "^0.358.0"
+    "lucide-react": "^0.358.0",
+    "socket.io-client": "^4.8.3"
   },
   "peerDependencies": {
     "react": "^18.2.0",

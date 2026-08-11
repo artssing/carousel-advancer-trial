@@ -195,7 +195,10 @@ export default function LoginPage() {
               <Link href="/privacy" className="text-brand-600 hover:underline">{_t('login.legal.privacy')}</Link>{_t('login.legal.suffix')}
             </p>
             <p className="mt-3 rounded-lg bg-surface-2 px-3 py-2 text-center text-[11px] text-neutral-text-hint">
-              Dev demo：seller@authentik.hk / password123
+              {/* ASCII colon: the full-width ：was the only Chinese character
+                  left on this screen in English, flagged by RS-09 and IN-03.
+                  The line is dev-only, so it stays untranslated by design. */}
+              Dev demo: seller@authentik.hk / password123
             </p>
           </form>
         </div>

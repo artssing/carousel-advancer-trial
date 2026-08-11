@@ -55,3 +55,13 @@ customer 刪除一律 soft（status flip + `removedAt`/`removedByRole`）；hard
 - RESERVED / SOLD 只可經 **direct listing URL** 到達；冇任何 public grid（browse、seller profile 都 ACTIVE-only）show 佢哋。卡 45° corner ribbon（`已預留` / `已售出`）code 留住，一有 surface 餵 RESERVED/SOLD 就即 render，但暫時冇 public surface。
 - **Product card 左上角 ribbon system**（`product-card.tsx`）：**只係交易狀態**，互斥，優先 SOLD > RESERVED。已售出=slate 灰（相 dim 但卡仍可 click 入 detail）、已預留=amber。
 - **卡上冇 tier / verification ribbon**（founder 2026-07-30）：買家 checkout 已知 Tier-3 強制鑑定，落 tag 只係呃 attention 引人入去，無意義。「已驗證」badge 只有喺 **賣前鑑定 flow** 存在（賣家上架前搵鑑定師攞 cert）+ Listing 加 cert 欄位先有意義 → backlog。未有之前卡上唔做任何 authenticity claim（平台中立）。
+
+## QA 帳號 rulings
+
+- **2026-08-10 — 鑑定師 case 借 `milan@authentik.hk`。** 08-02 定咗「QA 唔准掂
+  demo 帳號」，但一直冇 QA 專用鑑定師帳號（`qa-auth@authentik.hk` 寫咗落
+  runbook，從來冇 seed，login 401）。與其等開帳號，不如明文開一個例外：鑑定師
+  flow 借 milan，**只做讀為主，整咗嘢自己清乾淨並喺報告寫低**。買賣雙方照用
+  `qa-buyer` / `qa-seller`，唔准借 alice / tom / jenny。
+- **QA 要讀 `docs/demo-accounts.md`。** 「唔准掂 demo 帳號」呢條規矩，前提係
+  知道邊啲先係 demo 帳號。呢張 list 由 demo 專用改為 QA 同 demo 共用。

@@ -10,7 +10,7 @@ import {
   formatHKD, tierForPrice, calculateOrderFees, quoteAuthFee, formatSavings,
   categoryByApiEnum, brandLabel, brandFieldLabel,
   needsMyAction, sellerActionCta, getStatusLabel,
-  districtLabel, conditionLabel, stationDisplayLabel,
+  districtLabel, conditionLabel, categoryLabel, categoryShortLabel, stationDisplayLabel,
   getClientLocale, createT,
 } from '@authentik/utils';
 import { ShieldCheck, MapPin, Truck, Users, UserCheck, Wallet, Lock, AlertTriangle } from 'lucide-react';
@@ -578,7 +578,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
           return (
             <>
               <Link href={`/browse?cat=${cat.id}` as any} className="transition hover:text-ink">
-                {cat.labelZh}
+                {categoryLabel(cat.id, locale)}
               </Link>
               <span className="mx-1.5">/</span>
               {listing.brand && (() => {
@@ -611,7 +611,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
           const active = slides[activeImg] ?? slides[0];
           const brandWatermark = listing.brand
             ? brandLabel(categoryByApiEnum(listing.category)?.id as any, listing.brand) ?? listing.brand
-            : (categoryByApiEnum(listing.category)?.shortLabel ?? '');
+            : categoryShortLabel(categoryByApiEnum(listing.category)?.id, locale);
           return (
             <div>
               <div
@@ -779,7 +779,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                       return cat ? brandLabel(cat.id as any, listing.brand) : listing.brand;
                     })()
                   : null,
-                listing.condition ? _t('listing.condition.sellerStated', { cond: conditionLabel(listing.condition) ?? '' }) : null,
+                listing.condition ? _t('listing.condition.sellerStated', { cond: conditionLabel(listing.condition, locale) }) : null,
               ].filter(Boolean).join(' · ')}
             </div>
           )}
@@ -857,8 +857,8 @@ export default function ListingPage({ params }: { params: { id: string } }) {
               // Attribution is not decoration: an unattributed 「狀況」 reads as a
               // fact the platform verified. Condition is the seller's claim and
               // has to say so, in the same words everywhere (founder 2026-08-02).
-              { k: _t('listing.specConditionLabel'), v: listing.condition ? conditionLabel(listing.condition) : '—' },
-              { k: _t('listing.spec.category'), v: cat?.labelZh ?? '—' },
+              { k: _t('listing.specConditionLabel'), v: listing.condition ? conditionLabel(listing.condition, locale) : '—' },
+              { k: _t('listing.spec.category'), v: categoryLabel(cat?.id, locale) || '—' },
               { k: _t('listing.spec.brand'), v: listing.brand ? (cat ? brandLabel(cat.id as any, listing.brand) : listing.brand) : '—' },
               { k: _t('listing.spec.district'), v: districtLabelStr },
             ];

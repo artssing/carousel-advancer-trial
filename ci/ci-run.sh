@@ -61,6 +61,13 @@ case "$STEP" in
     ;;
 
   dockerbuild)
+    # Stamp the image so `deploy` can be verified instead of assumed.
+    # `git rev-parse` is the source of truth; GIT_COMMIT is only honoured as an
+    # override when git is unavailable (CI checkouts without .git).
+    GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo "${GIT_COMMIT:-unknown}")"
+    BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    export GIT_COMMIT BUILT_AT
+    echo "▸ stamping image: commit=$GIT_COMMIT builtAt=$BUILT_AT"
     docker compose $COMPOSE -p "$PROJECT" build $BUILD_SVCS
     ;;
 
@@ -78,6 +85,33 @@ case "$STEP" in
     echo '等 service 起身…'; sleep 15
     docker run --rm --network "$NETWORK" curlimages/curl:latest \
       -fsS --max-time 10 "http://$SMOKE_API/api/listings?limit=1" >/dev/null && echo 'API ok'
+
+    # A 200 above proves each container is alive, NOT that it is running the
+    # code we just built — an old image answers exactly as well. Compare the
+    # build stamp on ALL FOUR: they are four independently tagged images, and
+    # on 2026-08-10 the four UAT images spanned 18h41m of build times. Checking
+    # only the API would call a deploy live while a portal serves old code, and
+    # most changes in this repo are front-end.
+    WANT="$(git rev-parse HEAD 2>/dev/null || echo unknown)"
+    STALE=""
+    for svc in $SMOKE_API $SMOKE_FRONTS; do
+      GOT="$(docker run --rm --network "$NETWORK" curlimages/curl:latest \
+        -fsS --max-time 10 "http://$svc/api/version" 2>/dev/null \
+        | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')"
+      if [ "$GOT" = "$WANT" ]; then
+        echo "  ${svc%%:*} version ok"
+      else
+        # An empty GOT means /api/version is missing entirely — an image built
+        # before 2026-08-10, which is itself conclusive.
+        echo "  ${svc%%:*} STALE — serving '${GOT:-<no /api/version>}', expected '$WANT'"
+        STALE="$STALE ${svc%%:*}"
+      fi
+    done
+    if [ -n "$STALE" ]; then
+      echo "DEPLOY NOT LIVE —$STALE"
+      exit 1
+    fi
+    echo 'version ok (all 4)'
     for f in $SMOKE_FRONTS; do
       docker run --rm --network "$NETWORK" curlimages/curl:latest \
         -fsS --max-time 10 "http://$f/" >/dev/null && echo "${f%%:*} ok"

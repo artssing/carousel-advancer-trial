@@ -29,6 +29,15 @@ RUN npx turbo run build --filter=api
 FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /repo
+
+# Build stamp for GET /api/version. Declared in the LAST stage on purpose:
+# an ARG invalidates every layer after it, so putting these up top would defeat
+# the dependency cache on every commit. Defaults keep a plain
+# `docker build` (no --build-arg) working; CI passes the real values.
+ARG GIT_COMMIT=unknown
+ARG BUILT_AT=unknown
+ENV GIT_COMMIT=$GIT_COMMIT
+ENV BUILT_AT=$BUILT_AT
 COPY --from=build /repo/node_modules        ./node_modules
 COPY --from=build /repo/packages            ./packages
 COPY --from=build /repo/apps/api/dist       ./apps/api/dist

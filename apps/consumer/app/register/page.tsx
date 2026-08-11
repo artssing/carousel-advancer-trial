@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Check, Search, Tag } from 'lucide-react';
 import { api, setToken, ApiError } from '@/lib/api';
-import { CATEGORIES, type CategoryId,
+import { CATEGORIES, categoryShortLabel, type CategoryId,
   getClientLocale, createT,
 } from '@authentik/utils';
 import { AuthHeroPanel } from '@/components/auth/auth-hero-panel';
@@ -38,7 +38,7 @@ const FUNNEL_ORDER: Step[] = ['ACCOUNT', 'EMAIL_OTP', 'INTERESTS'];
 // enabledInBrowse = user-facing catalog; excludes internal `other` bucket.
 const INTEREST_OPTIONS = Object.values(CATEGORIES)
   .filter((c) => c.enabledInBrowse)
-  .map((c) => ({ id: c.id as CategoryId, apiEnum: c.apiEnum, emoji: c.emoji, label: c.shortLabel }));
+  .map((c) => ({ id: c.id as CategoryId, apiEnum: c.apiEnum, emoji: c.emoji }));
 
 function scorePassword(pw: string): number {
   let s = 0;
@@ -484,7 +484,7 @@ export default function RegisterPage() {
                       }`}
                     >
                       <span>{c.emoji}</span>
-                      <span>{c.label}</span>
+                      <span>{categoryShortLabel(c.id, locale)}</span>
                       {on && <Check className="h-3.5 w-3.5" strokeWidth={2.5} />}
                     </button>
                   );

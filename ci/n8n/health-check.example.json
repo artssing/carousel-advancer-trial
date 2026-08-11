@@ -1,5 +1,5 @@
 {
-  "name": "Authentik Health Check (每 10 分鐘)",
+  "name": "Certifine UAT Health + Build Stamp (每 10 分鐘)",
   "nodes": [
     {
       "parameters": {
@@ -13,15 +13,34 @@
     },
     {
       "parameters": {
-        "url": "http://host.docker.internal:4110/api/listings",
-        "options": { "timeout": 5000 }
+        "jsCode": "// Ask all four containers what they are running.\n//\n// Four independently tagged images: on 2026-08-10 the four UAT images spanned\n// 18h41m of build times. Checking only the API would call a deploy live while\n// a portal serves days-old code — and most changes in this repo are front-end.\n//\n// Service names, not host.docker.internal: the deploy stack publishes no host\n// ports (founder 2026-07-20), and n8n sits on the same compose network, so\n// this is the same path cloudflared uses.\nconst targets = [\n  { name: 'api',           url: 'http://api-uat:4000/api/version' },\n  { name: 'consumer',      url: 'http://consumer-uat:3008/api/version' },\n  { name: 'authenticator', url: 'http://authenticator-uat:3001/api/version' },\n  { name: 'admin',         url: 'http://admin-uat:3003/api/version' },\n];\n\nconst results = [];\nfor (const t of targets) {\n  try {\n    const r = await this.helpers.httpRequest({ url: t.url, timeout: 5000, json: true });\n    results.push({ ...t, commit: r.commit, builtAt: r.builtAt });\n  } catch (e) {\n    // A 404 is not \"down\" — /api/version shipped on 2026-08-10, so an image\n    // without it predates that commit. Saying so beats a generic outage alarm.\n    const msg = String(e.message || e);\n    results.push({ ...t, error: msg.includes('404') ? 'stale-image (no /api/version)' : msg });\n  }\n}\n\nconst down = results.filter((r) => r.error && !r.error.startsWith('stale-image'));\nconst stale = results.filter((r) => r.error && r.error.startsWith('stale-image'));\nconst unstamped = results.filter((r) => !r.error && (r.commit === 'unknown' || r.commit === 'dev'));\n\n// Four containers should be running one commit. A split means a partial\n// deploy — the failure this whole check exists for.\nconst commits = [...new Set(results.filter((r) => r.commit).map((r) => r.commit))];\nconst split = down.length === 0 && stale.length === 0 && commits.length > 1;\n\nconst lines = [];\nif (down.length) lines.push(`⚠️ 連唔到：${down.map((r) => r.name).join(', ')}`);\nif (stale.length) lines.push(`⚠️ Image 舊過 2026-08-10（deploy 未生效）：${stale.map((r) => r.name).join(', ')}`);\nif (unstamped.length) lines.push(`⚠️ 未蓋章 build（唔經 ci/ci-run.sh）：${unstamped.map((r) => `${r.name}=${r.commit}`).join(', ')}`);\nif (split) lines.push(`⚠️ 四個容器行緊唔同 commit：${results.map((r) => `${r.name}=${String(r.commit).slice(0, 8)}`).join(', ')}`);\n\n// Healthy: stay silent. An alert that fires when nothing is wrong is how\n// people learn to ignore alerts.\nreturn [{ json: { alert: lines.length > 0, text: `Certifine UAT\\n${lines.join('\\n')}`, results } }];"
       },
-      "id": "check-api",
-      "name": "查 UAT API",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [480, 300],
-      "onError": "continueErrorOutput"
+      "id": "probe",
+      "name": "查四個容器",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [520, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "version": 2 },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.alert }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "gate",
+      "name": "要唔要嘈",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [780, 300]
     },
     {
       "parameters": {
@@ -29,24 +48,20 @@
         "url": "https://api.telegram.org/bot<<<TELEGRAM_BOT_TOKEN>>>/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": \"<<<TELEGRAM_CHAT_ID>>>\",\n  \"text\": \"⚠️ Authentik UAT API (4110) 冇回應，可能死咗。\"\n}",
+        "jsonBody": "={\n  \"chat_id\": \"<<<TELEGRAM_CHAT_ID>>>\",\n  \"text\": {{ JSON.stringify($json.text) }}\n}",
         "options": {}
       },
       "id": "alert",
       "name": "出事先 send",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [760, 420]
+      "position": [1040, 240]
     }
   ],
   "connections": {
-    "每 10 分鐘": { "main": [[{ "node": "查 UAT API", "type": "main", "index": 0 }]] },
-    "查 UAT API": {
-      "main": [
-        [],
-        [{ "node": "出事先 send", "type": "main", "index": 0 }]
-      ]
-    }
+    "每 10 分鐘": { "main": [[{ "node": "查四個容器", "type": "main", "index": 0 }]] },
+    "查四個容器": { "main": [[{ "node": "要唔要嘈", "type": "main", "index": 0 }]] },
+    "要唔要嘈": { "main": [[{ "node": "出事先 send", "type": "main", "index": 0 }], []] }
   },
   "active": false,
   "settings": { "executionOrder": "v1" }
