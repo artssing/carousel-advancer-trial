@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures';
 import {
   CONSUMER, AUTHENTICATOR, API, HAN,
-  useEnglishAs, waitForEnglish, chineseOnScreen,
+  useEnglishAs, waitForEnglish, chineseOnScreen, tokenFor,
 } from './i18n-helpers';
 
 /**
@@ -49,16 +49,26 @@ test.describe('IN-17 ConversationPane 兩個 portal 都轉英文', () => {
 
   test('IN-17b authenticator — 同一個 component，第二個 adapter', async ({ page, context }) => {
     await useEnglishAs(context, page, AUTHENTICATOR, 'authenticator');
-    await page.goto(`${AUTHENTICATOR}/messages`);
 
-    // Borrowed demo account: it may legitimately have no conversation. Skipping
-    // loudly beats a green tick that proved nothing.
-    const composer = page.locator('textarea');
-    const empty = page.getByText(/No conversations yet|暫無對話/);
-    await expect(composer.or(empty).first()).toBeVisible();
-    if (await empty.count()) {
+    // Open a conversation by id rather than clicking the list. On desktop the
+    // right pane shows "select a conversation" until one is active, so landing
+    // on /messages renders no composer at all — that is the page working, not
+    // the pane failing, and asserting on it measured nothing.
+    const token = await tokenFor(page, 'authenticator');
+    const res = await page.request.get(`${API}/conversations/list`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    expect(res.ok(), 'could not list conversations').toBeTruthy();
+    const convs = await res.json();
+    // Borrowed demo account: it may legitimately have none. Skipping loudly
+    // beats a green tick that proved nothing.
+    if (!Array.isArray(convs) || convs.length === 0) {
       test.skip(true, 'milan@authentik.hk has no conversation on this UAT — nothing to open');
     }
+
+    await page.goto(`${AUTHENTICATOR}/messages?conv=${convs[0].id}`);
+    const composer = page.locator('textarea');
+    await expect(composer.first()).toBeVisible();
 
     await expect(composer.first()).toHaveAttribute('placeholder', COMPOSER_EN);
     await expect(page.locator(`textarea[placeholder="${COMPOSER_ZH}"]`)).toHaveCount(0);

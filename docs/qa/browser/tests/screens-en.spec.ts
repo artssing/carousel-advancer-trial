@@ -73,7 +73,18 @@ test.describe('IN-03 已收乾淨嘅 consumer 畫面 lang=en 之後零中文', (
 
     await page.goto(`/listing/${items[0].id}`);
     await waitForEnglish(page, async () => /Contact the seller/.test(await page.locator('body').innerText()));
-    await assertNoChinese(page, '/listing/[id]');
+
+    // A listing page necessarily renders user-written content: the seller's
+    // display name and the item title. Those are data, not UI copy — a listing
+    // called 「Chanel Classic 幾乎全新」 is correct in every locale. Filter the
+    // exact values the API gave us rather than loosening the Chinese check.
+    const userText = [items[0].title, items[0].seller?.displayName].filter(Boolean) as string[];
+    const lines = (await chineseOnScreen(page))
+      .filter((l) => !userText.some((u) => l.includes(u)));
+    expect(
+      lines,
+      `/listing/[id] still shows Chinese chrome after hydration:\n  ${lines.join('\n  ')}`,
+    ).toHaveLength(0);
   });
 
   test('IN-03 /seller/[id] 同 /authenticator/[id]', async ({ page, context }) => {

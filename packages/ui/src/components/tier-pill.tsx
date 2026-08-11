@@ -1,22 +1,27 @@
+'use client';
+
 import * as React from 'react';
 import { ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
+import { createT, getClientLocale, type TLocale } from '@authentik/utils';
 import { cn } from '../lib/cn';
 
 export type AuthenticationTier = 1 | 2 | 3;
 
 const tierConfig: Record<
   AuthenticationTier,
-  { label: string; description: string; classes: string; icon: React.ComponentType<{ className?: string }> }
+  { label: string; band: string; descriptionKey: string; classes: string; icon: React.ComponentType<{ className?: string }> }
 > = {
   1: {
     label: 'Tier 1 · Match-only',
-    description: '< HKD 1,000 · 純撮合',
+    band: '< HKD 1,000',
+    descriptionKey: 'ui.tierPill.tier1.description',
     classes: 'bg-slate-100 text-slate-700 ring-slate-200',
     icon: Shield,
   },
   2: {
     label: 'Tier 2 · Optional Auth',
-    description: 'HKD 1,000–10,000 · 可選鑑定',
+    band: 'HKD 1,000–10,000',
+    descriptionKey: 'ui.tierPill.tier2.description',
     classes: 'bg-amber-50 text-amber-800 ring-amber-200',
     icon: ShieldAlert,
   },
@@ -25,7 +30,8 @@ const tierConfig: Record<
     // the other two — nothing about a listing is authenticated before it sells,
     // so a per-item "Verified" would be the platform asserting authenticity.
     label: 'Tier 3 · Mandatory Auth',
-    description: '> HKD 10,000 · 強制鑑定',
+    band: '> HKD 10,000',
+    descriptionKey: 'ui.tierPill.tier3.description',
     classes: 'bg-emerald-50 text-emerald-800 ring-emerald-200',
     icon: ShieldCheck,
   },
@@ -38,6 +44,14 @@ export interface TierPillProps {
 }
 
 export function TierPill({ tier, showDescription = false, className }: TierPillProps) {
+  // The price band is data and reads the same in both locales; only the rule
+  // word ('純撮合' / 'Matchmaking only') is copy. `ui.tierPill.*` existed in
+  // the SSOT with no consumer — QA IN-03 found this rendering Chinese on an
+  // otherwise-English listing page.
+  const [locale, setLocale] = React.useState<TLocale>('zh');
+  React.useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const cfg = tierConfig[tier];
   const Icon = cfg.icon;
   return (
@@ -50,7 +64,7 @@ export function TierPill({ tier, showDescription = false, className }: TierPillP
     >
       <Icon className="h-3.5 w-3.5" />
       <span>{cfg.label}</span>
-      {showDescription && <span className="text-[10px] opacity-75">· {cfg.description}</span>}
+      {showDescription && <span className="text-[10px] opacity-75">· {cfg.band} · {_t(cfg.descriptionKey)}</span>}
     </span>
   );
 }
