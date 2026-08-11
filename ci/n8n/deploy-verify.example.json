@@ -12,30 +12,24 @@
       "name": "Webhook /deploy-verify",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 2,
-      "position": [240, 300],
+      "position": [
+        240,
+        300
+      ],
       "webhookId": "deploy-verify"
     },
     {
       "parameters": {
-        "url": "=http://api-{{ $json.body.env || 'uat' }}:4000/api/version",
-        "options": { "timeout": 8000 }
+        "jsCode": "// Caller says which commit it deployed; each container says what it is\n// running. Anything other than an exact match on ALL FOUR is a failed\n// deploy — including the healthy-but-old container, which is exactly the\n// failure a liveness check cannot see.\nconst body = $input.first().json.body || {};\nconst want = body.commit || '';\nconst env = body.env || 'uat';\nconst targets = [\n  { name: 'api',           url: `http://api-${env}:4000/api/version` },\n  { name: 'consumer',      url: `http://consumer-${env}:3008/api/version` },\n  { name: 'authenticator', url: `http://authenticator-${env}:3001/api/version` },\n  { name: 'admin',         url: `http://admin-${env}:3003/api/version` },\n];\n\nif (!want) {\n  return [{ json: { ok: false, text: `❌ Certifine ${env}: caller 冇畀 commit，驗唔到。` } }];\n}\n\nconst bad = [];\nconst seen = [];\nfor (const t of targets) {\n  try {\n    const r = await this.helpers.httpRequest({ url: t.url, timeout: 8000, json: true });\n    seen.push(`${t.name}=${String(r.commit).slice(0, 8)}`);\n    if (r.commit !== want) bad.push(`${t.name} 行緊 ${String(r.commit).slice(0, 8)}`);\n  } catch (e) {\n    const msg = String(e.message || e);\n    bad.push(`${t.name} ${msg.includes('404') ? '冇 /api/version（image 太舊）' : '連唔到'}`);\n  }\n}\n\nconst ok = bad.length === 0;\nreturn [{ json: {\n  ok, env, want, seen,\n  text: ok\n    ? `✅ Certifine ${env} deploy 生效，四個容器都係 ${want.slice(0, 8)}`\n    : `❌ Certifine ${env} deploy 未生效（應該係 ${want.slice(0, 8)}）：\\n` + bad.map((b) => `• ${b}`).join('\\n'),\n}}];"
       },
       "id": "ask",
-      "name": "問 API 你行緊邊個 commit",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4,
-      "position": [500, 300],
-      "onError": "continueErrorOutput"
-    },
-    {
-      "parameters": {
-        "jsCode": "// Caller says which commit it deployed; the API says which commit it is\n// running. Anything other than an exact match is a failed deploy — including\n// the case where the container is perfectly healthy and simply old, which is\n// the failure a liveness check cannot see.\nconst want = ($('Webhook /deploy-verify').first().json.body || {}).commit || '';\nconst env = ($('Webhook /deploy-verify').first().json.body || {}).env || 'uat';\nconst res = $input.first().json;\n\nif (res.error || !res.commit) {\n  return [{ json: {\n    ok: false,\n    text: `❌ Certifine ${env}: 攞唔到 build stamp（${res.error || 'no commit field'}）。`,\n  }}];\n}\n\nconst ok = !!want && res.commit === want;\nconst short = (c) => String(c).slice(0, 8);\nreturn [{ json: {\n  ok,\n  env,\n  want,\n  got: res.commit,\n  builtAt: res.builtAt,\n  text: ok\n    ? `✅ Certifine ${env} deploy 生效：${short(res.commit)}（built ${res.builtAt}）`\n    : `❌ Certifine ${env} deploy 未生效：行緊 ${short(res.commit)}，應該係 ${short(want) || '(caller 冇畀 commit)'}。`,\n}}];"
-      },
-      "id": "compare",
-      "name": "對數",
+      "name": "問四個容器行緊邊個 commit",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [760, 360]
+      "position": [
+        500,
+        300
+      ]
     },
     {
       "parameters": {
@@ -50,19 +44,38 @@
       "name": "通知",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [1020, 360]
+      "position": [
+        1020,
+        360
+      ]
     }
   ],
   "connections": {
-    "Webhook /deploy-verify": { "main": [[{ "node": "問 API 你行緊邊個 commit", "type": "main", "index": 0 }]] },
-    "問 API 你行緊邊個 commit": {
+    "Webhook /deploy-verify": {
       "main": [
-        [{ "node": "對數", "type": "main", "index": 0 }],
-        [{ "node": "對數", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "問四個容器行緊邊個 commit",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
-    "對數": { "main": [[{ "node": "通知", "type": "main", "index": 0 }]] }
+    "問四個容器行緊邊個 commit": {
+      "main": [
+        [
+          {
+            "node": "通知",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
   },
   "active": false,
-  "settings": { "executionOrder": "v1" }
+  "settings": {
+    "executionOrder": "v1"
+  }
 }

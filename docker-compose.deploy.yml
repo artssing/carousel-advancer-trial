@@ -68,6 +68,8 @@ services:
         NEXT_PUBLIC_CONSUMER_URL: "https://certifinehk.com"
         NEXT_PUBLIC_AUTHENTICATOR_URL: "https://auth.certifinehk.com"
         NEXT_PUBLIC_ADMIN_URL: "https://admin.certifinehk.com"
+        GIT_COMMIT: "${GIT_COMMIT:-unknown}"
+        BUILT_AT: "${BUILT_AT:-unknown}"
     image: certifine-consumer:prod
     container_name: certifine-consumer-prod
     restart: unless-stopped
@@ -82,6 +84,8 @@ services:
         NEXT_PUBLIC_CONSUMER_URL: "https://certifinehk.com"
         NEXT_PUBLIC_AUTHENTICATOR_URL: "https://auth.certifinehk.com"
         NEXT_PUBLIC_ADMIN_URL: "https://admin.certifinehk.com"
+        GIT_COMMIT: "${GIT_COMMIT:-unknown}"
+        BUILT_AT: "${BUILT_AT:-unknown}"
     image: certifine-authenticator:prod
     container_name: certifine-authenticator-prod
     restart: unless-stopped
@@ -96,6 +100,8 @@ services:
         NEXT_PUBLIC_CONSUMER_URL: "https://certifinehk.com"
         NEXT_PUBLIC_AUTHENTICATOR_URL: "https://auth.certifinehk.com"
         NEXT_PUBLIC_ADMIN_URL: "https://admin.certifinehk.com"
+        GIT_COMMIT: "${GIT_COMMIT:-unknown}"
+        BUILT_AT: "${BUILT_AT:-unknown}"
     image: certifine-admin:prod
     container_name: certifine-admin-prod
     restart: unless-stopped
@@ -134,6 +140,8 @@ services:
         NEXT_PUBLIC_CONSUMER_URL: "https://uat.certifinehk.com"
         NEXT_PUBLIC_AUTHENTICATOR_URL: "https://uat-auth.certifinehk.com"
         NEXT_PUBLIC_ADMIN_URL: "https://uat-admin.certifinehk.com"
+        GIT_COMMIT: "${GIT_COMMIT:-unknown}"
+        BUILT_AT: "${BUILT_AT:-unknown}"
     image: certifine-consumer:uat
     container_name: certifine-consumer-uat
     restart: unless-stopped
@@ -148,6 +156,8 @@ services:
         NEXT_PUBLIC_CONSUMER_URL: "https://uat.certifinehk.com"
         NEXT_PUBLIC_AUTHENTICATOR_URL: "https://uat-auth.certifinehk.com"
         NEXT_PUBLIC_ADMIN_URL: "https://uat-admin.certifinehk.com"
+        GIT_COMMIT: "${GIT_COMMIT:-unknown}"
+        BUILT_AT: "${BUILT_AT:-unknown}"
     image: certifine-authenticator:uat
     container_name: certifine-authenticator-uat
     restart: unless-stopped
@@ -162,6 +172,8 @@ services:
         NEXT_PUBLIC_CONSUMER_URL: "https://uat.certifinehk.com"
         NEXT_PUBLIC_AUTHENTICATOR_URL: "https://uat-auth.certifinehk.com"
         NEXT_PUBLIC_ADMIN_URL: "https://uat-admin.certifinehk.com"
+        GIT_COMMIT: "${GIT_COMMIT:-unknown}"
+        BUILT_AT: "${BUILT_AT:-unknown}"
     image: certifine-admin:uat
     container_name: certifine-admin-uat
     restart: unless-stopped

@@ -42,6 +42,14 @@ RUN npx turbo run build --filter=consumer
 FROM base AS runner
 ENV NODE_ENV=production
 WORKDIR /repo
+
+# Build stamp for GET /api/version. Declared in the LAST stage on purpose:
+# an ARG invalidates every layer after it, so putting these next to the
+# NEXT_PUBLIC_* args would rebuild the whole app on every commit.
+ARG GIT_COMMIT=unknown
+ARG BUILT_AT=unknown
+ENV GIT_COMMIT=$GIT_COMMIT
+ENV BUILT_AT=$BUILT_AT
 COPY --from=build /repo ./
 WORKDIR /repo/apps/consumer
 EXPOSE 3008

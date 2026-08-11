@@ -79,11 +79,23 @@ docker run --rm --network carousel-advancer-trial_default curlimages/curl:latest
 `uat.certifinehk.com`）同 founder 部機上嘅 dev server（`localhost:4010`，直接 serve
 working tree）係兩樣嘢，可以差好多日 code。報告寫「UAT 綠」之前，講清楚係邊個。
 
-前端仲未有 build stamp，暫時照舊：
+**四個容器都要查,唔係淨係 API。** 四個獨立 image 獨立 tag：2026-08-10 實測
+四個 UAT image 嘅 build 時間**橫跨 18 個鐘 41 分**。而且呢個 repo 大部分改動
+喺前端 —— 淨係查 API 會話你知「deploy 生效」，但你今次改嗰啲一行都冇上到。
 
 ```bash
-docker exec certifine-consumer-uat grep -rl "<新字串>" .next/ | head -1
+for s in api-uat:4000 consumer-uat:3008 authenticator-uat:3001 admin-uat:3003; do
+  printf '%s ' "$s"
+  docker run --rm --network carousel-advancer-trial_default curlimages/curl:latest \
+    -fsS --max-time 5 "http://$s/api/version" || echo '(冇回應／冇呢個 endpoint)'
+  echo
+done
 ```
+
+四個 `commit` 要**一模一樣**,而且等於你想測嗰個 SHA。有一個唔同 = 部分 deploy，
+一樣係垃圾數據。
+
+（`ci/ci-run.sh smoke` 已經內置同一個 loop，deploy 完會自己 fail，唔使人手行。）
 
 ---
 

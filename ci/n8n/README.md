@@ -65,19 +65,24 @@ docker run --rm cloudflare/cloudflared:latest tunnel --url http://host.docker.in
 
 Import `ci/n8n/health-check.example.json`，填 Telegram token / chat id，Activate。
 
-**佢查嘅唔係「死咗未」，係「行緊邊個 commit」** —— GET `http://api-uat:4000/api/version`。
+**佢查嘅唔係「死咗未」，係「四個容器行緊邊個 commit」** —— API + consumer +
+authenticator + admin 各自 GET `/api/version`。
 
 點解要咁：`/api/listings` 返 200 **只證明個 container 未死，唔證明新 code 上咗**。
 2026-08-10 實測：UAT container 係 8 日前嘅 image，`/api/listings` **200 ALIVE**，
 但 `/api/version` **404**。淨查 liveness 嗰種 health check 會一路綠，而件事其實壞緊。
 
-三種情況三個訊息（唔好合併 —— 常見嗰個同罕見嗰個撈埋，founder 就唔會再睇）：
+四種情況分開講（唔好合併 —— 常見嗰個同罕見嗰個撈埋，founder 就唔會再睇）：
 
 | 情況 | 意思 |
 |---|---|
-| 連唔到 | API 真係死咗 |
+| 連唔到 | 嗰個 container 真係死咗 |
 | 404 | 個 image 舊過 2026-08-10（`/api/version` 嗰陣先加），即 deploy 未生效 |
 | `commit` = `unknown` / `dev` | 有人喺 `ci/ci-run.sh` 以外 build，冇蓋章 → 下次 deploy 驗唔到 |
+| 四個 commit 唔一致 | **部分 deploy** —— 例如淨係重 build 咗 api，前端仲係舊 |
+
+點解四個都要查：四個獨立 image 獨立 tag。2026-08-10 實測，四個 UAT image
+build 時間橫跨 **18 個鐘 41 分**。而且大部分改動喺前端 —— 淨查 API 等於乜都冇驗到。
 
 正常就**唔出聲**。冇嘢壞都響嘅 alert，教識人無視 alert。
 
