@@ -76,7 +76,24 @@ case "$STEP" in
     # tunnel 用 service 名 route，容器 recreate 完自動接返 — deploy 唔使掂 tunnel。
     # ⚠️ 絕對唔好加 --remove-orphans：jenkins / n8n 同一個
     #    project 名下，會被當 orphan 剷走（= CI 剷自己）。
-    docker compose $COMPOSE -p "$PROJECT" up -d --force-recreate postgres $DEPLOY_SVCS
+    #
+    # ⚠️ postgres 唔喺 --force-recreate 名單入面（2026-08-11 修）。佢本來喺，
+    #    同上面句 comment 自相矛盾，而後果唔止係 DB 斷幾秒：api-prod 有
+    #    `depends_on: postgres (service_healthy)`，postgres 一 recreate，
+    #    compose 就會連 api-prod 一齊重啟 —— 而 api-prod 同 api-uat 共用
+    #    `certifine-api:latest`，即係一次 UAT deploy 會靜靜咁將新 code 推上
+    #    PROD。2026-08-11 就係咁中招。`up` 仍然會確保 postgres 起咗身（佢係
+    #    dependency），只係唔會逼佢重生。
+    # --no-deps 係關鍵，唔係可有可無：`up --force-recreate <svc>` 會連
+    # dependency 一齊 recreate。api-uat 有 `depends_on: api-prod`，所以冇
+    # 佢就會拖住 api-prod 重啟，而兩者共用 certifine-api:latest → 一次 UAT
+    # deploy 靜靜咁 deploy 埋 PROD。2026-08-11 連續中兩次先捉到（第一次以為
+    # 淨係 postgres 嗰條路）。dependency 由上面個 `postgres` step 負責起身。
+    #
+    # ⚠️ `docker compose --dry-run` 喺呢件事上面**報錯咗兩次**：兩次都話
+    #    api-prod 係 `Running`，實際兩次都 recreate 咗。唔好靠佢落保證，要
+    #    deploy 完查 .State.StartedAt。
+    docker compose $COMPOSE -p "$PROJECT" up -d --force-recreate --no-deps $DEPLOY_SVCS
     ;;
 
   smoke)
