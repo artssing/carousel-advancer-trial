@@ -16,7 +16,12 @@ GREP="${1:-}"
 # burns OTPs. It must never be pointed at production (founder 2026-08-02).
 BASE="${QA_BASE_URL:-https://uat.certifinehk.com}"
 case "$BASE" in
-  *uat*|*localhost*|*127.0.0.1*) ;;
+  # host.docker.internal is how the container reaches a dev server running on
+  # the host. Added 2026-08-10: the Docker UAT stack and the founder's dev
+  # servers are two different deployments of "UAT", and the containers can be
+  # days behind the working tree — pointing the lane at the tree is often the
+  # only way to test code that is not deployed yet.
+  *uat*|*localhost*|*127.0.0.1*|*host.docker.internal*) ;;
   *) echo "REFUSING: browser lane only runs against UAT or localhost. Got: $BASE"; exit 2 ;;
 esac
 
@@ -36,9 +41,12 @@ docker pull -q "$IMAGE"
 
 echo "▸ running browser lane${GREP:+ (grep: $GREP)}"
 docker run --rm \
+  --add-host=host.docker.internal:host-gateway \
   -v "$ROOT:/work" -w /work \
   -e QA_BASE_URL="${QA_BASE_URL:-https://uat.certifinehk.com}" \
   -e QA_API_URL="${QA_API_URL:-https://uat-api.certifinehk.com/api}" \
+  -e QA_AUTH_URL="${QA_AUTH_URL:-https://uat-auth.certifinehk.com}" \
+  -e QA_ADMIN_URL="${QA_ADMIN_URL:-https://uat-admin.certifinehk.com}" \
   "$IMAGE" bash -lc "$RUN_CMD"
 STATUS=$?
 
