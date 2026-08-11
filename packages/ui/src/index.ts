@@ -35,3 +35,5 @@ export type {
   ConversationLinkProps,
   ConversationTheme,
 } from './components/conversation-pane';
+export { OfferCard } from './components/offer-card';
+export type { OfferCardProps, OfferCardApi } from './components/offer-card';

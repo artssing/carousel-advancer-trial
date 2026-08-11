@@ -223,7 +223,7 @@ export default function MyListingsPage() {
                 </Link>
 
                 <div className="min-w-0 flex-1">
-                  <Link href={`/listing/${l.id}`} className="block truncate text-[14px] font-semibold text-neutral-text after:absolute after:inset-0 after:content-[''] hover:text-brand-700">
+                  <Link href={`/listing/${l.id}`} data-user-content className="block truncate text-[14px] font-semibold text-neutral-text after:absolute after:inset-0 after:content-[''] hover:text-brand-700">
                     {l.title}
                   </Link>
                   <div className="mt-1 flex flex-wrap items-center gap-2 text-[12px] text-neutral-text-hint">

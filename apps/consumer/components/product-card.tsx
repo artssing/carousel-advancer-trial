@@ -101,7 +101,7 @@ export function ProductCard({ listing: l, meta }: ProductCardProps) {
         <CornerRibbon status={l.status} />
       </div>
       <div className="flex flex-1 flex-col gap-1.5 px-4 pb-4 pt-3.5">
-        <h3 className="line-clamp-2 min-h-[2.6em] text-sm font-semibold leading-snug text-neutral-text">
+        <h3 data-user-content className="line-clamp-2 min-h-[2.6em] text-sm font-semibold leading-snug text-neutral-text">
           {l.title}
         </h3>
         <p className="text-xs text-neutral-text-hint">

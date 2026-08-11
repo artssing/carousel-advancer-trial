@@ -100,9 +100,9 @@ export function AuthTicker() {
           <div className="flex animate-marquee items-center gap-6 whitespace-nowrap text-[13px] text-neutral-text-muted">
             {doubled.map((it, i) => (
               <span key={`${it.key}-${i}`} className="flex items-center gap-2">
-                <b className="font-semibold text-neutral-text">{it.title}</b>
+                <b data-user-content className="font-semibold text-neutral-text">{it.title}</b>
                 <span className="text-neutral-text-hint">·</span>
-                <span>{it.authenticatorName}</span>
+                <span data-user-content>{it.authenticatorName}</span>
                 <span className="flex items-center gap-1 font-bold text-verify">
                   <Check className="h-3.5 w-3.5" strokeWidth={3} />
                   {_t('homepage.ticker.passed')}

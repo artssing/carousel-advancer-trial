@@ -829,7 +829,7 @@ export function ConversationPane({
                     const content = (
                       <>
                         <span className="opacity-70">{label}</span>
-                        <span>{p.displayName}</span>
+                        <span data-user-content>{p.displayName}</span>
                         {isMe && <span className="text-[9px] opacity-60">{_t('ui.conversation.header.meTag')}</span>}
                       </>
                     );
@@ -1132,11 +1132,11 @@ export function ConversationPane({
                     : 'rounded-2xl rounded-tl-[4px] border border-line bg-white text-neutral-text'
                 }`}>
                   {!isMe && !groupedWithPrev && (
-                    <p className="mb-0.5 text-[10px] font-medium text-neutral-text-hint">
+                    <p data-user-content className="mb-0.5 text-[10px] font-medium text-neutral-text-hint">
                       {msg.sender?.displayName ?? roleLabel(msg.senderRole, _t)}
                     </p>
                   )}
-                  <p className="text-sm leading-relaxed whitespace-pre-wrap">{msg.body}</p>
+                  <p data-user-content className="text-sm leading-relaxed whitespace-pre-wrap">{msg.body}</p>
                   <div className={`mt-0.5 flex items-center justify-end gap-1 text-[9px] ${isMe ? tk.bubbleMeMeta : 'text-neutral-text-hint'}`}>
                     <span>{formatTime(msgDate, locale)}</span>
                     {tickStatus && <MessageTick status={tickStatus} _t={_t} />}
@@ -1313,7 +1313,7 @@ export function ConversationPane({
                             : <div className="flex h-full w-full items-center justify-center text-sm">🛍️</div>}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="truncate text-[10px] font-medium text-neutral-text">{l.title}</p>
+                          <p data-user-content className="truncate text-[10px] font-medium text-neutral-text">{l.title}</p>
                           <p className="text-[10px] text-neutral-text-muted">HK${l.priceHKD.toLocaleString()}</p>
                         </div>
                       </button>

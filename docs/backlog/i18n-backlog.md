@@ -133,9 +133,18 @@ Milan Station 旺角                      ← 鑑定師自己改嘅名
 **呢啲喺任何語言都應該原樣顯示。** 而家 `/listing/[id]` 濾走 API 返嘅
 `title` / `seller.displayName`，但首頁有成打 listing + ticker，濾唔切。
 
-正路修法：唔好掃 `body`，改成只掃 **chrome 區域**（top-nav / footer / 特定
-component container）。未做，所以呢兩條 case 而家係紅。**唔好用「放鬆漢字檢查」
-嚟令佢綠** —— 咁等於閹咗成條 case。
+## ✅ 已修 2026-08-11 — 改用 `data-user-content` denylist
 
-`docs/qa/browser/README.md` 寫住「連續 flaky 兩次即刻 skip 咗佢再查」——
-呢兩條而家就係嗰種狀態。
+揀咗 denylist（掃全部，剔走標記咗嘅節點），**唔係** allowlist（只掃 chrome）：
+denylist 嘅預設係「掃」，漏標一個 component 出嚟係**假紅**，有人會查；allowlist
+漏標就係假綠，靜靜咁當條 case 過咗 —— 假綠先係最差嘅結果。
+
+- 產品側：用戶寫嘅字加 `data-user-content`（listing 標題、賣家/鑑定師/買家
+  displayName、店名、商品描述、message bubble 內文、ticker 項目、議價卡提出者）。
+- QA 側：`chineseOnScreen()` 由掃 `body.innerText` 改成 clone `body`、刪走
+  `[data-user-content]`、再讀 innerText。clone 要 attach 返落 DOM（off-screen）
+  先有 layout，否則 `innerText` 讀唔到 rendered text。
+- `screens-en.spec.ts` 個 `/listing/[id]` 專用 filter 一併刪走，統一行同一條路。
+
+**system message pill（`msg.body` for SYSTEM）刻意冇標。** 嗰啲係 server 出嘅
+copy，唔係用戶寫嘅字，仲係中文 —— 標咗就等於幫佢遮住一個真 gap。留返畀 QA 叫。

@@ -101,9 +101,32 @@ export async function waitForEnglish(page: Page, probe: () => Promise<boolean>) 
   }
 }
 
-/** Chinese still on screen after hydration, as `snippet` lines for the report. */
+/**
+ * Chinese still on screen after hydration, as `snippet` lines for the report.
+ *
+ * User-written content is excluded: a listing titled 「Chanel Classic 幾乎全新」
+ * or a seller called 「Tom (賣家)」 is correct in every locale, and this scan
+ * used to fail on both. The product marks those nodes `data-user-content`
+ * (2026-08-11), and they are removed from a clone of the body before reading.
+ *
+ * Deliberately a denylist, not an allowlist of "chrome" regions: the default is
+ * to scan, so forgetting to mark a node produces a FALSE RED — visible, and
+ * someone investigates. An allowlist would fail the other way, and a silently
+ * unscanned screen is the one outcome worse than a noisy one.
+ */
 export async function chineseOnScreen(page: Page): Promise<string[]> {
-  const text = await page.locator('body').innerText();
+  const text = await page.evaluate(() => {
+    const clone = document.body.cloneNode(true) as HTMLElement;
+    clone.querySelectorAll('[data-user-content]').forEach((n) => n.remove());
+    // innerText needs layout, which a detached clone has none of; attach it
+    // off-screen so it reports rendered text (and so hidden nodes stay hidden).
+    clone.style.position = 'absolute';
+    clone.style.left = '-99999px';
+    document.body.appendChild(clone);
+    const out = clone.innerText;
+    clone.remove();
+    return out;
+  });
   return text
     .split('\n')
     .map((l) => l.trim())

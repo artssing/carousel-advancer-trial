@@ -218,7 +218,7 @@ export default function OrderDetailPage() {
             />
           </Link>
           <div className="flex-1 min-w-0">
-            <Link href={`/listing/${order.listing?.id}`} className="block font-medium text-slate-900 hover:text-brand-700">
+            <Link data-user-content href={`/listing/${order.listing?.id}`} className="block font-medium text-slate-900 hover:text-brand-700">
               {order.listing?.title}
             </Link>
             <p className="mt-1 font-display text-xl font-bold text-brand-700">{formatHKD(order.salePriceHKD)}</p>
@@ -234,14 +234,14 @@ export default function OrderDetailPage() {
         </CardHeader>
         <CardContent className="space-y-2 p-4 text-sm">
           <Row label={_t('orderDetail.label.buyer')} link={isBuyer ? null : (order.buyer?.id ? `/buyer/${order.buyer.id}` : null)}>
-            {order.buyer?.displayName} {isBuyer && <span className="text-[10px] text-brand-600">{_t('orderDetail.you.self')}</span>}
+            <span data-user-content>{order.buyer?.displayName}</span> {isBuyer && <span className="text-[10px] text-brand-600">{_t('orderDetail.you.self')}</span>}
           </Row>
           <Row label={_t('orderDetail.label.seller')} link={isSeller ? null : (order.seller?.id ? `/seller/${order.seller.id}` : null)}>
-            {order.seller?.displayName} {isSeller && <span className="text-[10px] text-brand-600">{_t('orderDetail.you.self')}</span>}
+            <span data-user-content>{order.seller?.displayName}</span> {isSeller && <span className="text-[10px] text-brand-600">{_t('orderDetail.you.self')}</span>}
           </Row>
           {order.authenticator && (
             <Row label={_t('orderDetail.label.authenticator')} link={`/authenticator/${order.authenticator.id}`}>
-              {order.authenticator.displayName}
+              <span data-user-content>{order.authenticator.displayName}</span>
             </Row>
           )}
         </CardContent>

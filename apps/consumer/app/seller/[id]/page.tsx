@@ -145,7 +145,7 @@ export default function SellerPage() {
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="font-display-serif text-[26px] font-bold leading-tight tracking-[-0.01em] text-ink">
+            <h1 data-user-content className="font-display-serif text-[26px] font-bold leading-tight tracking-[-0.01em] text-ink">
               {profile.displayName}
             </h1>
             <Pill variant="status" size="md">{_t('seller.pill.seller')}</Pill>

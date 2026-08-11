@@ -574,7 +574,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
         <span className="mx-1.5">/</span>
         {(() => {
           const cat = categoryByApiEnum(listing.category);
-          if (!cat) return <span className="text-neutral-text-muted">{listing.title}</span>;
+          if (!cat) return <span data-user-content className="text-neutral-text-muted">{listing.title}</span>;
           return (
             <>
               <Link href={`/browse?cat=${cat.id}` as any} className="transition hover:text-ink">
@@ -592,7 +592,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   </>
                 ) : null;
               })()}
-              <span className="truncate text-neutral-text-muted">{listing.title}</span>
+              <span data-user-content className="truncate text-neutral-text-muted">{listing.title}</span>
             </>
           );
         })()}
@@ -765,7 +765,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
           )}
 
           {/* ── L3 Serif big title ── */}
-          <h1 className="mt-4 font-display-serif text-[28px] font-bold leading-[1.2] tracking-[-0.01em] text-ink">
+          <h1 data-user-content className="mt-4 font-display-serif text-[28px] font-bold leading-[1.2] tracking-[-0.01em] text-ink">
             {listing.title}
           </h1>
 
@@ -898,7 +898,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             </p>
           </div>
 
-          <p className="mt-6 text-sm text-neutral-text-muted whitespace-pre-wrap">{listing.description}</p>
+          <p data-user-content className="mt-6 text-sm text-neutral-text-muted whitespace-pre-wrap">{listing.description}</p>
 
           {/* 上架時間 — 分鐘/小時/日 granularity */}
           {listing.createdAt && (
@@ -928,7 +928,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                 <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-100 text-[10px] font-semibold text-brand-700">
                   {(listing.seller.displayName ?? '?').slice(0, 1).toUpperCase()}
                 </span>
-                <span className="font-medium text-slate-700 group-hover:text-brand-700">
+                <span data-user-content className="font-medium text-slate-700 group-hover:text-brand-700">
                   {listing.seller.displayName}
                 </span>
                 <span className="text-[10px] text-slate-400 group-hover:text-brand-600">
@@ -936,7 +936,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                 </span>
               </Link>
             ) : (
-              <span className="text-xs text-slate-500">{_t('listing.seller.prefix')}{listing.seller?.displayName}</span>
+              <span className="text-xs text-slate-500">{_t('listing.seller.prefix')}<span data-user-content>{listing.seller?.displayName}</span></span>
             )}
             {me && !isOwner && (
               <button
@@ -1258,9 +1258,9 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                           <CardContent className="p-4">
                             <div className="flex items-start justify-between gap-2">
                               <div className="min-w-0">
-                                <p className="truncate font-medium">{a.displayName}</p>
+                                <p data-user-content className="truncate font-medium">{a.displayName}</p>
                                 {a.storeName && (
-                                  <p className="truncate text-xs text-slate-500">{a.storeName}</p>
+                                  <p data-user-content className="truncate text-xs text-slate-500">{a.storeName}</p>
                                 )}
                               </div>
                               <StarRating value={a.starRating} size="sm" />
@@ -1561,7 +1561,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                     )}
                   </div>
                   <div className="flex flex-1 flex-col p-2">
-                    <p className="line-clamp-2 min-h-[2.25rem] text-xs leading-snug">{other.title}</p>
+                    <p data-user-content className="line-clamp-2 min-h-[2.25rem] text-xs leading-snug">{other.title}</p>
                     <p className="mt-auto pt-1 text-sm font-semibold">{formatHKD(other.priceHKD)}</p>
                   </div>
                 </div>
