@@ -31,6 +31,13 @@ services:
     build:
       context: .
       dockerfile: apps/api/Dockerfile
+      # Baked into GET /api/version so a deploy can be verified rather than
+      # assumed. ci/ci-run.sh exports both before `dockerbuild`; a manual
+      # build without them stamps `unknown`, which reads as "nobody recorded
+      # what this is" — not as a passing check.
+      args:
+        GIT_COMMIT: "${GIT_COMMIT:-unknown}"
+        BUILT_AT: "${BUILT_AT:-unknown}"
     image: certifine-api:latest
     container_name: certifine-api-prod
     restart: unless-stopped

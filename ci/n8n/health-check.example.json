@@ -1,5 +1,5 @@
 {
-  "name": "Authentik Health Check (每 10 分鐘)",
+  "name": "Certifine UAT Health + Build Stamp (每 10 分鐘)",
   "nodes": [
     {
       "parameters": {
@@ -13,11 +13,11 @@
     },
     {
       "parameters": {
-        "url": "http://host.docker.internal:4110/api/listings",
+        "url": "http://api-uat:4000/api/version",
         "options": { "timeout": 5000 }
       },
-      "id": "check-api",
-      "name": "查 UAT API",
+      "id": "check-version",
+      "name": "查 UAT build stamp",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
       "position": [480, 300],
@@ -25,28 +25,61 @@
     },
     {
       "parameters": {
+        "jsCode": "// Three distinct failures, three distinct messages. A single\n// \"UAT is down\" alert would make the common case (stale image) look\n// like the rare case (server dead) and waste the founder's attention.\nconst item = $input.first().json;\n\n// The HTTP node's error output carries `error`; a 404 lands here too,\n// and a 404 on /api/version is itself the signal: that endpoint shipped\n// on 2026-08-10, so an image without it predates that commit.\nif (item.error || !item.commit) {\n  const is404 = String(item.error || '').includes('404');\n  return [{ json: {\n    alert: true,\n    text: is404\n      ? '⚠️ Certifine UAT: /api/version 返 404 — 個 image 舊過 2026-08-10，即係 deploy 未生效。'\n      : '⚠️ Certifine UAT API (api-uat:4000) 冇回應，可能死咗。',\n  }}];\n}\n\n// An unstamped image means someone built outside ci/ci-run.sh. It is not\n// an outage, but it means the next deploy check cannot prove anything.\nif (item.commit === 'unknown' || item.commit === 'dev') {\n  return [{ json: {\n    alert: true,\n    text: `⚠️ Certifine UAT 行緊未蓋章嘅 build（commit=${item.commit}）。用 ./ci.sh 或 ci/ci-run.sh dockerbuild 重 build 先驗得到 deploy。`,\n  }}];\n}\n\n// Healthy: stay silent. An alert that fires when nothing is wrong is how\n// people learn to ignore alerts.\nreturn [{ json: { alert: false, commit: item.commit, builtAt: item.builtAt } }];"
+      },
+      "id": "judge",
+      "name": "判斷",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [740, 360]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "version": 2 },
+          "conditions": [
+            {
+              "leftValue": "={{ $json.alert }}",
+              "rightValue": true,
+              "operator": { "type": "boolean", "operation": "true", "singleValue": true }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "gate",
+      "name": "要唔要嘈",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [960, 360]
+    },
+    {
+      "parameters": {
         "method": "POST",
         "url": "https://api.telegram.org/bot<<<TELEGRAM_BOT_TOKEN>>>/sendMessage",
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={\n  \"chat_id\": \"<<<TELEGRAM_CHAT_ID>>>\",\n  \"text\": \"⚠️ Authentik UAT API (4110) 冇回應，可能死咗。\"\n}",
+        "jsonBody": "={\n  \"chat_id\": \"<<<TELEGRAM_CHAT_ID>>>\",\n  \"text\": {{ JSON.stringify($json.text) }}\n}",
         "options": {}
       },
       "id": "alert",
       "name": "出事先 send",
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4,
-      "position": [760, 420]
+      "position": [1200, 300]
     }
   ],
   "connections": {
-    "每 10 分鐘": { "main": [[{ "node": "查 UAT API", "type": "main", "index": 0 }]] },
-    "查 UAT API": {
+    "每 10 分鐘": { "main": [[{ "node": "查 UAT build stamp", "type": "main", "index": 0 }]] },
+    "查 UAT build stamp": {
       "main": [
-        [],
-        [{ "node": "出事先 send", "type": "main", "index": 0 }]
+        [{ "node": "判斷", "type": "main", "index": 0 }],
+        [{ "node": "判斷", "type": "main", "index": 0 }]
       ]
-    }
+    },
+    "判斷": { "main": [[{ "node": "要唔要嘈", "type": "main", "index": 0 }]] },
+    "要唔要嘈": { "main": [[{ "node": "出事先 send", "type": "main", "index": 0 }], []] }
   },
   "active": false,
   "settings": { "executionOrder": "v1" }

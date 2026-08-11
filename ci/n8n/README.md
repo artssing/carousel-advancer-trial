@@ -61,14 +61,45 @@ docker run --rm cloudflare/cloudflared:latest tunnel --url http://host.docker.in
 
 ---
 
-## 4. 定時 health check（nightly / 每 5 分鐘）
+## 4. 定時 health check + build stamp  ← 有 JSON
 
-Nodes：
-- **Schedule Trigger**（cron，例 `*/5 * * * *`）
-- **HTTP Request** ×1：GET `http://host.docker.internal:4000/api/listings`（PROD API）
-  - 設 "Continue On Fail" 開
-- **IF**：`{{$json.error}}` 存在或 status ≠ 200 → 出事
-- **Send Telegram/WhatsApp**：「⚠️ PROD API 冇回應」
+Import `ci/n8n/health-check.example.json`，填 Telegram token / chat id，Activate。
 
-同一個 workflow 可加多幾個 HTTP node 查 consumer/auth/admin port。
+**佢查嘅唔係「死咗未」，係「行緊邊個 commit」** —— GET `http://api-uat:4000/api/version`。
+
+點解要咁：`/api/listings` 返 200 **只證明個 container 未死，唔證明新 code 上咗**。
+2026-08-10 實測：UAT container 係 8 日前嘅 image，`/api/listings` **200 ALIVE**，
+但 `/api/version` **404**。淨查 liveness 嗰種 health check 會一路綠，而件事其實壞緊。
+
+三種情況三個訊息（唔好合併 —— 常見嗰個同罕見嗰個撈埋，founder 就唔會再睇）：
+
+| 情況 | 意思 |
+|---|---|
+| 連唔到 | API 真係死咗 |
+| 404 | 個 image 舊過 2026-08-10（`/api/version` 嗰陣先加），即 deploy 未生效 |
+| `commit` = `unknown` / `dev` | 有人喺 `ci/ci-run.sh` 以外 build，冇蓋章 → 下次 deploy 驗唔到 |
+
+正常就**唔出聲**。冇嘢壞都響嘅 alert，教識人無視 alert。
+
+用 service 名 `api-uat:4000`，唔用 `host.docker.internal` —— deploy stack 冇 host port map
+（founder 2026-07-20），而且 n8n 同 app 喺同一個 `carousel-advancer-trial_default` 網絡，
+行嘅係 cloudflared 同一條路徑。
+（舊版呢度寫 `4110`，邊個 env 都唔係 —— 大概亦係佢從來冇被 import 過嘅原因。）
+
+## 5. Deploy verify（deploy 完即刻對數）  ← 有 JSON
+
+Import `ci/n8n/deploy-verify.example.json`。
+
+```bash
+curl -X POST http://n8n:5678/webhook/deploy-verify \
+  -H 'Content-Type: application/json' \
+  -d "{\"env\":\"uat\",\"commit\":\"$(git rev-parse HEAD)\"}"
+```
+
+Caller 講佢 deploy 咗邊個 commit，API 講佢行緊邊個，唔一樣就 ❌。
+喺 Jenkinsfile deploy 之後打呢條，就唔使靠望 `docker images` 個日期估。
+
+`ci/ci-run.sh smoke` 已經內置同一個對數（唔使 n8n 都會 fail），
+呢個 workflow 係俾你手動 deploy／喺手機收通知嗰陣用。
+
 另可加一條 Schedule → **Execute Command / SSH** 跑 `scripts/db-copy.sh prod uat`（每朝攞真資料落 UAT）。

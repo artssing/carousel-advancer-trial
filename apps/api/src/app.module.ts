@@ -14,6 +14,7 @@ import { WalletModule } from './wallet/wallet.module';
 import { StorageModule } from './storage/storage.module';
 import { BannersModule } from './banners/banners.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { VersionModule } from './version/version.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
     StorageModule,
     BannersModule,
     AnalyticsModule,
+    VersionModule,
   ],
 })
 export class AppModule {}

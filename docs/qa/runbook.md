@@ -56,16 +56,34 @@ demo 帳號」，2026-08-10 一次 run 就係喺度停低問人。規矩自己�
 
 跑之前驗證：
 
-```bash
-# 睇 image 幾時建
-docker images | grep certifine
+**由 2026-08-10 起，一條 curl 答到：**
 
-# 確認新 code 真係喺 container 入面（<新函數名> 換做今次改動嘅識別字）
-docker exec certifine-api-uat grep -rl "<新函數名>" dist/
-docker exec certifine-consumer-uat grep -rl "<新字串>" .next/ | head -1
+```bash
+docker run --rm --network carousel-advancer-trial_default curlimages/curl:latest \
+  -fsS http://api-uat:4000/api/version
 ```
 
-對唔上就**停低講**，唔好照跑 —— 跑出嚟嘅嘢係垃圾。
+```json
+{"commit":"eb19c41…","builtAt":"2026-08-11T04:12:00Z","env":"uat","startedAt":"…"}
+```
+
+`commit` 同你想測嗰個 SHA 唔一樣 → **停低講**，跑出嚟嘅嘢係垃圾。
+
+| 收到 | 意思 |
+|---|---|
+| `404` | 個 image 舊過 2026-08-10（`/api/version` 嗰陣先加）→ deploy 一定未生效 |
+| `commit: "dev"` | 你打緊 host 上跑 source 嘅 dev server，唔係 container |
+| `commit: "unknown"` | 有人喺 `ci/ci-run.sh` 以外 build，冇蓋章 → 驗唔到，當佢未知 |
+
+**⚠️ 分清楚兩個「UAT」**（2026-08-10 撞到）：Docker stack（`api-uat:4000`，行 tunnel
+`uat.certifinehk.com`）同 founder 部機上嘅 dev server（`localhost:4010`，直接 serve
+working tree）係兩樣嘢，可以差好多日 code。報告寫「UAT 綠」之前，講清楚係邊個。
+
+前端仲未有 build stamp，暫時照舊：
+
+```bash
+docker exec certifine-consumer-uat grep -rl "<新字串>" .next/ | head -1
+```
 
 ---
 
