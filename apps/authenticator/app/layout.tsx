@@ -3,7 +3,6 @@ import type { Metadata } from 'next';
 import { AuthGuard } from '@/components/auth-guard';
 import { BannerBar } from '@/components/banner-bar';
 import { AnalyticsProvider } from '@/components/analytics-provider';
-import { LanguageSwitcher } from '@authentik/ui/language-switcher';
 
 export const metadata: Metadata = {
   title: 'Certifine · Authenticator Portal',
@@ -15,9 +14,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <AnalyticsProvider />
         <BannerBar />
-        <div className="fixed right-4 top-4 z-50">
-          <LanguageSwitcher />
-        </div>
+        {/* The floating top-right language pill moved into /settings
+            (founder 2026-08-12) — same call as was already made for the
+            consumer portal. Chrome that hovers over content is for things you
+            need on every screen; language is set once. */}
         <AuthGuard>{children}</AuthGuard>
       </body>
     </html>

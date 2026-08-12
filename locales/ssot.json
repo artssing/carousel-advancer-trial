@@ -6317,6 +6317,74 @@
     "noImage": {
       "zh": "暫無圖片",
       "en": "No images available"
+    },
+    "nav.dashboard": {
+      "zh": "概覽",
+      "en": "Dashboard"
+    },
+    "nav.inbox": {
+      "zh": "待鑑定",
+      "en": "To authenticate"
+    },
+    "nav.scan": {
+      "zh": "QR 交收",
+      "en": "QR handover"
+    },
+    "nav.messages": {
+      "zh": "訊息",
+      "en": "Messages"
+    },
+    "nav.earnings": {
+      "zh": "收入",
+      "en": "Earnings"
+    },
+    "nav.branches": {
+      "zh": "分店地址",
+      "en": "Branches"
+    },
+    "nav.profile": {
+      "zh": "店面 Profile",
+      "en": "Store profile"
+    },
+    "nav.settings": {
+      "zh": "設定",
+      "en": "Settings"
+    },
+    "settings.title": {
+      "zh": "設定",
+      "en": "Settings"
+    },
+    "settings.subtitle": {
+      "zh": "portal 嘅偏好設定。",
+      "en": "Preferences for this portal."
+    },
+    "settings.language.title": {
+      "zh": "語言",
+      "en": "Language"
+    },
+    "settings.language.hint": {
+      "zh": "揀咗之後成個 portal 即刻轉，唔會登出。",
+      "en": "Applies to the whole portal immediately. You stay signed in."
+    },
+    "settings.more.title": {
+      "zh": "仲有咩會加入嚟",
+      "en": "Coming here later"
+    },
+    "settings.more.hint": {
+      "zh": "通知、交收預設、時區呢啲都會收埋入呢版。",
+      "en": "Notifications, handover defaults and timezone will move here."
+    },
+    "nav.portalLabel": {
+      "zh": "鑑定師 Portal",
+      "en": "Authenticator Portal"
+    },
+    "nav.onDuty": {
+      "zh": "在職",
+      "en": "On duty"
+    },
+    "nav.logout": {
+      "zh": "登出",
+      "en": "Log out"
     }
   },
   "authenticator.dashboard": {

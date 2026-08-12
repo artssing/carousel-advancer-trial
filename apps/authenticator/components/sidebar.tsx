@@ -4,10 +4,11 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  Inbox, LayoutDashboard, User, Coins, LogOut, MessageCircle, MapPin, ScanLine,
+  Inbox, LayoutDashboard, User, Coins, LogOut, MessageCircle, MapPin, ScanLine, Settings,
 } from 'lucide-react';
 import { api, clearToken, hasToken } from '@/lib/api';
 import { VersionBadge } from '@authentik/ui';
+import { getClientLocale, createT } from '@authentik/utils';
 
 /**
  * L3 鑑定師 Portal chrome — deep-indigo gradient sidebar + dark mobile bottom nav.
@@ -22,15 +23,18 @@ import { VersionBadge } from '@authentik/ui';
  * coordinator note: amber alert on dark indigo bg is visually jarring +
  * legally-sensitive content shouldn't be truncated inside chrome).
  */
+// Labels are SSOT KEYS, not text. They were hardcoded zh, so the sidebar stayed
+// Chinese even with the portal switched to English (founder 2026-08-12).
 const nav = [
-  { href: '/', label: '概覽', icon: LayoutDashboard, mobile: true, badge: 0 },
-  { href: '/inbox', label: '待鑑定', icon: Inbox, mobile: true, badge: 0 },
-  { href: '/scan', label: 'QR 交收', icon: ScanLine, mobile: true, badge: 0 },
-  { href: '/messages', label: '訊息', icon: MessageCircle, showUnread: true, mobile: true, badge: 0 },
-  { href: '/earnings', label: '收入', icon: Coins, mobile: true, badge: 0 },
-  // Branches + profile: desktop sidebar only (avoiding bottom-nav overcrowding > 5 tabs)
-  { href: '/branches', label: '分店地址', icon: MapPin, mobile: false, badge: 0 },
-  { href: '/profile', label: '店面 Profile', icon: User, mobile: true, badge: 0 },
+  { href: '/', labelKey: 'authenticator.nav.dashboard', icon: LayoutDashboard, mobile: true, badge: 0 },
+  { href: '/inbox', labelKey: 'authenticator.nav.inbox', icon: Inbox, mobile: true, badge: 0 },
+  { href: '/scan', labelKey: 'authenticator.nav.scan', icon: ScanLine, mobile: true, badge: 0 },
+  { href: '/messages', labelKey: 'authenticator.nav.messages', icon: MessageCircle, showUnread: true, mobile: true, badge: 0 },
+  { href: '/earnings', labelKey: 'authenticator.nav.earnings', icon: Coins, mobile: true, badge: 0 },
+  // Branches / profile / settings: desktop sidebar only (bottom nav caps at 5 tabs)
+  { href: '/branches', labelKey: 'authenticator.nav.branches', icon: MapPin, mobile: false, badge: 0 },
+  { href: '/profile', labelKey: 'authenticator.nav.profile', icon: User, mobile: true, badge: 0 },
+  { href: '/settings', labelKey: 'authenticator.nav.settings', icon: Settings, mobile: false, badge: 0 },
 ];
 
 interface SidebarProps {
@@ -68,6 +72,10 @@ function useUnreadCount() {
 
 export function Sidebar({ authProfile }: SidebarProps) {
   const router = useRouter();
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const pathname = usePathname();
   const unread = useUnreadCount();
 
@@ -87,7 +95,7 @@ export function Sidebar({ authProfile }: SidebarProps) {
         CERTI<span className="text-authBrand-300">·</span>FINE
       </Link>
       <p className="px-2 pb-5 text-[11px] uppercase tracking-[0.1em] text-authBrand-200/70">
-        鑑定師 Portal
+        {_t('authenticator.nav.portalLabel')}
       </p>
 
       {/* Nav — .snav */}
@@ -107,7 +115,7 @@ export function Sidebar({ authProfile }: SidebarProps) {
               }`}
             >
               <Icon className="h-[18px] w-[18px] shrink-0 opacity-90" />
-              <span className="flex-1">{n.label}</span>
+              <span className="flex-1">{_t(n.labelKey)}</span>
               {showUnread && (
                 // IM unread → red for urgency (founder ruling)
                 <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1.5 text-[11px] font-extrabold text-white">
@@ -130,12 +138,12 @@ export function Sidebar({ authProfile }: SidebarProps) {
               {authProfile.storeName ?? authProfile.displayName}
             </p>
             <p className="text-[11px] text-authBrand-200/70">
-              {'★'.repeat(Math.min(authProfile.starRating, 5))} · 在職
+              {'★'.repeat(Math.min(authProfile.starRating, 5))} · {_t('authenticator.nav.onDuty')}
             </p>
           </div>
           <button
             onClick={onLogout}
-            title="登出"
+            title={_t('authenticator.nav.logout')}
             className="rounded p-1 text-authBrand-200/70 transition hover:bg-white/10 hover:text-white"
           >
             <LogOut className="h-4 w-4" />
@@ -160,6 +168,10 @@ export function Sidebar({ authProfile }: SidebarProps) {
  */
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
+
   const unread = useUnreadCount();
 
   return (
@@ -177,7 +189,7 @@ export function MobileBottomNav() {
             }`}
           >
             <Icon className="h-5 w-5" />
-            {n.label}
+            {_t(n.labelKey)}
             {active && (
               <span className="absolute -top-0.5 left-1/2 h-[3px] w-6 -translate-x-1/2 rounded-b-full bg-authBrand-300" />
             )}
