@@ -27,6 +27,58 @@ say() { printf "${B}▸${R} [%s] %s\n" "$ENV_NAME" "$*"; }
 ok()  { printf "${G}✓${R} [%s] %s\n" "$ENV_NAME" "$*"; }
 warn(){ printf "${Y}!${R} [%s] %s\n" "$ENV_NAME" "$*"; }
 
+
+# ── Docker daemon 探測（bounded）─────────────────────────────────────────
+# `docker info` 唔一定會 fail — Docker Desktop 半死嗰陣（backend process 仲喺
+# 度、socket 仲喺度，但冇嘢應）佢會**永遠 hang**。2026-08-12 實案：founder 行
+# ./start.sh 完全冇反應，就係卡死喺下面個等 daemon 嘅 loop 第一圈。
+# macOS 冇 `timeout`(1)，所以自己 background + poll。
+docker_ready() {          # docker_ready [秒數，預設 5] → 0=ready 1=唔 ready 2=hang
+  local limit="${1:-5}" pid i
+  ( docker info >/dev/null 2>&1 ) & pid=$!
+  for (( i=0; i<limit*2; i++ )); do
+    kill -0 "$pid" 2>/dev/null || { wait "$pid"; return $?; }
+    sleep 0.5
+  done
+  kill -9 "$pid" 2>/dev/null || true
+  return 2
+}
+
+# 半死狀態要人手清，等幾耐都冇用 — 直接講點救，唔好靜靜地等到天光。
+docker_stuck_hint() {
+  warn "Docker daemon 冇反應（唔係未開，係 hang 咗）。"
+  printf "  ${D}多數係 Docker Desktop 死咗但 backend process 仲賴喺度，霸住個 socket。${R}\n"
+  printf "  ${D}救法（唔使密碼）：${R}\n"
+  printf "    pkill -9 -f com.docker.backend && sleep 4 && open -a Docker\n"
+  printf "  ${D}等 Docker Desktop 個圖示變返綠色，再行一次 ./start.sh。${R}\n"
+}
+
+ensure_docker() {
+  if ! command -v docker >/dev/null 2>&1; then
+    warn "Docker 未安裝 — 請先裝 Docker Desktop: https://docs.docker.com/desktop/install/mac-install/"
+    exit 1
+  fi
+  docker_ready 5; local rc=$?
+  [[ "$rc" == "0" ]] && return 0
+  [[ "$rc" == "2" ]] && { docker_stuck_hint; exit 1; }
+
+  say "Docker daemon 唔 running — 自動開 Docker Desktop…"
+  open -a Docker 2>/dev/null || { warn "open -a Docker fail — 請手動開 Docker Desktop 再試"; exit 1; }
+  local i
+  for (( i=0; i<45; i++ )); do
+    docker_ready 2; rc=$?
+    [[ "$rc" == "0" ]] && { ok "Docker daemon ready"; return 0; }
+    sleep 2
+  done
+  # 開咗 90 秒都未 ready：如果係 hang 就俾救法，唔係就照報。
+  docker_ready 5; rc=$?
+  [[ "$rc" == "2" ]] && { docker_stuck_hint; exit 1; }
+  warn "等咗 90 秒 Docker 仍未 ready — 開 Docker Desktop 睇下有冇 dialog 等緊你"
+  exit 1
+}
+
+ensure_docker
+
 # ═══ Docker 部署模式（founder 2026-07-20：呢部機 = server，公網經 tunnel）═══
 if [[ "$MODE" == "docker" ]]; then
   SVCS="$(deploy_services "$ENV_NAME")"
@@ -50,18 +102,7 @@ if [[ "$MODE" == "docker" ]]; then
   exit 0
 fi
 
-# ── 0a. Docker daemon — auto-start Docker Desktop if needed ──────────────
-if ! command -v docker >/dev/null 2>&1; then
-  warn "Docker 未安裝 — 請先裝 Docker Desktop: https://docs.docker.com/desktop/install/mac-install/"
-  exit 1
-fi
-if ! docker info >/dev/null 2>&1; then
-  say "Docker daemon 唔 running — 自動開 Docker Desktop…"
-  open -a Docker 2>/dev/null || { warn "open -a Docker fail — 請手動開 Docker Desktop 再試"; exit 1; }
-  for i in {1..90}; do docker info >/dev/null 2>&1 && break; sleep 1; done
-  docker info >/dev/null 2>&1 || { warn "等咗 90 秒 Docker 仍未 ready"; exit 1; }
-  ok "Docker daemon ready"
-fi
+# ── 0a. Docker daemon —— 上面 ensure_docker 已經行咗（dev / docker 兩個 mode 共用）
 
 # ── 0b. Self-heal：node_modules/.bin 執行權限 ─────────────────────────────
 # Snapshot / backup restore / 某啲 copy 工具會抹走 exec bit（2026-07-14 實案：

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { VersionBadge } from '@authentik/ui';
 import { useRouter } from 'next/navigation';
 import {
-  Users, ShieldCheck, ShoppingBag, AlertOctagon, Wallet, FileSearch, BarChart3, LayoutDashboard, FileCheck, LogOut, Settings, TrendingDown, Megaphone,
+  Users, ShieldCheck, ShoppingBag, AlertOctagon, Wallet, FileSearch, BarChart3, LayoutDashboard, FileCheck, LogOut, Settings, TrendingDown, Megaphone, ScrollText,
 } from 'lucide-react';
 import { clearToken } from '@/lib/api';
 
@@ -21,6 +21,7 @@ const nav = [
   { href: '/analytics', label: 'Analytics', icon: BarChart3 },
   { href: '/price-changes', label: 'Price Changes', icon: TrendingDown },
   { href: '/platform-config', label: 'Platform Config', icon: Settings },
+  { href: '/changelog', label: 'Changelog', icon: ScrollText },
 ];
 
 export function AdminSidebar() {

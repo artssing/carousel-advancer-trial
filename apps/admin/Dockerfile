@@ -28,6 +28,8 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     NEXT_PUBLIC_ADMIN_URL=$NEXT_PUBLIC_ADMIN_URL
 COPY packages ./packages
 COPY apps/admin ./apps/admin
+# /api/changelog serves this file — it must be in the image, not just the repo.
+COPY CHANGELOG.md VERSION ./
 RUN npx turbo run build --filter=admin
 
 FROM base AS runner
