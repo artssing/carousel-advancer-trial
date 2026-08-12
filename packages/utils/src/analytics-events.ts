@@ -27,6 +27,12 @@ export const ANALYTICS_EVENTS = [
   'listing_viewed',
   'listing_view_ended',
   // search domain
+  // messages domain
+  // CLAUDE.md: anything a user can visibly interact with must be tagged, and an
+  // untagged interaction is a review blocker. Resizing is a deliberate act, and
+  // the width people settle on is the only evidence of whether 310px was right.
+  'messages_sidebar_resized',
+
   'search_performed',
   'search_zero_result',
   'search_filter_removed',

@@ -11371,6 +11371,18 @@
     "weekday.6": {
       "zh": "週六",
       "en": "Saturday"
+    },
+    "justNow": {
+      "zh": "啱啱",
+      "en": "Just now"
+    },
+    "dateShort": {
+      "zh": "{d}/{m}",
+      "en": "{d}/{m}"
+    },
+    "dateFull": {
+      "zh": "{d}/{m}/{y}",
+      "en": "{d}/{m}/{y}"
     }
   },
   "utils.search": {

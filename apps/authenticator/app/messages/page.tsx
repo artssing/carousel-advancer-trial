@@ -6,8 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { ChevronDown, ChevronRight, MessageCircle, Search, X } from 'lucide-react';
 import { Pill } from '@authentik/ui';
-import { formatChatTime, formatHKD, tierForPrice, previewBody, previewPrefix, previewEmpty, getClientLocale } from '@authentik/utils';
+import { formatChatTime, formatHKD, tierForPrice, previewBody, previewPrefix, previewEmpty, getClientLocale, formatChatTimeFull } from '@authentik/utils';
 import { api, hasToken, clearToken, getToken } from '@/lib/api';
+import { useSidebarWidth, SidebarResizeHandle } from '@authentik/ui';
 import { ConversationPane } from '@/components/conversation-pane';
 import { XLink } from '@/components/x-link';
 
@@ -79,6 +80,18 @@ export default function MessagesPage() {
   const [me, setMe] = useState<{ id: string } | null>(null);
   const [locale, setLocale] = useState<'zh' | 'en'>('zh');
   useEffect(() => { setLocale(getClientLocale()); }, []);
+  // One page-level clock, not one per row: the labels are minute-resolution, so
+  // a single 60s tick re-renders the whole list and 「啱啱」 ages by itself.
+  const { width: sidebarW, handleProps, dragging } = useSidebarWidth(
+    'ui.messages.sidebarW.auth',
+    locale === 'en' ? 'Resize conversation list' : '調整對話列表闊度',
+    () => {},
+  );
+  const [nowTick, setNowTick] = useState(() => new Date());
+  useEffect(() => {
+    const id = setInterval(() => setNowTick(new Date()), 60_000);
+    return () => clearInterval(id);
+  }, []);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [presenceMap, setPresenceMap] = useState<Record<string, { online: boolean }>>({});
   const [query, setQuery] = useState('');
@@ -320,16 +333,35 @@ export default function MessagesPage() {
                       <p className="truncate text-[14px] font-semibold text-neutral-text">
                         <span data-user-content>{conv.counterparty.displayName}</span>
                       </p>
-                      <span
-                        title={conv.lastMessage ? new Date(conv.lastMessage.createdAt).toLocaleString('zh-HK', { hour12: false }) : undefined}
-                        className={`shrink-0 text-[11px] ${conv.unread > 0 && !isActive ? 'font-semibold text-authBrand-500' : 'text-neutral-text-hint'}`}
-                      >
-                        {conv.lastMessage ? formatChatTime(conv.lastMessage.createdAt) : ''}
-                      </span>
+                      {conv.lastMessage && (
+                        <time
+                          dateTime={conv.lastMessage.createdAt}
+                          title={formatChatTimeFull(conv.lastMessage.createdAt, locale)}
+                          className={`shrink-0 text-[11px] ${conv.unread > 0 && !isActive ? 'font-semibold text-authBrand-500' : 'text-neutral-text-hint'}`}
+                        >
+                          {formatChatTime(conv.lastMessage.createdAt, nowTick, locale)}
+                        </time>
+                      )}
                     </div>
                   )}
-                  {indent && conv.listing?.title && (
-                    <p className="truncate text-[12px] font-medium text-neutral-text">{conv.listing.title}</p>
+                  {indent && (
+                    // Child rows carried no time at all: inside a group you could
+                    // see WHAT was said but not WHEN, which is the one thing the
+                    // row exists to tell you (founder 2026-08-12).
+                    <div className="flex items-baseline justify-between gap-2">
+                      <p className="truncate text-[12px] font-medium text-neutral-text" data-user-content>
+                        {conv.listing?.title ?? ''}
+                      </p>
+                      {conv.lastMessage && (
+                        <time
+                          dateTime={conv.lastMessage.createdAt}
+                          title={formatChatTimeFull(conv.lastMessage.createdAt, locale)}
+                          className={`shrink-0 text-[11px] ${conv.unread > 0 && !isActive ? 'font-semibold text-authBrand-500' : 'text-neutral-text-hint'}`}
+                        >
+                          {formatChatTime(conv.lastMessage.createdAt, nowTick, locale)}
+                        </time>
+                      )}
+                    </div>
                   )}
                   <div className="mt-0.5 flex items-start justify-between gap-2">
                     <p className={`line-clamp-2 flex-1 text-[12px] ${conv.unread > 0 && !isActive ? 'text-neutral-text' : 'text-neutral-text-hint'}`}>
@@ -374,12 +406,15 @@ export default function MessagesPage() {
                       <span data-user-content>{g.counterparty.displayName}</span>
                       <span className="ml-1 text-[10px] font-medium text-neutral-text-hint">· {g.convs.length}</span>
                     </p>
-                    <span
-                      title={latest.lastMessage ? new Date(latest.lastMessage.createdAt).toLocaleString('zh-HK', { hour12: false }) : undefined}
-                      className={`shrink-0 text-[11px] ${totalUnread > 0 ? 'font-semibold text-authBrand-500' : 'text-neutral-text-hint'}`}
-                    >
-                      {latest.lastMessage ? formatChatTime(latest.lastMessage.createdAt) : ''}
-                    </span>
+                    {latest.lastMessage && (
+                      <time
+                        dateTime={latest.lastMessage.createdAt}
+                        title={formatChatTimeFull(latest.lastMessage.createdAt, locale)}
+                        className={`shrink-0 text-[11px] ${totalUnread > 0 ? 'font-semibold text-authBrand-500' : 'text-neutral-text-hint'}`}
+                      >
+                        {formatChatTime(latest.lastMessage.createdAt, nowTick, locale)}
+                      </time>
+                    )}
                   </div>
                   {collapsed && (
                     <p className="mt-0.5 line-clamp-2 text-[11px] text-neutral-text-hint">
@@ -449,8 +484,16 @@ export default function MessagesPage() {
   // Height budget: 100dvh minus the mobile bottom nav (h-16 = 4rem) on mobile.
   // Desktop has no bottom nav so just dvh.
   return (
-    <div className="grid h-[calc(100dvh-4rem)] w-full overflow-hidden lg:grid-cols-[310px_1fr_292px] md:grid-cols-[310px_1fr] md:h-dvh grid-cols-1">
-      <div className={`${activeConvId ? 'hidden md:flex' : 'flex'} min-h-0`}>{sidebar}</div>
+    <div
+      className="grid h-[calc(100dvh-4rem)] w-full overflow-hidden grid-cols-1 md:h-dvh md:grid-cols-[var(--sidebar-w)_1fr] lg:grid-cols-[var(--sidebar-w)_1fr_292px]"
+      style={{ ['--sidebar-w' as any]: `${sidebarW}px` }}
+    >
+      {/* Sidebar + its drag edge — hidden below md, where this is two screens
+          rather than two columns. */}
+      <div className={`${activeConvId ? 'hidden md:flex' : 'flex'} min-h-0`}>
+        <div className="min-w-0 flex-1">{sidebar}</div>
+        <SidebarResizeHandle dragging={dragging} accent="bg-authBrand-500" {...handleProps} />
+      </div>
       <div className={`${activeConvId ? 'flex' : 'hidden md:flex'} min-h-0 min-w-0`}>{rightPane}</div>
       {activeConv && (
         <div className="hidden min-h-0 lg:block">

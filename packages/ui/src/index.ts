@@ -29,6 +29,7 @@ export { OtpInput } from './components/otp-input';
 export type { OtpInputProps } from './components/otp-input';
 export { LanguageSwitcher } from './components/language-switcher';
 export { VersionBadge } from './components/version-badge';
+export { useSidebarWidth, SidebarResizeHandle, SIDEBAR_DEFAULT, SIDEBAR_MIN, SIDEBAR_MAX } from './components/resizable-sidebar';
 export type { VersionBadgeProps } from './components/version-badge';
 export { shortSha, formatBuiltAt } from './components/version-badge';
 export { ConversationPane } from './components/conversation-pane';
