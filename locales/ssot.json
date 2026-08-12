@@ -11996,5 +11996,43 @@
       "zh": "{role}正在輸入…",
       "en": "{role} is typing…"
     }
+  },
+  "utils.chatPreview": {
+    "offer": {
+      "zh": "議價 HK${amount}",
+      "en": "Offer HK${amount}"
+    },
+    "offerNoAmount": {
+      "zh": "發出議價",
+      "en": "Made an offer"
+    },
+    "filtered": {
+      "zh": "訊息已被過濾",
+      "en": "Message was filtered"
+    },
+    "unknown": {
+      "zh": "訊息",
+      "en": "Message"
+    },
+    "empty": {
+      "zh": "未有訊息",
+      "en": "No messages yet"
+    },
+    "youPrefix": {
+      "zh": "你：",
+      "en": "You: "
+    },
+    "systemPrefix": {
+      "zh": "系統：",
+      "en": "System: "
+    },
+    "senderPrefix": {
+      "zh": "{name}：",
+      "en": "{name}: "
+    },
+    "senderPrefixAuth": {
+      "zh": "{name}（鑑定師）：",
+      "en": "{name} (authenticator): "
+    }
   }
 }

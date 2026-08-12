@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { ChevronDown, ChevronRight, MessageCircle, Search, X } from 'lucide-react';
 import { Pill } from '@authentik/ui';
-import { formatChatTime, formatHKD, tierForPrice } from '@authentik/utils';
+import { formatChatTime, formatHKD, tierForPrice, previewBody, previewPrefix, previewEmpty, getClientLocale } from '@authentik/utils';
 import { api, hasToken, clearToken, getToken } from '@/lib/api';
 import { ConversationPane } from '@/components/conversation-pane';
 import { XLink } from '@/components/x-link';
@@ -22,7 +22,16 @@ interface ConvSummary {
   orderStatus: string | null;
   counterparty: { id?: string; displayName: string };
   listing: { id: string; title: string; images: string[] } | null;
-  lastMessage: { body: string; senderRole: string; createdAt: string } | null;
+  kind?: string;
+  lastMessage: {
+    body: string;
+    senderRole: string;
+    senderId?: string | null;
+    senderDisplayName?: string | null;
+    isFiltered?: boolean;
+    offerPriceHKD?: number | null;
+    createdAt: string;
+  } | null;
   unread: number;
   createdAt: string;
 }
@@ -68,6 +77,8 @@ export default function MessagesPage() {
   const [conversations, setConversations] = useState<ConvSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [me, setMe] = useState<{ id: string } | null>(null);
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [presenceMap, setPresenceMap] = useState<Record<string, { online: boolean }>>({});
   const [query, setQuery] = useState('');
@@ -144,7 +155,15 @@ export default function MessagesPage() {
         const target = prev[i]!;
         const updated: ConvSummary = {
           ...target,
-          lastMessage: { body: msg.body, senderRole: msg.senderRole, createdAt: msg.createdAt },
+          lastMessage: {
+            body: msg.body,
+            senderRole: msg.senderRole,
+            senderId: msg.senderId ?? null,
+            // The socket payload carries no display name; the list refetch fills
+            // it in. Prefix falls back to '' until then, never to a wrong name.
+            senderDisplayName: null,
+            createdAt: msg.createdAt,
+          },
           unread: (isActive || isMine) ? 0 : (target.unread ?? 0) + 1,
         };
         const without = prev.filter((_, k) => k !== i);
@@ -265,9 +284,11 @@ export default function MessagesPage() {
           const latest = g.convs[0]!;
 
           const renderThread = (conv: ConvSummary, indent: boolean) => {
-            const preview = conv.lastMessage
-              ? `${ROLE_LABEL[conv.lastMessage.senderRole] ?? ''}：${conv.lastMessage.body}`
-              : '新對話';
+            // Prefix / body split so only the body carries data-user-content —
+            // see the consumer page and packages/utils/src/chat-preview.ts.
+            const lm = conv.lastMessage;
+            const prefix = lm ? previewPrefix(lm, { currentUserId: me?.id, showSenderName: conv.kind === 'THREE_WAY' }, locale) : '';
+            const bodyText = lm ? previewBody(lm, locale) : previewEmpty(locale);
             const isActive = conv.id === activeConvId;
             const tier = (conv as any).listing?.priceHKD ? tierForPrice((conv as any).listing.priceHKD) : null;
             const initial = conv.counterparty.displayName.slice(0, 1).toUpperCase();
@@ -297,9 +318,12 @@ export default function MessagesPage() {
                   {!indent && (
                     <div className="flex items-baseline justify-between gap-2">
                       <p className="truncate text-[14px] font-semibold text-neutral-text">
-                        {conv.counterparty.displayName}
+                        <span data-user-content>{conv.counterparty.displayName}</span>
                       </p>
-                      <span className="shrink-0 text-[11px] text-neutral-text-hint">
+                      <span
+                        title={conv.lastMessage ? new Date(conv.lastMessage.createdAt).toLocaleString('zh-HK', { hour12: false }) : undefined}
+                        className={`shrink-0 text-[11px] ${conv.unread > 0 && !isActive ? 'font-semibold text-authBrand-500' : 'text-neutral-text-hint'}`}
+                      >
                         {conv.lastMessage ? formatChatTime(conv.lastMessage.createdAt) : ''}
                       </span>
                     </div>
@@ -307,14 +331,19 @@ export default function MessagesPage() {
                   {indent && conv.listing?.title && (
                     <p className="truncate text-[12px] font-medium text-neutral-text">{conv.listing.title}</p>
                   )}
-                  <p className="mt-0.5 truncate text-[12px] text-neutral-text-hint">{preview}</p>
+                  <div className="mt-0.5 flex items-start justify-between gap-2">
+                    <p className={`line-clamp-2 flex-1 text-[12px] ${conv.unread > 0 && !isActive ? 'text-neutral-text' : 'text-neutral-text-hint'}`}>
+                      {prefix && <span className="font-medium">{prefix}</span>}
+                      <span data-user-content>{bodyText}</span>
+                    </p>
+                    {conv.unread > 0 && !isActive && (
+                      <span className="mt-[1px] flex h-[18px] min-w-[18px] shrink-0 items-center justify-center rounded-full bg-authBrand-500 px-1.5 text-[11px] font-extrabold text-white">
+                        {conv.unread > 99 ? '99+' : conv.unread}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                {conv.unread > 0 && !isActive && (
-                  <span className="mt-1 flex h-[18px] min-w-[18px] items-center justify-center self-center rounded-full bg-authBrand-500 px-1.5 text-[11px] font-extrabold text-white">
-                    {conv.unread}
-                  </span>
-                )}
               </button>
             );
           };
@@ -340,13 +369,32 @@ export default function MessagesPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[13px] font-semibold text-neutral-text">
-                    {g.counterparty.displayName}
-                    <span className="ml-1 text-[10px] font-medium text-neutral-text-hint">· {g.convs.length}</span>
-                  </p>
-                  <p className="truncate text-[11px] text-neutral-text-hint">
-                    {latest.lastMessage ? formatChatTime(latest.lastMessage.createdAt) : ''}
-                  </p>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <p className="truncate text-[13px] font-semibold text-neutral-text">
+                      <span data-user-content>{g.counterparty.displayName}</span>
+                      <span className="ml-1 text-[10px] font-medium text-neutral-text-hint">· {g.convs.length}</span>
+                    </p>
+                    <span
+                      title={latest.lastMessage ? new Date(latest.lastMessage.createdAt).toLocaleString('zh-HK', { hour12: false }) : undefined}
+                      className={`shrink-0 text-[11px] ${totalUnread > 0 ? 'font-semibold text-authBrand-500' : 'text-neutral-text-hint'}`}
+                    >
+                      {latest.lastMessage ? formatChatTime(latest.lastMessage.createdAt) : ''}
+                    </span>
+                  </div>
+                  {collapsed && (
+                    <p className="mt-0.5 line-clamp-2 text-[11px] text-neutral-text-hint">
+                      {latest.lastMessage ? (
+                        <>
+                          {previewPrefix(latest.lastMessage, { currentUserId: me?.id, showSenderName: latest.kind === 'THREE_WAY' }, locale) && (
+                            <span className="font-medium">
+                              {previewPrefix(latest.lastMessage, { currentUserId: me?.id, showSenderName: latest.kind === 'THREE_WAY' }, locale)}
+                            </span>
+                          )}
+                          <span data-user-content>{previewBody(latest.lastMessage, locale)}</span>
+                        </>
+                      ) : previewEmpty(locale)}
+                    </p>
+                  )}
                 </div>
                 {totalUnread > 0 && (
                   <span className="flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-authBrand-500 px-1.5 text-[11px] font-extrabold text-white">

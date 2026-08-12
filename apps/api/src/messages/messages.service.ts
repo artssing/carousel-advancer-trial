@@ -3,6 +3,13 @@ import { MessageRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 
 // Off-platform contact pattern filter
+/**
+ * `__OFFER__:<offerId>` — an offer message's body. The conversation pane
+ * renders it as a card; the sidebar must never print it verbatim. Exported so
+ * there is one definition rather than a copy per surface.
+ */
+export const OFFER_SENTINEL = /^__OFFER__:(.+)$/;
+
 const OFF_PLATFORM_PATTERNS = [
   /\b\d{8}\b/,                          // HK phone (8 digits)
   /\+?852\s*\d{4}\s*\d{4}/,             // +852 phone
@@ -110,6 +117,33 @@ export class MessagesService {
     const out: PartyDto[] = [];
     for (const uid of participantIds) {
       const u = byId.get(uid);
+      const name = u?.displayName ?? '使用者';
+      let role: PartyDto['role'] = 'BUYER';
+      if (uid === context.sellerId) role = 'SELLER';
+      else if (uid === context.authUserId) role = 'AUTHENTICATOR';
+      else if (uid === context.buyerId) role = 'BUYER';
+      const displayName = role === 'AUTHENTICATOR' && context.authDisplayName ? context.authDisplayName : name;
+      const seen = (u?.lastSeenAt ?? u?.createdAt)?.toISOString() ?? null;
+      out.push({ id: uid, displayName, role, lastSeenAt: seen });
+    }
+    return out;
+  }
+
+  /**
+   * Same shape as buildPartiesFromIds, but takes an already-fetched user map.
+   * listConversations used to call the async version once per conversation,
+   * i.e. one user.findMany per row; this lets it fetch every participant in a
+   * single query and build the rows in memory.
+   */
+  private buildPartiesFromMap(
+    participantIds: string[],
+    users: Map<string, { id: string; displayName: string; lastSeenAt: Date | null; createdAt: Date }>,
+    context: { buyerId: string | null; sellerId: string | null; authUserId: string | null; authDisplayName: string | null },
+  ): PartyDto[] {
+    if (!participantIds || participantIds.length === 0) return [];
+    const out: PartyDto[] = [];
+    for (const uid of participantIds) {
+      const u = users.get(uid);
       const name = u?.displayName ?? '使用者';
       let role: PartyDto['role'] = 'BUYER';
       if (uid === context.sellerId) role = 'SELLER';
@@ -703,7 +737,7 @@ export class MessagesService {
 
     // Hide terminated pair channels (same rule as listConversations)
     const PAIR_HIDE_STATUSES = new Set(['REFUNDED', 'DISPUTED', 'COMPLETED']);
-    return convs
+    const rows = convs
       .filter((conv) =>
         conv.kind === 'THREE_WAY' ||
         !conv.order?.status ||
@@ -734,8 +768,73 @@ export class MessagesService {
           createdAt: conv.createdAt,
         };
       });
+
+    // Search rows carry the same lastMessage shape as the list. Without it,
+    // every hit rendered as "no messages yet" the moment the sidebar started
+    // showing previews — the row would look emptier than the one it matched.
+    return this.attachLastMessages(rows);
   }
 
+  /**
+   * Attach `lastMessage` to conversation rows in two queries, whatever the row
+   * count: the newest message per conversation, then the offers those messages
+   * point at. Shared by the list and search so a sentinel can never leak from
+   * one path after being handled in the other.
+   */
+  private async attachLastMessages<T extends { id: string }>(rows: T[]) {
+    if (rows.length === 0) return rows.map((r) => ({ ...r, lastMessage: null }));
+    const ids = rows.map((r) => r.id);
+    const msgs = await this.prisma.message.findMany({
+      where: { conversationId: { in: ids }, deletedAt: null },
+      orderBy: [{ conversationId: 'asc' }, { createdAt: 'desc' }],
+      distinct: ['conversationId'],
+      select: {
+        conversationId: true,
+        body: true,
+        senderRole: true,
+        senderId: true,
+        isFiltered: true,
+        createdAt: true,
+        sender: { select: { id: true, displayName: true } },
+      },
+    });
+    const offerIds = Array.from(
+      new Set(msgs.map((m) => OFFER_SENTINEL.exec(m.body)?.[1]).filter((x): x is string => Boolean(x))),
+    );
+    const offers = offerIds.length
+      ? await this.prisma.offer.findMany({ where: { id: { in: offerIds } }, select: { id: true, priceHKD: true } })
+      : [];
+    const priceById = new Map(offers.map((o) => [o.id, o.priceHKD]));
+    const byConv = new Map(msgs.map((m) => [m.conversationId, m]));
+    return rows.map((r) => {
+      const m = byConv.get(r.id);
+      return {
+        ...r,
+        lastMessage: m
+          ? {
+              body: m.body,
+              senderRole: m.senderRole,
+              senderId: m.senderId,
+              senderDisplayName: m.sender?.displayName ?? null,
+              isFiltered: m.isFiltered,
+              offerPriceHKD: priceById.get(OFFER_SENTINEL.exec(m.body)?.[1] ?? '') ?? null,
+              createdAt: m.createdAt,
+            }
+          : null,
+      };
+    });
+  }
+
+  /**
+   * The messages sidebar. One row per conversation, newest activity first.
+   *
+   * Query budget is FLAT, not per-conversation. This used to run four queries
+   * inside the loop (human-message count, last message, unread count, and a
+   * user.findMany hidden inside buildPartiesFromIds) with no `take` at all, so
+   * a busy account issued hundreds of round-trips to render one screen.
+   * Everything below is batched: the cost is the same whether the user has
+   * three conversations or three hundred.
+   */
   async listConversations(userId: string) {
     // Membership single source of truth: Conversation.participantUserIds
     // is populated at create-time and never mutates. Avoids lesson #6
@@ -770,53 +869,126 @@ export class MessagesService {
         seller: { select: { id: true, displayName: true } },
       },
       orderBy: { createdAt: 'desc' },
+      // A hard cap so one account can never ask the DB for an unbounded set.
+      // Nobody works a sidebar past this; if that changes, this becomes a
+      // cursor rather than a larger number.
+      take: 200,
     });
 
     // Hide pair channels (private DMs) once the order is terminated.
     // THREE_WAY stays visible because it carries SYSTEM audit messages.
     const PAIR_HIDE_STATUSES = new Set(['REFUNDED', 'DISPUTED', 'COMPLETED']);
+    const visible = conversations.filter(
+      (conv) =>
+        !(
+          conv.kind !== 'THREE_WAY' &&
+          conv.order?.status &&
+          PAIR_HIDE_STATUSES.has(conv.order.status as string)
+        ),
+    );
+    const convIds = visible.map((c) => c.id);
+    if (convIds.length === 0) return [];
+
+    // ── Batch 1: which conversations have a real (non-SYSTEM) message? ──
+    // Conversations holding only the SYSTEM bootstrap line are "empty frames"
+    // and would clutter the list; they stay reachable from the order page.
+    const humanCounts = await this.prisma.message.groupBy({
+      by: ['conversationId'],
+      where: {
+        conversationId: { in: convIds },
+        deletedAt: null,
+        senderRole: { not: 'SYSTEM' as any },
+      },
+      _count: { _all: true },
+    });
+    const hasHuman = new Set(humanCounts.filter((g) => g._count._all > 0).map((g) => g.conversationId));
+    const used = visible.filter((c) => hasHuman.has(c.id));
+    if (used.length === 0) return [];
+    const usedIds = used.map((c) => c.id);
+
+    // ── Batch 2: the newest message of each conversation, in one query ──
+    // `distinct` after an ordered scan gives the first row per conversation,
+    // which the ordering makes the newest.
+    const lastMessages = await this.prisma.message.findMany({
+      where: { conversationId: { in: usedIds }, deletedAt: null },
+      orderBy: [{ conversationId: 'asc' }, { createdAt: 'desc' }],
+      distinct: ['conversationId'],
+      select: {
+        conversationId: true,
+        body: true,
+        senderRole: true,
+        senderId: true,
+        isFiltered: true,
+        createdAt: true,
+        sender: { select: { id: true, displayName: true } },
+      },
+    });
+    const lastByConv = new Map(lastMessages.map((m) => [m.conversationId, m]));
+
+    // ── Viewer role per conversation (decides WHICH read flag counts) ──
+    const roleOf = new Map<string, 'buyer' | 'seller' | 'auth'>();
+    for (const conv of used) {
+      if (conv.buyerId === userId || conv.order?.buyerId === userId) roleOf.set(conv.id, 'buyer');
+      else if (conv.sellerId === userId || conv.order?.sellerId === userId) roleOf.set(conv.id, 'seller');
+      else if (conv.order?.authenticator?.userId === userId) roleOf.set(conv.id, 'auth');
+      else roleOf.set(conv.id, 'buyer');
+    }
+
+    // ── Batch 3: unread counts — one groupBy per read flag, not per row ──
+    const unreadByConv = new Map<string, number>();
+    const buckets: Array<[('buyer' | 'seller' | 'auth'), 'readByBuyer' | 'readBySeller' | 'readByAuth']> = [
+      ['buyer', 'readByBuyer'],
+      ['seller', 'readBySeller'],
+      ['auth', 'readByAuth'],
+    ];
+    await Promise.all(
+      buckets.map(async ([role, field]) => {
+        const ids = usedIds.filter((id) => roleOf.get(id) === role);
+        if (ids.length === 0) return;
+        const groups = await this.prisma.message.groupBy({
+          by: ['conversationId'],
+          where: { conversationId: { in: ids }, [field]: false, deletedAt: null },
+          _count: { _all: true },
+        });
+        for (const g of groups) unreadByConv.set(g.conversationId, g._count._all);
+      }),
+    );
+
+    // ── Batch 4: every participant of every conversation, once ──
+    const allParticipantIds = Array.from(new Set(used.flatMap((c) => c.participantUserIds ?? [])));
+    const userRows = allParticipantIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: allParticipantIds } },
+          select: { id: true, displayName: true, lastSeenAt: true, createdAt: true },
+        })
+      : [];
+    const usersById = new Map(userRows.map((u) => [u.id, u]));
+
+    // ── Batch 5: resolve offer sentinels so the client never sees the raw id ──
+    // A last message of `__OFFER__:<id>` is a real message; rendering its body
+    // verbatim leaks an internal format into the sidebar. The price is resolved
+    // here so every client renders it the same way.
+    const offerIds = Array.from(
+      new Set(
+        lastMessages
+          .map((m) => OFFER_SENTINEL.exec(m.body)?.[1])
+          .filter((x): x is string => Boolean(x)),
+      ),
+    );
+    const offerRows = offerIds.length
+      ? await this.prisma.offer.findMany({
+          where: { id: { in: offerIds } },
+          select: { id: true, priceHKD: true },
+        })
+      : [];
+    const offerById = new Map(offerRows.map((o) => [o.id, o.priceHKD]));
+
     const result = [];
-    for (const conv of conversations) {
-      if (
-        conv.kind !== 'THREE_WAY' &&
-        conv.order?.status &&
-        PAIR_HIDE_STATUSES.has(conv.order.status as string)
-      ) {
-        continue;
-      }
-      // Skip conversations that only contain the SYSTEM bootstrap message —
-      // they clutter the messages list as "empty frames". User can still
-      // reach them via the order/listing detail page if they want to start
-      // a conversation. Surface only conversations someone has actually used.
-      const hasHumanMessage = await this.prisma.message.count({
-        where: {
-          conversationId: conv.id,
-          deletedAt: null,
-          senderRole: { not: 'SYSTEM' as any },
-        },
-      });
-      if (hasHumanMessage === 0) continue;
-
-      // Get last message
-      const lastMessage = await this.prisma.message.findFirst({
-        where: { conversationId: conv.id, deletedAt: null },
-        orderBy: { createdAt: 'desc' },
-        select: { body: true, senderRole: true, createdAt: true },
-      });
-
-      // Determine viewer's role in this conversation
-      const isBuyer =
-        conv.buyerId === userId || conv.order?.buyerId === userId;
-      const isSeller =
-        conv.sellerId === userId || conv.order?.sellerId === userId;
-      const isAuth =
-        conv.order?.authenticator?.userId === userId;
-
-      const readField = isBuyer ? 'readByBuyer' : isSeller ? 'readBySeller' : isAuth ? 'readByAuth' : 'readByBuyer';
-
-      const unread = await this.prisma.message.count({
-        where: { conversationId: conv.id, [readField]: false, deletedAt: null },
-      });
+    for (const conv of used) {
+      const role = roleOf.get(conv.id)!;
+      const isBuyer = role === 'buyer';
+      const isSeller = role === 'seller';
+      const isAuth = role === 'auth';
 
       // Determine counterparty (best-effort label)
       let counterparty: { id?: string; displayName: string };
@@ -831,18 +1003,33 @@ export class MessagesService {
         counterparty = conv.buyer ?? conv.order?.buyer ?? { displayName: '買家' };
       }
 
-      // Determine listing info
       const listingInfo = conv.listing ?? conv.order?.listing ?? null;
 
       // Build parties from THIS conversation's own participantUserIds — for
       // pair channels we MUST exclude the third party, else owner label dedupes
       // (e.g. THREE_WAY / BUYER_SELLER / SELLER_AUTH would all label "Alice + Milan").
-      const partiesArr = await this.buildPartiesFromIds(conv.participantUserIds, {
+      const partiesArr = this.buildPartiesFromMap(conv.participantUserIds, usersById, {
         buyerId: conv.buyerId ?? conv.order?.buyerId ?? null,
         sellerId: conv.sellerId ?? conv.order?.sellerId ?? null,
         authUserId: conv.order?.authenticator?.userId ?? null,
         authDisplayName: conv.order?.authenticator?.displayName ?? conv.order?.authenticator?.user?.displayName ?? null,
       });
+
+      const raw = lastByConv.get(conv.id);
+      // senderId + senderDisplayName are what let the client say "你" correctly.
+      // Without senderId it had to guess from senderRole, which mislabels every
+      // seller in the consumer app (buyers and sellers share one portal).
+      const lastMessage = raw
+        ? {
+            body: raw.body,
+            senderRole: raw.senderRole,
+            senderId: raw.senderId,
+            senderDisplayName: raw.sender?.displayName ?? null,
+            isFiltered: raw.isFiltered,
+            offerPriceHKD: offerById.get(OFFER_SENTINEL.exec(raw.body)?.[1] ?? '') ?? null,
+            createdAt: raw.createdAt,
+          }
+        : null;
 
       result.push({
         id: conv.id,
@@ -855,7 +1042,7 @@ export class MessagesService {
         parties: partiesArr,
         listing: listingInfo,
         lastMessage,
-        unread,
+        unread: unreadByConv.get(conv.id) ?? 0,
         createdAt: conv.createdAt,
       });
     }
