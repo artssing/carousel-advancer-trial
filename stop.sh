@@ -14,6 +14,8 @@ cd "$ROOT"
 
 # shellcheck source=scripts/env-config.sh
 source "$ROOT/scripts/env-config.sh"
+# shellcheck source=scripts/docker-health.sh
+source "$ROOT/scripts/docker-health.sh"
 
 TARGET="${1:-all}"
 MODE="${2:-dev}"     # dev = 停本機 hot-reload｜docker = 停部署容器
@@ -22,6 +24,11 @@ case "$TARGET" in prod|uat|all) ;; *) echo "用法：./stop.sh [prod|uat|all] [d
 G="\033[32m"; B="\033[34m"; D="\033[2m"; R="\033[0m"
 say() { printf "${B}▸${R} %s\n" "$*"; }
 ok()  { printf "${G}✓${R} %s\n" "$*"; }
+
+# 停之前一定夾份 DB 備份。2026-08-12 差啲冇咗七個星期嘅 UAT 資料，
+# 而最新一份備份係六個星期前 —— 唯一可靠嘅備份時機，就係「每次都做」。
+# 失敗唔會阻止 stop:救火嗰陣停唔到機比冇備份更差。
+backup_databases || true
 
 # ═══ Docker 部署模式 ═══════════════════════════════════════════════════
 if [[ "$MODE" == "docker" ]]; then
