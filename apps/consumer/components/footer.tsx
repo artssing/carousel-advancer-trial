@@ -57,8 +57,8 @@ export function Footer() {
                 Clicking still copies the full sha (founder 2026-08-12). Note
                 ConditionalFooter hides this footer on /messages /login
                 /register, so `/api/version` stays the authoritative check. */}
-            {' '}<VersionBadge
-              label="· 更新"
+            {' · '}<VersionBadge
+              label="更新"
               showSha={false}
               className="text-[11px] text-neutral-text-hint hover:text-neutral-text-muted"
             />
