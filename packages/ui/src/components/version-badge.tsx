@@ -82,7 +82,9 @@ export function VersionBadge({ className, showSha = true, label }: VersionBadgeP
   const built = formatBuiltAt(info.builtAt);
   const body = isDev
     ? `${label ? `${label} ` : ''}dev（本機）`
-    : [label, built, showSha ? shortSha(info.commit) : null].filter(Boolean).join(' · ');
+    // The label reads as a prefix to the stamp ("更新 08-12 15:23"), so it is
+    // joined by a space; only the stamp's own parts take the · separator.
+    : `${label ? `${label} ` : ''}${[built, showSha ? shortSha(info.commit) : null].filter(Boolean).join(' · ')}`;
 
   return (
     <button
