@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { StarRating } from '@authentik/ui';
+import { StarRating, VersionBadge } from '@authentik/ui';
 import { CATEGORIES, formatHKD, type CategoryId } from '@authentik/utils';
 import { api, hasToken, type AuthenticatorProfile } from '@/lib/api';
 import { AuthTopline, AuthContent } from '@/components/auth-topline';
@@ -349,6 +349,11 @@ export default function ProfilePage() {
             已儲存
           </p>
         )}
+        {/* Build stamp for mobile — the sidebar carrying it is desktop-only, and
+            an authenticator on a phone is exactly who ends up on a stale tab. */}
+        <div className="mt-8 border-t border-line pt-4 md:hidden">
+          <VersionBadge className="text-[10px] text-neutral-text-hint" />
+        </div>
       </AuthContent>
     </>
   );

@@ -2,13 +2,33 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { Facebook, Instagram } from 'lucide-react';
 import { getClientLocale, createT } from '@authentik/utils';
 import { LanguageSwitcher } from '@authentik/ui/language-switcher';
+import { VersionBadge } from '@authentik/ui';
 
 // Cross-app link to authenticator portal — env-driven so production / public-test
 // deployment can override (Lesson #4: never hardcode cross-app URLs).
 const AUTHENTICATOR_URL =
   process.env.NEXT_PUBLIC_AUTHENTICATOR_URL ?? 'http://localhost:3001';
+
+/**
+ * Social accounts (founder 2026-08-12). Hardcoded on purpose: unlike the
+ * cross-app URLs above, these are not environment-dependent — UAT and PROD
+ * point at the same two public pages.
+ */
+const SOCIALS = [
+  {
+    href: 'https://www.facebook.com/profile.php?id=61592681945644',
+    Icon: Facebook,
+    labelKey: 'layout.footer.followFacebook',
+  },
+  {
+    href: 'https://www.instagram.com/certifine.hk/',
+    Icon: Instagram,
+    labelKey: 'layout.footer.followInstagram',
+  },
+] as const;
 
 /**
  * L3 Footer — 4-column layout with wordmark + disclaimer, plus 買賣 / 信任 / 關於
@@ -32,7 +52,32 @@ export function Footer() {
           <p className="mt-3 text-xs leading-relaxed text-neutral-text-hint">
             {_t('layout.footer.disclaimer')}
             {' '}© {new Date().getFullYear()} Certifine Ltd.
+            {/* Build stamp. Date only — a real buyer reading a git sha under the
+                logo reads it as a broken site; 「更新 08-12」 reads as upkeep.
+                Clicking still copies the full sha (founder 2026-08-12). Note
+                ConditionalFooter hides this footer on /messages /login
+                /register, so `/api/version` stays the authoritative check. */}
+            {' '}<VersionBadge
+              label="· 更新"
+              showSha={false}
+              className="text-[11px] text-neutral-text-hint hover:text-neutral-text-muted"
+            />
           </p>
+          <div className="mt-4 flex items-center gap-3">
+            {SOCIALS.map(({ href, Icon, labelKey }) => (
+              <a
+                key={href}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={_t(labelKey)}
+                title={_t(labelKey)}
+                className="text-neutral-text-hint transition hover:text-brand-600"
+              >
+                <Icon className="h-[18px] w-[18px]" />
+              </a>
+            ))}
+          </div>
           <div className="mt-4">
             <LanguageSwitcher variant="select" />
           </div>

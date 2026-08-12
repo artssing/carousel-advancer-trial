@@ -3527,6 +3527,14 @@
     "nav.trust": {
       "zh": "信任機制",
       "en": "Trust & Safety"
+    },
+    "footer.followFacebook": {
+      "zh": "喺 Facebook 追蹤我哋",
+      "en": "Follow us on Facebook"
+    },
+    "footer.followInstagram": {
+      "zh": "喺 Instagram 追蹤我哋",
+      "en": "Follow us on Instagram"
     }
   },
   "messages": {

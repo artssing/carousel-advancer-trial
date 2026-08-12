@@ -28,6 +28,9 @@ export type { ConfirmDialogProps } from './components/confirm-dialog';
 export { OtpInput } from './components/otp-input';
 export type { OtpInputProps } from './components/otp-input';
 export { LanguageSwitcher } from './components/language-switcher';
+export { VersionBadge } from './components/version-badge';
+export type { VersionBadgeProps } from './components/version-badge';
+export { shortSha, formatBuiltAt } from './components/version-badge';
 export { ConversationPane } from './components/conversation-pane';
 export type {
   ConversationPaneProps,

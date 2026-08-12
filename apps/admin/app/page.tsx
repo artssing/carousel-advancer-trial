@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { FleetVersions } from '@/components/fleet-versions';
 
 interface Overview {
   users: number; listings: number; orders: number;
@@ -53,6 +54,7 @@ export default function AdminHome() {
         <QuickLink href="/users/kyc" title="KYC 審批" desc="審批 / 拒絕 pending KYC" />
         <QuickLink href="/users" title="用戶列表" desc="查所有 user、角色、KYC 狀態" />
       </div>
+      <FleetVersions />
     </div>
   );
 }

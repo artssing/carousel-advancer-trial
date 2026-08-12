@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { VersionBadge } from '@authentik/ui';
 import { useRouter } from 'next/navigation';
 import {
   Users, ShieldCheck, ShoppingBag, AlertOctagon, Wallet, FileSearch, BarChart3, LayoutDashboard, FileCheck, LogOut, Settings, TrendingDown, Megaphone,
@@ -56,6 +57,10 @@ export function AdminSidebar() {
         <LogOut className="h-4 w-4" />
         登出
       </button>
+      {/* Internal tool — no reason to hide the sha here. */}
+      <div className="mt-3 rounded-lg border border-slate-800 bg-slate-950 px-3 py-2">
+        <VersionBadge label="admin" className="text-[11px] text-slate-500 hover:text-slate-300" />
+      </div>
       <div className="mt-3 rounded-lg border border-slate-800 bg-slate-950 p-3 text-xs text-slate-400">
         <p className="font-medium text-slate-300">2FA required</p>
         <p className="mt-1">All actions are audit-logged.</p>

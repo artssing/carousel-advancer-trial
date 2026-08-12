@@ -7,6 +7,7 @@ import {
   Inbox, LayoutDashboard, User, Coins, LogOut, MessageCircle, MapPin, ScanLine,
 } from 'lucide-react';
 import { api, clearToken, hasToken } from '@/lib/api';
+import { VersionBadge } from '@authentik/ui';
 
 /**
  * L3 鑑定師 Portal chrome — deep-indigo gradient sidebar + dark mobile bottom nav.
@@ -141,6 +142,14 @@ export function Sidebar({ authProfile }: SidebarProps) {
           </button>
         </div>
       )}
+
+      {/* Build stamp — authenticators are a small, semi-professional audience
+          with a direct support line, so the sha is printed rather than hidden:
+          when one reports 「個掣禁唔到」 the first question is "what number is at
+          the bottom left", which separates a bug from a stale tab. */}
+      <div className="mt-2 px-2 pb-1">
+        <VersionBadge className="text-[10px] text-authBrand-200/50 hover:text-authBrand-200/80" />
+      </div>
     </aside>
   );
 }
