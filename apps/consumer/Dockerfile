@@ -36,6 +36,12 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     NEXT_PUBLIC_ADMIN_URL=$NEXT_PUBLIC_ADMIN_URL
 COPY packages ./packages
 COPY apps/consumer ./apps/consumer
+# Next 會試「patch」lockfile 攞返平台專屬嘅 SWC binary，而佢揀 package manager
+# 嗰下會揀中 node:20-alpine 自帶嘅 yarn 1.22，然後死喺 `packageManager: npm@…`
+# 上面（"defines packageManager yarn@npm@11.12.1"）。node_modules 上面個
+# `npm install` 已經裝好，所以 build 唔需要 lockfile —— 攞走佢，patch 就唔會行。
+# 呢個 bug 一直存在，只係之前次次都食 build cache 冇行到（2026-08-12 清 cache 後爆）。
+RUN rm -f package-lock.json
 RUN npx turbo run build --filter=consumer
 
 # ---- runner ----
