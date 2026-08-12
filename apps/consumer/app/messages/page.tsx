@@ -47,6 +47,7 @@ interface ConvSummary {
   counterparty: { id?: string; displayName: string };
   listing: { id: string; title: string; images: string[] } | null;
   kind?: string;
+  parties?: Array<{ id: string; displayName: string; role: string }>;
   lastMessage: {
     body: string;
     senderRole: string;
@@ -221,7 +222,19 @@ function MessagesPageInner() {
         const target = prev[i]!;
         const updated: ConvSummary = {
           ...target,
-          lastMessage: { body: msg.body, senderRole: msg.senderRole, createdAt: msg.createdAt },
+          // senderId MUST come along: previewPrefix compares it with the viewer
+          // to decide 「你：」, so dropping it made a message you had just sent
+          // render with no prefix until the next refetch (founder 2026-08-12).
+          // The display name is looked up from parties rather than guessed — a
+          // missing prefix is recoverable, a wrong name is not.
+          lastMessage: {
+            body: msg.body,
+            senderRole: msg.senderRole,
+            senderId: msg.senderId ?? null,
+            senderDisplayName:
+              target.parties?.find((pt) => pt.id === msg.senderId)?.displayName ?? null,
+            createdAt: msg.createdAt,
+          },
           unread: (isActive || isMine) ? 0 : (target.unread ?? 0) + 1,
         };
         const without = prev.filter((_, k) => k !== i);
@@ -388,8 +401,15 @@ function MessagesPageInner() {
               <button
                 key={conv.id}
                 onClick={() => openConv(conv.id)}
+                // Unread carries FOUR signals at once — tint, bolder name,
+                // darker preview, coloured time — so the row survives a glance
+                // instead of relying on the badge alone (founder 2026-08-12).
                 className={`flex w-full items-start gap-2.5 border-b border-line ${indent ? 'py-2 pl-8 pr-4' : 'px-4 py-3'} text-left transition ${
-                  isActive ? 'bg-verify-soft' : 'hover:bg-surface-2'
+                  isActive
+                    ? 'bg-verify-soft'
+                    : conv.unread > 0
+                      ? 'bg-brand-50/70 hover:bg-surface-2'
+                      : 'hover:bg-surface-2'
                 }`}
               >
                 {/* Avatar — messages.html .conv .av */}
@@ -449,7 +469,7 @@ function MessagesPageInner() {
                     </div>
                   )}
                   <div className="mt-0.5 flex items-start justify-between gap-2">
-                    <p className={`line-clamp-2 flex-1 text-[12px] ${conv.unread > 0 && !isActive ? 'text-neutral-text' : 'text-neutral-text-hint'}`}>
+                    <p className={`line-clamp-2 flex-1 text-[12px] ${conv.unread > 0 && !isActive ? 'font-medium text-neutral-text' : 'text-neutral-text-muted'}`}>
                       {prefix && <span className="font-medium">{prefix}</span>}
                       <span data-user-content>{bodyText}</span>
                     </p>
@@ -472,7 +492,9 @@ function MessagesPageInner() {
               <button
                 type="button"
                 onClick={() => setCollapsedGroups((prev) => ({ ...prev, [g.key]: !prev[g.key] }))}
-                className="flex w-full items-center gap-2 border-b border-line px-4 py-2.5 text-left hover:bg-surface-2"
+                className={`flex w-full items-center gap-2 border-b border-line px-4 py-2.5 text-left ${
+                  totalUnread > 0 ? 'bg-brand-50/70 hover:bg-surface-2' : 'hover:bg-surface-2'
+                }`}
                 aria-expanded={!collapsed}
                 aria-label={`${g.counterparty.displayName} · ${g.convs.length} 個對話`}
               >
@@ -490,7 +512,7 @@ function MessagesPageInner() {
                       never shrinks). The time used to sit alone on line 2 where
                       the message preview belongs (founder 2026-08-12). */}
                   <div className="flex items-baseline justify-between gap-2">
-                    <p className="truncate text-[13px] font-semibold text-neutral-text">
+                    <p className={`truncate text-[13px] ${totalUnread > 0 ? 'font-bold text-ink' : 'font-semibold text-neutral-text'}`}>
                       <span data-user-content>{g.counterparty.displayName}</span>
                       <span className="ml-1 text-[10px] font-medium text-neutral-text-hint">· {g.convs.length}</span>
                     </p>
@@ -507,7 +529,7 @@ function MessagesPageInner() {
                   {/* Line 2 — the newest message across the group. Hidden while
                       expanded: the first child row directly below repeats it. */}
                   {collapsed && (
-                    <p className="mt-0.5 line-clamp-2 text-[11px] text-neutral-text-hint">
+                    <p className={`mt-0.5 line-clamp-2 text-[11px] ${totalUnread > 0 ? 'font-medium text-neutral-text' : 'text-neutral-text-muted'}`}>
                       {latest.lastMessage && (
                         <>
                           {previewPrefix(latest.lastMessage, { currentUserId: me?.id, showSenderName: latest.kind === 'THREE_WAY' }, locale) && (
