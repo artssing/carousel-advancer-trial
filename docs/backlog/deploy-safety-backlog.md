@@ -117,3 +117,44 @@ certifine-api:$(git rev-parse --short HEAD)`，PROD deploy 明確傳 tag。
 見 `docs/backlog/prod-not-live-backlog.md`。同上面相關：因為 PROD 得個 API
 容器行緊，冇前端，所以今次意外嘅實際 blast radius 細。**呢個係僥倖，唔係防護。**
 PROD 前端一上線，同一個機制就會影響真用戶。
+
+---
+
+## 🔴 P0（上 PROD 之前一定要做）— 自動每日 DB 備份
+
+**founder 2026-08-12 拍板:「上左prod之後一定要做既backup」。** 而家係
+**明知未做**，唔係漏咗。
+
+### 點解係 P0 而唔係 P2
+
+2026-08-12 一次磁碟爆（剩 4.8GB）令 Docker VM 個 filesystem 寫壞:
+
+- Postgres SIGSEGV 死咗（exit 139），`docker ps` 仲顯示 "Up"
+- `docker volume ls` 一度**連 volume 清單都列唔到** —— 即係 DB 個 volume 嗰刻
+  係咪仲喺度，冇人答到
+- 當時最新一份備份係 **6 月 24 日**，即係差啲蒸發咗七個星期嘅 UAT 資料
+
+最後係人手救返（重啟 Docker → volume 見返 → 即刻 `pg_dump`）。**UAT 蒸發咗
+係損失時間，PROD 蒸發咗係損失生意。** 呢個唔可以靠人手。
+
+### 而家有嘅（唔夠）
+
+`./stop.sh` 每次會自動 dump 兩個 DB，留最近 7 份自動備份
+（`scripts/docker-health.sh` 個 `backup_databases`）。
+
+**個窿:唔 stop 就唔備份。** 部機一路行唔停，就一路冇新備份 —— 而「一路行唔停」
+正正係 PROD 嘅正常狀態。
+
+### 要做嘅
+
+1. **每日自動 `pg_dump`**（launchd / cron / n8n 都得），留 7 日。
+2. **備份唔可以淨係放喺同一個 volume / 同一部機。** 今次個 failure mode 就係
+   「成個 Docker VM 唔可靠」—— 備份同資料同生共死就等於冇備份。
+   最少要出到 host 另一個位，理想係推去 R2 / 雲端。
+3. **restore 要演練過。** 未 restore 過嘅備份唔算備份。
+4. （加分）備份完自動驗:行 `pg_restore --list` 或者 restore 去臨時 DB 數行數。
+
+### 相關
+
+- `scripts/docker-health.sh` — `backup_databases()`、磁碟硬線 10GB
+- `docs/backlog/self-host-prod-risk-backlog.md` — 自建 PROD 嘅整體風險
