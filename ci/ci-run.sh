@@ -68,8 +68,12 @@ case "$STEP" in
     # override when git is unavailable (CI checkouts without .git).
     GIT_COMMIT="$(git rev-parse HEAD 2>/dev/null || echo "${GIT_COMMIT:-unknown}")"
     BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-    export GIT_COMMIT BUILT_AT
-    echo "▸ stamping image: commit=$GIT_COMMIT builtAt=$BUILT_AT"
+    # Human-facing version. SSOT is the repo-root VERSION file, bumped by hand
+    # on release — a commit sha answers "which build", a version answers "which
+    # release", and only the second one maps to a CHANGELOG entry.
+    APP_VERSION="$(tr -d '[:space:]' < VERSION 2>/dev/null || echo 0.0.0)"
+    export GIT_COMMIT BUILT_AT APP_VERSION
+    echo "▸ stamping image: v$APP_VERSION commit=$GIT_COMMIT builtAt=$BUILT_AT"
     docker compose $COMPOSE -p "$PROJECT" build $BUILD_SVCS
 
     # 除咗浮動 tag（:prod / :uat），每個 build 再落一個釘死嘅 sha tag。

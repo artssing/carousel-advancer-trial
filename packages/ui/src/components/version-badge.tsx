@@ -9,19 +9,24 @@
  * answer for the wrong container. The badge in the admin console must report
  * admin's build, not the API's.
  *
- * Build TIME leads, sha follows. The question being answered is "did the deploy
- * I just ran actually land here", and the time settles that; the short sha is
- * only what you paste into a retag command afterwards. Clicking copies the full
- * 40-char sha — the thing a rollback command actually needs, and not something
- * anyone should retype off a screen.
+ * The VERSION LEADS (founder 2026-08-12): a release number is the thing that
+ * maps to a CHANGELOG entry, which a build timestamp never did. Its SSOT is the
+ * repo-root VERSION file, baked in as APP_VERSION at build.
+ *
+ * The commit sha stays underneath because a version alone cannot tell you
+ * WHICH build of that version is running — two deploys of v0.1.0 are
+ * indistinguishable by version — and the rollback tag is keyed by sha. Clicking
+ * copies the full 40-char sha, which is what a retag command needs.
  *
  * `dev` means the server had no GIT_COMMIT — a `next dev` working tree, which
- * has no single commit. It is deliberately not dressed up as a version.
+ * has no single commit. It is deliberately not dressed up as a release.
  */
 import { useEffect, useState } from 'react';
 
 interface VersionInfo {
   app: string;
+  /** Release number from the repo-root VERSION file, e.g. "0.1.0". */
+  version?: string;
   commit: string;
   builtAt: string | null;
 }
@@ -30,9 +35,9 @@ export interface VersionBadgeProps {
   /** Wrapper classes — each portal supplies its own colours. */
   className?: string;
   /**
-   * Print the short sha next to the time. Off for the consumer footer: a real
+   * Print the short sha after the version. Off for the consumer footer: a real
    * buyer reading `3f9a1c2` under the logo reads it as "this site is broken",
-   * while 「更新 08-12」 reads as "someone maintains this". The sha is still one
+   * while `v0.1.0` reads as an ordinary product version. The sha is still one
    * click away, so the founder loses nothing but a click (founder 2026-08-12).
    */
   showSha?: boolean;
@@ -80,16 +85,16 @@ export function VersionBadge({ className, showSha = true, label }: VersionBadgeP
 
   const isDev = info.commit === 'dev' || info.commit === 'unknown';
   const built = formatBuiltAt(info.builtAt);
+  // The label reads as a prefix ("admin v0.1.0"), so it joins with a space;
+  // only the stamp's own fields take the · separator.
   const body = isDev
     ? `${label ? `${label} ` : ''}dev（本機）`
-    // The label reads as a prefix to the stamp ("更新 08-12 15:23"), so it is
-    // joined by a space; only the stamp's own parts take the · separator.
-    : `${label ? `${label} ` : ''}${[built, showSha ? shortSha(info.commit) : null].filter(Boolean).join(' · ')}`;
+    : `${label ? `${label} ` : ''}${[`v${info.version ?? '0.0.0'}`, showSha ? shortSha(info.commit) : null].filter(Boolean).join(' · ')}`;
 
   return (
     <button
       type="button"
-      title={`${info.app} ${info.commit}${built ? `\nbuilt ${built}` : ''}\n撳一下 copy 完整 commit`}
+      title={`${info.app} v${info.version ?? '0.0.0'}\n${info.commit}${built ? `\nbuilt ${built}` : ''}\n撳一下 copy 完整 commit`}
       onClick={() => {
         navigator.clipboard?.writeText(info.commit).then(
           () => { setCopied(true); setTimeout(() => setCopied(false), 1500); },

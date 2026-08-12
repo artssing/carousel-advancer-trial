@@ -39,8 +39,10 @@ WORKDIR /repo
 # NEXT_PUBLIC_* args would rebuild the whole app on every commit.
 ARG GIT_COMMIT=unknown
 ARG BUILT_AT=unknown
+ARG APP_VERSION=0.0.0
 ENV GIT_COMMIT=$GIT_COMMIT
 ENV BUILT_AT=$BUILT_AT
+ENV APP_VERSION=$APP_VERSION
 COPY --from=build /repo ./
 WORKDIR /repo/apps/admin
 EXPOSE 3003

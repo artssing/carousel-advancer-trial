@@ -36,8 +36,10 @@ WORKDIR /repo
 # `docker build` (no --build-arg) working; CI passes the real values.
 ARG GIT_COMMIT=unknown
 ARG BUILT_AT=unknown
+ARG APP_VERSION=0.0.0
 ENV GIT_COMMIT=$GIT_COMMIT
 ENV BUILT_AT=$BUILT_AT
+ENV APP_VERSION=$APP_VERSION
 COPY --from=build /repo/node_modules        ./node_modules
 COPY --from=build /repo/packages            ./packages
 COPY --from=build /repo/apps/api/dist       ./apps/api/dist

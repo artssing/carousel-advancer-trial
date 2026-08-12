@@ -38,6 +38,7 @@ services:
       args:
         GIT_COMMIT: "${GIT_COMMIT:-unknown}"
         BUILT_AT: "${BUILT_AT:-unknown}"
+        APP_VERSION: "${APP_VERSION:-0.0.0}"
     image: certifine-api:prod
     container_name: certifine-api-prod
     restart: unless-stopped
@@ -70,6 +71,7 @@ services:
         NEXT_PUBLIC_ADMIN_URL: "https://admin.certifinehk.com"
         GIT_COMMIT: "${GIT_COMMIT:-unknown}"
         BUILT_AT: "${BUILT_AT:-unknown}"
+        APP_VERSION: "${APP_VERSION:-0.0.0}"
     image: certifine-consumer:prod
     container_name: certifine-consumer-prod
     restart: unless-stopped
@@ -86,6 +88,7 @@ services:
         NEXT_PUBLIC_ADMIN_URL: "https://admin.certifinehk.com"
         GIT_COMMIT: "${GIT_COMMIT:-unknown}"
         BUILT_AT: "${BUILT_AT:-unknown}"
+        APP_VERSION: "${APP_VERSION:-0.0.0}"
     image: certifine-authenticator:prod
     container_name: certifine-authenticator-prod
     restart: unless-stopped
@@ -102,6 +105,7 @@ services:
         NEXT_PUBLIC_ADMIN_URL: "https://admin.certifinehk.com"
         GIT_COMMIT: "${GIT_COMMIT:-unknown}"
         BUILT_AT: "${BUILT_AT:-unknown}"
+        APP_VERSION: "${APP_VERSION:-0.0.0}"
     image: certifine-admin:prod
     container_name: certifine-admin-prod
     restart: unless-stopped
@@ -128,6 +132,7 @@ services:
       args:
         GIT_COMMIT: "${GIT_COMMIT:-unknown}"
         BUILT_AT: "${BUILT_AT:-unknown}"
+        APP_VERSION: "${APP_VERSION:-0.0.0}"
     image: certifine-api:uat
     container_name: certifine-api-uat
     restart: unless-stopped
@@ -159,6 +164,7 @@ services:
         NEXT_PUBLIC_ADMIN_URL: "https://uat-admin.certifinehk.com"
         GIT_COMMIT: "${GIT_COMMIT:-unknown}"
         BUILT_AT: "${BUILT_AT:-unknown}"
+        APP_VERSION: "${APP_VERSION:-0.0.0}"
     image: certifine-consumer:uat
     container_name: certifine-consumer-uat
     restart: unless-stopped
@@ -175,6 +181,7 @@ services:
         NEXT_PUBLIC_ADMIN_URL: "https://uat-admin.certifinehk.com"
         GIT_COMMIT: "${GIT_COMMIT:-unknown}"
         BUILT_AT: "${BUILT_AT:-unknown}"
+        APP_VERSION: "${APP_VERSION:-0.0.0}"
     image: certifine-authenticator:uat
     container_name: certifine-authenticator-uat
     restart: unless-stopped
@@ -191,6 +198,7 @@ services:
         NEXT_PUBLIC_ADMIN_URL: "https://uat-admin.certifinehk.com"
         GIT_COMMIT: "${GIT_COMMIT:-unknown}"
         BUILT_AT: "${BUILT_AT:-unknown}"
+        APP_VERSION: "${APP_VERSION:-0.0.0}"
     image: certifine-admin:uat
     container_name: certifine-admin-uat
     restart: unless-stopped

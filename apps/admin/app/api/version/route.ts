@@ -22,6 +22,7 @@ export const dynamic = 'force-dynamic';
 export function GET() {
   return NextResponse.json({
     app: 'admin',
+    version: process.env.APP_VERSION || '0.0.0',
     commit: process.env.GIT_COMMIT || 'dev',
     builtAt: process.env.BUILT_AT || null,
   });

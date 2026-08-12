@@ -27,6 +27,7 @@ const API = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
 
 export interface FleetEntry {
   service: 'consumer' | 'authenticator' | 'admin' | 'api';
+  version: string | null;
   commit: string | null;
   builtAt: string | null;
   /** Set when the service could not be reached or answered badly. */
@@ -36,14 +37,14 @@ export interface FleetEntry {
 async function probe(service: FleetEntry['service'], url: string): Promise<FleetEntry> {
   try {
     const res = await fetch(url, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
-    if (!res.ok) return { service, commit: null, builtAt: null, error: `HTTP ${res.status}` };
+    if (!res.ok) return { service, version: null, commit: null, builtAt: null, error: `HTTP ${res.status}` };
     const body = await res.json();
     // An older image predating /api/version answers 404, which lands above. A
     // 200 with no commit means something else is serving this path.
-    if (!body?.commit) return { service, commit: null, builtAt: null, error: 'no commit in response' };
-    return { service, commit: body.commit, builtAt: body.builtAt ?? null };
+    if (!body?.commit) return { service, version: null, commit: null, builtAt: null, error: 'no commit in response' };
+    return { service, version: body.version ?? null, commit: body.commit, builtAt: body.builtAt ?? null };
   } catch (e: any) {
-    return { service, commit: null, builtAt: null, error: e?.message ?? 'unreachable' };
+    return { service, version: null, commit: null, builtAt: null, error: e?.message ?? 'unreachable' };
   }
 }
 
@@ -56,6 +57,7 @@ export async function GET() {
 
   const admin: FleetEntry = {
     service: 'admin',
+    version: process.env.APP_VERSION || '0.0.0',
     commit: process.env.GIT_COMMIT || 'dev',
     builtAt: process.env.BUILT_AT || null,
   };

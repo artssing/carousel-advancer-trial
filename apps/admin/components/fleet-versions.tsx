@@ -14,6 +14,7 @@ import { shortSha, formatBuiltAt } from '@authentik/ui';
 
 interface FleetEntry {
   service: string;
+  version?: string | null;
   commit: string | null;
   builtAt: string | null;
   error?: string;
@@ -32,8 +33,11 @@ function drift(entries: FleetEntry[]): { tone: 'ok' | 'warn' | 'bad'; label: str
   if (entries.some((e) => e.commit === 'dev' || e.commit === 'unknown')) {
     return { tone: 'bad', label: '有服務未 stamp（dev）' };
   }
+  if (new Set(entries.map((e) => e.version ?? '?')).size > 1) {
+    return { tone: 'bad', label: '版本號唔一致' };
+  }
   if (new Set(entries.map((e) => e.commit)).size === 1) {
-    return { tone: 'ok', label: '四個同一個 commit' };
+    return { tone: 'ok', label: `四個都係 v${entries[0]?.version ?? '?'}，同一個 commit` };
   }
   const times = entries.map((e) => (e.builtAt ? new Date(e.builtAt).getTime() : NaN));
   if (times.some(Number.isNaN)) return { tone: 'warn', label: 'commit 唔一致' };
@@ -81,7 +85,10 @@ export function FleetVersions() {
           {entries.map((e) => (
             <tr key={e.service} className="border-t border-slate-800/70">
               <td className="py-1.5 pr-3 font-medium text-slate-300">{e.service}</td>
-              <td className="py-1.5 pr-3 font-mono tabular-nums text-slate-400">
+              <td className="py-1.5 pr-3 font-mono tabular-nums text-slate-200">
+                {e.version ? `v${e.version}` : '—'}
+              </td>
+              <td className="py-1.5 pr-3 font-mono tabular-nums text-slate-500">
                 {formatBuiltAt(e.builtAt) ?? '—'}
               </td>
               <td className="py-1.5 pr-3 font-mono text-slate-400">

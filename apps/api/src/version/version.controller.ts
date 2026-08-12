@@ -26,6 +26,7 @@ export class VersionController {
   @Get()
   get() {
     return {
+      version: process.env.APP_VERSION || '0.0.0',
       commit: process.env.GIT_COMMIT || 'dev',
       builtAt: process.env.BUILT_AT || null,
       env: process.env.APP_ENV || process.env.NODE_ENV || 'unknown',
