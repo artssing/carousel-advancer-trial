@@ -777,7 +777,15 @@ export class MessagesService {
     // Search rows carry the same lastMessage AND unread as the list. Without
     // lastMessage every hit rendered as "no messages yet"; without unread every
     // hit looked read.
-    const withMessages = await this.attachLastMessages(rows);
+    // Search must not surface conversations the list hides. It had its own
+    // visibility rules and so returned "empty frames" (SYSTEM-only threads) and
+    // terminated pair channels that the sidebar refuses to show — the same
+    // two-definitions-of-visible problem that made the unread badge uncountable.
+    // Intersecting with the one shared definition keeps search a FILTER of the
+    // list rather than a different list.
+    const { used: visibleConvs } = await this.visibleConversations(userId);
+    const visibleIds = new Set(visibleConvs.map((c) => c.id));
+    const withMessages = await this.attachLastMessages(rows.filter((r) => visibleIds.has(r.id)));
     const roleOf = new Map<string, 'buyer' | 'seller' | 'auth'>();
     for (const conv of convs) {
       if (conv.buyerId === userId || conv.order?.buyerId === userId) roleOf.set(conv.id, 'buyer');
