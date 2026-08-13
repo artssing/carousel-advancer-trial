@@ -826,24 +826,16 @@ export class MessagesService {
   }
 
   /**
-   * The messages sidebar. One row per conversation, newest activity first.
+   * The conversations a user can actually open, with their role in each.
    *
-   * Query budget is FLAT, not per-conversation. This used to run four queries
-   * inside the loop (human-message count, last message, unread count, and a
-   * user.findMany hidden inside buildPartiesFromIds) with no `take` at all, so
-   * a busy account issued hundreds of round-trips to render one screen.
-   * Everything below is batched: the cost is the same whether the user has
-   * three conversations or three hundred.
+   * ONE definition of "visible", shared by the list and the unread badge. They
+   * used to each carry their own copy of these rules and drifted apart, which
+   * is how the badge came to count a message living in a conversation the list
+   * refuses to show (2026-08-12).
    */
-  async listConversations(userId: string) {
-    // Membership single source of truth: Conversation.participantUserIds
-    // is populated at create-time and never mutates. Avoids lesson #6
-    // (multi-role WHERE drift) entirely — pair channels naturally hide
-    // from non-participants because their userId isn't in the array.
+  private async visibleConversations(userId: string) {
     const conversations = await this.prisma.conversation.findMany({
-      where: {
-        participantUserIds: { has: userId },
-      },
+      where: { participantUserIds: { has: userId } },
       include: {
         order: {
           select: {
@@ -870,13 +862,11 @@ export class MessagesService {
       },
       orderBy: { createdAt: 'desc' },
       // A hard cap so one account can never ask the DB for an unbounded set.
-      // Nobody works a sidebar past this; if that changes, this becomes a
-      // cursor rather than a larger number.
       take: 200,
     });
 
-    // Hide pair channels (private DMs) once the order is terminated.
-    // THREE_WAY stays visible because it carries SYSTEM audit messages.
+    // Pair channels (private DMs) disappear once the order is terminated;
+    // THREE_WAY stays because it carries the SYSTEM audit trail.
     const PAIR_HIDE_STATUSES = new Set(['REFUNDED', 'DISPUTED', 'COMPLETED']);
     const visible = conversations.filter(
       (conv) =>
@@ -886,16 +876,14 @@ export class MessagesService {
           PAIR_HIDE_STATUSES.has(conv.order.status as string)
         ),
     );
-    const convIds = visible.map((c) => c.id);
-    if (convIds.length === 0) return [];
+    if (visible.length === 0) return { used: [], roleOf: new Map<string, 'buyer' | 'seller' | 'auth'>() };
 
-    // ── Batch 1: which conversations have a real (non-SYSTEM) message? ──
-    // Conversations holding only the SYSTEM bootstrap line are "empty frames"
-    // and would clutter the list; they stay reachable from the order page.
+    // Conversations holding only the SYSTEM bootstrap line are empty frames:
+    // they clutter the list, and they must not contribute to a badge either.
     const humanCounts = await this.prisma.message.groupBy({
       by: ['conversationId'],
       where: {
-        conversationId: { in: convIds },
+        conversationId: { in: visible.map((c) => c.id) },
         deletedAt: null,
         senderRole: { not: 'SYSTEM' as any },
       },
@@ -903,10 +891,63 @@ export class MessagesService {
     });
     const hasHuman = new Set(humanCounts.filter((g) => g._count._all > 0).map((g) => g.conversationId));
     const used = visible.filter((c) => hasHuman.has(c.id));
+
+    // Which read flag speaks for this viewer in this conversation.
+    const roleOf = new Map<string, 'buyer' | 'seller' | 'auth'>();
+    for (const conv of used) {
+      if (conv.buyerId === userId || conv.order?.buyerId === userId) roleOf.set(conv.id, 'buyer');
+      else if (conv.sellerId === userId || conv.order?.sellerId === userId) roleOf.set(conv.id, 'seller');
+      else if (conv.order?.authenticator?.userId === userId) roleOf.set(conv.id, 'auth');
+      else roleOf.set(conv.id, 'buyer');
+    }
+    return { used, roleOf };
+  }
+
+  /** Unread per conversation — one groupBy per read flag, never one per row. */
+  private async unreadCounts(
+    convIds: string[],
+    roleOf: Map<string, 'buyer' | 'seller' | 'auth'>,
+  ): Promise<Map<string, number>> {
+    const out = new Map<string, number>();
+    if (convIds.length === 0) return out;
+    const buckets: Array<[('buyer' | 'seller' | 'auth'), 'readByBuyer' | 'readBySeller' | 'readByAuth']> = [
+      ['buyer', 'readByBuyer'],
+      ['seller', 'readBySeller'],
+      ['auth', 'readByAuth'],
+    ];
+    await Promise.all(
+      buckets.map(async ([role, field]) => {
+        const ids = convIds.filter((id) => roleOf.get(id) === role);
+        if (ids.length === 0) return;
+        const groups = await this.prisma.message.groupBy({
+          by: ['conversationId'],
+          where: { conversationId: { in: ids }, [field]: false, deletedAt: null },
+          _count: { _all: true },
+        });
+        for (const g of groups) out.set(g.conversationId, g._count._all);
+      }),
+    );
+    return out;
+  }
+
+  /**
+   * The messages sidebar. One row per conversation, newest activity first.
+   *
+   * Query budget is FLAT, not per-conversation. This used to run four queries
+   * inside the loop (human-message count, last message, unread count, and a
+   * user.findMany hidden inside buildPartiesFromIds) with no `take` at all, so
+   * a busy account issued hundreds of round-trips to render one screen.
+   * Everything below is batched: the cost is the same whether the user has
+   * three conversations or three hundred.
+   */
+  async listConversations(userId: string) {
+    // Visibility + roles come from the shared helper so the sidebar and the
+    // unread badge can never disagree about which conversations exist.
+    const { used, roleOf } = await this.visibleConversations(userId);
     if (used.length === 0) return [];
     const usedIds = used.map((c) => c.id);
 
-    // ── Batch 2: the newest message of each conversation, in one query ──
+    // ── The newest message of each conversation, in one query ──
     // `distinct` after an ordered scan gives the first row per conversation,
     // which the ordering makes the newest.
     const lastMessages = await this.prisma.message.findMany({
@@ -925,34 +966,7 @@ export class MessagesService {
     });
     const lastByConv = new Map(lastMessages.map((m) => [m.conversationId, m]));
 
-    // ── Viewer role per conversation (decides WHICH read flag counts) ──
-    const roleOf = new Map<string, 'buyer' | 'seller' | 'auth'>();
-    for (const conv of used) {
-      if (conv.buyerId === userId || conv.order?.buyerId === userId) roleOf.set(conv.id, 'buyer');
-      else if (conv.sellerId === userId || conv.order?.sellerId === userId) roleOf.set(conv.id, 'seller');
-      else if (conv.order?.authenticator?.userId === userId) roleOf.set(conv.id, 'auth');
-      else roleOf.set(conv.id, 'buyer');
-    }
-
-    // ── Batch 3: unread counts — one groupBy per read flag, not per row ──
-    const unreadByConv = new Map<string, number>();
-    const buckets: Array<[('buyer' | 'seller' | 'auth'), 'readByBuyer' | 'readBySeller' | 'readByAuth']> = [
-      ['buyer', 'readByBuyer'],
-      ['seller', 'readBySeller'],
-      ['auth', 'readByAuth'],
-    ];
-    await Promise.all(
-      buckets.map(async ([role, field]) => {
-        const ids = usedIds.filter((id) => roleOf.get(id) === role);
-        if (ids.length === 0) return;
-        const groups = await this.prisma.message.groupBy({
-          by: ['conversationId'],
-          where: { conversationId: { in: ids }, [field]: false, deletedAt: null },
-          _count: { _all: true },
-        });
-        for (const g of groups) unreadByConv.set(g.conversationId, g._count._all);
-      }),
-    );
+    const unreadByConv = await this.unreadCounts(usedIds, roleOf);
 
     // ── Batch 4: every participant of every conversation, once ──
     const allParticipantIds = Array.from(new Set(used.flatMap((c) => c.participantUserIds ?? [])));
@@ -1059,42 +1073,27 @@ export class MessagesService {
     return result;
   }
 
-  /** Get unread count for a user across all conversations (order + listing) */
+  /**
+   * The number a badge should show: unread messages in conversations the user
+   * can actually OPEN.
+   *
+   * This used to count every conversation they participate in, including the
+   * ones listConversations deliberately hides — terminated pair channels, and
+   * "empty frames" holding nothing but the SYSTEM bootstrap line. The result
+   * was a badge that could not be cleared: on 2026-08-12 the top bar said 4
+   * while the list summed to 3, and the missing one lived in a COMPLETED
+   * conversation with zero human messages. A count you cannot act on is worse
+   * than no count — it trains people to ignore the badge.
+   *
+   * Sharing `visibleConversations` with the list is the point: the two can no
+   * longer drift, because there is one definition of "visible".
+   */
   async getUnreadCount(userId: string) {
-    // Same membership-via-participantUserIds principle as listConversations
-    const conversations = await this.prisma.conversation.findMany({
-      where: { participantUserIds: { has: userId } },
-      select: {
-        id: true,
-        buyerId: true,
-        sellerId: true,
-        order: {
-          select: {
-            buyerId: true,
-            sellerId: true,
-            authenticator: { select: { userId: true } },
-          },
-        },
-      },
-    });
-
+    const { used, roleOf } = await this.visibleConversations(userId);
+    if (used.length === 0) return { unread: 0 };
+    const unreadByConv = await this.unreadCounts(used.map((c) => c.id), roleOf);
     let total = 0;
-    for (const conv of conversations) {
-      const isBuyer = conv.buyerId === userId || conv.order?.buyerId === userId;
-      const isSeller = conv.sellerId === userId || conv.order?.sellerId === userId;
-      const isAuth = conv.order?.authenticator?.userId === userId;
-      const readField = isBuyer ? 'readByBuyer' : isSeller ? 'readBySeller' : isAuth ? 'readByAuth' : 'readByBuyer';
-
-      const unread = await this.prisma.message.count({
-        where: {
-          conversationId: conv.id,
-          [readField]: false,
-          deletedAt: null,
-        },
-      });
-      total += unread;
-    }
-
+    for (const n of unreadByConv.values()) total += n;
     return { unread: total };
   }
 

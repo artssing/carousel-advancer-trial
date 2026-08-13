@@ -7,7 +7,7 @@ import { io, Socket } from 'socket.io-client';
 import { Button, Pill, useSidebarWidth, SidebarResizeHandle } from '@authentik/ui';
 import {
   formatChatTime, formatHKD, tierForPrice, categoryByApiEnum, conditionLabel,
-  previewBody, previewPrefix, previewEmpty, getClientLocale, formatChatTimeFull,
+  previewBody, previewPrefix, previewEmpty, getClientLocale, formatChatTimeFull, createT,
   type ConditionGrade,
 } from '@authentik/utils';
 import { Tag } from 'lucide-react';
@@ -280,7 +280,10 @@ function MessagesPageInner() {
       })
     : conversations;
   const noResults = !!qLower && visibleConvs.length === 0;
-  const unreadCount = conversations.filter((c) => c.unread > 0).length;
+  // MESSAGES, not conversations. This counted conversations while the label
+  // said 「N 個未讀」 and the top bar counted messages, so the same screen showed
+  // three different numbers for what read as one thing (founder 2026-08-12).
+  const unreadCount = conversations.reduce((sum, c) => sum + (c.unread ?? 0), 0);
 
   const groups = useMemo(() => {
     const map = new Map<string, { key: string; counterparty: ConvSummary['counterparty']; convs: ConvSummary[] }>();
@@ -329,7 +332,7 @@ function MessagesPageInner() {
         </div>
         {unreadCount > 0 && (
           <p className="mt-1.5 text-[11px] font-semibold text-danger">
-            · {unreadCount} 個未讀
+            {createT(locale)('messages.list.unreadSummary', { n: unreadCount })}
           </p>
         )}
       </div>

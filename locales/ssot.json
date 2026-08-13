@@ -3913,6 +3913,10 @@
     "unreadCount": {
       "zh": "{n} 個未讀",
       "en": "{n} unread"
+    },
+    "list.unreadSummary": {
+      "zh": "· {n} 條未讀訊息",
+      "en": "· {n} unread message(s)"
     }
   },
   "notFound": {
