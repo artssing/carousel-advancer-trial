@@ -764,15 +764,29 @@ export class MessagesService {
           orderStatus: conv.order?.status ?? null,
           counterparty,
           listing: conv.listing ?? conv.order?.listing ?? null,
-          unread: 0,  // search results don't compute unread (UI shows it via listConversations cache anyway)
+          // Real count, filled in below. This was hardcoded 0, so the moment you
+          // typed in the search box every row claimed to be fully read — the
+          // same conversation showed a badge in the list and none in search
+          // (founder's rule 2026-08-12: the unread number must read the same
+          // everywhere).
+          unread: 0,
           createdAt: conv.createdAt,
         };
       });
 
-    // Search rows carry the same lastMessage shape as the list. Without it,
-    // every hit rendered as "no messages yet" the moment the sidebar started
-    // showing previews — the row would look emptier than the one it matched.
-    return this.attachLastMessages(rows);
+    // Search rows carry the same lastMessage AND unread as the list. Without
+    // lastMessage every hit rendered as "no messages yet"; without unread every
+    // hit looked read.
+    const withMessages = await this.attachLastMessages(rows);
+    const roleOf = new Map<string, 'buyer' | 'seller' | 'auth'>();
+    for (const conv of convs) {
+      if (conv.buyerId === userId || conv.order?.buyerId === userId) roleOf.set(conv.id, 'buyer');
+      else if (conv.sellerId === userId || conv.order?.sellerId === userId) roleOf.set(conv.id, 'seller');
+      else if (conv.order?.authenticator?.userId === userId) roleOf.set(conv.id, 'auth');
+      else roleOf.set(conv.id, 'buyer');
+    }
+    const unreadByConv = await this.unreadCounts(withMessages.map((r) => r.id), roleOf);
+    return withMessages.map((r) => ({ ...r, unread: unreadByConv.get(r.id) ?? 0 }));
   }
 
   /**
