@@ -198,7 +198,7 @@ export default function OrderDetailPage() {
       {/* Header */}
       <div className="mb-4 flex flex-wrap items-center gap-2">
         <Badge variant={STATUS_VARIANT[order.status] ?? 'default'}>
-          {getStatusLabel(order.status, order.deliveryMethod)}
+          {getStatusLabel(order.status, order.deliveryMethod, locale)}
         </Badge>
         <span className="text-xs text-slate-400">#{order.id.slice(0, 8)}</span>
         <span className="text-xs text-slate-400">·</span>

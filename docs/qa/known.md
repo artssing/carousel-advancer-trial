@@ -28,16 +28,31 @@
 
 | ID | 一句 | 首次見 | evidence 指紋 | disposition | 判於 |
 |---|---|---|---|---|---|
-| WA-06 | wallet confirm 冇 DTO binding，缺 `intentId` 回 500 唔係 400 | 2026-08-01 | `500 Internal server error` | ☐ 待判 | — |
-| CC-01 | checkout Review 個總數 client 自己加（`Order` response 冇 total 欄位可用） | 2026-08-02 | `page.tsx:290` 自行 sum；server total 只喺 `create-intent` 出 `amountHKD` | ☐ 待判 | — |
-| CC-06 | `GET /orders` 冇分頁，一次回 35 個，前端 in-memory 篩 | 2026-08-02 | 裸 array 35 個，頁面冇 paging 控制 | ☐ 待判 | — |
+| WA-06 | wallet confirm 冇 DTO binding，缺 `intentId` 回 500 唔係 400 | 2026-08-01 | ~~`500 Internal server error`~~ → 2026-08-14 實測 `400` | ✅ fixed | 2026-08-14 |
+| CC-01 | checkout Review 個總數 client 自己加（`Order` response 冇 total 欄位可用） | 2026-08-02 | ~~client 自行 sum~~ → 2026-08-14 `Order.totalHKD` 存在且已使用 | ✅ fixed | 2026-08-14 |
+| CC-06 | `GET /orders` 冇分頁，一次回 35 個，前端 in-memory 篩 | 2026-08-02 | ~~裸 array 35 個~~ → 2026-08-14 回 `{items,total,buyerTotal,sellerTotal}`，PAGE_SIZE 20 | ✅ fixed | 2026-08-14 |
 | CB-03 | 成色標註三種寫法（`賣家申報` / `賣方申報` / 規格表冇標） | 2026-08-02 | listing detail `:770` 用賣方；`:845` 冇標 | ☐ 待判 | — |
-| AP-02 | 5 個 authenticator component hardcode consumer 綠 `brand-*` | 2026-08-02 | photo-uploader / offer-card / 2×wallet / messages；CSS 已 ship 落 container | ☐ 待判 | — |
+| AP-02 | 5 個 authenticator component hardcode consumer 綠 `brand-*` | 2026-08-02 | 2026-08-14 重驗：一模一樣，未變 | ☐ 待判 | — |
 
-**呢五條要你逐條判**，判完先靜得到音。每條嘅二選一問題：
+### 2026-08-14 重判
 
-- **WA-06** — 補 DTO validation（真 bug），定係接受 500（case 改寫成 expect 500）？
-- **CC-01** — `Order` response 應該加 `totalHKD`（真 bug），定係 client 加數可接受（case 要改）？
-- **CC-06** — `/orders` 應該加分頁（真 bug），定係 35 條以內唔使理（case 改成有上限先算）？
+**WA-06 / CC-01 / CC-06 判 `fixed`。** 三條都唔係今日刻意去修嘅 —— 係做其他嘢
+順手解咗，而 2026-08-14 full run 嘅證據同登記時嗰個指紋唔再夾：
+
+- WA-06：wallet DTO 一路都有加返，缺 `intentId` 而家係 400。
+- CC-01：`Order.totalHKD` 而家存在，checkout Review 直接用 server 個數 ——
+  founder ruling「money rounding 用 server `Order.totals.*`，client 唔准重算」
+  終於真係做到。
+- CC-06：`/orders` 已分頁（`ORDERS_PAGE_SIZE = 20`），response 係
+  `{items,total,buyerTotal,sellerTotal}` 而唔係裸 array。
+
+**照規矩下次 run 再 match 多一次先刪得走呢三行** —— 「連續兩次 match」係本檔
+自己定嘅門檻，唔好因為今次好睇就提早收貨。
+
+**AP-02 仲係 ☐ 待判**，2026-08-14 重驗證據一模一樣。
+**CB-03 仲係 ☐ 待判**，今次 full run 冇新證據。
+
+要你判嘅兩條：
+
 - **CB-03** — 統一做「賣家申報」並補返規格表（真 bug），定係三種寫法各有場景（case 要改）？
 - **AP-02** — 5 個 component 換 `authBrand-*`（真 bug），定係嗰幾個位刻意用 consumer 色（case 要改）？

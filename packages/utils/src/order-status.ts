@@ -1,97 +1,92 @@
+import { t, type TLocale } from './locales';
 import { isMeetupOrder, type TabRole } from '@certifine/domain';
 
 /**
  * Order-status DISPLAY copy.
  *
- * The rules — `needsMyAction`, `orderGroup`, `TERMINAL_STATUSES` — moved to
+ * The rules — `needsMyAction`, `orderGroup`, `TERMINAL_STATUSES` — live in
  * `@certifine/domain`, because the API decides the same things (the top-nav
  * badge is a server count) and two copies of that logic is how the badge and
  * the list ended up disagreeing on 2026-08-14.
  *
- * What stayed is the Chinese. Deliberate: these labels were edited three times
- * in one afternoon, and under the repo split every edit to a file inside
- * domain costs a version bump on both sides. Copy churn must not drag the
- * rules along with it.
+ * The labels were hardcoded Chinese with no `t()` call at all, so the English
+ * portal printed 「已付款 · 待面交鑑定」 on an order (QA IN-03). The odd part is
+ * that `locales/ssot.json` already carried a complete `utils.orderStatus`
+ * namespace — all 31 statuses, meetup overrides and seller CTAs, translated
+ * and reviewed — that nothing ever called (QA IN-09). This file now calls it.
+ * The two findings were one wire, never connected.
+ *
+ * `locale` is optional on every function: callers that do not pass it keep
+ * getting Chinese, so pages migrate one at a time instead of all breaking at
+ * once. That is the same convention `conditionLabel` uses.
  */
 
-export const STATUS_LABEL_BASE: Record<string, string> = {
-  AWAITING_PAYMENT:                 '待付款',
-  PAID:                             '已付款 · 待賣家寄出',
-  SHIPPED_TO_AUTHENTICATOR:         '已寄出至鑑定師 · 待鑑定師簽收',
-  AUTH_RECEIVED_PENDING_SELLER_ACK: '鑑定師已簽收 · 待賣家確認',
-  AUTHENTICATING:                   '鑑定進行中 · 待鑑定師出具結果',
-  AUTH_PASSED:                      '鑑定通過 · 待賣家寄出至買家',
-  AUTH_FAILED:                      '鑑定未通過 · 安排退回賣家',
-  SHIPPED_TO_BUYER:                 '已寄出至買家 · 待買家簽收',
-  DELIVERED_PENDING_AUTH_ACK:       '已送達 · 待鑑定師確認開箱紀錄',
-  DELIVERED:                        '已送達 · 待買家確認完成',
-  COMPLETED:                        '已完成',
-  HANDOVER_TO_AUTH:                 '鑑定師接收中 · 拍攝存證',
-  SELLER_ACK_PENDING:               '待賣家確認交付',
-  CUSTODY:                          '鑑定師保管中',
-  AWAITING_BUYER_PICKUP:            '待買家到鑑定師門店取貨',
-  DISPUTED:                         '爭議處理中 · 平台客服跟進',
-  REFUNDED:                         '已退款',
-  // Was missing, so the raw enum `PAYMENT_EXPIRED` printed on screen in
-  // English — the one thing the fallback `?? status` is not meant to be for.
-  PAYMENT_EXPIRED:                  '逾期未付款 · 訂單已取消',
-};
+/** Statuses in the order they appear in the flow — used for fallbacks only. */
+const STATUS_KEYS = [
+  'AWAITING_PAYMENT', 'PAID', 'SHIPPED_TO_AUTHENTICATOR',
+  'AUTH_RECEIVED_PENDING_SELLER_ACK', 'AUTHENTICATING', 'AUTH_PASSED', 'AUTH_FAILED',
+  'SHIPPED_TO_BUYER', 'DELIVERED_PENDING_AUTH_ACK', 'DELIVERED', 'COMPLETED',
+  'HANDOVER_TO_AUTH', 'SELLER_ACK_PENDING', 'CUSTODY', 'AWAITING_BUYER_PICKUP',
+  'DISPUTED', 'REFUNDED', 'PAYMENT_EXPIRED',
+] as const;
 
-/** Meetup-aware label — overrides statuses that don't make sense for meetup. */
-export function getStatusLabel(status: string, deliveryMethod?: string | null): string {
-  const meetup = isMeetupOrder({ deliveryMethod });
-  if (!meetup) return STATUS_LABEL_BASE[status] ?? status;
-  if (status === 'AWAITING_PAYMENT') {
-    return deliveryMethod === 'MEETUP_DIRECT' ? '待雙方確認' : '待付款';
-  }
-  if (status === 'PAID') {
-    if (deliveryMethod === 'MEETUP_DIRECT') return '已確認 · 待面交';
-    return '已付款 · 待面交鑑定';
-  }
-  if (status === 'AUTH_PASSED') return '鑑定通過 · 待確認完成';
-  return STATUS_LABEL_BASE[status] ?? status;
+/**
+ * Label for a status, ignoring delivery method.
+ *
+ * Kept as a function rather than the old `STATUS_LABEL_BASE` record: a record
+ * has to be built at import time, which means picking a locale before the
+ * caller knows theirs. Every previous caller read it as `X[status] ?? status`,
+ * and that is exactly what this does.
+ */
+export function statusLabel(status: string, locale?: TLocale): string {
+  if (!(STATUS_KEYS as readonly string[]).includes(status)) return status;
+  return t(`utils.orderStatus.${status}`, undefined, locale);
 }
 
-/** Short, human-friendly CTA heading + button label for a seller's pending action.
- *  Returns null when this order doesn't need a seller action.  */
-export function sellerActionCta(o: any): { heading: string; buttonLabel: string } | null {
+/** Meetup-aware label — overrides statuses that don't make sense for meetup. */
+export function getStatusLabel(
+  status: string,
+  deliveryMethod?: string | null,
+  locale?: TLocale,
+): string {
+  if (!isMeetupOrder({ deliveryMethod })) return statusLabel(status, locale);
+  if (status === 'AWAITING_PAYMENT') {
+    return deliveryMethod === 'MEETUP_DIRECT'
+      ? t('utils.orderStatus.meetup.AWAITING_PAYMENT_DIRECT', undefined, locale)
+      : statusLabel(status, locale);
+  }
+  if (status === 'PAID') {
+    return deliveryMethod === 'MEETUP_DIRECT'
+      ? t('utils.orderStatus.meetup.PAID_DIRECT', undefined, locale)
+      : t('utils.orderStatus.meetup.PAID_AUTH', undefined, locale);
+  }
+  if (status === 'AUTH_PASSED') return t('utils.orderStatus.meetup.AUTH_PASSED', undefined, locale);
+  return statusLabel(status, locale);
+}
+
+/**
+ * Short CTA heading + button label for a seller's pending action.
+ * Returns null when this order doesn't need one.
+ */
+export function sellerActionCta(
+  o: any,
+  locale?: TLocale,
+): { heading: string; buttonLabel: string } | null {
   const meetup = isMeetupOrder(o);
-  if (o.status === 'SELLER_ACK_PENDING') {
-    return {
-      heading: '鑑定師已影相，請確認商品交付',
-      buttonLabel: '睇相片並確認交付 →',
-    };
-  }
-  if (o.status === 'AUTH_RECEIVED_PENDING_SELLER_ACK') {
-    return {
-      heading: '鑑定師已收件，請確認商品狀況',
-      buttonLabel: '睇收件相並確認 →',
-    };
-  }
-  if (!meetup && o.status === 'PAID') {
-    return {
-      heading: '買家已付款，請安排寄出',
-      buttonLabel: '確認已寄出 →',
-    };
-  }
+  const cta = (key: string) => ({
+    heading: t(`utils.orderStatus.sellerAction.${key}.heading`, undefined, locale),
+    buttonLabel: t(`utils.orderStatus.sellerAction.${key}.button`, undefined, locale),
+  });
+
+  if (o.status === 'SELLER_ACK_PENDING') return cta('SELLER_ACK_PENDING');
+  if (o.status === 'AUTH_RECEIVED_PENDING_SELLER_ACK') return cta('AUTH_RECEIVED_PENDING_SELLER_ACK');
+  if (!meetup && o.status === 'PAID') return cta('PAID');
+  // Meetup drop-off: nothing moves until the seller carries the item in.
   if ((o.deliveryMethod === 'MEETUP_AUTH' || o.deliveryMethod === 'MEETUP_3WAY')
-    && o.status === 'PAID') {
-    return {
-      heading: '買家已付款，請將商品送交鑑定師',
-      buttonLabel: '查看交收二維碼 →',
-    };
-  }
-  if (!meetup && o.status === 'AUTH_PASSED') {
-    return {
-      heading: '鑑定通過，請寄出至買家',
-      buttonLabel: '確認已寄出至買家 →',
-    };
-  }
+    && o.status === 'PAID') return cta('MEETUP_DROPOFF');
+  if (!meetup && o.status === 'AUTH_PASSED') return cta('AUTH_PASSED');
   if (o.status === 'REFUNDED' && o.returnPhotosUploadedAt && !o.returnSellerAckAt) {
-    return {
-      heading: '鑑定師已拍退貨相，請確認取回',
-      buttonLabel: '確認取回貨品 →',
-    };
+    return cta('REFUNDED_RETURN');
   }
   return null;
 }

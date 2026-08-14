@@ -2339,6 +2339,118 @@
     "verdictPassed": {
       "zh": "✓ 鑑定結果：真品",
       "en": "✓ Verdict: Authentic"
+    },
+    "group.action": {
+      "zh": "待處理",
+      "en": "Needs you"
+    },
+    "group.disputed": {
+      "zh": "爭議處理中",
+      "en": "In dispute"
+    },
+    "group.active": {
+      "zh": "進行中",
+      "en": "In progress"
+    },
+    "group.done": {
+      "zh": "已完成",
+      "en": "Completed"
+    },
+    "roleChip.all": {
+      "zh": "全部",
+      "en": "All"
+    },
+    "roleChip.buyer": {
+      "zh": "我的購買",
+      "en": "My purchases"
+    },
+    "roleChip.seller": {
+      "zh": "我的銷售",
+      "en": "My sales"
+    },
+    "roleChip.auth": {
+      "zh": "鑑定委託",
+      "en": "Authentication jobs"
+    },
+    "roleChip.showAll": {
+      "zh": "顯示全部角色的訂單",
+      "en": "Show orders in every role"
+    },
+    "dispute.bannerTitle": {
+      "zh": "款項已凍結，待平台客服處理",
+      "en": "Funds are held pending platform support"
+    },
+    "dispute.bannerBody": {
+      "zh": "爭議期間款項不會放予任何一方。客服將透過訂單訊息與買家、賣家及鑑定師聯絡，請留意訊息通知並提供所需資料。",
+      "en": "No funds are released to either party while a dispute is open. Support will contact the buyer, the seller and the authenticator through the order messages — please watch for notifications and supply what is asked for."
+    },
+    "empty.actionTitle": {
+      "zh": "目前沒有需要你處理的訂單",
+      "en": "Nothing needs your attention"
+    },
+    "empty.actionDesc": {
+      "zh": "有訂單需要你付款、寄出或確認時，將於此顯示。",
+      "en": "Orders waiting on your payment, shipment or confirmation appear here."
+    },
+    "empty.disputedTitle": {
+      "zh": "沒有爭議中的訂單",
+      "en": "No orders in dispute"
+    },
+    "empty.activeTitle": {
+      "zh": "沒有進行中的訂單",
+      "en": "No orders in progress"
+    },
+    "empty.activeDesc": {
+      "zh": "已付款、鑑定中或運送中的訂單，將於此顯示。",
+      "en": "Orders that are paid, being authenticated or in transit appear here."
+    },
+    "empty.doneTitle": {
+      "zh": "尚未有已完成的訂單",
+      "en": "No completed orders yet"
+    },
+    "empty.doneDesc": {
+      "zh": "想查看你上架的商品，請前往",
+      "en": "To see the items you have listed, go to"
+    },
+    "notLoaded": {
+      "zh": "此分類的訂單尚未載入。",
+      "en": "Orders in this group have not been loaded yet."
+    },
+    "meetup3way.title": {
+      "zh": "請與對方及鑑定師約定面交時間",
+      "en": "Arrange a meetup time with the other party and the authenticator"
+    },
+    "meetup3way.body": {
+      "zh": "三方面交需買賣雙方同時到場，由鑑定師當場鑑定。請透過訂單訊息協定時間及地點。",
+      "en": "A three-way meetup needs buyer and seller present at the same time, with the authenticator examining the item on the spot. Agree a time and place through the order messages."
+    },
+    "action.shipToBuyerTracking": {
+      "zh": "確認寄出至買家（填寫順豐單號）",
+      "en": "Confirm shipped to buyer (enter SF tracking no.)"
+    },
+    "confirmDialog.meetupDirectConsequence": {
+      "zh": "此操作將即時向賣家放款，訂單隨即轉為已完成，且無法撤回。",
+      "en": "This releases the funds to the seller immediately and completes the order. It cannot be undone."
+    },
+    "party.seller": {
+      "zh": "賣家：",
+      "en": "Seller: "
+    },
+    "party.buyer": {
+      "zh": "買家：",
+      "en": "Buyer: "
+    },
+    "party.auth": {
+      "zh": "鑑定師：",
+      "en": "Authenticator: "
+    },
+    "loadMore": {
+      "zh": "載入更多（尚有 {n} 張）",
+      "en": "Load more ({n} remaining)"
+    },
+    "loadingMore": {
+      "zh": "載入中…",
+      "en": "Loading…"
     }
   },
   "orderDetail": {
@@ -10539,88 +10651,88 @@
   },
   "utils.orderStatus": {
     "AWAITING_PAYMENT": {
-      "zh": "等待付款",
-      "en": "Awaiting Payment"
+      "zh": "待付款",
+      "en": "Awaiting payment"
     },
     "PAID": {
-      "zh": "已付款 · 等待賣家寄出",
-      "en": "Paid · Awaiting Seller Shipment"
+      "zh": "已付款 · 待賣家寄出",
+      "en": "Paid · awaiting seller shipment"
     },
     "SHIPPED_TO_AUTHENTICATOR": {
-      "zh": "已寄出至鑑定師",
-      "en": "Shipped to Authenticator"
+      "zh": "已寄出至鑑定師 · 待鑑定師簽收",
+      "en": "Shipped to authenticator · awaiting their receipt"
     },
     "AUTH_RECEIVED_PENDING_SELLER_ACK": {
-      "zh": "鑑定師已收件 · 等賣家確認",
-      "en": "Authenticator Received · Awaiting Seller Confirmation"
+      "zh": "鑑定師已簽收 · 待賣家確認",
+      "en": "Authenticator received · awaiting seller confirmation"
     },
     "AUTHENTICATING": {
-      "zh": "鑑定中",
-      "en": "Authenticating"
+      "zh": "鑑定進行中 · 待鑑定師出具結果",
+      "en": "Authentication in progress · awaiting the result"
     },
     "AUTH_PASSED": {
-      "zh": "鑑定通過 · 等待寄出至買家",
-      "en": "Authentication Passed · Awaiting Shipment to Buyer"
+      "zh": "鑑定通過 · 待賣家寄出至買家",
+      "en": "Authenticated · awaiting seller shipment to buyer"
     },
     "AUTH_FAILED": {
-      "zh": "鑑定不通過 · 退回賣家",
-      "en": "Authentication Failed · Returning to Seller"
+      "zh": "鑑定未通過 · 安排退回賣家",
+      "en": "Not authenticated · return to seller arranged"
     },
     "SHIPPED_TO_BUYER": {
-      "zh": "已寄出 · 等待買家確認",
-      "en": "Shipped · Awaiting Buyer Confirmation"
+      "zh": "已寄出至買家 · 待買家簽收",
+      "en": "Shipped to buyer · awaiting delivery"
     },
     "DELIVERED_PENDING_AUTH_ACK": {
-      "zh": "已送達 · 等鑑定師確認 unboxing",
-      "en": "Delivered · Awaiting Authenticator Unboxing"
+      "zh": "已送達 · 待鑑定師確認開箱紀錄",
+      "en": "Delivered · awaiting authenticator unboxing record"
     },
     "DELIVERED": {
-      "zh": "已送達 · 等待確認完成",
-      "en": "Delivered · Awaiting Completion Confirmation"
+      "zh": "已送達 · 待買家確認完成",
+      "en": "Delivered · awaiting buyer confirmation"
     },
     "COMPLETED": {
       "zh": "已完成",
       "en": "Completed"
     },
     "HANDOVER_TO_AUTH": {
-      "zh": "鑑定師接收中（影相）",
-      "en": "Authenticator Receiving (Photographs)"
+      "zh": "鑑定師接收中 · 拍攝存證",
+      "en": "Authenticator receiving · photographing for record"
     },
     "SELLER_ACK_PENDING": {
-      "zh": "等賣家確認交付",
-      "en": "Awaiting Seller Delivery Confirmation"
+      "zh": "待賣家確認交付",
+      "en": "Awaiting seller delivery confirmation"
     },
     "CUSTODY": {
-      "zh": "鑑定師持貨中",
-      "en": "In Authenticator Custody"
+      "zh": "鑑定師保管中",
+      "en": "In authenticator custody"
     },
     "AWAITING_BUYER_PICKUP": {
-      "zh": "請到鑑定師店取貨",
-      "en": "Please Pick Up at Authenticator Store"
+      "zh": "待買家到鑑定師門店取貨",
+      "en": "Awaiting buyer collection at the authenticator store"
     },
     "DISPUTED": {
-      "zh": "爭議中",
-      "en": "Disputed"
+      "zh": "爭議處理中 · 平台客服跟進",
+      "en": "Dispute in progress · platform support following up"
     },
     "REFUNDED": {
       "zh": "已退款",
       "en": "Refunded"
     },
     "meetup.AWAITING_PAYMENT_DIRECT": {
-      "zh": "等待確認",
-      "en": "Awaiting Confirmation"
+      "zh": "待雙方確認",
+      "en": "Awaiting confirmation from both parties"
     },
     "meetup.PAID_DIRECT": {
-      "zh": "已確認 · 等待面交",
-      "en": "Confirmed · Awaiting Meetup"
+      "zh": "已確認 · 待面交",
+      "en": "Confirmed · awaiting meetup"
     },
     "meetup.PAID_AUTH": {
-      "zh": "已付款 · 等待面交鑑定",
-      "en": "Paid · Awaiting In-Person Authentication"
+      "zh": "已付款 · 待面交鑑定",
+      "en": "Paid · awaiting in-person authentication"
     },
     "meetup.AUTH_PASSED": {
-      "zh": "鑑定通過 · 等待確認完成",
-      "en": "Authentication Passed · Awaiting Completion"
+      "zh": "鑑定通過 · 待確認完成",
+      "en": "Authenticated · awaiting completion"
     },
     "sellerAction.SELLER_ACK_PENDING.heading": {
       "zh": "鑑定師已影相，請確認商品交付",
@@ -10661,6 +10773,18 @@
     "sellerAction.REFUNDED_RETURN.button": {
       "zh": "確認取回貨品 →",
       "en": "Confirm Item Retrieval →"
+    },
+    "PAYMENT_EXPIRED": {
+      "zh": "逾期未付款 · 訂單已取消",
+      "en": "Payment expired · order cancelled"
+    },
+    "sellerAction.MEETUP_DROPOFF.heading": {
+      "zh": "買家已付款，請將商品送交鑑定師",
+      "en": "Buyer has paid. Please bring the item to the authenticator."
+    },
+    "sellerAction.MEETUP_DROPOFF.button": {
+      "zh": "查看交收二維碼 →",
+      "en": "View handover QR code →"
     }
   },
   "utils.prices": {

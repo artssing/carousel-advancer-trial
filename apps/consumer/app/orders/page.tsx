@@ -9,7 +9,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Badge, TierPill, Button, ListingThumb, ConfirmDialog } from '@authentik/ui';
 import {
   formatHKD, tierForPrice, categoryByApiEnum,
-  STATUS_LABEL_BASE, getStatusLabel, needsMyAction, isMeetupOrder, TERMINAL_STATUSES,
+  getStatusLabel, needsMyAction, isMeetupOrder, TERMINAL_STATUSES,
   sfTrackingUrl, orderGroup,
   type TabRole, type OrderGroup,
   getClientLocale, createT,
@@ -24,7 +24,7 @@ import { QrHandoverCard } from '@/components/qr-handover-card';
 // TabRole imported from @authentik/utils SSOT
 
 // ─── Status helpers (SSOT — imported from @authentik/utils) ──────────────────
-// STATUS_LABEL_BASE, getStatusLabel, needsMyAction, isMeetupOrder, TERMINAL_STATUSES
+// getStatusLabel, needsMyAction, isMeetupOrder, TERMINAL_STATUSES
 // all live in packages/utils/src/order-status.ts. Listing page reuses the same.
 
 /** One page of orders. Most accounts never need a second one. */
@@ -464,7 +464,7 @@ export default function OrdersPage() {
       if (o.deliveryMethod === 'MEETUP_DIRECT' && o.status === 'PAID' && o.escrowHeld) {
         btns.push({ label: _t('orders.action.completeMeetupDirect'), action: async () => setMoneyConfirm({
           orderId: o.id, title: _t('orders.confirmDialog.meetupTitle'), label: _t('orders.confirmDialog.completeLabel'),
-          consequence: '此操作將即時向賣家放款，訂單隨即轉為已完成，且無法撤回。',
+          consequence: _t('orders.confirmDialog.meetupDirectConsequence'),
           run: () => api.orders.completeMeetup(o.id),
         }), primary: true });
       }
@@ -483,9 +483,9 @@ export default function OrdersPage() {
       if (!meetup && o.status === 'PAID' && o.authenticatorId)
         btns.push({ label: _t('orders.action.shipToAuth'), action: async () => { setTrackingPrompt({ orderId: o.id, kind: 'toAuth' }); setTrackingNo(''); }, primary: true });
       if (!meetup && o.status === 'PAID' && !o.authenticatorId)
-        btns.push({ label: '確認寄出至買家（填寫順豐單號）', action: async () => { setTrackingPrompt({ orderId: o.id, kind: 'toBuyerDirect' }); setTrackingNo(''); }, primary: true });
+        btns.push({ label: _t('orders.action.shipToBuyerTracking'), action: async () => { setTrackingPrompt({ orderId: o.id, kind: 'toBuyerDirect' }); setTrackingNo(''); }, primary: true });
       if (!meetup && o.status === 'AUTH_PASSED')
-        btns.push({ label: '確認寄出至買家（填寫順豐單號）', action: async () => { setTrackingPrompt({ orderId: o.id, kind: 'toBuyer' }); setTrackingNo(''); }, primary: true });
+        btns.push({ label: _t('orders.action.shipToBuyerTracking'), action: async () => { setTrackingPrompt({ orderId: o.id, kind: 'toBuyer' }); setTrackingNo(''); }, primary: true });
     }
 
     // Ack v2 extra panels（唔係 btns 一部分）
@@ -630,9 +630,9 @@ export default function OrdersPage() {
     if (o.deliveryMethod === 'MEETUP_3WAY' && o.status === 'PAID' && (isBuyer || isSeller)) {
       extras.push(
         <div key="meetup3way" className="rounded-xl border border-brand-200 bg-brand-50 p-3">
-          <p className="text-xs font-semibold text-brand-800">請與對方及鑑定師約定面交時間</p>
+          <p className="text-xs font-semibold text-brand-800">{_t('orders.meetup3way.title')}</p>
           <p className="mt-1 text-[11px] leading-relaxed text-brand-700">
-            三方面交需買賣雙方同時到場，由鑑定師當場鑑定。請透過訂單訊息協定時間及地點。
+            {_t('orders.meetup3way.body')}
           </p>
         </div>,
       );
@@ -726,21 +726,21 @@ export default function OrdersPage() {
   // customer that something can go wrong; it should show up when it applies to
   // them, and be unmissable when it does.
   const tabs: { id: OrderGroup; label: string; count: number; tone?: 'danger' }[] = [
-    { id: 'action',   label: '待處理', count: totalActionCount },
+    { id: 'action',   label: _t('orders.group.action'), count: totalActionCount },
     ...(actionCounts.disputed > 0
-      ? [{ id: 'disputed' as OrderGroup, label: '爭議處理中', count: actionCounts.disputed, tone: 'danger' as const }]
+      ? [{ id: 'disputed' as OrderGroup, label: _t('orders.group.disputed'), count: actionCounts.disputed, tone: 'danger' as const }]
       : []),
-    { id: 'active',   label: '進行中', count: actionCounts.active },
+    { id: 'active',   label: _t('orders.group.active'), count: actionCounts.active },
     // 已完成 carries no number: it only ever grows, and a number that always
     // goes up is not information (founder 2026-08-14).
-    { id: 'done',     label: '已完成', count: 0 },
+    { id: 'done',     label: _t('orders.group.done'), count: 0 },
   ];
 
   const roleChips: { id: TabRole | 'all'; label: string }[] = [
-    { id: 'all',    label: '全部' },
-    { id: 'buyer',  label: '我的購買' },
-    { id: 'seller', label: '我的銷售' },
-    ...(isAuthenticator ? [{ id: 'auth' as TabRole, label: '鑑定委託' }] : []),
+    { id: 'all',    label: _t('orders.roleChip.all') },
+    { id: 'buyer',  label: _t('orders.roleChip.buyer') },
+    { id: 'seller', label: _t('orders.roleChip.seller') },
+    ...(isAuthenticator ? [{ id: 'auth' as TabRole, label: _t('orders.roleChip.auth') }] : []),
   ];
 
   // ── Counterparty nodes (clickable) based on tab ───────────────────────────
@@ -755,19 +755,19 @@ export default function OrdersPage() {
     const role = viewRole(o);
     if (role === 'buyer') {
       if (!o.seller?.displayName || !o.seller?.id) return null;
-      return <>賣家：{sellerLink(o.seller.id, o.seller.displayName)}</>;
+      return <>{_t('orders.party.seller')}{sellerLink(o.seller.id, o.seller.displayName)}</>;
     }
     if (role === 'seller') {
       if (!o.buyer?.displayName || !o.buyer?.id) return null;
-      return <>買家：{buyerLink(o.buyer.id, o.buyer.displayName)}</>;
+      return <>{_t('orders.party.buyer')}{buyerLink(o.buyer.id, o.buyer.displayName)}</>;
     }
     if (role === 'auth') {
       const nodes: React.ReactNode[] = [];
       if (o.buyer?.displayName && o.buyer?.id) {
-        nodes.push(<span key="b">買家：{buyerLink(o.buyer.id, o.buyer.displayName)}</span>);
+        nodes.push(<span key="b">{_t('orders.party.buyer')}{buyerLink(o.buyer.id, o.buyer.displayName)}</span>);
       }
       if (o.seller?.displayName && o.seller?.id) {
-        nodes.push(<span key="s">賣家：{sellerLink(o.seller.id, o.seller.displayName)}</span>);
+        nodes.push(<span key="s">{_t('orders.party.seller')}{sellerLink(o.seller.id, o.seller.displayName)}</span>);
       }
       if (nodes.length === 0) return null;
       return (
@@ -847,10 +847,9 @@ export default function OrdersPage() {
 
       {activeGroup === 'disputed' && (
         <div className="mb-5 rounded-xl border border-danger/30 bg-red-50 px-4 py-3">
-          <p className="text-[13px] font-semibold text-danger">款項已凍結，待平台客服處理</p>
+          <p className="text-[13px] font-semibold text-danger">{_t('orders.dispute.bannerTitle')}</p>
           <p className="mt-1 text-[12px] leading-relaxed text-red-800">
-            爭議期間款項不會放予任何一方。客服將透過訂單訊息與買家、賣家及鑑定師聯絡，
-            請留意訊息通知並提供所需資料。
+            {_t('orders.dispute.bannerBody')}
           </p>
         </div>
       )}
@@ -871,9 +870,9 @@ export default function OrdersPage() {
           「沒有訂單」 here would be a lie the load-more button contradicts. */}
       {!loading && visibleOrders.length === 0 && orders.length < ordersTotal && (
         <div className="mt-12 text-center">
-          <p className="text-sm text-slate-500">此分類的訂單尚未載入。</p>
+          <p className="text-sm text-slate-500">{_t('orders.notLoaded')}</p>
           <Button className="mt-4" onClick={loadMoreOrders} disabled={loadingMoreOrders}>
-            {loadingMoreOrders ? '載入中…' : `載入更多（尚有 ${ordersTotal - orders.length} 張）`}
+            {loadingMoreOrders ? _t('orders.loadingMore') : _t('orders.loadMore', { n: ordersTotal - orders.length })}
           </Button>
         </div>
       )}
@@ -885,9 +884,9 @@ export default function OrdersPage() {
           {activeGroup === 'action' && (
             <>
               <p className="text-3xl">✅</p>
-              <p className="mt-3 font-medium text-slate-700">目前沒有需要你處理的訂單</p>
+              <p className="mt-3 font-medium text-slate-700">{_t('orders.empty.actionTitle')}</p>
               <p className="mt-1 text-sm text-slate-400">
-                有訂單需要你付款、寄出或確認時，將於此顯示。
+                {_t('orders.empty.actionDesc')}
               </p>
               {allOrders.length === 0 && (
                 <Link href="/browse"><Button className="mt-4">{_t('orders.empty.browse')}</Button></Link>
@@ -897,24 +896,24 @@ export default function OrdersPage() {
           {activeGroup === 'disputed' && (
             <>
               <p className="text-3xl">🛡️</p>
-              <p className="mt-3 font-medium text-slate-700">沒有爭議中的訂單</p>
+              <p className="mt-3 font-medium text-slate-700">{_t('orders.empty.disputedTitle')}</p>
             </>
           )}
           {activeGroup === 'active' && (
             <>
               <p className="text-3xl">📦</p>
-              <p className="mt-3 font-medium text-slate-700">沒有進行中的訂單</p>
+              <p className="mt-3 font-medium text-slate-700">{_t('orders.empty.activeTitle')}</p>
               <p className="mt-1 text-sm text-slate-400">
-                已付款、鑑定中或運送中的訂單，將於此顯示。
+                {_t('orders.empty.activeDesc')}
               </p>
             </>
           )}
           {activeGroup === 'done' && (
             <>
               <p className="text-3xl">🗂️</p>
-              <p className="mt-3 font-medium text-slate-700">尚未有已完成的訂單</p>
+              <p className="mt-3 font-medium text-slate-700">{_t('orders.empty.doneTitle')}</p>
               <p className="mt-1 text-sm text-slate-400">
-                想查看你上架的商品，請前往
+                {_t('orders.empty.doneDesc')}
                 <Link href="/my-listings" className="text-brand-600 hover:underline">「我的商品」</Link>。
               </p>
             </>
@@ -924,7 +923,7 @@ export default function OrdersPage() {
               onClick={() => selectView(activeGroup, 'all')}
               className="mt-4 text-sm text-brand-600 hover:underline"
             >
-              顯示全部角色的訂單
+              {_t('orders.roleChip.showAll')}
             </button>
           )}
         </div>
@@ -992,7 +991,7 @@ export default function OrdersPage() {
                       {/* Status badge */}
                       <div className="mt-2">
                         <Badge variant={STATUS_VARIANT(o.status)}>
-                          {getStatusLabel(o.status, o.deliveryMethod)}
+                          {getStatusLabel(o.status, o.deliveryMethod, locale)}
                         </Badge>
                       </div>
                     </div>
@@ -1028,7 +1027,7 @@ export default function OrdersPage() {
                   {o.authenticator && (
                     <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-500">
                       <span>🔍</span>
-                      <span>鑑定師：
+                      <span>{_t('orders.party.auth')}
                         {o.authenticator.id ? (
                           <Link href={`/authenticator/${o.authenticator.id}`} className="font-medium text-slate-700 hover:text-brand-700 hover:underline">
                             {o.authenticator.displayName}
@@ -1218,7 +1217,7 @@ export default function OrdersPage() {
             disabled={loadingMoreOrders}
             className="rounded-lg border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink shadow-sh1 transition hover:bg-surface-2 disabled:opacity-50"
           >
-            {loadingMoreOrders ? '載入中…' : `載入更多（尚有 ${ordersTotal - orders.length} 張）`}
+            {loadingMoreOrders ? _t('orders.loadingMore') : _t('orders.loadMore', { n: ordersTotal - orders.length })}
           </button>
         </div>
       )}

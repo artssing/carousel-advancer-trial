@@ -960,7 +960,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   listing needs jenny's attention. Source of CTA copy: SSOT
                   sellerActionCta() in @authentik/utils. */}
               {activeOrder && me && needsMyAction(activeOrder, me.id, 'seller') && (() => {
-                const cta = sellerActionCta(activeOrder);
+                const cta = sellerActionCta(activeOrder, locale);
                 if (!cta) return null;
                 const buyerName = activeOrder.buyer?.displayName ?? _t('orderDetail.label.buyer');
                 const deliveryMetaForOrder = DELIVERY_META[activeOrder.deliveryMethod as DeliveryMethod];
@@ -1000,7 +1000,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   <span className="min-w-0">
                     <span className="font-medium text-slate-800">{_t('listing.sellerAction.inProgress')}</span>
                     <span className="ml-1.5 text-[11px] text-slate-600">
-                      · {getStatusLabel(activeOrder.status, activeOrder.deliveryMethod)}
+                      · {getStatusLabel(activeOrder.status, activeOrder.deliveryMethod, locale)}
                     </span>
                     <span className="ml-1.5 text-[10px] text-slate-400">
                       #{activeOrder.id.slice(0, 8)} · {activeOrder.buyer?.displayName ?? _t('orderDetail.label.buyer')}
@@ -1146,7 +1146,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
                   <span className="min-w-0">
                     <span className="font-medium text-brand-900">{_t('listing.buyer.trackOrderTitle')}</span>
                     <span className="ml-1.5 text-[11px] text-brand-700">
-                      · {getStatusLabel(activeOrder.status, activeOrder.deliveryMethod)}
+                      · {getStatusLabel(activeOrder.status, activeOrder.deliveryMethod, locale)}
                     </span>
                   </span>
                   <span className="shrink-0 text-xs font-medium text-brand-700">{_t('listing.buyer.trackOrder')}</span>
