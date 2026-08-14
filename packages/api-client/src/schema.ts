@@ -2747,7 +2747,7 @@ export interface components {
             priority?: number;
         };
         IngestEventsDto: {
-            events: string[];
+            events: Record<string, never>[];
         };
     };
     responses: never;

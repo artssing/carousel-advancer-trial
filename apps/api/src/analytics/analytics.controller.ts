@@ -27,7 +27,15 @@ export class AnalyticsController {
     }
   }
 
-  /** Batch ingest — fire-and-forget semantics：永遠 200，internally best-effort。 */
+  /**
+   * Batch ingest — fire-and-forget semantics：永遠 200，internally best-effort。
+   *
+   * The route-level pipe is the point: the global one runs
+   * `forbidNonWhitelisted`, which rejects an unrecognised property with a 400
+   * BEFORE this method runs, defeating the catch below. A client that tags an
+   * event wrong must still get a 200 — the registry check in the service is
+   * what decides whether an event counts.
+   */
   @Post('events')
   @UseGuards(OptionalJwtAuthGuard)
   async ingest(
