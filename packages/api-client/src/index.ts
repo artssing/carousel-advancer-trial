@@ -16,3 +16,4 @@
  * the three `lib/api.ts`, and those are what should consume the types below.
  */
 export type { paths, components, operations } from './schema';
+export type { ApiBody, ApiParams, ApiPath } from './typed';

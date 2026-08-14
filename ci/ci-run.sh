@@ -52,6 +52,9 @@ case "$STEP" in
     # DTO 嘅 @ApiProperty 由 codemod 出，唔係人手寫。漏咗跑 = 生成嘅契約同
     # 實際 DTO 唔一致，而個 client 係由契約生成 —— 靜靜地錯，好難查。
     npx tsx scripts/add-api-property.ts --check
+    # 三個 portal call 嘅 route 一定要喺契約入面。拆 repo 之後 API 改名，
+    # web 唔會即刻知 —— 呢個 check 就係嗰個訊號。
+    npx tsx scripts/check-api-contract-coverage.ts
     ;;
 
   postgres)
