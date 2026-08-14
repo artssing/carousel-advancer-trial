@@ -1,6 +1,28 @@
 # Repo 拆分 + CI/CD 交接 Proposal
 
-> 起草：2026-08-10 · 狀態：**待 founder 決策**
+> 起草：2026-08-10 · 狀態：**已決策 2026-08-14,執行中**
+
+## 決策紀錄（2026-08-14）
+
+| 問題 | 決定 |
+|---|---|
+| 拆到咩程度 | **3 個 repo**：`certifine-api`(backend + `packages/domain`,由佢發版) · `certifine-web`(3 個 portal + ui/config/web-kit/api-client) · `certifine-infra`(compose · Jenkinsfile · ci/ · scripts/ · docs/qa/) |
+| Registry | **GitHub Packages** |
+| P0 CODEOWNERS | **即刻做** — 已完成，`.github/CODEOWNERS` |
+| P1 swagger + 生成 api-client | **做** |
+
+**由 4 個改成 3 個嘅理由：** 原方案有獨立 `certifine-shared`。重新數過之後
+（見下面 §1 修訂），API 真正 import 嘅係 **18 個 symbol、8 個檔案**，而嗰 8 個
+全部係 **business rule**（tier / 平台費 / 訂單狀態機 / 提款上限 / analytics
+白名單）—— 而 business rule 嘅權威本來就係 API：server 執行，前端只係跟住顯示。
+所以 `domain` 住喺 `certifine-api` 入面、由嗰度發版，慳返一個 repo、一條
+pipeline、一份 `CLAUDE.md`，同時「邊個 own domain」呢條問題自然有答案。
+
+代價同原方案一樣：改 domain 要發版 + 前端 bump。冇變差。
+
+---
+
+> 以下為 2026-08-10 原文（除 §1 表格已按 2026-08-14 重新量度更新）。
 > 觸發：founder「backend / frontend / docker db 全部同一個 directory，frontend 同事好易 commit 到 backend 嘅嘢，我需要分開，同埋 Jenkins 應該由 CI/CD team 做」
 
 ---
@@ -68,7 +90,13 @@ certifine-infra      compose · Jenkinsfile · ci/ · scripts/ · docs/qa/ · cl
 
 ### 3.1 先切開 `utils`，再拆 repo
 
-數過 API 真正 import 嘅 symbol —— **得 16 個**：
+數過 API 真正 import 嘅 symbol —— **18 個，散落 17 個檔案入面嘅 8 個**
+（2026-08-14 重新量度；原文寫 16 個，中間加咗 `orderGroup` / `TabRole` 等）：
+
+> **更正：** 原文寫 `money.ts → calculateOrderFees`。實際 `calculateOrderFees`
+> 喺 `categories.ts`；`money.ts` API 完全冇用，係純前端。
+
+
 
 | utils 檔案 | API 用到 |
 |---|---|
