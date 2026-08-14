@@ -10,8 +10,8 @@ import { Badge, TierPill, Button, ListingThumb, ConfirmDialog } from '@authentik
 import {
   formatHKD, tierForPrice, categoryByApiEnum,
   STATUS_LABEL_BASE, getStatusLabel, needsMyAction, isMeetupOrder, TERMINAL_STATUSES,
-  sfTrackingUrl,
-  type TabRole,
+  sfTrackingUrl, orderGroup,
+  type TabRole, type OrderGroup,
   getClientLocale, createT,
 } from '@authentik/utils';
 import { api, hasToken, clearToken, ApiError, getToken } from '@/lib/api';
@@ -207,11 +207,13 @@ function SkeletonOrder() {
 
 // ─── Action helpers (SSOT imports above) ───────────────────────────────────
 
-/** Sort: action-needed first, within each group descending by time */
-function sortOrders(orders: any[], userId: string, tab: TabRole): any[] {
+/** Sort: action-needed first, within each group descending by time.
+ *  `roleOf` reads the viewer's role off each row — the list is no longer split
+ *  by role, so one fixed role for the whole list would be wrong. */
+function sortOrders(orders: any[], userId: string, roleOf: (o: any) => TabRole): any[] {
   return [...orders].sort((a, b) => {
-    const aNeeds = needsMyAction(a, userId, tab) ? 1 : 0;
-    const bNeeds = needsMyAction(b, userId, tab) ? 1 : 0;
+    const aNeeds = needsMyAction(a, userId, roleOf(a)) ? 1 : 0;
+    const bNeeds = needsMyAction(b, userId, roleOf(b)) ? 1 : 0;
     if (aNeeds !== bNeeds) return bNeeds - aNeeds; // action-needed first
     // within group: non-terminal before terminal, then by time desc
     const aTerminal = TERMINAL_STATUSES.includes(a.status) ? 1 : 0;
@@ -234,6 +236,10 @@ export default function OrdersPage() {
 
   const [orders, setOrders]               = useState<any[]>([]);
   const [ordersTotal, setOrdersTotal]     = useState(0);
+  /** Per-role "needs my action" totals, from the server — see below. */
+  const [actionCounts, setActionCounts]   = useState({
+    buyer: 0, seller: 0, auth: 0, disputed: 0, active: 0, done: 0,
+  });
   const [loadingMoreOrders, setLoadingMoreOrders] = useState(false);
   const [authOrders, setAuthOrders]       = useState<any[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -257,8 +263,19 @@ export default function OrdersPage() {
   const [reviewRating, setReviewRating]   = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [reviewBusy, setReviewBusy]       = useState(false);
-  const [activeTab, setActiveTab]         = useState<TabRole>(
-    ['buyer', 'seller', 'auth'].includes(initialRole) ? initialRole : 'buyer',
+  /**
+   * The page is organised by WHAT NEEDS DOING, not by which side of the trade
+   * the user is on (founder 2026-08-14). Role is a secondary filter — an
+   * account that both buys and sells had to check two tabs just to find out
+   * whether anything was waiting on it.
+   */
+  const [activeGroup, setActiveGroup]     = useState<OrderGroup>('action');
+  // `?role=` only pre-filters when it is actually in the URL — `initialRole`
+  // falls back to 'buyer', which would silently hide every sale on first load.
+  const [roleFilter, setRoleFilter]       = useState<TabRole | 'all'>(
+    searchParams.get('role') && ['buyer', 'seller', 'auth'].includes(initialRole)
+      ? initialRole
+      : 'all',
   );
 
   /** 載入更多 — appends the next page; totals come from the server so the tab
@@ -280,10 +297,21 @@ export default function OrdersPage() {
       // Paged (founder 2026-08-02). PAGE_SIZE covers the overwhelming majority
       // of accounts in one shot; 載入更多 handles the rest instead of shipping
       // every order a user has ever had on first paint.
-      const [me, orderPage] = await Promise.all([api.me(), api.orders.list(ORDERS_PAGE_SIZE)]);
+      // The action counts come from the server, NOT from `orderPage.items`:
+      // that is one page of 20, so deriving the tab badges from it would make
+      // them disagree with the top-nav badge (which counts every order) the
+      // moment an account has more than a page of history. Same query, same
+      // `needsMyAction`, every surface.
+      const [me, orderPage, counts] = await Promise.all([
+        api.me(), api.orders.list(ORDERS_PAGE_SIZE), api.orders.badgeCount(),
+      ]);
       setCurrentUserId(me.id);
       setOrders(orderPage.items);
       setOrdersTotal(orderPage.total);
+      setActionCounts({
+        buyer: counts.buyer, seller: counts.seller, auth: counts.auth,
+        disputed: counts.disputed, active: counts.active, done: counts.done,
+      });
 
       // 如果用戶有鑑定師身份，同時拉鑑定 inbox
       if (me.authenticator) {
@@ -312,24 +340,64 @@ export default function OrdersPage() {
     finally { setActionBusy(null); }
   }
 
-  // ── Filter by tab ────────────────────────────────────────────────────────
-  const buyerOrders  = orders.filter((o) => o.buyerId === currentUserId);
-  const sellerOrders = orders.filter((o) => o.sellerId === currentUserId);
+  // ── Which side of the trade is the viewer on, for THIS order ─────────────
+  // Replaces the old `activeTab` role: with one merged list, role has to be
+  // read off each row rather than off the tab the user happens to be on.
+  const viewRole = useCallback((o: any): TabRole => (
+    o.buyerId === currentUserId ? 'buyer'
+    : o.sellerId === currentUserId ? 'seller'
+    : 'auth'
+  ), [currentUserId]);
 
-  const visibleOrders = (() => {
-    if (activeTab === 'buyer')  return sortOrders(buyerOrders, currentUserId ?? '', 'buyer');
-    if (activeTab === 'seller') return sortOrders(sellerOrders, currentUserId ?? '', 'seller');
-    if (activeTab === 'auth')   return sortOrders(authOrders, currentUserId ?? '', 'auth');
-    return [];
+  // Auth inbox rows are fetched separately; merge so one list covers every hat
+  // the user wears. Dedupe in case an authenticator is also a party.
+  const allOrders = (() => {
+    const seen = new Set(orders.map((o) => o.id));
+    return [...orders, ...authOrders.filter((o) => !seen.has(o.id))];
   })();
 
-  // Count orders needing action
-  const buyerActionCount  = buyerOrders.filter((o) => needsMyAction(o, currentUserId ?? '', 'buyer')).length;
-  const sellerActionCount = sellerOrders.filter((o) => needsMyAction(o, currentUserId ?? '', 'seller')).length;
-  const authActionCount   = authOrders.filter((o) => needsMyAction(o, currentUserId ?? '', 'auth')).length;
+  const buyerOrders  = allOrders.filter((o) => o.buyerId === currentUserId);
+  const sellerOrders = allOrders.filter((o) => o.sellerId === currentUserId);
 
-  // ── Render actions (per tab role) ──────────────────────────────────────────
+  const inGroup = allOrders.filter(
+    (o) => orderGroup(o, currentUserId ?? '', viewRole(o)) === activeGroup,
+  );
+  const visibleOrders = sortOrders(
+    roleFilter === 'all' ? inGroup : inGroup.filter((o) => viewRole(o) === roleFilter),
+    currentUserId ?? '',
+    viewRole,
+  );
+
+  const { buyer: buyerActionCount, seller: sellerActionCount, auth: authActionCount } = actionCounts;
+  const totalActionCount = buyerActionCount + sellerActionCount + authActionCount;
+
+  /**
+   * 待處理 and 爭議 must never hide behind pagination.
+   *
+   * The list comes back newest-first, so an order you have to act on can sit
+   * on page 2 while the tab confidently says 「待處理 1」 over an empty screen —
+   * exactly the mismatch this whole change is meant to remove. Both groups are
+   * small by nature (they are the exception, not the archive), so it is cheaper
+   * to finish loading them than to explain the gap.
+   *
+   * Compared against `inGroup`, not `visibleOrders`: the role chips are a view
+   * filter, and a filtered-out row is loaded, not missing.
+   */
+  const expectedInGroup = activeGroup === 'action' ? totalActionCount
+    : activeGroup === 'disputed' ? actionCounts.disputed
+    : 0;
+  useEffect(() => {
+    if (activeGroup !== 'action' && activeGroup !== 'disputed') return;
+    if (loading || loadingMoreOrders) return;
+    if (orders.length >= ordersTotal) return;
+    if (inGroup.length >= expectedInGroup) return;
+    loadMoreOrders();
+  }, [activeGroup, loading, loadingMoreOrders, orders.length, ordersTotal,
+      inGroup.length, expectedInGroup, loadMoreOrders]);
+
+  // ── Render actions (role read off the row, not off the tab) ───────────────
   function renderActions(o: any) {
+    const role     = viewRole(o);
     const isBuyer  = o.buyerId  === currentUserId;
     const isSeller = o.sellerId === currentUserId;
     const meetup   = isMeetupOrder(o);
@@ -337,7 +405,7 @@ export default function OrdersPage() {
     const btns: { label: string; action: () => Promise<any>; primary?: boolean; desc?: string }[] = [];
 
     // ── Buyer actions ──────────────────────────────────────────────────────
-    if (activeTab === 'buyer' || (activeTab !== 'auth' && isBuyer)) {
+    if (role === 'buyer') {
       // Pay (both SHIP and meetup ONLINE_ESCROW)
       if (o.status === 'AWAITING_PAYMENT') {
         const label = o.paymentMethod === 'OFFLINE_CASH'
@@ -373,28 +441,28 @@ export default function OrdersPage() {
       if (o.deliveryMethod === 'MEETUP_DIRECT' && o.status === 'PAID' && o.escrowHeld) {
         btns.push({ label: _t('orders.action.completeMeetupDirect'), action: async () => setMoneyConfirm({
           orderId: o.id, title: _t('orders.confirmDialog.meetupTitle'), label: _t('orders.confirmDialog.completeLabel'),
-          consequence: '呢個動作會即時放款畀賣家，訂單轉為完成，不可撤回。',
+          consequence: '此操作將即時向賣家放款，訂單隨即轉為已完成，且無法撤回。',
           run: () => api.orders.completeMeetup(o.id),
         }), primary: true });
       }
     }
 
-    // ── Authenticator actions (鑑定 tab) ──────────────────────────────────
-    if (activeTab === 'auth') {
+    // ── Authenticator actions ─────────────────────────────────────────────
+    if (role === 'auth') {
       // Meetup: start authentication directly from PAID
       if (meetup && o.status === 'PAID')
         btns.push({ label: _t('orders.action.startMeetupAuth'), action: () => api.orders.startMeetupAuth(o.id), primary: true });
     }
 
     // ── Seller actions (SHIP only — meetup 唔需要 seller ship) ─────────────
-    if (activeTab === 'seller' || (activeTab !== 'auth' && isSeller)) {
+    if (role === 'seller') {
       // Ack v2 (A2): 寄出必須提供 SF 單號 — 開 inline prompt，唔係齋 click
       if (!meetup && o.status === 'PAID' && o.authenticatorId)
         btns.push({ label: _t('orders.action.shipToAuth'), action: async () => { setTrackingPrompt({ orderId: o.id, kind: 'toAuth' }); setTrackingNo(''); }, primary: true });
       if (!meetup && o.status === 'PAID' && !o.authenticatorId)
-        btns.push({ label: '已寄出至買家（入 SF 單號）', action: async () => { setTrackingPrompt({ orderId: o.id, kind: 'toBuyerDirect' }); setTrackingNo(''); }, primary: true });
+        btns.push({ label: '確認寄出至買家（填寫順豐單號）', action: async () => { setTrackingPrompt({ orderId: o.id, kind: 'toBuyerDirect' }); setTrackingNo(''); }, primary: true });
       if (!meetup && o.status === 'AUTH_PASSED')
-        btns.push({ label: '已寄出至買家（入 SF 單號）', action: async () => { setTrackingPrompt({ orderId: o.id, kind: 'toBuyer' }); setTrackingNo(''); }, primary: true });
+        btns.push({ label: '確認寄出至買家（填寫順豐單號）', action: async () => { setTrackingPrompt({ orderId: o.id, kind: 'toBuyer' }); setTrackingNo(''); }, primary: true });
     }
 
     // Ack v2 extra panels（唔係 btns 一部分）
@@ -617,12 +685,24 @@ export default function OrdersPage() {
   }
 
   // ── Tab definition ─────────────────────────────────────────────────────────
-  const tabs: { id: TabRole; label: string; count: number; actionCount: number }[] = [
-    { id: 'buyer',  label: _t('orders.tab.buyer'), count: buyerOrders.length,  actionCount: buyerActionCount },
-    { id: 'seller', label: _t('orders.tab.seller'), count: sellerOrders.length, actionCount: sellerActionCount },
-    ...(isAuthenticator
-      ? [{ id: 'auth' as TabRole, label: _t('orders.tab.auth'), count: authOrders.length, actionCount: authActionCount }]
+  // 爭議中 appears ONLY when the account actually has a dispute (founder
+  // 2026-08-14). A permanent 「爭議」 tab reads as a warning to every ordinary
+  // customer that something can go wrong; it should show up when it applies to
+  // them, and be unmissable when it does.
+  const tabs: { id: OrderGroup; label: string; count: number; tone?: 'danger' }[] = [
+    { id: 'action',   label: '待處理', count: totalActionCount },
+    ...(actionCounts.disputed > 0
+      ? [{ id: 'disputed' as OrderGroup, label: '爭議處理中', count: actionCounts.disputed, tone: 'danger' as const }]
       : []),
+    { id: 'active',   label: '進行中', count: actionCounts.active },
+    { id: 'done',     label: '已完成', count: actionCounts.done },
+  ];
+
+  const roleChips: { id: TabRole | 'all'; label: string }[] = [
+    { id: 'all',    label: '全部' },
+    { id: 'buyer',  label: '我的購買' },
+    { id: 'seller', label: '我的銷售' },
+    ...(isAuthenticator ? [{ id: 'auth' as TabRole, label: '鑑定委託' }] : []),
   ];
 
   // ── Counterparty nodes (clickable) based on tab ───────────────────────────
@@ -634,15 +714,16 @@ export default function OrdersPage() {
     const buyerLink = (id: string, name: string) => (
       <Link key={`b-${id}`} href={`/buyer/${id}` as any} className={linkCls}>{name}</Link>
     );
-    if (activeTab === 'buyer') {
+    const role = viewRole(o);
+    if (role === 'buyer') {
       if (!o.seller?.displayName || !o.seller?.id) return null;
       return <>賣家：{sellerLink(o.seller.id, o.seller.displayName)}</>;
     }
-    if (activeTab === 'seller') {
+    if (role === 'seller') {
       if (!o.buyer?.displayName || !o.buyer?.id) return null;
       return <>買家：{buyerLink(o.buyer.id, o.buyer.displayName)}</>;
     }
-    if (activeTab === 'auth') {
+    if (role === 'auth') {
       const nodes: React.ReactNode[] = [];
       if (o.buyer?.displayName && o.buyer?.id) {
         nodes.push(<span key="b">買家：{buyerLink(o.buyer.id, o.buyer.displayName)}</span>);
@@ -674,29 +755,67 @@ export default function OrdersPage() {
       </div>
 
       {/* ═══ L3 Tabs — bottom-border underline ═══ */}
-      <div className="mb-6 flex gap-1 border-b border-line">
+      <div className="mb-4 flex gap-1 overflow-x-auto border-b border-line">
         {tabs.map((t) => {
-          const isActive = activeTab === t.id;
+          const isActive = activeGroup === t.id;
+          const danger = t.tone === 'danger';
           return (
             <button
               key={t.id}
-              onClick={() => setActiveTab(t.id)}
-              className={`relative -mb-px border-b-2 px-4 py-3 text-[14px] font-semibold transition ${
+              onClick={() => setActiveGroup(t.id)}
+              className={`relative -mb-px shrink-0 border-b-2 px-4 py-3 text-[14px] font-semibold transition ${
                 isActive
-                  ? 'border-brand-600 text-ink'
-                  : 'border-transparent text-neutral-text-hint hover:text-neutral-text-muted'
+                  ? danger ? 'border-danger text-danger' : 'border-brand-600 text-ink'
+                  : danger
+                    ? 'border-transparent text-danger/70 hover:text-danger'
+                    : 'border-transparent text-neutral-text-hint hover:text-neutral-text-muted'
               }`}
             >
-              {t.label}{!loading && ` (${t.count})`}
-              {t.actionCount > 0 && (
-                <span className="ml-1.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-danger px-1 text-[9px] font-bold text-white">
-                  {t.actionCount}
+              {t.label}
+              {!loading && t.count > 0 && (
+                <span
+                  className={`ml-1.5 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold ${
+                    // Red is reserved for the two groups that mean "this is on
+                    // you": something to do, or money frozen in a dispute.
+                    t.id === 'action' || danger
+                      ? 'bg-danger text-white'
+                      : 'bg-neutral-100 text-neutral-text-muted'
+                  }`}
+                >
+                  {t.count}
                 </span>
               )}
             </button>
           );
         })}
       </div>
+
+      {/* Role is a filter, not a destination — see the tab comment above. */}
+      <div className="mb-6 flex gap-2 overflow-x-auto">
+        {roleChips.map((c) => (
+          <button
+            key={c.id}
+            onClick={() => setRoleFilter(c.id)}
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
+              roleFilter === c.id
+                ? 'border-brand-600 bg-brand-50 text-brand-700'
+                : 'border-line text-neutral-text-muted hover:border-line-2 hover:text-neutral-text'
+            }`}
+          >
+            {c.label}
+          </button>
+        ))}
+      </div>
+
+      {activeGroup === 'disputed' && (
+        <div className="mb-5 rounded-xl border border-danger/30 bg-red-50 px-4 py-3">
+          <p className="text-[13px] font-semibold text-danger">款項已凍結，待平台客服處理</p>
+          <p className="mt-1 text-[12px] leading-relaxed text-red-800">
+            爭議期間款項不會放予任何一方。客服將透過訂單訊息與買家、賣家及鑑定師聯絡，
+            請留意訊息通知並提供所需資料。
+          </p>
+        </div>
+      )}
 
       {actionError && (
         <p className="mb-4 rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">{actionError}</p>
@@ -709,37 +828,66 @@ export default function OrdersPage() {
         </div>
       )}
 
-      {/* Empty states per tab */}
-      {!loading && visibleOrders.length === 0 && (
+      {/* Nothing on screen for this group, but there ARE more pages to fetch —
+          the tab count comes from the server and covers every order, so saying
+          「沒有訂單」 here would be a lie the load-more button contradicts. */}
+      {!loading && visibleOrders.length === 0 && orders.length < ordersTotal && (
         <div className="mt-12 text-center">
-          <p className="text-3xl">{activeTab === 'seller' ? '🏪' : activeTab === 'auth' ? '🔍' : '📦'}</p>
-          {activeTab === 'buyer' && (
+          <p className="text-sm text-slate-500">此分類的訂單尚未載入。</p>
+          <Button className="mt-4" onClick={loadMoreOrders} disabled={loadingMoreOrders}>
+            {loadingMoreOrders ? '載入中…' : `載入更多（尚有 ${ordersTotal - orders.length} 張）`}
+          </Button>
+        </div>
+      )}
+
+      {/* Empty states per group. An empty 「待處理」 is the GOOD outcome, so it
+          reads as reassurance rather than as an absence to be corrected. */}
+      {!loading && visibleOrders.length === 0 && orders.length >= ordersTotal && (
+        <div className="mt-12 text-center">
+          {activeGroup === 'action' && (
             <>
-              <p className="mt-3 font-medium text-slate-700">{_t('orders.empty.buyerTitle')}</p>
-              <p className="mt-1 text-sm text-slate-400">{_t('orders.empty.buyerDesc')}</p>
-              <Link href="/browse"><Button className="mt-4">{_t('orders.empty.browse')}</Button></Link>
+              <p className="text-3xl">✅</p>
+              <p className="mt-3 font-medium text-slate-700">目前沒有需要你處理的訂單</p>
+              <p className="mt-1 text-sm text-slate-400">
+                有訂單需要你付款、寄出或確認時，將於此顯示。
+              </p>
+              {allOrders.length === 0 && (
+                <Link href="/browse"><Button className="mt-4">{_t('orders.empty.browse')}</Button></Link>
+              )}
             </>
           )}
-          {activeTab === 'seller' && (
+          {activeGroup === 'disputed' && (
             <>
-              <p className="mt-3 font-medium text-slate-700">{_t('orders.empty.sellerTitle')}</p>
+              <p className="text-3xl">🛡️</p>
+              <p className="mt-3 font-medium text-slate-700">沒有爭議中的訂單</p>
+            </>
+          )}
+          {activeGroup === 'active' && (
+            <>
+              <p className="text-3xl">📦</p>
+              <p className="mt-3 font-medium text-slate-700">沒有進行中的訂單</p>
               <p className="mt-1 text-sm text-slate-400">
-                當買家購買你上架嘅商品後，訂單會出現喺呢度。
+                已付款、鑑定中或運送中的訂單，將於此顯示。
               </p>
+            </>
+          )}
+          {activeGroup === 'done' && (
+            <>
+              <p className="text-3xl">🗂️</p>
+              <p className="mt-3 font-medium text-slate-700">尚未有已完成的訂單</p>
               <p className="mt-1 text-sm text-slate-400">
-                想睇你上架嘅商品？去
+                想查看你上架的商品，請前往
                 <Link href="/my-listings" className="text-brand-600 hover:underline">「我的商品」</Link>。
               </p>
-              <Link href="/sell"><Button className="mt-4">{_t('orders.empty.sellButton')}</Button></Link>
             </>
           )}
-          {activeTab === 'auth' && (
-            <>
-              <p className="mt-3 font-medium text-slate-700">{_t('orders.empty.authTitle')}</p>
-              <p className="mt-1 text-sm text-slate-400">
-                當買家揀你做鑑定師後，訂單會出現喺呢度。
-              </p>
-            </>
+          {roleFilter !== 'all' && allOrders.length > 0 && (
+            <button
+              onClick={() => setRoleFilter('all')}
+              className="mt-4 text-sm text-brand-600 hover:underline"
+            >
+              顯示全部角色的訂單
+            </button>
           )}
         </div>
       )}
@@ -750,7 +898,7 @@ export default function OrdersPage() {
           {visibleOrders.map((o) => {
             const hasAuth = !!o.authenticatorId;
             const img     = o.listing?.coverUrl ?? o.listing?.images?.[0];
-            const isAction = needsMyAction(o, currentUserId ?? '', activeTab);
+            const isAction = needsMyAction(o, currentUserId ?? '', viewRole(o));
             const cp = counterpartyNodes(o);
 
             // Lesson #20：卡內有多個獨立 interactive 元素（star rating / 評價
@@ -865,7 +1013,7 @@ export default function OrdersPage() {
                   )}
 
                   {/* Review section (buyer tab, COMPLETED orders with authenticator) */}
-                  {activeTab === 'buyer' && o.status === 'COMPLETED' && hasAuth && (
+                  {viewRole(o) === 'buyer' && o.status === 'COMPLETED' && hasAuth && (
                     <div className="mt-3">
                       {o.review ? (
                         /* Already reviewed — show it */
@@ -978,9 +1126,10 @@ export default function OrdersPage() {
       {chatOrderId && currentUserId && (() => {
         const o = [...orders, ...authOrders].find((x) => x.id === chatOrderId);
         if (!o) return null;
+        const chatRole = viewRole(o);
         const cpName =
-          activeTab === 'buyer'  ? (o.seller?.displayName ?? '賣家') :
-          activeTab === 'seller' ? (o.buyer?.displayName ?? _t('orderDetail.label.buyer')) :
+          chatRole === 'buyer'  ? (o.seller?.displayName ?? '賣家') :
+          chatRole === 'seller' ? (o.buyer?.displayName ?? _t('orderDetail.label.buyer')) :
           `${o.buyer?.displayName ?? '買家'} / ${o.seller?.displayName ?? '賣家'}`;
         return (
           <ConversationDrawer
@@ -990,8 +1139,8 @@ export default function OrdersPage() {
             listingTitle={o.listing?.title ?? ''}
             listingLinkId={o.listing?.id}
             listingImage={o.listing?.coverUrl ?? o.listing?.images?.[0]}
-            counterpartySellerId={activeTab === 'buyer' ? o.seller?.id : undefined}
-            counterpartyBuyerId={activeTab === 'seller' ? o.buyer?.id : undefined}
+            counterpartySellerId={chatRole === 'buyer' ? o.seller?.id : undefined}
+            counterpartyBuyerId={chatRole === 'seller' ? o.buyer?.id : undefined}
             orderStatus={o.status}
             conversationType="order"
             onClose={() => setChatOrderId(null)}
@@ -1023,7 +1172,7 @@ export default function OrdersPage() {
           dismissOnBackdrop={false}
         />
       )}
-      {!loading && orders.length < ordersTotal && (
+      {!loading && visibleOrders.length > 0 && orders.length < ordersTotal && (
         <div className="mt-6 text-center">
           <button
             type="button"

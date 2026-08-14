@@ -13,7 +13,10 @@ import {
   OrderStatus,
   PaymentMethod,
 } from '@prisma/client';
-import { calculateOrderFees, tierForPrice, needsMyAction, normalizeHKPhone } from '@authentik/utils';
+import {
+  calculateOrderFees, tierForPrice, needsMyAction, normalizeHKPhone,
+  orderGroup, type TabRole,
+} from '@authentik/utils';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessagesService } from '../messages/messages.service';
 import { MessagesGateway } from '../messages/messages.gateway';
@@ -351,34 +354,40 @@ export class OrdersService {
   }
 
   /**
-   * Count of orders awaiting user action (drives /orders badge in TopNav).
+   * Every count the orders page and the top-nav badge display, from ONE query.
    *
-   * Buyer side: AWAITING_PAYMENT (pay) / DELIVERED (confirm receipt)
-   * Seller side: PAID (ship out) / AUTH_PASSED with SHIP path (ship to buyer)
+   * Two rules this enforces, both of them founder rulings:
    *
-   * Keeps WHERE clause covering both roles per past regression #6.
+   *  1. The same number everywhere. The page used to derive its per-tab counts
+   *     from the rows it had already loaded — one page of 20 — while the nav
+   *     badge counted every order. A busy account saw a badge of 3 over tabs
+   *     adding up to 1. Same root cause as the messages unread bug: two places
+   *     counting the same thing over different data sets.
+   *  2. The badge counts what needs the user's ATTENTION, which is action-
+   *     required PLUS disputes (founder 2026-08-14). A disputed order needs no
+   *     button pressed — that is exactly why it would otherwise fall silently
+   *     out of every count while money sits held.
+   *
+   * `needsMyAction` stays the SSOT for the action half (lesson #8); this method
+   * must never re-implement it.
    */
-  /**
-   * SSOT: re-use `needsMyAction` from @authentik/utils so the top-nav badge
-   * counts EXACTLY what the per-tab badges count. Previously this used a
-   * hand-rolled list of statuses that drifted from the SSOT (lesson #8).
-   */
-  async actionRequiredCount(userId: string): Promise<{ count: number }> {
+  async actionRequiredCount(userId: string): Promise<{
+    count: number;
+    buyer: number; seller: number; auth: number;
+    disputed: number; active: number; done: number;
+  }> {
     const auth = await this.prisma.authenticator.findUnique({ where: { userId } });
     const authId = auth?.id;
 
-    // Fetch all non-terminal orders where the user plays any role.
+    // Every order the user is a party to, terminal ones included — the page
+    // needs a truthful 「已完成」 count too, and it cannot get one from a page
+    // of 20.
     const orders = await this.prisma.order.findMany({
       where: {
-        AND: [
-          { status: { notIn: [OrderStatus.COMPLETED, OrderStatus.AUTH_FAILED] } },
-          {
-            OR: [
-              { buyerId: userId },
-              { sellerId: userId },
-              ...(authId ? [{ authenticatorId: authId }] : []),
-            ],
-          },
+        OR: [
+          { buyerId: userId },
+          { sellerId: userId },
+          ...(authId ? [{ authenticatorId: authId }] : []),
         ],
       },
       select: {
@@ -389,13 +398,28 @@ export class OrdersService {
       },
     });
 
-    let count = 0;
+    let buyer = 0, seller = 0, authRole = 0, disputed = 0, active = 0, done = 0;
     for (const o of orders) {
-      if (o.buyerId === userId && needsMyAction(o, userId, 'buyer')) count++;
-      else if (o.sellerId === userId && needsMyAction(o, userId, 'seller')) count++;
-      else if (authId && o.authenticatorId === authId && needsMyAction(o, userId, 'auth')) count++;
+      const role: TabRole =
+        o.buyerId === userId ? 'buyer'
+        : o.sellerId === userId ? 'seller'
+        : 'auth';
+      switch (orderGroup(o, userId, role)) {
+        case 'disputed': disputed++; break;
+        case 'done':     done++;     break;
+        case 'active':   active++;   break;
+        case 'action':
+          if (role === 'buyer') buyer++;
+          else if (role === 'seller') seller++;
+          else authRole++;
+          break;
+      }
     }
-    return { count };
+    return {
+      count: buyer + seller + authRole + disputed,
+      buyer, seller, auth: authRole,
+      disputed, active, done,
+    };
   }
 
   async listForAuthenticator(userId: string) {
@@ -985,7 +1009,7 @@ export class OrdersService {
     const phaseAStates: string[] = [OrderStatus.HANDOVER_TO_AUTH, OrderStatus.SELLER_ACK_PENDING];
     if (isSeller && phaseAStates.includes(order.status)) {
       throw new BadRequestException(
-        '呢個階段請用「要求重拍相片」或「取消交易」soft options，DISPUTED 留待較嚴重爭議',
+        '此階段請使用「要求重新拍攝」或「取消交易」，正式爭議程序保留予較嚴重的個案',
       );
     }
     return this.prisma.order.update({
@@ -1339,12 +1363,12 @@ export class OrdersService {
    */
   async disputeShip(orderId: string, buyerId: string, reason: string) {
     const text = (reason ?? '').trim();
-    if (!text) throw new BadRequestException('請講低爭議原因');
+    if (!text) throw new BadRequestException('請填寫爭議原因');
     const order = await this.prisma.order.findUnique({ where: { id: orderId } });
     if (!order) throw new NotFoundException('Order not found');
     if (order.buyerId !== buyerId) throw new ForbiddenException('Only buyer can dispute');
     if (order.status !== OrderStatus.SHIPPED_TO_BUYER) {
-      throw new BadRequestException(`只可以喺寄出後、自動完成前提出爭議（而家係 ${order.status}）`);
+      throw new BadRequestException(`只可於寄出後、自動完成前提出爭議（目前狀態：${order.status}）`);
     }
     return this.prisma.order.update({
       where: { id: orderId },

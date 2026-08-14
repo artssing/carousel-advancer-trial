@@ -196,6 +196,10 @@ export function TopNav() {
               href="/orders"
               className="relative hidden items-center rounded-lg p-2 text-neutral-text-muted transition hover:bg-surface-2 hover:text-ink md:flex"
               aria-label={_t('layout.nav.ordersAria')}
+              /* The number is orders needing attention, not orders in total —
+                 it looks exactly like the unread-messages dot beside it, so
+                 without this it reads as "you have 1 order". */
+              title={orderBadge > 0 ? `${orderBadge} 張訂單需要你處理` : undefined}
             >
               <span className="text-sm">{_t('layout.nav.ordersLabel')}</span>
               {orderBadge > 0 && (

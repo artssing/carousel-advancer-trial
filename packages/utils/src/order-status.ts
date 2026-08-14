@@ -15,24 +15,33 @@ export function isMeetupOrder(o: { deliveryMethod?: string | null }): boolean {
   return MEETUP_DELIVERIES.includes(o.deliveryMethod ?? '');
 }
 
+/**
+ * Status labels. Written Chinese, not speech (founder 2026-08-14) — these are
+ * transaction records, and 「等賣家確認」 reads like a spoken aside where
+ * 「待賣家確認」 reads like a record of state. Every label answers the same
+ * question in the same shape: what has happened · who is next.
+ */
 export const STATUS_LABEL_BASE: Record<string, string> = {
-  AWAITING_PAYMENT:                 '等待付款',
-  PAID:                             '已付款 · 等待賣家寄出',
-  SHIPPED_TO_AUTHENTICATOR:         '已寄出至鑑定師',
-  AUTH_RECEIVED_PENDING_SELLER_ACK: '鑑定師已收件 · 等賣家確認',
-  AUTHENTICATING:                   '鑑定中',
-  AUTH_PASSED:                      '鑑定通過 · 等待寄出至買家',
-  AUTH_FAILED:                      '鑑定不通過 · 退回賣家',
-  SHIPPED_TO_BUYER:                 '已寄出 · 等待買家確認',
-  DELIVERED_PENDING_AUTH_ACK:       '已送達 · 等鑑定師確認 unboxing',
-  DELIVERED:                        '已送達 · 等待確認完成',
+  AWAITING_PAYMENT:                 '待付款',
+  PAID:                             '已付款 · 待賣家寄出',
+  SHIPPED_TO_AUTHENTICATOR:         '已寄出至鑑定師 · 待鑑定師簽收',
+  AUTH_RECEIVED_PENDING_SELLER_ACK: '鑑定師已簽收 · 待賣家確認',
+  AUTHENTICATING:                   '鑑定進行中 · 待鑑定師出具結果',
+  AUTH_PASSED:                      '鑑定通過 · 待賣家寄出至買家',
+  AUTH_FAILED:                      '鑑定未通過 · 安排退回賣家',
+  SHIPPED_TO_BUYER:                 '已寄出至買家 · 待買家簽收',
+  DELIVERED_PENDING_AUTH_ACK:       '已送達 · 待鑑定師確認開箱紀錄',
+  DELIVERED:                        '已送達 · 待買家確認完成',
   COMPLETED:                        '已完成',
-  HANDOVER_TO_AUTH:                 '鑑定師接收中（影相）',
-  SELLER_ACK_PENDING:               '等賣家確認交付',
-  CUSTODY:                          '鑑定師持貨中',
-  AWAITING_BUYER_PICKUP:            '請到鑑定師店取貨',
-  DISPUTED:                         '爭議中',
+  HANDOVER_TO_AUTH:                 '鑑定師接收中 · 拍攝存證',
+  SELLER_ACK_PENDING:               '待賣家確認交付',
+  CUSTODY:                          '鑑定師保管中',
+  AWAITING_BUYER_PICKUP:            '待買家到鑑定師門店取貨',
+  DISPUTED:                         '爭議處理中 · 平台客服跟進',
   REFUNDED:                         '已退款',
+  // Was missing, so the raw enum `PAYMENT_EXPIRED` printed on screen in
+  // English — the one thing the fallback `?? status` is not meant to be for.
+  PAYMENT_EXPIRED:                  '逾期未付款 · 訂單已取消',
 };
 
 /** Meetup-aware label — overrides statuses that don't make sense for meetup. */
@@ -40,17 +49,42 @@ export function getStatusLabel(status: string, deliveryMethod?: string | null): 
   const meetup = MEETUP_DELIVERIES.includes(deliveryMethod ?? '');
   if (!meetup) return STATUS_LABEL_BASE[status] ?? status;
   if (status === 'AWAITING_PAYMENT') {
-    return deliveryMethod === 'MEETUP_DIRECT' ? '等待確認' : '等待付款';
+    return deliveryMethod === 'MEETUP_DIRECT' ? '待雙方確認' : '待付款';
   }
   if (status === 'PAID') {
-    if (deliveryMethod === 'MEETUP_DIRECT') return '已確認 · 等待面交';
-    return '已付款 · 等待面交鑑定';
+    if (deliveryMethod === 'MEETUP_DIRECT') return '已確認 · 待面交';
+    return '已付款 · 待面交鑑定';
   }
-  if (status === 'AUTH_PASSED') return '鑑定通過 · 等待確認完成';
+  if (status === 'AUTH_PASSED') return '鑑定通過 · 待確認完成';
   return STATUS_LABEL_BASE[status] ?? status;
 }
 
-export const TERMINAL_STATUSES = ['COMPLETED', 'REFUNDED'];
+/** Nothing further will happen to the order without human intervention.
+ *  PAYMENT_EXPIRED belongs here: the order is dead, not in progress — leaving
+ *  it out sorted cancelled orders in among live ones. */
+export const TERMINAL_STATUSES = ['COMPLETED', 'REFUNDED', 'PAYMENT_EXPIRED'];
+
+/**
+ * Which section of the orders page an order belongs to.
+ *
+ * Founder 2026-08-14: the page used to be split by ROLE (買入 / 賣出), which
+ * made the user answer "am I the buyer or the seller here?" before they could
+ * find out the only thing they actually wanted to know — whether anything is
+ * waiting on them. Role is metadata on the row now; this is the axis.
+ *
+ * `disputed` is deliberately its own group rather than a flavour of `active`:
+ * money is held, no party can move the order forward on their own, and the
+ * resolution is off-platform. It is not "in progress" in any sense the user
+ * would recognise.
+ */
+export type OrderGroup = 'action' | 'disputed' | 'active' | 'done';
+
+export function orderGroup(o: any, userId: string, role: TabRole): OrderGroup {
+  if (o.status === 'DISPUTED') return 'disputed';
+  if (needsMyAction(o, userId, role)) return 'action';
+  if (TERMINAL_STATUSES.includes(o.status)) return 'done';
+  return 'active';
+}
 
 /** Does this order need an action from this user in the given role? */
 export function needsMyAction(

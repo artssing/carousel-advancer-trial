@@ -240,7 +240,11 @@ export const api = {
       req<{ items: any[]; total: number; buyerTotal: number; sellerTotal: number }>(
         `/orders?limit=${limit}&offset=${offset}${role ? `&role=${role}` : ''}`,
       ),
-    badgeCount: () => req<{ count: number }>('/orders/badge-count'),
+    badgeCount: () =>
+      req<{
+        count: number; buyer: number; seller: number; auth: number;
+        disputed: number; active: number; done: number;
+      }>('/orders/badge-count'),
     /** Public — most recent AUTH_PASSED / DELIVERED / COMPLETED orders. */
     recentPassed: () => req<Array<{
       key: string;

@@ -2029,8 +2029,8 @@
       "en": "Confirm shipped"
     },
     "action.shipToAuth": {
-      "zh": "已寄出至鑑定師（入 SF 單號）",
-      "en": "Shipped to authenticator (enter SF tracking)"
+      "zh": "確認寄出至鑑定師（填寫順豐單號）",
+      "en": "Confirm shipped to authenticator (enter SF tracking no.)"
     },
     "action.shipToBuyer": {
       "zh": "已寄出至買家（入 SF 單號）",
@@ -2093,8 +2093,8 @@
       "en": "Dispute in progress"
     },
     "constant.terminalDisputedDesc": {
-      "zh": "平台正在跟進，請留意通知。",
-      "en": "The platform is reviewing the case. Please watch for updates."
+      "zh": "款項已凍結，平台客服正在跟進，請留意訂單訊息。",
+      "en": "Funds are held while platform support reviews the case. Please watch the order messages."
     },
     "constant.terminalRefunded": {
       "zh": "已退款",
@@ -2329,7 +2329,7 @@
       "en": "e.g. SF1234567890123"
     },
     "tracking.title": {
-      "zh": "輸入 SF Express 運單編號（必填）",
+      "zh": "請填寫順豐速運單號（必填）",
       "en": "Enter SF Express tracking number (required)"
     },
     "verdictFailed": {
