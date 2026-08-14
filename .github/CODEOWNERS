@@ -1,0 +1,66 @@
+# CODEOWNERS — 邊個 approve 邊忽
+#
+# 開呢個檔係因為 founder 2026-08-10 講：「backend / frontend / docker db 全部
+# 同一個 directory，frontend 同事好易 commit 到 backend 嘅嘢」。
+#
+# 拆 repo（`docs/proposals/repo-split-proposal.md`）解決得到，但唔使等佢：
+# CODEOWNERS + branch protection 今日就可以令「改咗唔應該改嘅嘢」變成一個
+# 要人 approve 嘅動作，而唔係一個冇人為意嘅 commit。呢個係 P0，零風險，
+# 就算最後決定唔拆都值得留。
+#
+# ⚠️ 本身冇強制力。要 GitHub Settings → Branches → main → 開
+#    "Require a pull request before merging" + "Require review from Code Owners"
+#    先至真係擋得住。呢個係 repo 設定，要 owner 去撳。
+#
+# 語法：最後 match 到嘅一行贏（同 .gitignore 相反）。
+
+# ── 預設：所有嘢都要 owner 睇 ──────────────────────────────────────────
+*                               @artssing
+
+# ── Backend ────────────────────────────────────────────────────────────
+# Prisma schema 同 order state machine 係全 repo 最貴嘅兩忽：schema 用
+# `db push --accept-data-loss`（唔係 migration），改錯直接冇資料。
+/apps/api/                      @artssing
+/apps/api/prisma/               @artssing
+
+# ── Frontend ───────────────────────────────────────────────────────────
+/apps/consumer/                 @artssing
+/apps/authenticator/            @artssing
+/apps/admin/                    @artssing
+/packages/ui/                   @artssing
+
+# ── 跨界：改一次，前後端一齊受影響 ─────────────────────────────────────
+# 呢啲就係 repo-split proposal §3.1 講嘅 domain 層。改銀碼／等級／訂單狀態
+# 嘅規則，API 同三個 portal 會即刻一齊變 —— 所以呢度應該係最嚴嗰忽，
+# 唔係最鬆。
+/packages/utils/src/tier.ts             @artssing
+/packages/utils/src/money.ts            @artssing
+/packages/utils/src/categories.ts       @artssing
+/packages/utils/src/order-status.ts     @artssing
+/packages/utils/src/payout-methods.ts   @artssing
+/packages/utils/src/analytics-events.ts @artssing
+/packages/utils/src/conditions.ts       @artssing
+/packages/utils/src/phone.ts            @artssing
+
+# ── Infra / CI / 部署 ──────────────────────────────────────────────────
+# 呢忽將來歸 CI/CD team（proposal P4）。而家先標示邊界。
+/docker-compose*.yml            @artssing
+/Jenkinsfile                    @artssing
+/ci/                            @artssing
+/scripts/                       @artssing
+/start.sh                       @artssing
+/stop.sh                        @artssing
+/.github/                       @artssing
+
+# ── 規矩本身 ───────────────────────────────────────────────────────────
+# CLAUDE.md 同 founder rulings 改咗，等於改咗全部人嘅工作方式。
+/CLAUDE.md                      @artssing
+/docs/founder-rulings.md        @artssing
+/docs/lessons.md                @artssing
+
+# ─────────────────────────────────────────────────────────────────────
+# 招人之後點改：
+#   而家全部係 @artssing，因為 repo 得一個 GitHub 帳號。請到人之後開
+#   @certifine/backend、@certifine/frontend、@certifine/infra 三個 team，
+#   再將上面對應嘅段落換成 team handle。**唔好留住 @artssing 做 fallback
+#   加喺每一行** —— owner 永遠 match 到就等於冇分過工。
