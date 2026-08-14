@@ -14,7 +14,9 @@ cd "$(dirname "$0")/.."
 
 fail=0
 
-hits="$(grep -rn "@authentik/utils\|@authentik/ui" apps/api/src 2>/dev/null || true)"
+# 唔止 src/ —— prisma/seed.ts 都喺 tsconfig include 入面，一樣會被
+# `nest build` 編譯。漏咗佢，本機 hoisting 會遮住，Docker 入面先爆。
+hits="$(grep -rn "@authentik/utils\|@authentik/ui" apps/api/src apps/api/prisma 2>/dev/null || true)"
 if [ -n "$hits" ]; then
   printf '\033[33m✗\033[0m apps/api 唔可以 import web 嘅 package：\n'
   printf '  %s\n' "$hits"

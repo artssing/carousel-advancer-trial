@@ -6,7 +6,7 @@ import {
   DeliveryMethod,
 } from '@prisma/client';
 import * as bcrypt from 'bcryptjs';
-import { tierForPrice } from '@authentik/utils';
+import { tierForPrice } from '@certifine/domain';
 
 const prisma = new PrismaClient();
 

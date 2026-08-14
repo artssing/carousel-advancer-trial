@@ -802,7 +802,7 @@ model PayoutMethod {
   userId            String
   user              User             @relation(fields: [userId], references: [id])
   type              PayoutMethodType
-  /// FPS phone / email / id / bank account number — raw, format helpers in @authentik/utils
+  /// FPS phone / email / id / bank account number — raw, format helpers in @certifine/domain
   accountIdentifier String
   /// Only set when type=BANK_LOCAL (HK clearing code, e.g. "004" for HSBC)
   bankCode          String?
