@@ -55,16 +55,19 @@ pipeline、一份 `CLAUDE.md`，同時「邊個 own domain」呢條問題自然�
 
 ---
 
-## 2. 目標拓撲：4 個 repo
+## 2. 目標拓撲：3 個 repo
 
 ```
-certifine-shared     @certifine/domain（16 個 symbol）+ CANON.md   → 私有 registry 發布
-certifine-api        apps/api（NestJS + Prisma schema + seed）      → 出 api image
+certifine-api        apps/api（NestJS + Prisma schema + seed）
+                     + packages/domain（18 個 symbol）+ CANON.md → 發版上 GitHub Packages
+                                                                 → 出 api image
 certifine-web        3 個 portal + ui · config · web-kit · api-client → 出 3 個 web image
 certifine-infra      compose · Jenkinsfile · ci/ · scripts/ · docs/qa/ · cloudflared
 ```
 
-> **2026-08-10 修訂：** 初稿寫 `certifine-shared` 裝 `utils + ui + config + api-client`。數完 API 實際用咩之後改咗 —— 見 §3.1。跨 repo 共用面積由「4 個 package」縮到「16 個 function」。
+> **2026-08-10 修訂：** 初稿寫 `certifine-shared` 裝 `utils + ui + config + api-client`。數完 API 實際用咩之後改咗 —— 見 §3.1。跨 repo 共用面積由「4 個 package」縮到「18 個 function」。
+>
+> **2026-08-14 決策：** 再取消埋獨立嘅 `certifine-shared` repo —— 見文件開頭嘅決策紀錄。`domain` 併入 `certifine-api`，由 4 個 repo 變 3 個。下面 §3.5 / §4 提到 `shared` 嘅地方，一律讀成「`certifine-api` 入面嘅 domain package」。
 
 ### 點解唔係「每個 end 一個 repo」（即 5 個，三個前端各自一個）
 
@@ -98,23 +101,23 @@ certifine-infra      compose · Jenkinsfile · ci/ · scripts/ · docs/qa/ · cl
 
 
 
-| utils 檔案 | API 用到 |
-|---|---|
-| `tier.ts` | `gradesAtLeast` |
-| `money.ts` | `calculateOrderFees` |
-| `categories.ts` | `categoryByApiEnum` |
-| `order-status.ts` | `needsMyAction` |
-| `payout-methods.ts` | `PayoutMethodType` · `PayoutMethodTypeKey` · `PayoutStatus` · `PayoutIntentKind` |
-| `phone.ts` | `normalizeHKPhone` · `isPhoneIdentifier` |
-| `search.ts` | `normalizeForMatch` |
-| `analytics-events.ts` | `isAnalyticsEventName` |
-| `brands.ts` | `ADMIN_ROLES` · `SUPER_ADMIN` · `OPS_ADMIN` · `OPS_AGENT` |
-| `mtr` `districts` `prices` `shipping` `chat-time` | **零** |
+| utils 檔案 | API 用到 | 兩份唔同步會點 |
+|---|---|---|
+| `tier.ts` | `tierForPrice` | 銀碼。買家見一個數，server 收另一個數 |
+| `categories.ts` | `calculateOrderFees` · `categoryByApiEnum` | 同上 |
+| `order-status.ts` | `needsMyAction` · `orderGroup` · `TabRole` | badge 同列表對唔到數（2026-08-14 實際踩過） |
+| `payout-methods.ts` | `PAYOUT_MIN_HKD` · `PAYOUT_MAX_HKD` · `PayoutMethodTypeKey` · `validatePayoutAccount` · `generatePayoutReference` · `payoutMethodDisplayLabel` | 前端 validate 過關，server 拒收 |
+| `analytics-events.ts` | `isAnalyticsEventName` · `AnalyticsEventEnvelope` | 白名單。前端射 API 唔認嘅 event，靜靜地掉咗 |
+| `phone.ts` | `normalizeHKPhone` · `isPhoneIdentifier` | normalize 要逐個 byte 一樣，唔係就查唔到 |
+| `conditions.ts` | `gradesAtLeast` | 成色門檻兩邊唔同 |
+| `brands.ts` | `normalizeForMatch` | 同 `phone.ts` |
+| `money` `search` `mtr` `districts` `prices` `shipping` `chat-time` `chat-preview` | **零** | — |
 
 ```
-@certifine/domain    上面 16 個 symbol
+@certifine/domain    上面 18 個 symbol（8 個檔案）
                      ← 前後端共用。改得少，改嗰陣好緊要。要版本控制。要發版。
-ui · config · api-client · web-kit（mtr/districts/prices/shipping/chat-time）
+                     ← 2026-08-14 決策：住喺 certifine-api repo，由佢發版。
+ui · config · api-client · web-kit（其餘 9 個檔案）
                      ← 零 backend 使用者 → 直接住喺 certifine-web，唔使發版、唔使 registry。
 ```
 
