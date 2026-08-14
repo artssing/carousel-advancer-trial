@@ -86,7 +86,13 @@ export function orderGroup(o: any, userId: string, role: TabRole): OrderGroup {
   return 'active';
 }
 
-/** Does this order need an action from this user in the given role? */
+/**
+ * Does this order need an action from this user in the given role?
+ *
+ * The test is "would this order stall if this person did nothing?" — not "is
+ * there a button on the card". Physically turning up somewhere counts; waiting
+ * for a courier does not (founder 2026-08-14).
+ */
 export function needsMyAction(
   o: any,
   userId: string,
@@ -96,16 +102,27 @@ export function needsMyAction(
 
   if (role === 'buyer') {
     if (o.status === 'AWAITING_PAYMENT' && o.buyerId === userId) return true;
-    if (!meetup && o.status === 'SHIPPED_TO_BUYER' && o.buyerId === userId) return true;
+    // NOT SHIPPED_TO_BUYER: Ack v2 auto-completes at T+3 with no confirmation
+    // from the buyer, so the only thing they can do is raise a dispute — an
+    // option, not a task. It belongs in 進行中 with the countdown showing.
     if (!meetup && o.status === 'DELIVERED' && o.buyerId === userId) return true;
     if (o.status === 'AWAITING_BUYER_PICKUP' && o.buyerId === userId) return true;
     if (o.deliveryMethod === 'MEETUP_3WAY' && o.status === 'AUTH_PASSED' && o.buyerId === userId) return true;
     if (o.deliveryMethod === 'MEETUP_DIRECT' && o.status === 'PAID' && o.buyerId === userId) return true;
+    // Three-way meetup: buyer, seller and authenticator are all at the shop at
+    // the same time, so the buyer has an appointment to keep.
+    if (o.deliveryMethod === 'MEETUP_3WAY' && o.status === 'PAID' && o.buyerId === userId) return true;
     return false;
   }
   if (role === 'seller') {
     if (!meetup && o.status === 'PAID' && o.sellerId === userId) return true;
     if (!meetup && o.status === 'AUTH_PASSED' && o.sellerId === userId) return true;
+    // Meetup drop-off. The item does not move until the seller carries it to
+    // the authenticator and presents the drop-off QR — the card already renders
+    // that QR here, so treating it as "in progress" was the page contradicting
+    // itself.
+    if ((o.deliveryMethod === 'MEETUP_AUTH' || o.deliveryMethod === 'MEETUP_3WAY')
+      && o.status === 'PAID' && o.sellerId === userId) return true;
     if (o.status === 'AUTH_RECEIVED_PENDING_SELLER_ACK' && o.sellerId === userId) return true;
     if (o.status === 'SELLER_ACK_PENDING' && o.sellerId === userId) return true;
     if (o.status === 'REFUNDED' && o.returnPhotosUploadedAt && !o.returnSellerAckAt && o.sellerId === userId) return true;
@@ -143,6 +160,13 @@ export function sellerActionCta(o: any): { heading: string; buttonLabel: string 
     return {
       heading: '買家已付款，請安排寄出',
       buttonLabel: '確認已寄出 →',
+    };
+  }
+  if ((o.deliveryMethod === 'MEETUP_AUTH' || o.deliveryMethod === 'MEETUP_3WAY')
+    && o.status === 'PAID') {
+    return {
+      heading: '買家已付款，請將商品送交鑑定師',
+      buttonLabel: '查看交收二維碼 →',
     };
   }
   if (!meetup && o.status === 'AUTH_PASSED') {

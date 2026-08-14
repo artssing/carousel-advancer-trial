@@ -2739,23 +2739,23 @@
       "en": "Copy"
     },
     "qr.dropoffTitle": {
-      "zh": "到店交貨 — 出示此 QR 碼畀鑑定師 scan",
+      "zh": "到店交貨 — 請向鑑定師出示此二維碼",
       "en": "Dropping off in store — show this QR code to the authenticator"
     },
     "qr.error": {
-      "zh": "攞唔到 QR 碼，請重試",
+      "zh": "無法載入二維碼，請重試",
       "en": "Could not load the QR code — please try again"
     },
     "qr.imageAlt": {
-      "zh": "交收 QR 碼",
+      "zh": "交收二維碼",
       "en": "Handover QR code"
     },
     "qr.pickupTitle": {
-      "zh": "到店取貨 — 出示此 QR 碼畀鑑定師 scan",
+      "zh": "到店取貨 — 請向鑑定師出示此二維碼",
       "en": "Collecting in store — show this QR code to the authenticator"
     },
     "qr.refreshNotice": {
-      "zh": "每 60 秒自動更新（{seconds}s）· 一次性，截圖無效",
+      "zh": "每 60 秒自動更新（{seconds}s）· 僅限一次使用，截圖無效",
       "en": "Refreshes every 60 seconds ({seconds}s) · single use, a screenshot will not work"
     },
     "qr.retry": {
@@ -2763,7 +2763,7 @@
       "en": "Retry"
     },
     "qr.scanNotice": {
-      "zh": "鑑定師 scan 完會核對訂單 + 商品，確認後",
+      "zh": "鑑定師掃描後會核對訂單及商品，確認無誤即",
       "en": "After scanning, the authenticator checks the order and the item; once confirmed,"
     },
     "raiseDispute": {

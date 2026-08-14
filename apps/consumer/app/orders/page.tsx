@@ -601,6 +601,19 @@ export default function OrdersPage() {
     if (isSeller && o.deliveryMethod === 'MEETUP_AUTH' && o.status === 'PAID') {
       extras.push(<QrHandoverCard key="qr-dropoff" orderId={o.id} role="dropoff" />);
     }
+    // Three-way meetup has no drop-off QR — everyone is in the room at once —
+    // so the appointment itself is the only instruction to give. Without this
+    // the order sits in 待處理 with nothing on the card telling you why.
+    if (o.deliveryMethod === 'MEETUP_3WAY' && o.status === 'PAID' && (isBuyer || isSeller)) {
+      extras.push(
+        <div key="meetup3way" className="rounded-xl border border-brand-200 bg-brand-50 p-3">
+          <p className="text-xs font-semibold text-brand-800">請與對方及鑑定師約定面交時間</p>
+          <p className="mt-1 text-[11px] leading-relaxed text-brand-700">
+            三方面交需買賣雙方同時到場，由鑑定師當場鑑定。請透過訂單訊息協定時間及地點。
+          </p>
+        </div>,
+      );
+    }
 
     if (btns.length === 0 && extras.length === 0) return null;
     return (
