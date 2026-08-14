@@ -13,7 +13,8 @@
  * prompts can disambiguate brands reliably. Free-text fallback is allowed
  * for long-tail brands; AI can fuzzy-match later.
  */
-import type { CategoryId } from './categories';
+import type { CategoryId } from '@certifine/domain';
+import { normalizeForMatch } from '@certifine/domain';
 
 export interface BrandConfig {
   /** Canonical enum key. Stored in DB. Used by AI vision prompts. */
@@ -156,10 +157,6 @@ export function brandLabel(categoryId: CategoryId, brandId: string | null | unde
 
 /** Lowercase + strip diacritics so "Hermès" matches "hermes". Exported so the
  *  search-query parser (search.ts) shares the exact same normalization. */
-export function normalizeForMatch(s: string): string {
-  return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-}
-
 function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -205,6 +202,7 @@ function matchBrandWithLen(
  * picker but only if the user hasn't already manually chosen one, and show
  * a dismissible "auto-detected" hint rather than silently overwriting.
  */
+
 export function matchBrandFromTitle(categoryId: CategoryId, title: string): BrandConfig | null {
   const trimmed = title.trim();
   if (!trimmed) return null;
@@ -236,3 +234,7 @@ export function matchBrandAcrossCategories(
   }
   return best ? { categoryId: best.categoryId, brand: best.brand } : null;
 }
+
+// Re-exported: it lived here historically, and search.ts + several pages
+// import it from './brands'. The definition is in @certifine/domain now.
+export { normalizeForMatch };

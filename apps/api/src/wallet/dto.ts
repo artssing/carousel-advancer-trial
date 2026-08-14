@@ -13,7 +13,7 @@ import {
   PAYOUT_MAX_HKD,
   PAYOUT_MIN_HKD,
   type PayoutMethodTypeKey,
-} from '@authentik/utils';
+} from '@certifine/domain';
 
 /**
  * Wallet DTOs (founder ruling 2026-08-02).

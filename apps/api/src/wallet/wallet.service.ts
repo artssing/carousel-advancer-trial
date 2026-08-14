@@ -15,7 +15,7 @@ import {
   PAYOUT_MIN_HKD,
   PayoutMethodTypeKey,
   validatePayoutAccount,
-} from '@authentik/utils';
+} from '@certifine/domain';
 import { PayoutIntentKind, PayoutMethodType, PayoutStatus } from '@prisma/client';
 import { AuthService } from '../auth/auth.service';
 

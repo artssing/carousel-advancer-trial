@@ -3,7 +3,7 @@ import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
 import { WalletService } from './wallet.service';
-import type { PayoutMethodTypeKey } from '@authentik/utils';
+import type { PayoutMethodTypeKey } from '@certifine/domain';
 import { ConfirmIntentDto, InitiateAddMethodDto, InitiatePayoutDto } from './dto';
 
 @Controller('wallet')

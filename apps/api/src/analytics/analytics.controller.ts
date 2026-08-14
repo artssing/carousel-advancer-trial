@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
 import { AnalyticsService } from './analytics.service';
-import type { AnalyticsEventEnvelope } from '@authentik/utils';
+import type { AnalyticsEventEnvelope } from '@certifine/domain';
 
 const ADMIN_ROLES = ['OPS_AGENT', 'OPS_ADMIN', 'SUPER_ADMIN'];
 

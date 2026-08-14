@@ -1,6 +1,6 @@
 import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { Category, ConditionGrade, ListingStatus, PriceChangeStatus } from '@prisma/client';
-import { tierForPrice, normalizeForMatch, gradesAtLeast } from '@authentik/utils';
+import { tierForPrice, normalizeForMatch, gradesAtLeast } from '@certifine/domain';
 import { PrismaService } from '../prisma/prisma.service';
 import type { CreateListingDto, UpdateListingDto } from './dto';
 
@@ -66,7 +66,9 @@ export class ListingsService {
     // single-substring match against `title` only (which returned nothing the
     // moment a buyer combined brand + condition + colour). Parsing of the raw
     // query into category + residual terms happens client-side via
-    // parseSearchQuery() (SSOT in @authentik/utils); the server just matches.
+    // parseSearchQuery(), which lives in the web package; the server just
+    // matches. Deliberately not shared: only the normaliser has to agree, and
+    // that one is in @certifine/domain (`normalizeForMatch`).
     const terms = (q ?? '').split(/\s+/).map((t) => t.trim()).filter(Boolean);
 
     // Founder ruling 2026-07-30 (REVERSES 2026-06-11 Q1): in-transaction items

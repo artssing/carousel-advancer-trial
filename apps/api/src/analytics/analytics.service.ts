@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { isAnalyticsEventName, type AnalyticsEventEnvelope } from '@authentik/utils';
+import { isAnalyticsEventName, type AnalyticsEventEnvelope } from '@certifine/domain';
 
 /**
  * Analytics MVP（docs/proposals/analytics-tagging-spec.md，founder 2026-07-14 拍板）。

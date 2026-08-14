@@ -10,6 +10,7 @@ WORKDIR /repo
 FROM base AS deps
 COPY package.json package-lock.json turbo.json tsconfig.base.json ./
 COPY apps/admin/package.json         apps/admin/package.json
+COPY packages/domain/package.json   packages/domain/package.json
 COPY packages/utils/package.json     packages/utils/package.json
 COPY packages/ui/package.json        packages/ui/package.json
 COPY packages/config/package.json    packages/config/package.json

@@ -1,6 +1,6 @@
 import { Controller, Get } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { categoryByApiEnum } from '@authentik/utils';
+import { categoryByApiEnum } from '@certifine/domain';
 
 /**
  * Public read-only aggregates from the orders table.

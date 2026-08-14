@@ -16,7 +16,7 @@ import {
 import {
   calculateOrderFees, tierForPrice, needsMyAction, normalizeHKPhone,
   orderGroup, type TabRole,
-} from '@authentik/utils';
+} from '@certifine/domain';
 import { PrismaService } from '../prisma/prisma.service';
 import { MessagesService } from '../messages/messages.service';
 import { MessagesGateway } from '../messages/messages.gateway';

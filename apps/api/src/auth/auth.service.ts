@@ -9,7 +9,7 @@ import { JwtService } from '@nestjs/jwt';
 import { OAuth2Client } from 'google-auth-library';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../prisma/prisma.service';
-import { normalizeHKPhone, isPhoneIdentifier } from '@authentik/utils';
+import { normalizeHKPhone, isPhoneIdentifier } from '@certifine/domain';
 import type { LoginDto, RegisterDto } from './dto';
 
 /**

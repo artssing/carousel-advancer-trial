@@ -19,7 +19,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { tierForPrice } from '@authentik/utils';
+import { tierForPrice } from '@certifine/domain';
 import { stripeAdapter } from './stripe-adapter';
 
 @Injectable()

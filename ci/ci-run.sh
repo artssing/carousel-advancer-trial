@@ -47,6 +47,8 @@ case "$STEP" in
   typecheck)
     # repo-wide lint 壞咗 → type-check 先係權威 gate（CLAUDE.md）
     npm run type-check
+    # 拆 repo 之前，呢個 check 就係 API/web 邊界嗰道牆 —— 見 script 頭嘅註釋。
+    bash scripts/check-domain-boundary.sh
     ;;
 
   postgres)
