@@ -269,7 +269,12 @@ export default function OrdersPage() {
    * account that both buys and sells had to check two tabs just to find out
    * whether anything was waiting on it.
    */
-  const [activeGroup, setActiveGroup]     = useState<OrderGroup>('action');
+  const [activeGroup, setActiveGroup]     = useState<OrderGroup>(() => {
+    const g = searchParams.get('group');
+    return (['action', 'disputed', 'active', 'done'] as const).includes(g as OrderGroup)
+      ? (g as OrderGroup)
+      : 'action';
+  });
   // `?role=` only pre-filters when it is actually in the URL — `initialRole`
   // falls back to 'buyer', which would silently hide every sale on first load.
   const [roleFilter, setRoleFilter]       = useState<TabRole | 'all'>(
@@ -343,6 +348,24 @@ export default function OrdersPage() {
   // ── Which side of the trade is the viewer on, for THIS order ─────────────
   // Replaces the old `activeTab` role: with one merged list, role has to be
   // read off each row rather than off the tab the user happens to be on.
+  /**
+   * Which tab you are on lives in the URL.
+   *
+   * Founder 2026-08-14: opening an order from 已完成 and pressing back landed
+   * on 待處理, because the tab was component state and the browser restored a
+   * URL that never knew about it. `replace` rather than `push` — clicking
+   * through four tabs should not cost four presses of the back button.
+   */
+  const selectView = useCallback((group: OrderGroup, role: TabRole | 'all') => {
+    setActiveGroup(group);
+    setRoleFilter(role);
+    const qs = new URLSearchParams();
+    if (group !== 'action') qs.set('group', group);
+    if (role !== 'all') qs.set('role', role);
+    const q = qs.toString();
+    router.replace((q ? `/orders?${q}` : '/orders') as any, { scroll: false });
+  }, [router]);
+
   const viewRole = useCallback((o: any): TabRole => (
     o.buyerId === currentUserId ? 'buyer'
     : o.sellerId === currentUserId ? 'seller'
@@ -708,7 +731,9 @@ export default function OrdersPage() {
       ? [{ id: 'disputed' as OrderGroup, label: '爭議處理中', count: actionCounts.disputed, tone: 'danger' as const }]
       : []),
     { id: 'active',   label: '進行中', count: actionCounts.active },
-    { id: 'done',     label: '已完成', count: actionCounts.done },
+    // 已完成 carries no number: it only ever grows, and a number that always
+    // goes up is not information (founder 2026-08-14).
+    { id: 'done',     label: '已完成', count: 0 },
   ];
 
   const roleChips: { id: TabRole | 'all'; label: string }[] = [
@@ -775,7 +800,7 @@ export default function OrdersPage() {
           return (
             <button
               key={t.id}
-              onClick={() => setActiveGroup(t.id)}
+              onClick={() => selectView(t.id, roleFilter)}
               className={`relative -mb-px shrink-0 border-b-2 px-4 py-3 text-[14px] font-semibold transition ${
                 isActive
                   ? danger ? 'border-danger text-danger' : 'border-brand-600 text-ink'
@@ -808,7 +833,7 @@ export default function OrdersPage() {
         {roleChips.map((c) => (
           <button
             key={c.id}
-            onClick={() => setRoleFilter(c.id)}
+            onClick={() => selectView(activeGroup, c.id)}
             className={`shrink-0 rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
               roleFilter === c.id
                 ? 'border-brand-600 bg-brand-50 text-brand-700'
@@ -896,7 +921,7 @@ export default function OrdersPage() {
           )}
           {roleFilter !== 'all' && allOrders.length > 0 && (
             <button
-              onClick={() => setRoleFilter('all')}
+              onClick={() => selectView(activeGroup, 'all')}
               className="mt-4 text-sm text-brand-600 hover:underline"
             >
               顯示全部角色的訂單

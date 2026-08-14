@@ -182,7 +182,14 @@ export default function OrderDetailPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <button
-        onClick={() => router.push('/orders')}
+        // Go BACK, not to /orders — pushing the bare path throws away which
+        // tab and filter the list was on, so returning from an order you opened
+        // from 已完成 dumped you in 待處理 (founder 2026-08-14). Deep links have
+        // no history to return to, so those still get the list.
+        onClick={() => {
+          if (typeof window !== 'undefined' && window.history.length > 1) router.back();
+          else router.push('/orders');
+        }}
         className="mb-4 flex items-center gap-1 text-sm text-slate-500 hover:text-slate-700"
       >
         <ArrowLeft className="h-4 w-4" /> {_t('orderDetail.backToOrders')}

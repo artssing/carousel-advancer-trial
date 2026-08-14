@@ -305,9 +305,16 @@ export class OrdersService {
 
     // 賣家唔見 draft（買家未 double-confirm 嘅 AWAITING_PAYMENT，貨未 lock）—
     // 嗰啲只係人哋個購物車，唔係真單（founder 2026-07-20）。買家自己就見到。
-    const asBuyer = { buyerId: userId };
+    // Orders that expired unpaid never happened (founder 2026-08-14). On a C2C
+    // marketplace almost every listing is one item: an unpaid order is a hold
+    // that lapsed and released the item, not a transaction with an outcome, so
+    // filing it under 已完成 misrepresents what the page is a record of. The
+    // conversation survives — only the order row is hidden.
+    const notExpired = { status: { not: OrderStatus.PAYMENT_EXPIRED } };
+    const asBuyer = { buyerId: userId, ...notExpired };
     const asSeller = {
       sellerId: userId,
+      ...notExpired,
       NOT: { status: OrderStatus.AWAITING_PAYMENT, paymentDeadlineAt: null },
     };
     const where =
@@ -384,6 +391,9 @@ export class OrdersService {
     // of 20.
     const orders = await this.prisma.order.findMany({
       where: {
+        // Mirrors `listForUser` — a count the list cannot show is the bug this
+        // whole change set exists to remove.
+        status: { not: OrderStatus.PAYMENT_EXPIRED },
         OR: [
           { buyerId: userId },
           { sellerId: userId },
