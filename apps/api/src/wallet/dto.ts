@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
 import {
   IsBoolean,
@@ -51,9 +52,11 @@ function toIntegerAmount({ value }: { value: unknown }): unknown {
 }
 
 export class InitiateAddMethodDto {
+  @ApiProperty({ type: String })
   @IsIn(PAYOUT_METHOD_TYPES)
   type!: PayoutMethodTypeKey;
 
+  @ApiProperty()
   @IsString()
   @Length(1, 64)
   accountIdentifier!: string;
@@ -63,15 +66,18 @@ export class InitiateAddMethodDto {
    * then threw inside createMethod — the user did everything right and got a
    * 500 with a dead intent.
    */
+  @ApiProperty()
   @IsString()
   @Length(1, 100)
   accountName!: string;
 
+  @ApiPropertyOptional()
   @IsOptional()
   @IsString()
   @Length(1, 20)
   bankCode?: string;
 
+  @ApiPropertyOptional()
   @IsOptional()
   @IsBoolean()
   isDefault?: boolean;
@@ -79,20 +85,24 @@ export class InitiateAddMethodDto {
 
 /** Shared by both confirm routes — same shape, same rules. */
 export class ConfirmIntentDto {
+  @ApiProperty()
   @IsString()
   @Length(1, 40)
   intentId!: string;
 
+  @ApiProperty()
   @IsString()
   @Length(6, 6)
   code!: string;
 }
 
 export class InitiatePayoutDto {
+  @ApiProperty()
   @IsString()
   @Length(1, 40)
   payoutMethodId!: string;
 
+  @ApiProperty()
   @Transform(toIntegerAmount)
   @IsInt()
   @Min(PAYOUT_MIN_HKD)

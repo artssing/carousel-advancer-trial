@@ -20,11 +20,13 @@
     "dev:api": "turbo run dev --filter=api",
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
-    "db:setup": "npm run db:setup --workspace=api"
+    "db:setup": "npm run db:setup --workspace=api",
+    "api:contract": "npm run openapi --workspace=api && npx openapi-typescript apps/api/openapi.json -o packages/api-client/src/schema.ts"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
     "eslint": "^8.57.0",
+    "openapi-typescript": "^7.13.0",
     "prettier": "^3.2.5",
     "tailwind-scrollbar-hide": "^4.0.0",
     "turbo": "^2.0.0",

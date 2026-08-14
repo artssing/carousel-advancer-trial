@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   BadRequestException,
   Body,
@@ -18,29 +19,38 @@ const AVATAR_MAX_BYTES = 256 * 1024; // 256 KB, matches schema comment
 const AVATAR_ORIGINAL_MAX_BYTES = 512 * 1024; // 512 KB — pre-crop source
 
 class UpdateMeDto {
+  @ApiPropertyOptional()
   @IsOptional() @IsString() @MinLength(1) @MaxLength(40)
   displayName?: string;
   /** base64 data URL, e.g. "data:image/png;base64,iVBORw0..." Pass empty string to clear. */
+  @ApiPropertyOptional()
   @IsOptional() @IsString()
   avatarUrl?: string | null;
   /** Uncompressed source so the customer can re-crop later. Empty string to clear. */
+  @ApiPropertyOptional()
   @IsOptional() @IsString()
   avatarOriginalUrl?: string | null;
   /** Crop transform parameters (zoom 1.0–3.0, tx/ty in 200px viewport units). */
+  @ApiPropertyOptional()
   @IsOptional()
   avatarCropZoom?: number | null;
+  @ApiPropertyOptional()
   @IsOptional()
   avatarCropX?: number | null;
+  @ApiPropertyOptional()
   @IsOptional()
   avatarCropY?: number | null;
   /** Register-v2 interests — Category enum values to seed personalisation. */
+  @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   interests?: string[];
 }
 
 class ChangePasswordDto {
+  @ApiProperty()
   @IsString() @MinLength(1)
   currentPassword!: string;
+  @ApiProperty()
   @IsString() @MinLength(8) @MaxLength(72)
   newPassword!: string;
 }

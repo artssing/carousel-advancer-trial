@@ -1,3 +1,4 @@
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { BadRequestException, Body, Controller, ForbiddenException, Get, NotFoundException, Param, Post, UseGuards } from '@nestjs/common';
 import { IsBoolean, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -8,11 +9,14 @@ const ANONYMOUS_LABEL = '認證買家';
 const ADMIN_ROLES = ['OPS_AGENT', 'OPS_ADMIN', 'SUPER_ADMIN'];
 
 class SellerReviewDto {
+  @ApiProperty()
   @IsInt() @Min(1) @Max(5)
   rating!: number;
+  @ApiPropertyOptional()
   @IsOptional() @IsString()
   comment?: string;
   /** Default true (founder ruling 2026-06-11). UI checkbox defaults to anonymous. */
+  @ApiPropertyOptional()
   @IsOptional() @IsBoolean()
   isAnonymous?: boolean;
 }
