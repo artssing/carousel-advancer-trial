@@ -3,6 +3,7 @@ import { BannerAudience } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
 import { BannersService } from './banners.service';
+import { CreateBannerDto, UpdateBannerDto } from './dto';
 
 /** Coerce string query param to BannerAudience; unknown → ALL. */
 function coerceAudience(v: string | undefined): BannerAudience {
@@ -32,12 +33,12 @@ export class AdminBannersController {
   }
 
   @Post()
-  create(@CurrentUser() user: CurrentUserData, @Body() dto: any) {
+  create(@CurrentUser() user: CurrentUserData, @Body() dto: CreateBannerDto) {
     return this.banners.create(user.userId, dto);
   }
 
   @Patch(':id')
-  update(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() dto: any) {
+  update(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() dto: UpdateBannerDto) {
     return this.banners.update(user.userId, id, dto);
   }
 

@@ -9,6 +9,19 @@ import * as bcrypt from 'bcryptjs';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
+import {
+  BodyTextDto,
+  BooleanValueDto,
+  ConfigValueDto,
+  DisputeResolutionDto,
+  KycStatusDto,
+  ListingStatusDto,
+  PayoutStatusDto,
+  ReasonDto,
+  ReasonWithMoreInfoDto,
+  RenameDto,
+  RolesDto,
+} from './dto';
 import { stripeAdapter } from '../payments/stripe-adapter';
 
 const ADMIN_ROLES = ['OPS_AGENT', 'OPS_ADMIN', 'SUPER_ADMIN'];
@@ -205,7 +218,7 @@ export class AdminController {
   async suspendUser(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { reason: string },
+    @Body() body: ReasonDto,
   ) {
     await this.requireOpsAdmin(user.userId);
     if (id === user.userId) {
@@ -255,7 +268,7 @@ export class AdminController {
   async setKyc(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { status: 'PENDING' | 'VERIFIED' | 'REJECTED'; reason?: string },
+    @Body() body: KycStatusDto,
   ) {
     await this.requireOpsAdmin(user.userId);
     const newStatus = body?.status;
@@ -332,7 +345,7 @@ export class AdminController {
   async setRoles(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { roles: string[] },
+    @Body() body: RolesDto,
   ) {
     await this.requireOpsAdmin(user.userId);
 
@@ -410,7 +423,7 @@ export class AdminController {
   async setEmailVerified(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { value: boolean; reason?: string },
+    @Body() body: BooleanValueDto,
   ) {
     await this.requireOpsAdmin(user.userId);
     const target = await this.prisma.user.findUnique({ where: { id } });
@@ -477,7 +490,7 @@ export class AdminController {
   async addNote(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { body: string },
+    @Body() body: BodyTextDto,
   ) {
     await this.requireAdmin(user.userId); // OPS_AGENT+ can write notes
     const text = (body?.body ?? '').trim();
@@ -514,7 +527,7 @@ export class AdminController {
   async overrideDisplayName(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { displayName: string; reason: string },
+    @Body() body: RenameDto,
   ) {
     await this.requireOpsAdmin(user.userId);
     const newName = (body?.displayName ?? '').trim();
@@ -593,7 +606,7 @@ export class AdminController {
   async setConfig(
     @CurrentUser() user: CurrentUserData,
     @Param('key') key: string,
-    @Body() body: { value: any },
+    @Body() body: ConfigValueDto,
   ) {
     await this.requireOpsAdmin(user.userId);
     const existing = await this.prisma.platformConfig.findUnique({ where: { key } });
@@ -873,7 +886,7 @@ export class AdminController {
   async forceRefund(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { reason: string },
+    @Body() body: ReasonDto,
   ) {
     await this.requireOpsAdmin(user.userId);
     const reason = (body?.reason ?? '').trim();
@@ -932,7 +945,7 @@ export class AdminController {
   async releaseEscrow(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { reason: string },
+    @Body() body: ReasonDto,
   ) {
     await this.requireOpsAdmin(user.userId);
     const reason = (body?.reason ?? '').trim();
@@ -989,7 +1002,7 @@ export class AdminController {
   async resolveDispute(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { resolution: 'REFUND_BUYER' | 'RELEASE_SELLER'; note: string },
+    @Body() body: DisputeResolutionDto,
   ) {
     await this.requireOpsAdmin(user.userId);
     const note = (body?.note ?? '').trim();
@@ -1041,7 +1054,7 @@ export class AdminController {
   async setPayoutStatus(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { status: string; failureReason?: string },
+    @Body() body: PayoutStatusDto,
   ) {
     await this.requireOpsAdmin(user.userId);
     const po = await this.prisma.payoutRequest.findUnique({ where: { id } });
@@ -1128,7 +1141,7 @@ export class AdminController {
   async removeListing(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { reason: string },
+    @Body() body: ReasonDto,
   ) {
     await this.requireOpsAdmin(user.userId);
     const reason = (body?.reason ?? '').trim();
@@ -1159,7 +1172,7 @@ export class AdminController {
   async restoreListing(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { reason: string },
+    @Body() body: ReasonDto,
   ) {
     await this.requireOpsAdmin(user.userId);
     const reason = (body?.reason ?? '').trim();
@@ -1267,7 +1280,7 @@ export class AdminController {
   async rejectAuthenticator(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { reason: string; needsMoreInfo?: boolean },
+    @Body() body: ReasonWithMoreInfoDto,
   ) {
     await this.requireOpsAdmin(user.userId);
     const reason = (body?.reason ?? '').trim();
@@ -1336,7 +1349,7 @@ export class AdminController {
   async setAuthenticatorStatus(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() body: { status: 'ACTIVE' | 'SUSPENDED' | 'REMOVED'; reason?: string },
+    @Body() body: ListingStatusDto,
   ) {
     await this.requireOpsAdmin(user.userId);
     const next = body?.status;

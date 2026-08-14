@@ -2,7 +2,21 @@ import { Body, Controller, Get, Param, Patch, Post, Query, UseGuards } from '@ne
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
 import { OrdersService } from './orders.service';
-import { AddEvidenceDto, CreateOrderDto, DisputeDto, PhotosDto, RePhotoRequestDto, ReviewDto, SoftReasonDto, VerdictDto } from './dto';
+import {
+  AddEvidenceDto,
+  CreateOrderDto,
+  CustodyPhoneFallbackDto,
+  DisputeDto,
+  DisputeReasonDto,
+  PhotosDto,
+  QrConfirmDto,
+  QrTokenDto,
+  RePhotoRequestDto,
+  ReviewDto,
+  SoftReasonDto,
+  TrackingDto,
+  VerdictDto,
+} from './dto';
 
 @Controller('orders')
 @UseGuards(JwtAuthGuard)
@@ -66,12 +80,12 @@ export class OrdersController {
   }
 
   @Patch(':id/ship-to-authenticator')
-  shipToAuthenticator(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() body: { trackingNo?: string }) {
+  shipToAuthenticator(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() body: TrackingDto) {
     return this.orders.shipToAuthenticator(id, user.userId, body?.trackingNo);
   }
 
   @Patch(':id/ship-to-buyer-direct')
-  shipToBuyerDirect(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() body: { trackingNo?: string }) {
+  shipToBuyerDirect(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() body: TrackingDto) {
     return this.orders.shipToBuyerDirect(id, user.userId, body?.trackingNo);
   }
 
@@ -109,7 +123,7 @@ export class OrdersController {
   }
 
   @Post(':id/dispute-ship')
-  disputeShip(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() body: { reason: string }) {
+  disputeShip(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() body: DisputeReasonDto) {
     return this.orders.disputeShip(id, user.userId, body?.reason);
   }
 
@@ -120,17 +134,17 @@ export class OrdersController {
   }
 
   @Post('qr/scan')
-  scanQr(@CurrentUser() user: CurrentUserData, @Body() body: { token: string }) {
+  scanQr(@CurrentUser() user: CurrentUserData, @Body() body: QrTokenDto) {
     return this.orders.scanQrToken(body?.token, user.userId);
   }
 
   @Post('qr/confirm')
-  confirmQr(@CurrentUser() user: CurrentUserData, @Body() body: { token: string; photos?: string[] }) {
+  confirmQr(@CurrentUser() user: CurrentUserData, @Body() body: QrConfirmDto) {
     return this.orders.confirmQrHandover(body?.token, user.userId, body?.photos);
   }
 
   @Patch(':id/ship-to-buyer')
-  shipToBuyer(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() body: { trackingNo?: string }) {
+  shipToBuyer(@CurrentUser() user: CurrentUserData, @Param('id') id: string, @Body() body: TrackingDto) {
     return this.orders.shipToBuyer(id, user.userId, body?.trackingNo);
   }
 
@@ -162,7 +176,7 @@ export class OrdersController {
   custodyPhoneFallback(
     @CurrentUser() user: CurrentUserData,
     @Param('id') id: string,
-    @Body() dto: { sellerPhone: string; photos: string[] },
+    @Body() dto: CustodyPhoneFallbackDto,
   ) {
     return this.orders.custodyPhoneFallback(id, user.userId, dto.sellerPhone, dto.photos ?? []);
   }

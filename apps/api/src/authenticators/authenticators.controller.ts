@@ -16,7 +16,12 @@ import { AuthenticatorStatus, Category, ListingStatus } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
-import { UpdateAuthenticatorDto } from './dto';
+import {
+  ApplyAuthenticatorDto,
+  CreateBranchDto,
+  UpdateAuthenticatorDto,
+  UpdateBranchDto,
+} from './dto';
 
 // 買家揀鑑定師時見到嘅公開欄位
 const PUBLIC_SELECT = {
@@ -58,12 +63,7 @@ export class AuthenticatorsController {
   @UseGuards(JwtAuthGuard)
   async submitApplication(
     @CurrentUser() user: CurrentUserData,
-    @Body() dto: {
-      displayName: string; storeName?: string; categories?: Category[];
-      yearsExperience?: number; bio?: string; feeRatePct?: number; feeMinHKD?: number;
-      locationAddress?: string; district?: string;
-      credentialDocs?: string[]; eAndOProofDoc?: string; eAndOExpiresAt?: string;
-    },
+    @Body() dto: ApplyAuthenticatorDto,
   ) {
     // 已經係 ACTIVE 鑑定師唔使再申請
     const existingAuth = await this.prisma.authenticator.findUnique({ where: { userId: user.userId } });
@@ -180,16 +180,7 @@ export class AuthenticatorsController {
   @UseGuards(JwtAuthGuard)
   async createBranch(
     @CurrentUser() user: CurrentUserData,
-    @Body() dto: {
-      name: string;
-      fullAddress: string;
-      districtKey: string;
-      businessHours?: string;
-      notes?: string;
-      contactPhone?: string;
-      contactWhatsapp?: string;
-      isPrimary?: boolean;
-    },
+    @Body() dto: CreateBranchDto,
   ) {
     const auth = await this.prisma.authenticator.findUnique({ where: { userId: user.userId } });
     if (!auth) throw new ForbiddenException('此帳號並非鑑定師');
@@ -223,17 +214,7 @@ export class AuthenticatorsController {
   async updateBranch(
     @CurrentUser() user: CurrentUserData,
     @Param('branchId') branchId: string,
-    @Body() dto: {
-      name?: string;
-      fullAddress?: string;
-      districtKey?: string;
-      businessHours?: string;
-      notes?: string;
-      contactPhone?: string;
-      contactWhatsapp?: string;
-      isActive?: boolean;
-      isPrimary?: boolean;
-    },
+    @Body() dto: UpdateBranchDto,
   ) {
     const auth = await this.prisma.authenticator.findUnique({ where: { userId: user.userId } });
     if (!auth) throw new ForbiddenException('此帳號並非鑑定師');

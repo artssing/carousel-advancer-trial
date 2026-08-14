@@ -3,6 +3,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
 import { PaymentsService } from './payments.service';
 import { stripeAdapter } from './stripe-adapter';
+import { ConfirmMockDto, LogMethodDto } from './dto';
 
 @Controller('payments')
 @UseGuards(JwtAuthGuard)
@@ -24,11 +25,7 @@ export class PaymentsController {
   async confirmMock(
     @CurrentUser() user: CurrentUserData,
     @Param('orderId') orderId: string,
-    @Body() body: {
-      paymentId: string;
-      testCard?: string;
-      method?: 'CARD' | 'ALIPAY_HK' | 'WECHAT_HK' | 'FPS' | 'APPLE_PAY';
-    },
+    @Body() body: ConfirmMockDto,
   ) {
     if (stripeAdapter.mode !== 'mock') {
       throw new BadRequestException('confirm-mock only available in STRIPE_MODE=mock');
@@ -42,7 +39,7 @@ export class PaymentsController {
   logMethod(
     @CurrentUser() user: CurrentUserData,
     @Param('orderId') orderId: string,
-    @Body() body: { method: 'CARD' | 'ALIPAY_HK' | 'WECHAT_HK' | 'FPS' | 'APPLE_PAY' },
+    @Body() body: LogMethodDto,
   ) {
     if (!body?.method) throw new BadRequestException('method required');
     return this.payments.logMethod(orderId, user.userId, body.method);

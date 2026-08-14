@@ -132,8 +132,12 @@ function processFile(file: string): boolean {
 
   const out: string[] = [];
   for (let i = 0; i < lines.length; i++) {
-    if (drop.has(i)) continue;
+    // Emit the replacement BEFORE honouring the drop: on a re-run the line
+    // being dropped IS the previous @ApiProperty, and it is also the anchor
+    // the new one is keyed to. Checking `drop` first skipped the insert and
+    // silently stripped every decorator in the file.
     for (const ins of inserts) if (ins.line === i) out.push(ins.text);
+    if (drop.has(i)) continue;
     out.push(lines[i]!);
   }
 

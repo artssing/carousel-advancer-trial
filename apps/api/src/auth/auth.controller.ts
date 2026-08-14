@@ -4,8 +4,14 @@ import { AuthService } from './auth.service';
 import { CurrentUser, CurrentUserData } from './current-user.decorator';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import {
-  LoginDto, RegisterDto, SendOtpDto, VerifyOtpDto,
-  SendEmailOtpDto, VerifyEmailOtpDto,
+  CompleteProfileDto,
+  ConfirmLinkDto,
+  LoginDto,
+  RegisterDto,
+  SendEmailOtpDto,
+  SendOtpDto,
+  VerifyEmailOtpDto,
+  VerifyOtpDto,
 } from './dto';
 
 const CONSUMER_URL = process.env.NEXT_PUBLIC_CONSUMER_URL ?? 'http://localhost:3008';
@@ -83,7 +89,7 @@ export class AuthController {
 
   /** Consumer link-confirm page POSTs here after user clicks 確認連接. */
   @Post('google/link-confirm')
-  confirmLink(@Body() body: { linkToken: string }) {
+  confirmLink(@Body() body: ConfirmLinkDto) {
     return this.auth.confirmLink(body.linkToken);
   }
 
@@ -152,7 +158,7 @@ export class AuthController {
   /** Consumer complete-profile page POSTs here after user finishes 完善資料. */
   @Post('google/complete-profile')
   completeProfile(
-    @Body() body: { completeToken: string; displayName: string; useSuggestedAvatar: boolean },
+    @Body() body: CompleteProfileDto,
   ) {
     return this.auth.completeProfile(
       body.completeToken,

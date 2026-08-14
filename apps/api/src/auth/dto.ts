@@ -1,5 +1,14 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsEmail, IsIn, IsOptional, IsString, Length, MinLength } from 'class-validator';
+import {
+  IsArray,
+  IsBoolean,
+  IsEmail,
+  IsIn,
+  IsOptional,
+  IsString,
+  Length,
+  MinLength,
+} from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty()
@@ -110,4 +119,25 @@ export class VerifyEmailOtpDto {
   @ApiProperty()
   @IsIn(['VERIFY_EMAIL'])
   purpose!: 'VERIFY_EMAIL';
+}
+
+/** Repo-split P1c — previously inline object types on the controller. */
+export class ConfirmLinkDto {
+  @ApiProperty()
+  @IsString()
+  linkToken!: string;
+}
+
+export class CompleteProfileDto {
+  @ApiProperty()
+  @IsString()
+  completeToken!: string;
+
+  @ApiProperty()
+  @IsString()
+  displayName!: string;
+
+  @ApiProperty()
+  @IsBoolean()
+  useSuggestedAvatar!: boolean;
 }

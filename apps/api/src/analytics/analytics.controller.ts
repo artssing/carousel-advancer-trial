@@ -4,7 +4,7 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { OptionalJwtAuthGuard } from '../auth/optional-jwt-auth.guard';
 import { CurrentUser, CurrentUserData } from '../auth/current-user.decorator';
 import { AnalyticsService } from './analytics.service';
-import type { AnalyticsEventEnvelope } from '@certifine/domain';
+import { IngestEventsDto } from './dto';
 
 const ADMIN_ROLES = ['OPS_AGENT', 'OPS_ADMIN', 'SUPER_ADMIN'];
 
@@ -32,7 +32,7 @@ export class AnalyticsController {
   @UseGuards(OptionalJwtAuthGuard)
   async ingest(
     @CurrentUser() user: CurrentUserData | undefined,
-    @Body() body: { events: AnalyticsEventEnvelope[] },
+    @Body() body: IngestEventsDto,
   ) {
     try {
       return await this.analytics.ingest(body?.events ?? [], user?.userId ?? null);

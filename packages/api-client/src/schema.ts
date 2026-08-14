@@ -2469,6 +2469,9 @@ export interface components {
             identifier?: string;
             password: string;
         };
+        ConfirmLinkDto: {
+            linkToken: string;
+        };
         SendOtpDto: {
             phone: string;
             /** @enum {string} */
@@ -2489,6 +2492,11 @@ export interface components {
             email: string;
             code: string;
             purpose: string;
+        };
+        CompleteProfileDto: {
+            completeToken: string;
+            displayName: string;
+            useSuggestedAvatar: boolean;
         };
         UpdateMeDto: {
             displayName?: string;
@@ -2554,6 +2562,9 @@ export interface components {
             meetupFreeText?: string;
             offerId?: string;
         };
+        TrackingDto: {
+            trackingNo?: string;
+        };
         PhotosDto: {
             photos: string[];
         };
@@ -2569,6 +2580,20 @@ export interface components {
             /** @enum {string} */
             kind: "VIDEO" | "IMAGE";
         };
+        DisputeReasonDto: {
+            reason: string;
+        };
+        QrTokenDto: {
+            token: string;
+        };
+        QrConfirmDto: {
+            token: string;
+            photos?: string[];
+        };
+        CustodyPhoneFallbackDto: {
+            sellerPhone: string;
+            photos: string[];
+        };
         DisputeDto: {
             reason: string;
         };
@@ -2583,6 +2608,28 @@ export interface components {
             rating: number;
             comment?: string;
         };
+        ConfirmMockDto: {
+            paymentId: string;
+            testCard?: string;
+            method?: string;
+        };
+        LogMethodDto: {
+            method: string;
+        };
+        ApplyAuthenticatorDto: {
+            displayName: string;
+            storeName?: string;
+            categories?: ("HANDBAG" | "IPHONE" | "POKEMON_CARD" | "WATCH" | "SNEAKER" | "DESIGNER_TOY" | "OTHER")[];
+            yearsExperience?: number;
+            bio?: string;
+            feeRatePct?: number;
+            feeMinHKD?: number;
+            locationAddress?: string;
+            district?: string;
+            credentialDocs?: string[];
+            eAndOProofDoc?: string;
+            eAndOExpiresAt?: string;
+        };
         UpdateAuthenticatorDto: {
             feeRatePct?: number;
             feeMinHKD?: number;
@@ -2593,12 +2640,76 @@ export interface components {
             businessHours?: string;
             acceptsMeetup?: boolean;
         };
+        CreateBranchDto: {
+            name: string;
+            fullAddress: string;
+            districtKey: string;
+            businessHours?: string;
+            notes?: string;
+            contactPhone?: string;
+            contactWhatsapp?: string;
+            isPrimary?: boolean;
+        };
+        UpdateBranchDto: {
+            name?: string;
+            fullAddress?: string;
+            districtKey?: string;
+            businessHours?: string;
+            notes?: string;
+            contactPhone?: string;
+            contactWhatsapp?: string;
+            isActive?: boolean;
+            isPrimary?: boolean;
+        };
         CreateOfferDto: {
             conversationId: string;
             priceHKD: number;
         };
         CounterOfferDto: {
             priceHKD: number;
+        };
+        ReasonDto: {
+            reason: string;
+        };
+        KycStatusDto: {
+            /** @enum {string} */
+            status: "PENDING" | "VERIFIED" | "REJECTED";
+            reason?: string;
+        };
+        RolesDto: {
+            roles: string[];
+        };
+        BooleanValueDto: {
+            value: boolean;
+            reason?: string;
+        };
+        BodyTextDto: {
+            body: string;
+        };
+        RenameDto: {
+            displayName: string;
+            reason: string;
+        };
+        ConfigValueDto: {
+            value: Record<string, never>;
+        };
+        DisputeResolutionDto: {
+            /** @enum {string} */
+            resolution: "REFUND_BUYER" | "RELEASE_SELLER";
+            note: string;
+        };
+        PayoutStatusDto: {
+            status: string;
+            failureReason?: string;
+        };
+        ReasonWithMoreInfoDto: {
+            reason: string;
+            needsMoreInfo?: boolean;
+        };
+        ListingStatusDto: {
+            /** @enum {string} */
+            status: "ACTIVE" | "SUSPENDED" | "REMOVED";
+            reason?: string;
         };
         InitiateAddMethodDto: {
             type: string;
@@ -2614,6 +2725,29 @@ export interface components {
         InitiatePayoutDto: {
             payoutMethodId: string;
             amountHKD: number;
+        };
+        CreateBannerDto: {
+            message: string;
+            severity: Record<string, never>;
+            audience?: Record<string, never>;
+            isActive?: boolean;
+            startsAt?: Record<string, never>;
+            endsAt?: Record<string, never>;
+            dismissible?: boolean;
+            priority?: number;
+        };
+        UpdateBannerDto: {
+            message?: string;
+            severity?: Record<string, never>;
+            audience?: Record<string, never>;
+            isActive?: boolean;
+            startsAt?: Record<string, never>;
+            endsAt?: Record<string, never>;
+            dismissible?: boolean;
+            priority?: number;
+        };
+        IngestEventsDto: {
+            events: string[];
         };
     };
     responses: never;
@@ -2711,7 +2845,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmLinkDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -2831,7 +2969,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteProfileDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -3344,7 +3486,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackingDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -3363,7 +3509,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackingDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -3470,7 +3620,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisputeReasonDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -3506,7 +3660,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QrTokenDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -3523,7 +3681,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QrConfirmDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -3542,7 +3704,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrackingDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -3622,7 +3788,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustodyPhoneFallbackDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -4082,7 +4252,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmMockDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -4101,7 +4275,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogMethodDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -4175,7 +4353,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ApplyAuthenticatorDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -4283,7 +4465,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBranchDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -4321,7 +4507,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBranchDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -4642,7 +4832,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -4661,7 +4855,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KycStatusDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -4680,7 +4878,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RolesDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -4699,7 +4901,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BooleanValueDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -4756,7 +4962,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BodyTextDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -4775,7 +4985,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenameDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -4830,7 +5044,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfigValueDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -4932,7 +5150,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -4951,7 +5173,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -4970,7 +5196,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DisputeResolutionDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -5008,7 +5238,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PayoutStatusDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -5049,7 +5283,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -5068,7 +5306,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -5125,7 +5367,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonWithMoreInfoDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -5164,7 +5410,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ListingStatusDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -5481,7 +5731,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateBannerDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {
@@ -5519,7 +5773,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateBannerDto"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -5536,7 +5794,11 @@ export interface operations {
             path?: never;
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestEventsDto"];
+            };
+        };
         responses: {
             201: {
                 headers: {

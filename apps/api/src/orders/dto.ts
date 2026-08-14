@@ -119,3 +119,56 @@ export class ReviewDto {
   @IsString()
   comment?: string;
 }
+
+/**
+ * DTOs for the routes that used to take an inline `@Body() body: { … }`
+ * (repo-split P1c). An inline object type produces no named schema, so those
+ * bodies were invisible in the generated contract — and the global
+ * ValidationPipe only engages when the parameter is a class, so nothing
+ * validated them either.
+ *
+ * The pipe runs `whitelist` + `forbidNonWhitelisted`, so these routes now
+ * REJECT unknown properties. Each was checked against what the portals send.
+ */
+export class TrackingDto {
+  /** SF Express waybill number. Optional: meetup flows have no courier. */
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  trackingNo?: string;
+}
+
+export class DisputeReasonDto {
+  @ApiProperty()
+  @IsString()
+  reason!: string;
+}
+
+export class QrTokenDto {
+  @ApiProperty()
+  @IsString()
+  token!: string;
+}
+
+export class QrConfirmDto {
+  @ApiProperty()
+  @IsString()
+  token!: string;
+
+  @ApiPropertyOptional({ type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  photos?: string[];
+}
+
+export class CustodyPhoneFallbackDto {
+  @ApiProperty()
+  @IsString()
+  sellerPhone!: string;
+
+  @ApiProperty({ type: [String] })
+  @IsArray()
+  @IsString({ each: true })
+  photos!: string[];
+}

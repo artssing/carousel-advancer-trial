@@ -49,6 +49,9 @@ case "$STEP" in
     npm run type-check
     # 拆 repo 之前，呢個 check 就係 API/web 邊界嗰道牆 —— 見 script 頭嘅註釋。
     bash scripts/check-domain-boundary.sh
+    # DTO 嘅 @ApiProperty 由 codemod 出，唔係人手寫。漏咗跑 = 生成嘅契約同
+    # 實際 DTO 唔一致，而個 client 係由契約生成 —— 靜靜地錯，好難查。
+    npx tsx scripts/add-api-property.ts --check
     ;;
 
   postgres)

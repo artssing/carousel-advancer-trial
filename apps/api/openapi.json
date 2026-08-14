@@ -106,6 +106,16 @@
       "post": {
         "operationId": "AuthController_confirmLink",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmLinkDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -239,6 +249,16 @@
       "post": {
         "operationId": "AuthController_completeProfile",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteProfileDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -902,6 +922,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackingDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -925,6 +955,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackingDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -1068,6 +1108,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisputeReasonDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -1105,6 +1155,16 @@
       "post": {
         "operationId": "OrdersController_scanQr",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QrTokenDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -1119,6 +1179,16 @@
       "post": {
         "operationId": "OrdersController_confirmQr",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QrConfirmDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -1142,6 +1212,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TrackingDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -1244,6 +1324,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustodyPhoneFallbackDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -1824,6 +1914,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfirmMockDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -1847,6 +1947,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LogMethodDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -1930,6 +2040,16 @@
       "post": {
         "operationId": "AuthenticatorsController_submitApplication",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ApplyAuthenticatorDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -2031,6 +2151,16 @@
       "post": {
         "operationId": "AuthenticatorsController_createBranch",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBranchDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -2054,6 +2184,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBranchDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2441,6 +2581,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2464,6 +2614,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KycStatusDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2487,6 +2647,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RolesDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2510,6 +2680,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BooleanValueDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2556,6 +2736,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BodyTextDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -2600,6 +2790,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2660,6 +2860,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConfigValueDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2838,6 +3048,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2861,6 +3081,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2884,6 +3114,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DisputeResolutionDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -2930,6 +3170,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PayoutStatusDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -3000,6 +3250,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -3023,6 +3283,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -3092,6 +3362,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReasonWithMoreInfoDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -3146,6 +3426,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ListingStatusDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -3476,6 +3766,16 @@
       "post": {
         "operationId": "AdminBannersController_create",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateBannerDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -3499,6 +3799,16 @@
             }
           }
         ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateBannerDto"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -3534,6 +3844,16 @@
       "post": {
         "operationId": "AnalyticsController_ingest",
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngestEventsDto"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -3906,6 +4226,17 @@
           "password"
         ]
       },
+      "ConfirmLinkDto": {
+        "type": "object",
+        "properties": {
+          "linkToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "linkToken"
+        ]
+      },
       "SendOtpDto": {
         "type": "object",
         "properties": {
@@ -3984,6 +4315,25 @@
           "email",
           "code",
           "purpose"
+        ]
+      },
+      "CompleteProfileDto": {
+        "type": "object",
+        "properties": {
+          "completeToken": {
+            "type": "string"
+          },
+          "displayName": {
+            "type": "string"
+          },
+          "useSuggestedAvatar": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "completeToken",
+          "displayName",
+          "useSuggestedAvatar"
         ]
       },
       "UpdateMeDto": {
@@ -4248,6 +4598,14 @@
           "paymentMethod"
         ]
       },
+      "TrackingDto": {
+        "type": "object",
+        "properties": {
+          "trackingNo": {
+            "type": "string"
+          }
+        }
+      },
       "PhotosDto": {
         "type": "object",
         "properties": {
@@ -4308,6 +4666,63 @@
           "kind"
         ]
       },
+      "DisputeReasonDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "QrTokenDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "QrConfirmDto": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "token"
+        ]
+      },
+      "CustodyPhoneFallbackDto": {
+        "type": "object",
+        "properties": {
+          "sellerPhone": {
+            "type": "string"
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "sellerPhone",
+          "photos"
+        ]
+      },
       "DisputeDto": {
         "type": "object",
         "properties": {
@@ -4355,6 +4770,93 @@
           "rating"
         ]
       },
+      "ConfirmMockDto": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string"
+          },
+          "testCard": {
+            "type": "string"
+          },
+          "method": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "paymentId"
+        ]
+      },
+      "LogMethodDto": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "method"
+        ]
+      },
+      "ApplyAuthenticatorDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "storeName": {
+            "type": "string"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "HANDBAG",
+                "IPHONE",
+                "POKEMON_CARD",
+                "WATCH",
+                "SNEAKER",
+                "DESIGNER_TOY",
+                "OTHER"
+              ]
+            }
+          },
+          "yearsExperience": {
+            "type": "number"
+          },
+          "bio": {
+            "type": "string"
+          },
+          "feeRatePct": {
+            "type": "number"
+          },
+          "feeMinHKD": {
+            "type": "number"
+          },
+          "locationAddress": {
+            "type": "string"
+          },
+          "district": {
+            "type": "string"
+          },
+          "credentialDocs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "eAndOProofDoc": {
+            "type": "string"
+          },
+          "eAndOExpiresAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "displayName"
+        ]
+      },
       "UpdateAuthenticatorDto": {
         "type": "object",
         "properties": {
@@ -4384,6 +4886,72 @@
           }
         }
       },
+      "CreateBranchDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fullAddress": {
+            "type": "string"
+          },
+          "districtKey": {
+            "type": "string"
+          },
+          "businessHours": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "contactPhone": {
+            "type": "string"
+          },
+          "contactWhatsapp": {
+            "type": "string"
+          },
+          "isPrimary": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "fullAddress",
+          "districtKey"
+        ]
+      },
+      "UpdateBranchDto": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "fullAddress": {
+            "type": "string"
+          },
+          "districtKey": {
+            "type": "string"
+          },
+          "businessHours": {
+            "type": "string"
+          },
+          "notes": {
+            "type": "string"
+          },
+          "contactPhone": {
+            "type": "string"
+          },
+          "contactWhatsapp": {
+            "type": "string"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "isPrimary": {
+            "type": "boolean"
+          }
+        }
+      },
       "CreateOfferDto": {
         "type": "object",
         "properties": {
@@ -4408,6 +4976,167 @@
         },
         "required": [
           "priceHKD"
+        ]
+      },
+      "ReasonDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "KycStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "VERIFIED",
+              "REJECTED"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "RolesDto": {
+        "type": "object",
+        "properties": {
+          "roles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "roles"
+        ]
+      },
+      "BooleanValueDto": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "BodyTextDto": {
+        "type": "object",
+        "properties": {
+          "body": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "body"
+        ]
+      },
+      "RenameDto": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "displayName",
+          "reason"
+        ]
+      },
+      "ConfigValueDto": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "object"
+          }
+        },
+        "required": [
+          "value"
+        ]
+      },
+      "DisputeResolutionDto": {
+        "type": "object",
+        "properties": {
+          "resolution": {
+            "type": "string",
+            "enum": [
+              "REFUND_BUYER",
+              "RELEASE_SELLER"
+            ]
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "resolution",
+          "note"
+        ]
+      },
+      "PayoutStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string"
+          },
+          "failureReason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
+        ]
+      },
+      "ReasonWithMoreInfoDto": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string"
+          },
+          "needsMoreInfo": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "reason"
+        ]
+      },
+      "ListingStatusDto": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "SUSPENDED",
+              "REMOVED"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "status"
         ]
       },
       "InitiateAddMethodDto": {
@@ -4463,6 +5192,82 @@
         "required": [
           "payoutMethodId",
           "amountHKD"
+        ]
+      },
+      "CreateBannerDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "object"
+          },
+          "audience": {
+            "type": "object"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "startsAt": {
+            "type": "object"
+          },
+          "endsAt": {
+            "type": "object"
+          },
+          "dismissible": {
+            "type": "boolean"
+          },
+          "priority": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "message",
+          "severity"
+        ]
+      },
+      "UpdateBannerDto": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "object"
+          },
+          "audience": {
+            "type": "object"
+          },
+          "isActive": {
+            "type": "boolean"
+          },
+          "startsAt": {
+            "type": "object"
+          },
+          "endsAt": {
+            "type": "object"
+          },
+          "dismissible": {
+            "type": "boolean"
+          },
+          "priority": {
+            "type": "number"
+          }
+        }
+      },
+      "IngestEventsDto": {
+        "type": "object",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "events"
         ]
       }
     }
