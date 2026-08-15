@@ -1,0 +1,108 @@
+# Build the four app images in CI and push them to GHCR.
+#
+# This is repo-split P3, and it is the step without which the split cannot
+# ship. Today every image is built on the founder's Mac from the monorepo
+# checkout — `docker compose build` with `context: .` reads apps/ AND
+# packages/. The day `certifine-infra` becomes its own repo it has no source at
+# all, so it cannot build anything: it can only PULL. Images therefore have to
+# come from a registry before the repos are allowed to separate.
+#
+# Same credential story as the domain package: GITHUB_TOKEN with
+# `packages: write` is enough for ghcr.io, so no personal token is minted or
+# stored anywhere.
+#
+# Cost worth knowing: this builds four Next.js/NestJS images on a hosted
+# runner. On a private repo those minutes are metered, so it is deliberately
+# NOT wired to every push — trigger it when you intend to deploy.
+#
+# See docs/setup/domain-package-release.md for the sibling npm flow.
+name: build images
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Which env to build for (uat or prod)'
+        required: true
+        default: 'uat'
+        type: choice
+        options: [uat, prod]
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: certifine
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      # One job per app: a failure names the app that broke, and three good
+      # images still land instead of the whole set being lost.
+      fail-fast: false
+      matrix:
+        app: [api, consumer, authenticator, admin]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve build stamps
+        id: stamp
+        run: |
+          # Same three values main.ts serves from GET /api/version, so a deploy
+          # can be verified instead of assumed.
+          echo "commit=$(git rev-parse HEAD)"              >> "$GITHUB_OUTPUT"
+          echo "short=$(git rev-parse --short HEAD)"       >> "$GITHUB_OUTPUT"
+          echo "built=$(date -u +%Y-%m-%dT%H:%M:%SZ)"      >> "$GITHUB_OUTPUT"
+          echo "version=$(tr -d '[:space:]' < VERSION)"    >> "$GITHUB_OUTPUT"
+
+      - name: Public URLs for this environment
+        id: urls
+        run: |
+          # Baked in at build time by Next, so an image is environment-specific
+          # and cannot be promoted from UAT to PROD by retagging. Keep in step
+          # with docker-compose.deploy.yml.
+          if [ "${{ inputs.environment }}" = "prod" ]; then
+            echo "api=https://api.certifinehk.com/api"        >> "$GITHUB_OUTPUT"
+            echo "consumer=https://certifinehk.com"           >> "$GITHUB_OUTPUT"
+            echo "auth=https://auth.certifinehk.com"          >> "$GITHUB_OUTPUT"
+            echo "admin=https://admin.certifinehk.com"        >> "$GITHUB_OUTPUT"
+          else
+            echo "api=https://uat-api.certifinehk.com/api"    >> "$GITHUB_OUTPUT"
+            echo "consumer=https://uat.certifinehk.com"       >> "$GITHUB_OUTPUT"
+            echo "auth=https://uat-auth.certifinehk.com"      >> "$GITHUB_OUTPUT"
+            echo "admin=https://uat-admin.certifinehk.com"    >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: true
+          # Two tags on purpose. The floating one answers "what is this env on
+          # now"; the sha one answers "where did that build go", and only the
+          # second survives the next build — which is what a rollback needs.
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/certifine-${{ matrix.app }}:${{ inputs.environment }}
+            ${{ env.REGISTRY }}/${{ env.OWNER }}/certifine-${{ matrix.app }}:${{ inputs.environment }}-${{ steps.stamp.outputs.short }}
+          build-args: |
+            GIT_COMMIT=${{ steps.stamp.outputs.commit }}
+            BUILT_AT=${{ steps.stamp.outputs.built }}
+            APP_VERSION=${{ steps.stamp.outputs.version }}
+            NEXT_PUBLIC_API_URL=${{ steps.urls.outputs.api }}
+            NEXT_PUBLIC_CONSUMER_URL=${{ steps.urls.outputs.consumer }}
+            NEXT_PUBLIC_AUTHENTICATOR_URL=${{ steps.urls.outputs.auth }}
+            NEXT_PUBLIC_ADMIN_URL=${{ steps.urls.outputs.admin }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

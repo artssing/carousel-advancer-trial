@@ -4,7 +4,7 @@
 # BUILD_DIR 執行 → 改呢度嘅邏輯唔使 reseed Jenkins job，run `./ci.sh build` 即生效。
 #
 #   bash ci/ci-run.sh <step> <env>
-#   step: install | typecheck | postgres | dockerbuild | deploy | smoke
+#   step: install | typecheck | postgres | dockerbuild | dockerpull | deploy | smoke
 #   env : uat | prod
 #
 # 註：唔用 `set -u`（macOS bash 3.2 quirk，見 CLAUDE.md CI #1）。
@@ -95,6 +95,30 @@ case "$STEP" in
       docker image inspect "$src" >/dev/null 2>&1 || continue
       docker tag "$src" "certifine-${app}:${env_suffix}-${SHORT}"
       echo "  釘死 $src → certifine-${app}:${env_suffix}-${SHORT}"
+    done
+    ;;
+
+  dockerpull)
+    # Repo-split P3: 由 registry 攞 image，唔喺本機 build。
+    #
+    # 拆完之後 `certifine-infra` 冇 source，build 唔到任何嘢 —— 佢只可以
+    # pull。所以呢個 step 就係將來 infra 唯一嘅「攞 image」路徑，而家先喺
+    # monorepo 入面行通佢。
+    #
+    # Pull 完會 retag 返本機名（`certifine-api:uat` 等），因為
+    # docker-compose.deploy.yml 仲係用嗰批名。咁樣 `deploy` step 一個字都
+    #唔使改 —— compose 入面嗰啲 image 名等 P4 infra 真係分家嗰陣先改，
+    # 一次過，唔好而家改一半。
+    REG="${REGISTRY:-ghcr.io/certifine}"
+    TAG="${IMAGE_TAG:-$ENVIRONMENT}"
+    for svc in $BUILD_SVCS; do
+      app="${svc%-*}"; env_suffix="${svc##*-}"
+      remote="${REG}/certifine-${app}:${TAG}"
+      local_name="certifine-${app}:${env_suffix}"
+      echo "▸ pull $remote"
+      docker pull "$remote" || { echo "✗ pull 失敗：$remote"; exit 1; }
+      docker tag "$remote" "$local_name"
+      echo "  $remote → $local_name"
     done
     ;;
 
