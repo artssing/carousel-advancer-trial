@@ -4,10 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
-import {
-  browseCategories, categoryLabel, type CategoryConfig,
-  getClientLocale, createT,
-} from '@authentik/utils';
+import { browseCategories, type CategoryConfig } from '@certifine/domain';
+import { categoryLabel, getClientLocale, createT } from '@certifine/web-kit';
 import { api } from '@/lib/api';
 import { AuthTicker } from '@/components/auth-ticker';
 import { ProductCard, ProductCardSkeleton } from '@/components/product-card';

@@ -7,13 +7,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import type { Route } from 'next';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
-import { Chip } from '@authentik/ui';
-import {
-  browseCategories, categoryById,
-  brandsForCategory, hasBrandPicker, brandFieldLabel, brandLabel, parseSearchQuery,
-  CONDITION_GRADES, conditionLabel, categoryLabel, stationDisplayLabel,
-  getClientLocale, createT,
-} from '@authentik/utils';
+import { Chip } from '@certifine/ui';
+import { browseCategories, categoryById, CONDITION_GRADES } from '@certifine/domain';
+import { brandsForCategory, hasBrandPicker, brandFieldLabel, brandLabel, parseSearchQuery, conditionLabel, categoryLabel, stationDisplayLabel, getClientLocale, createT } from '@certifine/web-kit';
 import { api } from '@/lib/api';
 import { track } from '@/lib/analytics';
 import { ProductCard, ProductCardSkeleton } from '@/components/product-card';

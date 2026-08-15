@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { formatHKD, getClientLocale, createT } from '@authentik/utils';
+import { formatHKD, getClientLocale, createT } from '@certifine/web-kit';
 import { api, type InboxOrder, type Me } from '@/lib/api';
 import { AuthTopline, AuthContent } from '@/components/auth-topline';
 import { EAndOWarning } from '@/components/eando-warning';

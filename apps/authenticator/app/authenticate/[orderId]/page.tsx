@@ -5,11 +5,11 @@ import { useRouter } from 'next/navigation';
 import {
   Button, Card, CardContent, CardHeader, CardTitle, Label, Input, Badge,
   HandoverHistoryTimeline, type HandoverRound, ConfirmDialog,
-} from '@authentik/ui';
+} from '@certifine/ui';
 
 const MAX_REPHOTO = 2;
 const MEETUP_AUTH_PHASE_A: string[] = ['PAID', 'HANDOVER_TO_AUTH', 'SELLER_ACK_PENDING'];
-import { formatHKD } from '@authentik/utils';
+import { formatHKD } from '@certifine/web-kit';
 import {
   Camera, Video, FileSignature, ArrowLeft, CheckCircle2, ChevronDown, Handshake,
   Package, MapPin, MessageCircle, ShieldCheck, AlertTriangle, ExternalLink, Clock,

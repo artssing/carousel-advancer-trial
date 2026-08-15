@@ -258,7 +258,7 @@ function run(file: string, write: boolean, nsOverride: string | null) {
     out = out.slice(0, e.start) + e.text + out.slice(e.end);
   }
 
-  // Extend the existing @authentik/utils import rather than adding a second one.
+  // Extend the existing @certifine/web-kit import rather than adding a second one.
   const importRe = /import\s*\{([\s\S]*?)\}\s*from\s*'@authentik\/utils';/;
   const m = out.match(importRe);
   if (m) {
@@ -272,14 +272,14 @@ function run(file: string, write: boolean, nsOverride: string | null) {
       out = out.replace(
         importRe,
         multiline
-          ? `import {${body},\n  ${add.join(', ')},\n} from '@authentik/utils';`
-          : `import { ${body.trim()}, ${add.join(', ')} } from '@authentik/utils';`,
+          ? `import {${body},\n  ${add.join(', ')},\n} from '@certifine/web-kit';`
+          : `import { ${body.trim()}, ${add.join(', ')} } from '@certifine/web-kit';`,
       );
     }
   } else {
     out = out.replace(
       /(^import .*?;\n)/m,
-      `$1import { getClientLocale, createT } from '@authentik/utils';\n`,
+      `$1import { getClientLocale, createT } from '@certifine/web-kit';\n`,
     );
   }
 

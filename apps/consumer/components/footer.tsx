@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Facebook, Instagram } from 'lucide-react';
-import { getClientLocale, createT } from '@authentik/utils';
-import { LanguageSwitcher } from '@authentik/ui/language-switcher';
-import { VersionBadge } from '@authentik/ui';
+import { getClientLocale, createT } from '@certifine/web-kit';
+import { LanguageSwitcher } from '@certifine/ui/language-switcher';
+import { VersionBadge } from '@certifine/ui';
 
 // Cross-app link to authenticator portal — env-driven so production / public-test
 // deployment can override (Lesson #4: never hardcode cross-app URLs).

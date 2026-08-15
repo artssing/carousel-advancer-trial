@@ -5,10 +5,11 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { io, Socket } from 'socket.io-client';
 import { ChevronDown, ChevronRight, MessageCircle, Search, X } from 'lucide-react';
-import { Pill } from '@authentik/ui';
-import { formatChatTime, formatHKD, tierForPrice, previewBody, previewPrefix, previewEmpty, getClientLocale, formatChatTimeFull, createT } from '@authentik/utils';
+import { Pill } from '@certifine/ui';
+import { tierForPrice } from '@certifine/domain';
+import { formatChatTime, formatHKD, previewBody, previewPrefix, previewEmpty, getClientLocale, formatChatTimeFull, createT } from '@certifine/web-kit';
 import { api, hasToken, clearToken, getToken } from '@/lib/api';
-import { useSidebarWidth, SidebarResizeHandle } from '@authentik/ui';
+import { useSidebarWidth, SidebarResizeHandle } from '@certifine/ui';
 import { ConversationPane } from '@/components/conversation-pane';
 import { XLink } from '@/components/x-link';
 

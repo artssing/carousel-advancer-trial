@@ -4,7 +4,7 @@
  *  fields, inline validation. Mock-mode: parent passes selected card number
  *  for visual debugging; production: stripe Elements would replace this. */
 import { useRef, useState, useEffect } from 'react';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 import {
   BRAND_SPECS, detectBrand, digitsOnly, formatCardNumber, formatExpiry,
   luhnCheck, validateExpiry, validateCardholderName, type CardBrand,

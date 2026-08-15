@@ -8,7 +8,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 import { ImagePlus, X } from 'lucide-react';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 
 const MAX_PHOTOS = 8;
 // 50MB sanity ceiling — anything bigger is almost certainly accidental

@@ -12,7 +12,7 @@
  */
 import Link from 'next/link';
 import { SearchX } from 'lucide-react';
-import { browseCategories } from '@authentik/utils';
+import { browseCategories } from '@certifine/domain';
 
 export default function NotFound() {
   const cats = browseCategories().slice(0, 6);

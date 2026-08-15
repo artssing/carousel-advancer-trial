@@ -11,7 +11,7 @@
  * needs something richer, add it here rather than loosening the parser.
  */
 import { useEffect, useState } from 'react';
-import { VersionBadge } from '@authentik/ui';
+import { VersionBadge } from '@certifine/ui';
 
 /** Bold and `code` inside a line of text. */
 function inline(text: string, key: string) {

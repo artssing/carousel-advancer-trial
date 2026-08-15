@@ -26,7 +26,7 @@ last_synced_commit: 3b8dfcd
   - 理由：賣家落價之前要知會唔會踩入強制鑑定，呢個係定價決定嘅一部分
 
 - [CS-03] `static` `verified` — 品類／地區選項全部由 `packages/utils` SSOT 出，page 唔准 hardcode
-  - `grep -n "from '@authentik/utils'" -B4 apps/consumer/app/sell/page.tsx`
+  - `grep -n "from '@certifine/web-kit'" -B4 apps/consumer/app/sell/page.tsx`
   - 實測 2026-08-03（`:20-24`）：import `sellCategories, categoryById, categoryByApiEnum, tierForPrice,
     brandsForCategory, hasBrandPicker, brandFieldLabel, matchBrandFromTitle, CONDITION_GRADES,
     formatHKD, stationDisplayLabel, stationCodesFromValue` —— 冇 hardcode 選項

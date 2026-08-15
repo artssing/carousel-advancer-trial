@@ -6,14 +6,9 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Badge, TierPill, Button, ListingThumb, ConfirmDialog } from '@authentik/ui';
-import {
-  formatHKD, tierForPrice, categoryByApiEnum,
-  getStatusLabel, needsMyAction, isMeetupOrder, TERMINAL_STATUSES,
-  sfTrackingUrl, orderGroup,
-  type TabRole, type OrderGroup,
-  getClientLocale, createT,
-} from '@authentik/utils';
+import { Badge, TierPill, Button, ListingThumb, ConfirmDialog } from '@certifine/ui';
+import { tierForPrice, categoryByApiEnum, needsMyAction, isMeetupOrder, TERMINAL_STATUSES, orderGroup, type TabRole, type OrderGroup } from '@certifine/domain';
+import { formatHKD, getStatusLabel, sfTrackingUrl, getClientLocale, createT } from '@certifine/web-kit';
 import { api, hasToken, clearToken, ApiError, getToken } from '@/lib/api';
 import { ConversationDrawer } from '@/components/conversation-drawer';
 import { MessageCircle } from 'lucide-react';
@@ -21,9 +16,9 @@ import { QrHandoverCard } from '@/components/qr-handover-card';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
-// TabRole imported from @authentik/utils SSOT
+// TabRole imported from @certifine/web-kit SSOT
 
-// ─── Status helpers (SSOT — imported from @authentik/utils) ──────────────────
+// ─── Status helpers (SSOT — imported from @certifine/web-kit) ──────────────────
 // getStatusLabel, needsMyAction, isMeetupOrder, TERMINAL_STATUSES
 // all live in packages/utils/src/order-status.ts. Listing page reuses the same.
 
@@ -61,7 +56,7 @@ const STATUS_STRIPE = (s: string) => {
   return 'bg-slate-300';
 };
 
-// TERMINAL_STATUSES imported from @authentik/utils SSOT
+// TERMINAL_STATUSES imported from @certifine/web-kit SSOT
 
 // ─── Progress step bar (情境化：按交收/付款方式顯示唔同步驟) ─────────────────
 

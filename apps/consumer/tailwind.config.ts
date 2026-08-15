@@ -1,5 +1,5 @@
 import type { Config } from 'tailwindcss';
-import preset from '@authentik/config/tailwind-preset';
+import preset from '@certifine/config/tailwind-preset';
 
 const config: Config = {
   presets: [preset as Config],

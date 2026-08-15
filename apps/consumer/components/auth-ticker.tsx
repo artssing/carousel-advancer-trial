@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Check } from 'lucide-react';
 import { api } from '@/lib/api';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 
 /**
  * L3 「實時鑑定」 ticker — floating trust bar shown on the home page hero.

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { clearToken, AUTH_CHANGE_EVENT } from '@/lib/api';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 
 /**
  * L3 shared account-area left navigation (220px sticky rail).

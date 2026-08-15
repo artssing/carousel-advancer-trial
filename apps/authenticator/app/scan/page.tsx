@@ -11,7 +11,7 @@
 import { useEffect, useRef, useState } from 'react';
 import jsQR from 'jsqr';
 import { Camera, CheckCircle2, ImagePlus, RefreshCw, X } from 'lucide-react';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 import { api } from '@/lib/api';
 
 type ScanResult = Awaited<ReturnType<typeof api.orders.qrScan>>;

@@ -4,7 +4,7 @@
  *  All amounts read from server-computed Order.totals (lesson — never recompute). */
 import { useEffect, useState } from 'react';
 import { ShieldCheck } from 'lucide-react';
-import { formatHKD, getClientLocale, createT } from '@authentik/utils';
+import { formatHKD, getClientLocale, createT } from '@certifine/web-kit';
 
 interface Props {
   order: any;

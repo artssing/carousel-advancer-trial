@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { formatHKD } from '@authentik/utils';
+import { formatHKD } from '@certifine/web-kit';
 import { api } from '@/lib/api';
 
 export default function FinancePage() {

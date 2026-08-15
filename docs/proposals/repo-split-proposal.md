@@ -31,13 +31,13 @@ pipeline、一份 `CLAUDE.md`，同時「邊個 own domain」呢條問題自然�
 
 「同事會 commit 錯嘢」呢個問題，**唔一定要拆 repo 先解決得到**（CODEOWNERS + branch protection 一日搞掂）。但拆 repo 解決嘅係另外兩件事 —— **獨立 deploy** 同 **團隊邊界** —— 呢兩樣係現有 monorepo 真係做唔到嘅，而你講明「我認為有必要做」。所以以下按「要拆」去寫，同時列清楚代價，唔會扮冇成本。
 
-**最大代價一句講完：** `@authentik/utils` 有 **112 個 import 點**，其中 **27 個喺 API**。佢係唯一一個真正跨越 frontend/backend 界線嘅嘢。拆咗之後，改一次 tier 門檻 = 三個 repo、三個 PR、一次版本發布。呢個係拆分嘅真正帳單，唔係 CI script。
+**最大代價一句講完：** `@certifine/web-kit` 有 **112 個 import 點**，其中 **27 個喺 API**。佢係唯一一個真正跨越 frontend/backend 界線嘅嘢。拆咗之後，改一次 tier 門檻 = 三個 repo、三個 PR、一次版本發布。呢個係拆分嘅真正帳單，唔係 CI script。
 
 ---
 
 ## 1. 現況量度（唔係估，係數出嚟）
 
-| Workspace | 性質 | `@authentik/utils` | `@authentik/ui` |
+| Workspace | 性質 | `@certifine/web-kit` | `@certifine/ui` |
 |---|---|---:|---:|
 | `apps/consumer` | Next.js 買+賣 | 53 | 33 |
 | `apps/authenticator` | Next.js 鑑定師 | 28 | 12 |
@@ -71,7 +71,7 @@ certifine-infra      compose · Jenkinsfile · ci/ · scripts/ · docs/qa/ · cl
 
 ### 點解唔係「每個 end 一個 repo」（即 5 個，三個前端各自一個）
 
-三個前端係**同一個技術棧、同一班人、共用 56 個 `@authentik/ui` import**。拆散佢哋 = 你要為每個共用 component 改動開三次 PR，收益零。**前端邊界應該係「web vs api」，唔係「portal vs portal」。** 想再拆嘅話留到有第二隊前端人先。
+三個前端係**同一個技術棧、同一班人、共用 56 個 `@certifine/ui` import**。拆散佢哋 = 你要為每個共用 component 改動開三次 PR，收益零。**前端邊界應該係「web vs api」，唔係「portal vs portal」。** 想再拆嘅話留到有第二隊前端人先。
 
 ### 點解 infra 要獨立
 

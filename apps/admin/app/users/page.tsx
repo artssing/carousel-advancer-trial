@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ConfirmDialog } from '@authentik/ui';
+import { ConfirmDialog } from '@certifine/ui';
 import { api } from '@/lib/api';
 
 type Row = {

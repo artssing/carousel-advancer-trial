@@ -4,10 +4,10 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useRef, useState } from 'react';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Pill, StarRating } from '@authentik/ui';
+import { Pill, StarRating } from '@certifine/ui';
 import { Search, ShieldCheck, X } from 'lucide-react';
 import { api, hasToken, clearToken } from '@/lib/api';
 import { ProductCard, ProductCardSkeleton } from '@/components/product-card';

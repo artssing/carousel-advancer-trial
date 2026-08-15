@@ -3,9 +3,9 @@
 /**
  * Analytics slim SDK — authenticator portal（spec MVP scope：session domain
  * only，供「鑑定師在線」counter 用）。Event registry SSOT 同 consumer 一樣
- * 來自 @authentik/utils；behaviour parity、code 有意精簡（唔使 search/checkout）。
+ * 來自 @certifine/web-kit；behaviour parity、code 有意精簡（唔使 search/checkout）。
  */
-import type { AnalyticsEventEnvelope, AnalyticsEventName } from '@authentik/utils';
+import type { AnalyticsEventEnvelope, AnalyticsEventName } from '@certifine/domain';
 import { getToken } from './api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';

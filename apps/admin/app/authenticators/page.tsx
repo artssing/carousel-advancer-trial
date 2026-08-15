@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { ConfirmDialog } from '@authentik/ui';
+import { ConfirmDialog } from '@certifine/ui';
 import { api } from '@/lib/api';
 
 /**

@@ -5,7 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Sidebar, MobileBottomNav } from '@/components/sidebar';
 import { MessageSoundNotifier } from '@/components/message-sound-notifier';
 import { api, hasToken, clearToken } from '@/lib/api';
-import { getClientLocale } from '@authentik/utils';
+import { getClientLocale } from '@certifine/web-kit';
 
 const PUBLIC_PATHS = ['/login', '/onboarding'];
 

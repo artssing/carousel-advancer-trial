@@ -14,10 +14,9 @@ import Link from 'next/link';
 import {
   Badge, Button, Card, CardContent, CardHeader, CardTitle, ListingThumb,
   HandoverHistoryTimeline, RE_PHOTO_PRESETS, type HandoverRound, ConfirmDialog,
-} from '@authentik/ui';
-import { formatHKD, getStatusLabel, districtLabel, categoryByApiEnum,
-  getClientLocale, createT,
-} from '@authentik/utils';
+} from '@certifine/ui';
+import { categoryByApiEnum } from '@certifine/domain';
+import { formatHKD, getStatusLabel, districtLabel, getClientLocale, createT } from '@certifine/web-kit';
 
 const MAX_REPHOTO = 2;
 const MEETUP_AUTH_PHASE_A: string[] = ['PAID', 'HANDOVER_TO_AUTH', 'SELLER_ACK_PENDING'];
@@ -27,7 +26,7 @@ import {
 import { api, hasToken, clearToken } from '@/lib/api';
 import { ConversationDrawer } from '@/components/conversation-drawer';
 
-// STATUS_LABEL is now SSOT — use getStatusLabel(status, deliveryMethod) from @authentik/utils.
+// STATUS_LABEL is now SSOT — use getStatusLabel(status, deliveryMethod) from @certifine/web-kit.
 // (Lesson #8: catalog dict was previously duplicated here AND in orders/page.tsx; both removed.)
 
 const STATUS_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'default' | 'brand'> = {

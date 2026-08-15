@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { detectLocale, createT } from '@authentik/utils';
+import { detectLocale, createT } from '@certifine/web-kit';
 import type { Route } from 'next';
 import Link from 'next/link';
 import { ShareRedirect } from './redirect-client';

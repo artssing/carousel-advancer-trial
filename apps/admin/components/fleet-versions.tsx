@@ -10,7 +10,7 @@
  * the one screen where a rollback decision can be made.
  */
 import { useEffect, useState } from 'react';
-import { shortSha, formatBuiltAt } from '@authentik/ui';
+import { shortSha, formatBuiltAt } from '@certifine/ui';
 
 interface FleetEntry {
   service: string;

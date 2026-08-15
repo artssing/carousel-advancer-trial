@@ -3,7 +3,7 @@
 /** Slim amber banner shown when STRIPE_MODE=mock. Disclosure expands to show
  *  test card numbers for manual QA. Hidden in test/live mode. */
 import { useEffect, useState } from 'react';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 import { TEST_CARDS } from '@/lib/payment-methods';
 
 export function TestModeBanner({ visible }: { visible: boolean }) {

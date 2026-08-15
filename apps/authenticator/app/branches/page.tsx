@@ -11,14 +11,14 @@
  *   - One branch can be marked primary (auto-selected at checkout)
  *
  * Lesson #16: Delete = 2-step inline confirm.
- * Lesson #8: districts come from @authentik/utils SSOT.
+ * Lesson #8: districts come from @certifine/web-kit SSOT.
  */
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Card, CardContent, Label, Input, ConfirmDialog } from '@authentik/ui';
+import { Button, Card, CardContent, Label, Input, ConfirmDialog } from '@certifine/ui';
 import { MapPin, Plus, Pencil, Trash2, Star, EyeOff, Eye } from 'lucide-react';
 import { api, hasToken, ApiError } from '@/lib/api';
-import { allDistricts, districtLabel } from '@authentik/utils';
+import { allDistricts, districtLabel } from '@certifine/web-kit';
 import { AuthTopline, AuthContent } from '@/components/auth-topline';
 
 type Branch = Awaited<ReturnType<typeof api.branches.list>>[number];

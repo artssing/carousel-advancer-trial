@@ -24,10 +24,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@authentik/ui';
-import { formatHKD, tierForPrice,
-  getClientLocale, createT,
-} from '@authentik/utils';
+import { Button } from '@certifine/ui';
+import { tierForPrice } from '@certifine/domain';
+import { formatHKD, getClientLocale, createT } from '@certifine/web-kit';
 import { ArrowLeft, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { api, hasToken, clearToken } from '@/lib/api';
 import { track } from '@/lib/analytics';

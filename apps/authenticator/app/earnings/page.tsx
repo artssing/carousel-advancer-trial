@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { PayoutDisclaimer } from '@authentik/ui';
-import { formatHKD, PAYOUT_STATUS_META, type PayoutStatusKey } from '@authentik/utils';
+import { PayoutDisclaimer } from '@certifine/ui';
+import { PAYOUT_STATUS_META, type PayoutStatusKey } from '@certifine/domain';
+import { formatHKD } from '@certifine/web-kit';
 import { api, hasToken, type InboxOrder } from '@/lib/api';
 import { CashoutWizard } from '@/components/wallet/cashout-wizard';
 import { PayoutMethodDrawer } from '@/components/wallet/payout-method-drawer';

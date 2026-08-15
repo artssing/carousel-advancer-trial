@@ -3,15 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Button, Card, CardContent } from '@authentik/ui';
+import { Button, Card, CardContent } from '@certifine/ui';
 import { api, hasToken, clearToken, ApiError, AUTH_CHANGE_EVENT } from '@/lib/api';
 import {
   User as UserIcon, Lock, Store, ShieldCheck, ExternalLink, Camera,
   Check, AlertTriangle, Loader2, Mail, Eye, EyeOff, Phone,
 } from 'lucide-react';
-import { formatHKPhoneDisplay,
-  getClientLocale, createT,
-} from '@authentik/utils';
+import { formatHKPhoneDisplay } from '@certifine/domain';
+import { getClientLocale, createT } from '@certifine/web-kit';
 import { AccountSidebar } from '@/components/account/account-sidebar';
 
 const AUTHENTICATOR_URL = process.env.NEXT_PUBLIC_AUTHENTICATOR_URL ?? 'http://localhost:3001';

@@ -18,8 +18,8 @@ export const dynamic = 'force-dynamic';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { ShieldCheck } from 'lucide-react';
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '@authentik/ui';
-import { getClientLocale, createT } from '@authentik/utils';
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '@certifine/ui';
+import { getClientLocale, createT } from '@certifine/web-kit';
 import { api, setToken, ApiError } from '@/lib/api';
 
 const CONSUMER_URL = process.env.NEXT_PUBLIC_CONSUMER_URL ?? 'http://localhost:3008';

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 import { useParams, useRouter } from 'next/navigation';
-import { Card, CardContent, Badge } from '@authentik/ui';
+import { Card, CardContent, Badge } from '@certifine/ui';
 import { ShieldCheck, Package, Calendar, Lock } from 'lucide-react';
 import { api, hasToken, clearToken, ApiError } from '@/lib/api';
 

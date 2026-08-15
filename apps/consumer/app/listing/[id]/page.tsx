@@ -4,15 +4,10 @@ import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { Button, Card, CardContent, TierPill, StarRating, Badge, Pill } from '@authentik/ui';
+import { Button, Card, CardContent, TierPill, StarRating, Badge, Pill } from '@certifine/ui';
 import { ChevronLeft, ChevronRight, X, ZoomIn } from 'lucide-react';
-import {
-  formatHKD, tierForPrice, calculateOrderFees, quoteAuthFee, formatSavings,
-  categoryByApiEnum, brandLabel, brandFieldLabel,
-  needsMyAction, sellerActionCta, getStatusLabel,
-  districtLabel, conditionLabel, categoryLabel, categoryShortLabel, stationDisplayLabel,
-  getClientLocale, createT,
-} from '@authentik/utils';
+import { tierForPrice, calculateOrderFees, quoteAuthFee, categoryByApiEnum, needsMyAction } from '@certifine/domain';
+import { formatHKD, formatSavings, brandLabel, brandFieldLabel, sellerActionCta, getStatusLabel, districtLabel, conditionLabel, categoryLabel, categoryShortLabel, stationDisplayLabel, getClientLocale, createT } from '@certifine/web-kit';
 import { ShieldCheck, MapPin, Truck, Users, UserCheck, Wallet, Lock, AlertTriangle } from 'lucide-react';
 import { api, hasToken, ApiError } from '@/lib/api';
 import { track, flushAnalytics } from '@/lib/analytics';
@@ -958,7 +953,7 @@ export default function ListingPage({ params }: { params: { id: string } }) {
             <div className="mt-6 space-y-4">
               {/* ── Seller Action Card — direct CTA when an order on this
                   listing needs jenny's attention. Source of CTA copy: SSOT
-                  sellerActionCta() in @authentik/utils. */}
+                  sellerActionCta() in @certifine/web-kit. */}
               {activeOrder && me && needsMyAction(activeOrder, me.id, 'seller') && (() => {
                 const cta = sellerActionCta(activeOrder, locale);
                 if (!cta) return null;

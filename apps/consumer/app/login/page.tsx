@@ -8,9 +8,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { api, setToken } from '@/lib/api';
 import { trackLogin } from '@/lib/analytics';
-import { isPhoneIdentifier,
-  getClientLocale, createT,
-} from '@authentik/utils';
+import { isPhoneIdentifier } from '@certifine/domain';
+import { getClientLocale, createT } from '@certifine/web-kit';
 import { AuthHeroPanel } from '@/components/auth/auth-hero-panel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';

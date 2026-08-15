@@ -69,5 +69,5 @@ last_synced_commit: e8b5ce1
   - `grep -rn "OtpInput" apps/consumer/app/account/wallet apps/authenticator/components/wallet`
   - 實測 2026-08-03：consumer（`app/account/wallet/methods/page.tsx:5`）同 authenticator
     （`components/wallet/cashout-wizard.tsx:5`、`payout-method-drawer.tsx:4`）都
-    `import { … OtpInput } from '@authentik/ui'`
+    `import { … OtpInput } from '@certifine/ui'`
   - 理由：OTP 輸入嘅 paste / 退格 / 自動跳格行為好易寫錯，只維護一份先唔會兩邊行為分岔

@@ -9,7 +9,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { api } from '@/lib/api';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 
 export function QrHandoverCard({ orderId, role }: { orderId: string; role: 'pickup' | 'dropoff' }) {
   const [locale, setLocale] = useState<'zh' | 'en'>('zh');

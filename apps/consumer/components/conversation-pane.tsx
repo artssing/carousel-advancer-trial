@@ -3,7 +3,7 @@
 /**
  * Consumer's adapter over the shared ConversationPane.
  *
- * The 1,200-line body now lives in @authentik/ui. This file supplies only the
+ * The 1,200-line body now lives in @certifine/ui. This file supplies only the
  * three things that were ever actually different between the two portals —
  * colours, how a link is rendered, and which api client to call. Existing
  * callers (the messages page, ConversationDrawer) import from here unchanged.
@@ -16,7 +16,7 @@ import {
   ConversationPane as SharedConversationPane,
   type ConversationPaneProps as SharedProps,
   type ConversationLinkProps,
-} from '@authentik/ui';
+} from '@certifine/ui';
 import { api, getToken } from '@/lib/api';
 import { OfferCard } from './offer-card';
 

@@ -7,8 +7,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   Search, User, LogOut, Package, Store, MessageCircle, Wallet, UserCog, Menu, X,
 } from 'lucide-react';
-import { Button } from '@authentik/ui';
-import { getClientLocale, createT } from '@authentik/utils';
+import { Button } from '@certifine/ui';
+import { getClientLocale, createT } from '@certifine/web-kit';
 import { api, hasToken, clearToken, AUTH_CHANGE_EVENT } from '@/lib/api';
 
 interface NavUser {

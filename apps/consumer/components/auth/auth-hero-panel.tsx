@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Check, ShieldCheck } from 'lucide-react';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 
 /**
  * Shared left-side hero panel used by /login and /register.

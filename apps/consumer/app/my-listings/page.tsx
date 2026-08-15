@@ -3,10 +3,9 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button, Pill, TierPill, ListingThumb, ConfirmDialog } from '@authentik/ui';
-import { formatHKD, tierForPrice, categoryByApiEnum,
-  getClientLocale, createT,
-} from '@authentik/utils';
+import { Button, Pill, TierPill, ListingThumb, ConfirmDialog } from '@certifine/ui';
+import { tierForPrice, categoryByApiEnum } from '@certifine/domain';
+import { formatHKD, getClientLocale, createT } from '@certifine/web-kit';
 import { api, hasToken } from '@/lib/api';
 import { ShareIgModal, type ShareListing } from '@/components/share-ig-modal';
 

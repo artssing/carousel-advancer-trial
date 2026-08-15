@@ -17,7 +17,7 @@
 
 - **改 UI / component 前**：讀 `docs/lessons.md`（20 條全文）。**改 CI 前**：讀 `docs/setup/CI-RUNBOOK.md`。
 - **SSOT**：enum-like 選項（category/district/status/event 名）一律 `packages/utils`，page 唔准自己 hardcode。
-- **改 `@authentik/utils` 後必 rebuild**：`npx tsc -p tsconfig.build.json`。
+- **改 `@certifine/web-kit` 後必 rebuild**：`npx tsc -p tsconfig.build.json`。
 - **repo-wide lint 已壞**：`npm run type-check` 先係權威 gate。
 - **Portal 色 token**：consumer `brand-*` 綠 / authenticator `authBrand-*` 靛藍。
 - **新 feature 有用戶可見互動 = 必須 tag analytics event**（registry 白名單：`analytics-events.ts`）。冇 tagging = review blocker。

@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { formatHKD } from '@authentik/utils';
+import { formatHKD } from '@certifine/web-kit';
 
 /**
  * SSOT for the OpenGraph / Twitter card of anything that represents a listing:

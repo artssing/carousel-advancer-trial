@@ -12,7 +12,7 @@
  *   npx tsx scripts/i18n-page-scan.ts --all apps/consumer
  *
  * Only `@/…` and relative imports are followed. Packages are out of scope:
- * `@authentik/ui` has its own namespace and its own reckoning.
+ * `@certifine/ui` has its own namespace and its own reckoning.
  */
 import * as fs from 'fs';
 import * as path from 'path';

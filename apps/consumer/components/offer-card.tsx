@@ -3,12 +3,12 @@
 /**
  * Consumer's adapter over the shared OfferCard.
  *
- * The body now lives in @authentik/ui — see the note there for why the fork was
+ * The body now lives in @certifine/ui — see the note there for why the fork was
  * merged. This file supplies the same three things the ConversationPane adapter
  * does: colours, how a link is rendered, and which api client to call.
  */
 import NextLink from 'next/link';
-import { OfferCard as SharedOfferCard, type ConversationLinkProps } from '@authentik/ui';
+import { OfferCard as SharedOfferCard, type ConversationLinkProps } from '@certifine/ui';
 import { api } from '@/lib/api';
 
 function ConsumerLink({ href, onClick, className, title, children }: ConversationLinkProps) {

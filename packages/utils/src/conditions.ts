@@ -1,7 +1,6 @@
 import { t, type TLocale } from './locales';
 import { CONDITION_GRADES, type ConditionGrade } from '@certifine/domain';
 
-export * from '@certifine/domain';
 
 /**
  * Display copy for condition grades.

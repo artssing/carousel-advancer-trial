@@ -2,7 +2,7 @@ import './globals.css';
 import type { Metadata } from 'next';
 import { AdminAuthGuard } from '@/components/auth-guard';
 import { LayoutShell } from '@/components/layout-shell';
-import { LanguageSwitcher } from '@authentik/ui/language-switcher';
+import { LanguageSwitcher } from '@certifine/ui/language-switcher';
 
 export const metadata: Metadata = {
   title: 'Certifine · Admin Console',

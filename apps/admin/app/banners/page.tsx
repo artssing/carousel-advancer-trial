@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { AlertOctagon, AlertTriangle, Info, X } from 'lucide-react';
-import { ConfirmDialog } from '@authentik/ui';
+import { ConfirmDialog } from '@certifine/ui';
 import { api } from '@/lib/api';
 
 type Severity = 'INFO' | 'WARNING' | 'CRITICAL';

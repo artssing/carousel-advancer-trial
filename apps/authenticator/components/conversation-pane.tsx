@@ -3,7 +3,7 @@
 /**
  * Authenticator's adapter over the shared ConversationPane.
  *
- * Same body as the consumer portal (@authentik/ui); the differences are the
+ * Same body as the consumer portal (@certifine/ui); the differences are the
  * authBrand colours and the fact that every listing/profile link points at the
  * consumer app, so it opens in a new tab rather than routing in-app.
  */
@@ -11,7 +11,7 @@ import {
   ConversationPane as SharedConversationPane,
   type ConversationPaneProps as SharedProps,
   type ConversationLinkProps,
-} from '@authentik/ui';
+} from '@certifine/ui';
 import { api, getToken } from '@/lib/api';
 import { OfferCard } from './offer-card';
 

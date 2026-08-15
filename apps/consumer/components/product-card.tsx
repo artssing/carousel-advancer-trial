@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { TierPill } from '@authentik/ui';
-import { formatHKD, tierForPrice, categoryByApiEnum, categoryShortLabel, getClientLocale, createT } from '@authentik/utils';
+import { TierPill } from '@certifine/ui';
+import { tierForPrice, categoryByApiEnum } from '@certifine/domain';
+import { formatHKD, categoryShortLabel, getClientLocale, createT } from '@certifine/web-kit';
 
 /**
  * L3 Product card — the `.p-card` primitive from design-samples/final-L3.

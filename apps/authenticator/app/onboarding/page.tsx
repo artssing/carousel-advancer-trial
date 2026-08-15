@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Check, Clock, XCircle, AlertCircle, ShieldCheck } from 'lucide-react';
-import { sellCategories } from '@authentik/utils';
+import { sellCategories } from '@certifine/domain';
 import { api, hasToken } from '@/lib/api';
 
 /**

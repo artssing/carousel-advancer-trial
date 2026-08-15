@@ -20,7 +20,7 @@ import { cn } from '../lib/cn';
 export interface ListingThumbProps extends React.HTMLAttributes<HTMLDivElement> {
   src?: string | null;
   alt?: string;
-  /** Category emoji (default 📦). Use `categoryById(cat)?.emoji` from @authentik/utils. */
+  /** Category emoji (default 📦). Use `categoryById(cat)?.emoji` from @certifine/web-kit. */
   emoji?: string;
   /** Tailwind classes for the outer wrapper (controls aspect / radius / size). */
   className?: string;

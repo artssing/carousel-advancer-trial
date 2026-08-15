@@ -4,12 +4,9 @@ import { useEffect, useMemo, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { io, Socket } from 'socket.io-client';
-import { Button, Pill, useSidebarWidth, SidebarResizeHandle } from '@authentik/ui';
-import {
-  formatChatTime, formatHKD, tierForPrice, categoryByApiEnum, conditionLabel,
-  previewBody, previewPrefix, previewEmpty, getClientLocale, formatChatTimeFull, createT,
-  type ConditionGrade,
-} from '@authentik/utils';
+import { Button, Pill, useSidebarWidth, SidebarResizeHandle } from '@certifine/ui';
+import { tierForPrice, categoryByApiEnum, type ConditionGrade } from '@certifine/domain';
+import { formatChatTime, formatHKD, conditionLabel, previewBody, previewPrefix, previewEmpty, getClientLocale, formatChatTimeFull, createT } from '@certifine/web-kit';
 import { Tag } from 'lucide-react';
 
 const DELIVERY_LABEL: Record<string, string> = {

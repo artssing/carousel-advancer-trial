@@ -16,13 +16,9 @@ import {
   Input,
   Label,
   TierPill,
-} from '@authentik/ui';
-import {
-  sellCategories, categoryById, categoryByApiEnum, tierForPrice,
-  brandsForCategory, hasBrandPicker, brandFieldLabel, matchBrandFromTitle,
-  CONDITION_GRADES, formatHKD, stationDisplayLabel, stationCodesFromValue,
-  getClientLocale, createT,
-} from '@authentik/utils';
+} from '@certifine/ui';
+import { sellCategories, categoryById, categoryByApiEnum, tierForPrice, CONDITION_GRADES } from '@certifine/domain';
+import { brandsForCategory, hasBrandPicker, brandFieldLabel, matchBrandFromTitle, formatHKD, stationDisplayLabel, stationCodesFromValue, getClientLocale, createT } from '@certifine/web-kit';
 import { api, hasToken, ApiError } from '@/lib/api';
 import { StationPicker } from '@/components/station-picker';
 import { ImagePlus, X, GripVertical } from 'lucide-react';

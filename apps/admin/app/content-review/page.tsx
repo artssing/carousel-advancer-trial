@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { formatHKD } from '@authentik/utils';
-import { ConfirmDialog } from '@authentik/ui';
+import { formatHKD } from '@certifine/web-kit';
+import { ConfirmDialog } from '@certifine/ui';
 import { api } from '@/lib/api';
 
 /**

@@ -22,7 +22,8 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { X, Share2, Download, Copy, Check, ChevronLeft } from 'lucide-react';
-import { formatHKD, conditionLabel, getClientLocale, createT, type ShareChannel } from '@authentik/utils';
+import { type ShareChannel } from '@certifine/domain';
+import { formatHKD, conditionLabel, getClientLocale, createT } from '@certifine/web-kit';
 import { uploadSharePreview } from '@/lib/api';
 import { track } from '@/lib/analytics';
 

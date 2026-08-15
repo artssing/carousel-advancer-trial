@@ -1,6 +1,6 @@
 'use client';
 
-import { PAYOUT_STATUS_META, type PayoutStatusKey } from '@authentik/utils';
+import { PAYOUT_STATUS_META, type PayoutStatusKey } from '@certifine/domain';
 
 export function StatusPill({ status }: { status: PayoutStatusKey | string }) {
   const meta = PAYOUT_STATUS_META[status as PayoutStatusKey] ?? { label: status, tone: 'slate' as const };

@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "@authentik/api-client": "*",
-    "@authentik/ui": "*",
-    "@authentik/utils": "*",
+    "@certifine/ui": "*",
+    "@certifine/web-kit": "*",
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
@@ -24,7 +24,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@authentik/config": "*",
+    "@certifine/config": "*",
     "@types/node": "^20.11.0",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",

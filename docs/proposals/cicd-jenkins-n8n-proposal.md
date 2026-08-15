@@ -20,7 +20,7 @@ Jenkins 做**編排 + build/deploy 引擎**（checkout → type-check gate → b
 | **`type-check` 係權威 gate**（repo-wide lint 壞咗） | Pipeline gate 用 `npm run type-check`，**唔用 lint 做 fail 條件**（lint 只做 warning，唔 block） |
 | **UAT/PROD 只隔離 data+schema+port，唔隔離 code**（同一 working tree） | 呢個係「code-level staging」缺口，正正係 pipeline 要補嘅嘢 —— PROD 改行 **build artifact**（`next build && next start` / `node dist/main.js`），UAT 保留 hot-reload |
 | **Schema SSOT = `prisma db push`，唔係 migrate** | 上 cloud 前必須切去 `prisma migrate`（CLAUDE.md backlog 第 5 點已經自己標咗）。**Phase 3 處理**，本地階段暫用 `db push` |
-| **`packages/*` 改完要 rebuild dist**（lesson #10） | Docker build stage 一定要 `turbo run build`（連 `@authentik/utils`/`ui`/`config` 一齊 build），唔可以淨係 build app |
+| **`packages/*` 改完要 rebuild dist**（lesson #10） | Docker build stage 一定要 `turbo run build`（連 `@certifine/web-kit`/`ui`/`config` 一齊 build），唔可以淨係 build app |
 | **start.sh / env-config.sh 係 port topology SSOT** | Pipeline 唔重複寫 port，deploy stage `source scripts/env-config.sh` 攞值 |
 | **`.env.prod` / `.env.uat` gitignored** | Secret 由 **Jenkins Credentials** 注入，唔入 git、唔入 image layer |
 | **PROD 永不 auto-seed**（start.sh 已 gate） | Deploy PROD stage 唔跑 seed；UAT deploy 可 reseed |

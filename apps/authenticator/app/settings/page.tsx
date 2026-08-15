@@ -10,8 +10,8 @@
  * several (notifications, handover defaults, timezone) that will live here.
  */
 import { useEffect, useState } from 'react';
-import { LanguageSwitcher } from '@authentik/ui/language-switcher';
-import { getClientLocale, createT } from '@authentik/utils';
+import { LanguageSwitcher } from '@certifine/ui/language-switcher';
+import { getClientLocale, createT } from '@certifine/web-kit';
 import { AuthTopline, AuthContent } from '@/components/auth-topline';
 
 export default function SettingsPage() {

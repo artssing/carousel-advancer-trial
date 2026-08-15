@@ -2,10 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, CardContent, Badge, StarRating } from '@authentik/ui';
-import { formatHKD, CATEGORIES, type CategoryId,
-  getClientLocale, createT,
-} from '@authentik/utils';
+import { Card, CardContent, Badge, StarRating } from '@certifine/ui';
+import { CATEGORIES, type CategoryId } from '@certifine/domain';
+import { formatHKD, getClientLocale, createT } from '@certifine/web-kit';
 import { MapPin, Clock, ShieldCheck, Award, ChevronLeft } from 'lucide-react';
 import { api } from '@/lib/api';
 

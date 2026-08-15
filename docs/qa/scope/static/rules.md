@@ -188,10 +188,10 @@ last_synced_commit: 21f183f
       packages/ui/src/components/language-switcher.tsx \
       packages/ui/src/components/confirm-dialog.tsx
     ```
-    （清單點嚟：`grep -rn '@authentik/ui' apps/admin --include='*.tsx'`。
+    （清單點嚟：`grep -rn '@certifine/ui' apps/admin --include='*.tsx'`。
     admin 加咗新 import 就要順手加入上面條命令 —— 呢個係人手步驟，寫低咗）
   - 範圍 = admin 真係 import 緊嘅兩個共用 component（2026-08-11 實測
-    `grep -rn '@authentik/ui' apps/admin`：`LanguageSwitcher`（`app/layout.tsx:5`）
+    `grep -rn '@certifine/ui' apps/admin`：`LanguageSwitcher`（`app/layout.tsx:5`）
     同 `ConfirmDialog`（7 版）。**唔係**成個 `packages/ui`）
   - **實測 2026-08-11（sync）：1 行命中** ——
     `language-switcher.tsx:54`（`hover:text-ink focus:text-ink`）
@@ -228,7 +228,7 @@ grep 到冇嘢命中** —— 咁樣等於閹咗個 rule。正路做法係喺條
 | `packages/ui/src/components/conversation-pane.tsx` | **關（三條）** — 新增 1,386 行；自己 `createT`；同時帶住 `brand-*` 同 `authBrand-*` 兩套 token | RS-09 擴闊路徑收咗佢；新開 **RS-10** 守 token table；點名入 `owners` |
 | `packages/ui/src/components/language-switcher.tsx` | **關** — `bg-white` → `bg-transparent border-current/20`，admin/authenticator mount 緊佢 | 新開 **RS-11**；點名入 `owners` |
 | `packages/ui/src/index.ts` | **唔關** — 淨係 re-export，冇 class 冇字串，冇 case 靠佢 | 不變 |
-| `packages/ui/package.json` | **唔關（呢個 scope 而言）** — 新增 `@authentik/utils` dep。RS-09 靠 `createT` 出現喺 source，唔靠 package.json | 不變（`frontend/i18n.md` 已經收咗） |
+| `packages/ui/package.json` | **唔關（呢個 scope 而言）** — 新增 `@certifine/web-kit` dep。RS-09 靠 `createT` 出現喺 source，唔靠 package.json | 不變（`frontend/i18n.md` 已經收咗） |
 | `packages/utils/src/locales/data.ts` | **唔關，但要主動擋** — 2,943 條中文嘅 generated 字典。如果 RS-09 條 grep 冇 `--include='*.tsx'`，佢會即刻炸出幾千行假陽性 | 已經喺 RS-09 寫明點解要 `*.tsx` |
 
 ### 逐條 case 過一次 sweep（其餘）
@@ -244,7 +244,7 @@ grep 到冇嘢命中** —— 咁樣等於閹咗個 rule。正路做法係喺條
 ### 刻意留低、冇動嘅嘢
 
 - `packages/ui/src/components/pill.tsx:26` 有 `text-ink`（consumer 淺色 token）。
-  Admin 冇 import `Pill`（2026-08-11 `grep -rn '@authentik/ui' apps/admin` 得
+  Admin 冇 import `Pill`（2026-08-11 `grep -rn '@certifine/ui' apps/admin` 得
   `ConfirmDialog` 同 `LanguageSwitcher`），所以**唔喺 RS-11 範圍**。
   將來 admin 一 import `Pill` 就要加入 RS-11 條清單 —— 記低喺呢度，唔開 case。
 - ConversationPane 嘅 `text-ink`（`:763/768/773/777`，4 處）同樣冇動：

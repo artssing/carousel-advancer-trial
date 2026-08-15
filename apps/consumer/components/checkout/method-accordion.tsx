@@ -1,5 +1,5 @@
 'use client';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 
 /** Vertical accordion picker — replaces horizontal tabs.
  *  Each method renders as a tappable row; the selected row expands inline

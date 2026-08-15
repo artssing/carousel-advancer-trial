@@ -1,11 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Button, Card, CardContent, OtpInput } from '@authentik/ui';
-import {
-  HK_BANKS, PAYOUT_METHOD_TYPES, validatePayoutAccount,
-  payoutMethodDisplayLabel, type PayoutMethodTypeKey,
-} from '@authentik/utils';
+import { Button, Card, CardContent, OtpInput } from '@certifine/ui';
+import { HK_BANKS, PAYOUT_METHOD_TYPES, validatePayoutAccount, payoutMethodDisplayLabel, type PayoutMethodTypeKey } from '@certifine/domain';
 import { api, ApiError } from '@/lib/api';
 import { AlertTriangle, Loader2, ShieldCheck, Star, Trash2, X } from 'lucide-react';
 

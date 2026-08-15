@@ -22,7 +22,7 @@
  * has no single commit. It is deliberately not dressed up as a release.
  */
 import { useEffect, useState } from 'react';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 
 interface VersionInfo {
   app: string;

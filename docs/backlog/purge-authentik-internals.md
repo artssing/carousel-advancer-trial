@@ -8,7 +8,7 @@
 
 | 位置 | 現況 | 改法 + 風險 |
 |------|------|------------|
-| Package scope | `@authentik/ui` `utils` `config` `api-client` | 全 repo import 改 `@certifine/*` + 各 package.json name + tsconfig paths；純機械但檔案量大，type-check 做 gate |
+| Package scope | `@certifine/ui` `utils` `config` `api-client` | 全 repo import 改 `@certifine/*` + 各 package.json name + tsconfig paths；純機械但檔案量大，type-check 做 gate |
 | DB 名 | `authentik` / `authentik_uat` | `ALTER DATABASE RENAME` + `.env.*` DATABASE_URL + `scripts/env-config.sh` + db-copy.sh；要停 API 做 |
 | Docker | container `authentik-postgres`、compose project 名、POSTGRES_USER=authentik | compose down/up 重建 volume 或 rename；連帶 start.sh/stop.sh/seed-demo.sh 嘅 `docker compose exec -U authentik` |
 | Demo 帳號 email | milan/procheck/cardlab/seller@authentik.hk | seed.ts + seed-demo.sh + docs/demo-accounts.md + DB 現有 rows（UPDATE User SET email）；改完要通知所有測試緊嘅人 |

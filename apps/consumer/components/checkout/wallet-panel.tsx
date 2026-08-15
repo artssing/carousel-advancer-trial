@@ -4,8 +4,8 @@
  *  Mock-only: emits onResolve('success' | 'fail') when user taps the dev
  *  buttons or after auto-resolve timer expires. */
 import { useEffect, useState } from 'react';
-import { Button } from '@authentik/ui';
-import { getClientLocale, createT } from '@authentik/utils';
+import { Button } from '@certifine/ui';
+import { getClientLocale, createT } from '@certifine/web-kit';
 import type { PaymentMethodId } from '@/lib/payment-methods';
 
 interface Props {

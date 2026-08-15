@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { ShieldCheck, ShieldAlert, Shield } from 'lucide-react';
-import { createT, getClientLocale, type TLocale } from '@authentik/utils';
+import { createT, getClientLocale, type TLocale } from '@certifine/web-kit';
 import { cn } from '../lib/cn';
 
 export type AuthenticationTier = 1 | 2 | 3;

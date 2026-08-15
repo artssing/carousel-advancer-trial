@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button, Pill, PayoutDisclaimer, ConfirmDialog, OtpInput } from '@authentik/ui';
-import {
-  HK_BANKS, PAYOUT_METHOD_TYPES, validatePayoutAccount,
-  payoutMethodDisplayLabel, type PayoutMethodTypeKey,
-  getClientLocale, createT,
-} from '@authentik/utils';
+import { Button, Pill, PayoutDisclaimer, ConfirmDialog, OtpInput } from '@certifine/ui';
+import { HK_BANKS, PAYOUT_METHOD_TYPES, validatePayoutAccount, payoutMethodDisplayLabel, type PayoutMethodTypeKey } from '@certifine/domain';
+import { getClientLocale, createT } from '@certifine/web-kit';
 import { api, hasToken, ApiError } from '@/lib/api';
 import { Plus, Star, Trash2, AlertTriangle, Loader2, ShieldCheck } from 'lucide-react';
 import { AccountSidebar } from '@/components/account/account-sidebar';

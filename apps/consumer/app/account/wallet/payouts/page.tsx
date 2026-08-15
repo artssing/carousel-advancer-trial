@@ -3,10 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PayoutDisclaimer } from '@authentik/ui';
-import { formatHKD, type PayoutStatusKey,
-  getClientLocale, createT,
-} from '@authentik/utils';
+import { PayoutDisclaimer } from '@certifine/ui';
+import { type PayoutStatusKey } from '@certifine/domain';
+import { formatHKD, getClientLocale, createT } from '@certifine/web-kit';
 import { api, hasToken, ApiError } from '@/lib/api';
 import { Copy, Check } from 'lucide-react';
 import { StatusPill } from '@/components/wallet/status-pill';

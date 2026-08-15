@@ -18,17 +18,8 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Check, MapPin, Search, X } from 'lucide-react';
-import { getClientLocale, createT } from '@authentik/utils';
-import {
-  MTR_LINES,
-  type MTRLineKey,
-  searchStations,
-  stationsOfLine,
-  linesForStation,
-  stationDisplayLabel,
-  lineToken,
-  lineFromToken,
-} from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
+import { MTR_LINES, type MTRLineKey, searchStations, stationsOfLine, linesForStation, stationDisplayLabel, lineToken, lineFromToken } from '@certifine/web-kit';
 
 export function StationPicker({
   values,

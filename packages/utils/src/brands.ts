@@ -234,7 +234,3 @@ export function matchBrandAcrossCategories(
   }
   return best ? { categoryId: best.categoryId, brand: best.brand } : null;
 }
-
-// Re-exported: it lived here historically, and search.ts + several pages
-// import it from './brands'. The definition is in @certifine/domain now.
-export { normalizeForMatch };

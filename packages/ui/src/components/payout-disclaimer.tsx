@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { createT, getClientLocale, type TLocale } from '@authentik/utils';
+import { createT, getClientLocale, type TLocale } from '@certifine/web-kit';
 
 /**
  * 平台中立提款 disclaimer — 任何 cashout 相關 view 必須出。

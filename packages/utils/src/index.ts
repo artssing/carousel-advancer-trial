@@ -1,10 +1,12 @@
 /**
- * Re-exports `@certifine/domain` so existing `@authentik/utils` imports keep
- * working while the boundary is proven inside the monorepo (repo-split P1).
- * The web may import either; the API must import domain directly.
+ * `@certifine/web-kit` — front-end only. Nothing here has a backend consumer.
+ *
+ * It deliberately does NOT re-export `@certifine/domain`. It did during the
+ * P1 transition so 112 call sites could keep their imports; that shim was
+ * removed before the repo split, because once these are separate repos a
+ * pass-through would mean the WEB package appears to own the backend's rules.
+ * Import business rules straight from `@certifine/domain`.
  */
-export * from '@certifine/domain';
-
 export * from './money';
 export * from './categories';
 export * from './brands';

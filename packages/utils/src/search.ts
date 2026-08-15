@@ -34,9 +34,10 @@
  * SSOT: this is the single place query→intent parsing lives. Do NOT re-derive
  * category/brand/condition from a query string anywhere else (lesson #8).
  */
-import { CategoryId, browseCategories } from './categories';
-import { matchBrandAcrossCategories, normalizeForMatch } from './brands';
-import { ConditionGrade } from './conditions';
+import { CategoryId, browseCategories } from '@certifine/domain';
+import { matchBrandAcrossCategories } from './brands';
+import { normalizeForMatch } from '@certifine/domain';
+import { ConditionGrade } from '@certifine/domain';
 
 export interface ParsedSearchQuery {
   /** Detected category to auto-apply as a filter, or null if none inferred. */

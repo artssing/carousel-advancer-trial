@@ -4,7 +4,7 @@
  *  "我哋認證" — rephrase to facts user can verify. */
 import { useEffect, useState } from 'react';
 import { Lock, ShieldCheck, Clock } from 'lucide-react';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 
 export function TrustStrip() {
   const [locale, setLocale] = useState<'zh' | 'en'>('zh');

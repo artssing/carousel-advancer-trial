@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { AlertOctagon, AlertTriangle, Info, X } from 'lucide-react';
 import { api } from '@/lib/api';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 
 /** Poll interval — 60s per coordinator (see docs/backlog/banner-backlog.md for
  *  SSE-based sub-10s alternative). */

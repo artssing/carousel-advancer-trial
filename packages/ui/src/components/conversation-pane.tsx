@@ -26,7 +26,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import type { ComponentType, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 import { X, Send, MessageCircle, ExternalLink, Store, ShieldCheck, ChevronLeft, Tag } from 'lucide-react';
-import { createT, getClientLocale, type TLocale } from '@authentik/utils';
+import { createT, getClientLocale, type TLocale } from '@certifine/web-kit';
 
 /**
  * Every string in this file lives in `locales/ssot.json` under `ui.conversation.*`.

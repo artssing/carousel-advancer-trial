@@ -3,8 +3,8 @@
 /** Mock Apple Pay button — native pill style. Mock-only: shows fake
  *  "Touch ID 驗證中…" spinner 2s then onResolve('success'). Dev toggle for fail. */
 import { useEffect, useState } from 'react';
-import { getClientLocale, createT } from '@authentik/utils';
-import { Button } from '@authentik/ui';
+import { getClientLocale, createT } from '@certifine/web-kit';
+import { Button } from '@certifine/ui';
 
 interface Props {
   onResolve: (outcome: 'success' | 'fail') => void;

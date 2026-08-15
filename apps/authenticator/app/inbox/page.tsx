@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
-import { formatHKD, getClientLocale, createT } from '@authentik/utils';
+import { formatHKD, getClientLocale, createT } from '@certifine/web-kit';
 import { Package, Handshake, MapPin, MessageCircle, Search, X } from 'lucide-react';
 import { api, type InboxOrder } from '@/lib/api';
 import { ConversationDrawer } from '@/components/conversation-drawer';

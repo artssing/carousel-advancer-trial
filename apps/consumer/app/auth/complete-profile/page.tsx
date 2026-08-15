@@ -4,9 +4,9 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from 'react';
-import { getClientLocale, createT } from '@authentik/utils';
+import { getClientLocale, createT } from '@certifine/web-kit';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '@authentik/ui';
+import { Button, Card, CardContent, CardHeader, CardTitle, Input, Label } from '@certifine/ui';
 import { setToken } from '@/lib/api';
 import { UserCheck } from 'lucide-react';
 

@@ -3,8 +3,9 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { StarRating, VersionBadge } from '@authentik/ui';
-import { CATEGORIES, formatHKD, type CategoryId } from '@authentik/utils';
+import { StarRating, VersionBadge } from '@certifine/ui';
+import { CATEGORIES, type CategoryId } from '@certifine/domain';
+import { formatHKD } from '@certifine/web-kit';
 import { api, hasToken, type AuthenticatorProfile } from '@/lib/api';
 import { AuthTopline, AuthContent } from '@/components/auth-topline';
 import { EAndOWarning } from '@/components/eando-warning';

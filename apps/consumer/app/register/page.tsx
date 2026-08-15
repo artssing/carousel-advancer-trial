@@ -8,9 +8,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft, Check, Search, Tag } from 'lucide-react';
 import { api, setToken, ApiError } from '@/lib/api';
-import { CATEGORIES, categoryShortLabel, type CategoryId,
-  getClientLocale, createT,
-} from '@authentik/utils';
+import { CATEGORIES, type CategoryId } from '@certifine/domain';
+import { categoryShortLabel, getClientLocale, createT } from '@certifine/web-kit';
 import { AuthHeroPanel } from '@/components/auth/auth-hero-panel';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';

@@ -2,7 +2,7 @@
 # ─────────────────────────────────────────────────────────────────────────
 # 守住 API ↔ web 嘅邊界（repo-split P1）。
 #
-# 拆 repo 之後 `apps/api` 根本見唔到 `@authentik/utils`，import 錯即刻 build
+# 拆 repo 之後 `apps/api` 根本見唔到 `@certifine/web-kit`，import 錯即刻 build
 # 唔到。但而家仲喺 monorepo，npm workspace 會 hoist，錯咗都照行 —— 所以喺
 # 真正拆之前，呢個 check 就係嗰道牆。
 #
@@ -16,7 +16,7 @@ fail=0
 
 # 唔止 src/ —— prisma/seed.ts 都喺 tsconfig include 入面，一樣會被
 # `nest build` 編譯。漏咗佢，本機 hoisting 會遮住，Docker 入面先爆。
-hits="$(grep -rn "@authentik/utils\|@authentik/ui" apps/api/src apps/api/prisma 2>/dev/null || true)"
+hits="$(grep -rn "@certifine/web-kit\|@certifine/ui" apps/api/src apps/api/prisma 2>/dev/null || true)"
 if [ -n "$hits" ]; then
   printf '\033[33m✗\033[0m apps/api 唔可以 import web 嘅 package：\n'
   printf '  %s\n' "$hits"
@@ -26,7 +26,7 @@ fi
 
 # domain 唔可以依賴 locale bundle —— 佢一旦拉埋成個 translation data 入去，
 # 改一句 copy 就要 domain 發版，正正係拆呢個 package 想避免嘅嘢。
-loc="$(grep -rn "from '\./locales'\|@authentik/utils" packages/domain/src 2>/dev/null || true)"
+loc="$(grep -rn "from '\./locales'\|@certifine/web-kit" packages/domain/src 2>/dev/null || true)"
 if [ -n "$loc" ]; then
   printf '\033[33m✗\033[0m @certifine/domain 唔可以依賴 locales / utils：\n'
   printf '  %s\n' "$loc"

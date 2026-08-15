@@ -7,8 +7,8 @@ import {
   Inbox, LayoutDashboard, User, Coins, LogOut, MessageCircle, MapPin, ScanLine, Settings,
 } from 'lucide-react';
 import { api, clearToken, hasToken } from '@/lib/api';
-import { VersionBadge } from '@authentik/ui';
-import { getClientLocale, createT } from '@authentik/utils';
+import { VersionBadge } from '@certifine/ui';
+import { getClientLocale, createT } from '@certifine/web-kit';
 
 /**
  * L3 鑑定師 Portal chrome — deep-indigo gradient sidebar + dark mobile bottom nav.

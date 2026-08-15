@@ -2,10 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Button, Card, CardContent, OtpInput } from '@authentik/ui';
-import { formatHKD, payoutMethodDisplayLabel, PAYOUT_METHOD_TYPES, PAYOUT_MIN_HKD, type PayoutMethodTypeKey,
-  getClientLocale, createT,
-} from '@authentik/utils';
+import { Button, Card, CardContent, OtpInput } from '@certifine/ui';
+import { payoutMethodDisplayLabel, PAYOUT_METHOD_TYPES, PAYOUT_MIN_HKD, type PayoutMethodTypeKey } from '@certifine/domain';
+import { formatHKD, getClientLocale, createT } from '@certifine/web-kit';
 import { api, ApiError } from '@/lib/api';
 import { AlertTriangle, Check, ChevronRight, Loader2, ShieldCheck, X } from 'lucide-react';
 

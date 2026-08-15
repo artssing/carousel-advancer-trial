@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { VersionBadge } from '@authentik/ui';
+import { VersionBadge } from '@certifine/ui';
 import { useRouter } from 'next/navigation';
 import {
   Users, ShieldCheck, ShoppingBag, AlertOctagon, Wallet, FileSearch, BarChart3, LayoutDashboard, FileCheck, LogOut, Settings, TrendingDown, Megaphone, ScrollText,

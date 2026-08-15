@@ -1,9 +1,6 @@
 import { t, type TLocale } from './locales';
 import { CATEGORIES, categoryByApiEnum, type CategoryId } from '@certifine/domain';
 
-// The registry moved to domain; re-exported so `from './categories'` keeps working.
-export * from '@certifine/domain';
-
 /** Display copy for categories. The registry itself lives in @certifine/domain. */
 
 export function categoryLabel(id: CategoryId | null | undefined, locale?: TLocale): string {

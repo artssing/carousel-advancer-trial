@@ -8,7 +8,7 @@
  * instead of ConfirmDialog (founder 2026-07-12). Both now come from the shared
  * component. Links leave the portal, so they are plain anchors into consumer.
  */
-import { OfferCard as SharedOfferCard, type ConversationLinkProps } from '@authentik/ui';
+import { OfferCard as SharedOfferCard, type ConversationLinkProps } from '@certifine/ui';
 import { api } from '@/lib/api';
 
 const CONSUMER_URL = process.env.NEXT_PUBLIC_CONSUMER_URL ?? 'http://localhost:3008';

@@ -4,16 +4,12 @@
  * Analytics client SDK（docs/proposals/analytics-tagging-spec.md，MVP）。
  *
  * 原則：
- *  • 所有 event 必須用 @authentik/utils analytics-events SSOT 嘅名 + typed props
+ *  • 所有 event 必須用 @certifine/web-kit analytics-events SSOT 嘅名 + typed props
  *   （governance §9 — 唔准自由命名）。
  *  • Fire-and-forget：queue + batch flush，失敗 drop，永不影響 UI。
  *  • anonymous_id 存 localStorage（跨 tab 持久）；session 30 分鐘無活動輪換。
  */
-import {
-  type AnalyticsEventEnvelope,
-  type AnalyticsEventName,
-  type AnalyticsRole,
-} from '@authentik/utils';
+import { type AnalyticsEventEnvelope, type AnalyticsEventName, type AnalyticsRole } from '@certifine/domain';
 import { getToken } from './api';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';

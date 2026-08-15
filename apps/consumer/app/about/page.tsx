@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { cookies } from 'next/headers';
-import { detectLocale, createT } from '@authentik/utils';
+import { detectLocale, createT } from '@certifine/web-kit';
 import { ShieldCheck, Users, Gavel, Coins, Layers } from 'lucide-react';
 
 export const metadata = { title: '關於我們 · Certifine' }; // static <title>; locale-aware metadata is a separate job
