@@ -1,7 +1,13 @@
 {
-  "name": "@authentik/api-client",
-  "version": "0.0.1",
-  "private": true,
+  "name": "@certifine/api-client",
+  "version": "0.1.0",
+  "description": "Generated TypeScript types for the Certifine API. Machine-written from openapi.json — do not hand-edit.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/certifine/carousel-advancer-trial.git",
+    "directory": "packages/api-client"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -10,9 +16,17 @@
       "default": "./dist/index.js"
     }
   },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "prepack": "npm run build"
   },
   "devDependencies": {
     "typescript": "^5.4.0"

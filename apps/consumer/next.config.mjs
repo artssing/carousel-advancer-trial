@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@certifine/ui', '@certifine/web-kit', '@authentik/api-client'],
+  transpilePackages: ['@certifine/ui', '@certifine/web-kit', '@certifine/api-client'],
   experimental: {
     typedRoutes: true,
     // Next 14: allow useSearchParams() without Suspense (pre-existing client pages).
