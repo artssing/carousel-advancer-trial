@@ -1,7 +1,13 @@
 {
   "name": "@certifine/domain",
   "version": "0.1.0",
-  "private": true,
+  "description": "Business rules the Certifine API and web must agree on — tiers, fees, order state, payout limits, analytics registry.",
+  "license": "UNLICENSED",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/artssing/carousel-advancer-trial.git",
+    "directory": "packages/domain"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
@@ -10,9 +16,17 @@
       "default": "./dist/index.js"
     }
   },
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com",
+    "access": "restricted"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "prepack": "npm run build"
   },
   "devDependencies": {
     "typescript": "^5.4.0"

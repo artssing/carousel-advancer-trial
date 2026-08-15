@@ -21,7 +21,9 @@
     "db:up": "docker compose up -d postgres",
     "db:down": "docker compose down",
     "db:setup": "npm run db:setup --workspace=api",
-    "api:contract": "npm run openapi --workspace=api && npx openapi-typescript apps/api/openapi.json -o packages/api-client/src/schema.ts"
+    "api:contract": "npm run openapi --workspace=api && npx openapi-typescript apps/api/openapi.json -o packages/api-client/src/schema.ts",
+    "domain:release": "npm publish --workspace=@certifine/domain",
+    "domain:pack": "npm pack --dry-run --workspace=@certifine/domain"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
