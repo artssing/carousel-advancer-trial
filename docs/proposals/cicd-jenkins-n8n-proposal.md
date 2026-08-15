@@ -32,7 +32,7 @@ Jenkins 做**編排 + build/deploy 引擎**（checkout → type-check gate → b
 
 ```
                     ┌─────────────────────────────────────────────┐
-   git push ───────▶│  GitHub (artssing/carousel-advancer-trial)  │
+   git push ───────▶│  GitHub (certifine/carousel-advancer-trial)  │
                     └───────────────────┬─────────────────────────┘
                                         │ webhook (push / PR)
                                         ▼
@@ -135,7 +135,7 @@ Stage 10 Notify            成功/失敗都 POST 去 n8n → 出通知
 
 - [ ] **Docker Desktop**（你已經用緊 docker compose 起 postgres，即係已有 ✅）確認版本 ≥ 24，有 `docker compose` v2
 - [ ] **主機資源**：Jenkins + n8n + 兩套 app stack 同時行，建議 **≥ 8GB RAM 撥畀 Docker、≥ 20GB 磁碟**（4 個 Next build image 唔細）
-- [ ] **GitHub 權限**：你係 `artssing/carousel-advancer-trial` owner，要能加 **webhook** + 一個 **Personal Access Token / Deploy Key**（畀 Jenkins clone）
+- [ ] **GitHub 權限**：你係 `certifine/carousel-advancer-trial` owner，要能加 **webhook** + 一個 **Personal Access Token / Deploy Key**（畀 Jenkins clone）
 - [ ] **決定 secret 清單**：`JWT_SECRET`、Postgres 密碼、（將來）Stripe/Sumsub key —— 全部要放入 Jenkins Credentials，唔好再散喺 `.env`
 
 ### 5.2 要我幫手整（Pipeline 交付物）

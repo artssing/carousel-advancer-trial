@@ -14,7 +14,7 @@
 
 ```bash
 cd ~/Desktop  # 或者你想擺嘅地方
-git clone https://github.com/artssing/carousel-advancer-trial.git
+git clone https://github.com/certifine/carousel-advancer-trial.git
 cd carousel-advancer-trial
 ```
 

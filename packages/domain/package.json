@@ -5,7 +5,7 @@
   "license": "UNLICENSED",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/artssing/carousel-advancer-trial.git",
+    "url": "git+https://github.com/certifine/carousel-advancer-trial.git",
     "directory": "packages/domain"
   },
   "main": "./dist/index.js",

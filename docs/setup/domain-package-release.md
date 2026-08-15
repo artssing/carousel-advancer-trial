@@ -1,6 +1,6 @@
 # 發布 `@certifine/domain`（repo-split P2）
 
-> 2026-08-14 · 狀態：**package 準備好，等一個有 `write:packages` 嘅 token**
+> 2026-08-14 開 · **2026-08-15 第一版 `@certifine/domain@0.1.0` 已發布**
 
 `@certifine/domain` 係 API 同 web 都要跟嘅 business rule（tier / 平台費 /
 訂單狀態機 / 提款上限 / analytics 白名單）。拆 repo 之後佢住喺
@@ -18,34 +18,46 @@
 
 ---
 
-## 一次性設定（founder 要做，唔係 agent 做得到）
+## 唔需要 Personal Access Token
 
-發版要一個 **classic Personal Access Token**，scope 要有 `write:packages`
-（同 `read:packages`）。而家 `gh auth status` 個 token 得
-`admin:public_key, gist, read:org, repo` —— **發唔到**。
+初稿寫住要開一個有 `write:packages` 嘅 classic PAT。**唔使。** 發版行
+`.github/workflows/publish-domain.yml`，用 workflow 自己嘅 `GITHUB_TOKEN`
+配 `permissions: packages: write` —— 每次 run 即發、只限呢個 repo、job 完
+就消失。冇人要 mint、貼落 shell profile、或者記住 rotate。
 
-1. GitHub → Settings → Developer settings → Personal access tokens →
-   Tokens (classic) → Generate new token
-2. 剔 `write:packages` + `read:packages`（`repo` 已經有）
-3. 放入 shell environment，**唔好 commit 落 repo**：
+`npm run domain:release`（本機 publish）仲留住做應急，但**正路係行 CI**。
 
-```bash
-export NODE_AUTH_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+## 兩個踩過嘅坑（2026-08-15）
+
+**1. Package scope 必須等於 repo owner。**
+
+```
+npm error 403 Permission permission_denied: The requested installation does not exist.
 ```
 
-> `.npmrc` 用 `${NODE_AUTH_TOKEN}` 變數展開，所以檔案本身冇 secret，commit
-> 得。真 token 只存在於 environment。呢個係 GitHub 官方做法。
+當時個 repo 喺 `artssing`（個人帳號）名下，而 package 叫 `@certifine/domain`。
+GitHub Packages 唔准跨主體發版 —— 開咗 `certifine` org 都仲係唔夠，**個
+repo 本身**要住喺 org 度。已經喺 2026-08-15 transfer 咗。
+
+**2. Workflow 一定要行 `prisma generate`。**
+
+第一次 run 死喺 type-check：`@prisma/client has no exported member
+ListingStatus`。Prisma client 係生成代碼，唔係 `npm ci` 裝得返嘅嘢。
 
 ---
 
 ## 發一版
 
+改 `packages/domain/package.json` 個版本 → merge → 撳 tag：
+
 ```bash
-npm run domain:release
+git tag domain-v0.2.0 && git push origin domain-v0.2.0
 ```
 
-佢做嘅嘢：`prepack` 重新 build（所以 `dist/` 唔會過期）→ `npm publish`
-到 `https://npm.pkg.github.com`。
+Workflow 會核對 tag 同 `package.json` 一唔一致（唔一致即刻 fail）、行成個
+repo 嘅 type-check、然後 publish。
+
+> ⚠️ 同一個版本 publish 兩次會 409。要重發就 bump 版本，唔好重推 tag。
 
 版本號**手動 bump**（`packages/domain/package.json`）。呢個係故意嘅：
 domain 一改就係改 business rule，唔應該由工具自動決定叫咩版本。

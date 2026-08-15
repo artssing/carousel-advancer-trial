@@ -60,7 +60,13 @@
 
 # ─────────────────────────────────────────────────────────────────────
 # 招人之後點改：
-#   而家全部係 @artssing，因為 repo 得一個 GitHub 帳號。請到人之後開
-#   @certifine/backend、@certifine/frontend、@certifine/infra 三個 team，
-#   再將上面對應嘅段落換成 team handle。**唔好留住 @artssing 做 fallback
-#   加喺每一行** —— owner 永遠 match 到就等於冇分過工。
+#   2026-08-15 個 repo 已經由 `artssing` 轉咗去 `certifine` org（發版要
+#   package scope 同 repo owner 一致）。但**團隊仲係得一個人**，所以呢度
+#   照樣寫 @artssing —— 佢係 org owner，handle 有效。
+#
+#   請到人之後開 @certifine/backend、@certifine/frontend、@certifine/infra
+#   三個 team，再將上面對應嘅段落換成 team handle。**唔好留住 @artssing
+#   做 fallback 加喺每一行** —— owner 永遠 match 到就等於冇分過工。
+#
+#   ⚠️ CODEOWNERS 引用一個唔存在嘅 team 係靜靜地失效（GitHub 唔會報錯，
+#   規則直接當冇），所以要開咗 team 先改呢個檔，唔好倒轉。

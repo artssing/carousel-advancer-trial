@@ -14,7 +14,7 @@
 | Demo 帳號 email | milan/procheck/cardlab/seller@authentik.hk | seed.ts + seed-demo.sh + docs/demo-accounts.md + DB 現有 rows（UPDATE User SET email）；改完要通知所有測試緊嘅人 |
 | Env vars / URLs | `.env.*` 內 DATABASE_URL、CORS_ORIGIN 註釋 | 跟 DB rename 一齊做 |
 | Code 雜項 | `authentik-robots-noindex` meta id、log prefix、README/docs 全文 | grep -ri authentik 清尾 |
-| Git repo 名 | github.com/artssing/carousel-advancer-trial | 順手一齊諗埋（repo 名本身都唔係 product 名） |
+| Git repo 名 | github.com/certifine/carousel-advancer-trial | 順手一齊諗埋（repo 名本身都唔係 product 名） |
 
 ## 執行建議
 
