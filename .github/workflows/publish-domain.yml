@@ -44,6 +44,12 @@ jobs:
       # `npm ci` in a workspace root is the only install that respects the lock.
       - run: npm ci --no-audit --no-fund
 
+      # Without this the api workspace does not type-check: the Prisma client
+      # is generated code, not something npm installs, so `@prisma/client` has
+      # no ListingStatus and every `tx` is an implicit any. ci/ci-run.sh does
+      # the same thing in its install step.
+      - run: npx prisma generate --schema=apps/api/prisma/schema.prisma
+
       - name: Guard — tag must match package.json
         if: startsWith(github.ref, 'refs/tags/domain-v')
         run: |
