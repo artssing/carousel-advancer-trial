@@ -30,7 +30,7 @@ P0 ruling (founder 2026-06-11): Google only. Apple / Facebook = backlog.
 
 ## 2. 設 env vars（**兩個 env 一齊填**）
 
-**`apps/api/.env.prod`**（PROD API :4000 / Consumer :3008）：
+**`env/api.prod.env`**（PROD API :4000 / Consumer :3008）：
 ```bash
 GOOGLE_CLIENT_ID="xxx-yyy.apps.googleusercontent.com"        # ← 同一個 client_id
 GOOGLE_CLIENT_SECRET="GOCSPX-xxxxxxxxxxxx"                    # ← 同一個 client_secret
@@ -38,7 +38,7 @@ GOOGLE_REDIRECT_URI="http://localhost:4000/api/auth/google/callback"  # ← :400
 NEXT_PUBLIC_CONSUMER_URL="http://localhost:3008"
 ```
 
-**`apps/api/.env.uat`**（UAT API :4010 / Consumer :3018）：
+**`env/api.uat.env`**（UAT API :4010 / Consumer :3018）：
 ```bash
 GOOGLE_CLIENT_ID="xxx-yyy.apps.googleusercontent.com"        # ← 同一個 client_id（同 .env.prod 一樣）
 GOOGLE_CLIENT_SECRET="GOCSPX-xxxxxxxxxxxx"                    # ← 同一個 client_secret（同 .env.prod 一樣）

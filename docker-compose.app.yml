@@ -8,8 +8,8 @@
 # 延續 start.sh / env-config.sh 嘅思路（container-internal port 固定，
 # host port 由 env 決定）。
 #
-#   PROD :  docker compose --env-file .env.compose.prod -p authentik      up -d --build
-#   UAT  :  docker compose --env-file .env.compose.uat  -p authentik_uat  up -d --build
+#   PROD :  docker compose --env-file env/compose.prod.env -p authentik      up -d --build
+#   UAT  :  docker compose --env-file env/compose.uat.env  -p authentik_uat  up -d --build
 #
 # ⚠️ 依賴現有 postgres container（docker-compose.yml）先起：
 #      docker compose -f docker-compose.yml up -d postgres
@@ -23,7 +23,7 @@ services:
     image: authentik-api:${IMAGE_TAG:-local}
     restart: unless-stopped
     env_file:
-      - ${API_ENV_FILE:-apps/api/.env.prod}   # JWT_SECRET / CORS / GOOGLE_* 等
+      - ${API_ENV_FILE:-env/api.prod.env}   # JWT_SECRET / CORS / GOOGLE_* 等
     environment:
       # 覆蓋 .env 入面嘅 localhost → container 要用 host.docker.internal 連 host postgres
       DATABASE_URL: "postgresql://authentik:authentik_dev@host.docker.internal:5432/${DB_NAME:-authentik}?schema=public"

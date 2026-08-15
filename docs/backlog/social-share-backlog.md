@@ -18,7 +18,7 @@
 | Cloudflare R2 storage driver | `apps/api/src/storage/storage.service.ts`（`STORAGE_DRIVER=s3`） |
 | 1200×630 OG 卡（FB/WhatsApp 用嘅闊版），撳先上載 + cache | `compositeOg()` |
 
-R2 配置：bucket `certifine-media`(prod) / `certifine-media-uat`，custom domain `media.certifinehk.com` / `media-uat.certifinehk.com`。Secrets 喺 `apps/api/.env.prod` / `.env.uat`（gitignored）。
+R2 配置：bucket `certifine-media`(prod) / `certifine-media-uat`，custom domain `media.certifinehk.com` / `media-uat.certifinehk.com`。Secrets 喺 `env/api.prod.env` / `.env.uat`（gitignored）。
 
 ---
 

@@ -35,7 +35,7 @@ export interface StoredFile {
  *       S3_SECRET_ACCESS_KEY=...
  *       S3_PUBLIC_BASE_URL=https://media.certifinehk.com  (R2 custom domain)
  *     Live on UAT + PROD since 2026-07-30 (buckets certifine-media /
- *     certifine-media-uat); secrets live in apps/api/.env.prod / .env.uat.
+ *     certifine-media-uat); secrets live in env/api.{prod,uat}.env (infra repo).
  *
  * Callers never see the driver — they just get back a stable `url` to store
  * in Listing.images / OrderEvidence.mediaUrl etc. Swapping driver later does

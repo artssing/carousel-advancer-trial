@@ -43,3 +43,12 @@ n8n-backup-*/
 # QA/screenshot 殘留（bodyLen + console log，冇檔名嗰陣寫成 undefined.*）
 undefined.png
 undefined.meta.json
+
+# Deploy env lives in env/ (repo-split P4 ④ — infra owns it, because infra is
+# what runs the deploy). Real values are NEVER committed; only *.env.example.
+env/*.env
+!env/*.env.example
+# compose.*.env is topology only — ports, DB name, public URLs, image tag.
+# No secret has ever been in it, and infra needs it in version control.
+!env/compose.prod.env
+!env/compose.uat.env

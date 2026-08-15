@@ -55,7 +55,7 @@ cloudflared **喺 compose 網內**，用 service DNS 名（`consumer-prod:3008`�
   （Postgres）一齊行。
 - **公網 URL / CORS / OAuth redirect** 已喺 compose `environment` / build `args` 設好指去
   `*.certifinehk.com`（呢個係之前 doc 最大 gap — 唔改前端會 call 返 localhost）。
-- Secret（JWT_SECRET / GOOGLE_CLIENT_SECRET / DB pw）留喺 gitignored `apps/api/.env.prod`
+- Secret（JWT_SECRET / GOOGLE_CLIENT_SECRET / DB pw）留喺 gitignored `env/api.prod.env`
   `.env.uat`，compose `env_file` 讀；container 專屬值（`DATABASE_URL` 指 `postgres` service、
   公網 CORS）由 `environment` override。
 - **PROD + UAT 都 STRIPE_MODE=mock**（in-process）→ 唔使 gateway container，亦避開遠端瀏覽器

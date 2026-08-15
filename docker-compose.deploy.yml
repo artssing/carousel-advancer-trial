@@ -10,7 +10,7 @@
 #  • cloudflared 用 compose service DNS 名連（api-prod:4000…），唔用
 #    host.docker.internal（嗰個係「app 喺 host 行」先需要）。
 #  • Secret（JWT_SECRET / GOOGLE_CLIENT_SECRET / DB pw）留喺 gitignored
-#    apps/api/.env.prod / .env.uat，由 env_file 讀入；container 專屬值
+#    env/api.prod.env / .env.uat，由 env_file 讀入；container 專屬值
 #    （DATABASE_URL 指 postgres service、公網 CORS / URL）喺下面 environment
 #    override（compose：environment 蓋過 env_file）。
 #  • PROD + UAT 都 STRIPE_MODE=mock（in-process）→ 唔使 gateway container，
@@ -46,7 +46,7 @@ services:
       postgres:
         condition: service_healthy
     env_file:
-      - apps/api/.env.prod          # secrets: JWT_SECRET / GOOGLE_CLIENT_SECRET
+      - env/api.prod.env          # secrets: JWT_SECRET / GOOGLE_CLIENT_SECRET
     environment:
       RUN_DB_PUSH: "1"              # entrypoint schema sync（唔 seed）
       API_PORT: "4000"
@@ -140,7 +140,7 @@ services:
       postgres:
         condition: service_healthy
     env_file:
-      - apps/api/.env.uat
+      - env/api.uat.env
     environment:
       RUN_DB_PUSH: "1"
       API_PORT: "4000"
@@ -209,7 +209,7 @@ services:
   # public hostname 喺 Cloudflare Zero Trust dashboard 設（uat.certifinehk.com
   # → consumer-uat:3008 …），DNS 由 dashboard 自動起。cloudflared 喺 compose
   # 網內 → 可以用 service 名解析。
-  # TUNNEL_TOKEN 係 secret，放 gitignored .env.tunnel（見 .env.tunnel.example）。
+  # TUNNEL_TOKEN 係 secret，放 gitignored env/tunnel.env（見 env/tunnel.env.example）。
   # 詳見 docs/setup/cloudflare-tunnel-setup.md。
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -219,6 +219,6 @@ services:
     env_file:
       # TUNNEL_TOKEN=eyJ…（唔好 commit）。required:false → CI BUILD_DIR 冇呢個
       # 檔都唔會炸（CI 只 deploy app services，tunnel 唔喺 CI 手上）。
-      - path: .env.tunnel
+      - path: env/tunnel.env
         required: false
     depends_on: [consumer-uat, api-uat]

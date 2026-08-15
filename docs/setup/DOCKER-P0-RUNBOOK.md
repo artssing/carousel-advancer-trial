@@ -12,13 +12,13 @@ apps/consumer/Dockerfile
 apps/authenticator/Dockerfile
 apps/admin/Dockerfile
 docker-compose.app.yml
-.env.compose.prod  /  .env.compose.uat   （無 secret，port + public URL）
+env/compose.prod.env  /  env/compose.uat.env   （無 secret，port + public URL）
 ```
 
 ## 前置
 
 1. Docker Desktop 行緊（`docker version` 有嘢）。
-2. `apps/api/.env.prod` / `.env.uat` 已經有（你已有 ✅）。
+2. `env/api.prod.env` / `.env.uat` 已經有（你已有 ✅）。
 3. Postgres container 起咗（沿用現有 compose，兩個 DB 喺同一 container）：
    ```bash
    docker compose -f docker-compose.yml up -d postgres
@@ -28,7 +28,7 @@ docker-compose.app.yml
 
 ```bash
 # build + up（第一次冷 build，4 個 Next app 約 5–10 分鐘）
-docker compose --env-file .env.compose.prod -p authentik up -d --build
+docker compose --env-file env/compose.prod.env -p authentik up -d --build
 
 # 睇 log
 docker compose -p authentik logs -f api
@@ -45,7 +45,7 @@ curl -f http://localhost:3003                 >/dev/null && echo "admin ok"
 ## 起 UAT stack（同時並存，唔撞 PROD）
 
 ```bash
-docker compose --env-file .env.compose.uat -p authentik_uat up -d --build
+docker compose --env-file env/compose.uat.env -p authentik_uat up -d --build
 # API 4010 / consumer 3018 / auth 3011 / admin 3013
 ```
 
@@ -69,7 +69,7 @@ docker compose -p authentik_uat  down      # 停 UAT stack
 呢批全部係**新增檔案**，直接刪走即可，唔影響任何現有 code：
 ```bash
 docker compose -p authentik down; docker compose -p authentik_uat down
-rm -f .dockerignore docker-compose.app.yml .env.compose.prod .env.compose.uat
+rm -f .dockerignore docker-compose.app.yml env/compose.prod.env env/compose.uat.env
 rm -f apps/api/Dockerfile apps/api/docker-entrypoint.sh
 rm -f apps/consumer/Dockerfile apps/authenticator/Dockerfile apps/admin/Dockerfile
 ```
