@@ -22,6 +22,10 @@ on:
         default: 'uat'
         type: choice
         options: [uat, prod]
+      version:
+        description: 'Release version to stamp (blank = read the VERSION file)'
+        required: false
+        type: string
 
 jobs:
   build:
@@ -47,7 +51,13 @@ jobs:
           echo "commit=$(git rev-parse HEAD)"           >> "$GITHUB_OUTPUT"
           echo "short=$(git rev-parse --short HEAD)"    >> "$GITHUB_OUTPUT"
           echo "built=$(date -u +%Y-%m-%dT%H:%M:%SZ)"   >> "$GITHUB_OUTPUT"
-          echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+          # The release number is INPUT, not a file: after the split this repo
+          # has no VERSION — infra owns the number and passes the same one to
+          # both builds when it cuts a release. The file is only a fallback so
+          # this still works inside the monorepo today.
+          V="${{ inputs.version }}"
+          [ -n "$V" ] || V="$(tr -d '[:space:]' < VERSION 2>/dev/null || echo 0.0.0)"
+          echo "version=$V" >> "$GITHUB_OUTPUT"
 
       - uses: docker/build-push-action@v6
         with:

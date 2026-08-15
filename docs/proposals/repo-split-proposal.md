@@ -42,7 +42,7 @@ Founder 拆 repo 嘅真正理由更新咗：**唔係團隊邊界，係佢自己�
 | ② | 契約點過 repo | **api repo 發 `@certifine/api-client`**，抄 `publish-domain.yml` | ⬜ |
 | ③ | build workflow | 斬兩份：api repo build 1 個 image，web repo build 3 個。**infra 一個都冇** | ⬜ |
 | ④ | secrets | `.env.prod`/`.env.uat` 搬去 infra，api repo 只留 `.env.example` | ⬜ |
-| ⑥ | VERSION / CHANGELOG | infra 揸一個 release 版本，三個 repo 各出 sha | ⬜ |
+| ⑥ | VERSION / CHANGELOG | **改咗決定** — 檔案跟 web（admin 係唯一 reader），版本號做 workflow input，infra 出 release 時傳同一個數 | ✅ |
 | ⑦ | docs 分家 | lessons→web · qa/backlog/proposals→infra · founder-rulings 跟 domain 發 · CLAUDE.md 斬三份 | ⬜ |
 | ⑧ | 本機開發流程 | 改前端：infra 起 API（Docker）+ web `npm run dev`。改 API：倒轉。**兩個方向都要寫** | ⬜ |
 
@@ -59,8 +59,16 @@ infra 改到 product code。呢個係邊界最實在嘅體現，唔係疏忽。
 deploy，揸住 production secret 冇道理。⚠️ 搬嗰陣**唔好經 git history 搬** ——
 直接 copy 檔案落新 repo。
 
-**⑥ 點解 VERSION 歸 infra：** 佢現時兩個用途（admin fleet-version 頁 + changelog）
-都係 ops 角度。`domain` 同 `api-client` 例外 —— 佢哋係真 library，要自己 semver。
+**⑥ 2026-08-15 改咗決定：檔案唔搬去 infra。** 原本寫「infra 揸」，但落手先發現
+兩個 consumer **都喺 admin**：`/changelog` 頁要 `CHANGELOG.md` **喺 admin 個
+build context 入面**先 COPY 得入 image（`apps/admin/Dockerfile:39`），而 admin
+住喺 web。搬去 infra = admin 睇唔到自己個 changelog。
+
+所以：**檔案跟 web，版本號做 workflow input。** 兩條 build workflow 都收
+`version`，infra 出 release 嗰陣傳同一個數落 api 同 web，記低邊三個 sha 配呢個
+版本。infra 仍然係「邊個決定叫 v0.2.0」嘅擁有者 —— 只係佢唔使揸住個檔案。
+
+`domain` 同 `api-client` 例外，佢哋係真 library，各自 semver。
 
 **⑦ 點解 founder-rulings 跟 domain 發：** 佢係唯一三個 repo 都要嘅文件。各 repo
 `CLAUDE.md` 開頭寫一行 `@node_modules/@certifine/domain/CANON.md`，就自動跟版本
