@@ -1,0 +1,86 @@
+# Build the three portal images and push them to GHCR.
+#
+# The other half of the old `build-images.yml` (P4 pre-flight ③). After the
+# split this file lives in `certifine-web`.
+#
+# The NEXT_PUBLIC_* args are the reason the web half cannot share a workflow
+# with the API: Next bakes them into the bundle at BUILD time, so a web image
+# is environment-specific and can never be promoted from UAT to PROD by
+# retagging. Keep these in step with docker-compose.deploy.yml.
+name: build web images
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Which env to build for (uat or prod)'
+        required: true
+        default: 'uat'
+        type: choice
+        options: [uat, prod]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      # One job per portal: a failure names the portal that broke, and the
+      # other two images still land.
+      fail-fast: false
+      matrix:
+        app: [consumer, authenticator, admin]
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve build stamps
+        id: stamp
+        run: |
+          echo "commit=$(git rev-parse HEAD)"           >> "$GITHUB_OUTPUT"
+          echo "short=$(git rev-parse --short HEAD)"    >> "$GITHUB_OUTPUT"
+          echo "built=$(date -u +%Y-%m-%dT%H:%M:%SZ)"   >> "$GITHUB_OUTPUT"
+          echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+
+      - name: Public URLs for this environment
+        id: urls
+        run: |
+          if [ "${{ inputs.environment }}" = "prod" ]; then
+            echo "api=https://api.certifinehk.com/api"     >> "$GITHUB_OUTPUT"
+            echo "consumer=https://certifinehk.com"        >> "$GITHUB_OUTPUT"
+            echo "auth=https://auth.certifinehk.com"       >> "$GITHUB_OUTPUT"
+            echo "admin=https://admin.certifinehk.com"     >> "$GITHUB_OUTPUT"
+          else
+            echo "api=https://uat-api.certifinehk.com/api" >> "$GITHUB_OUTPUT"
+            echo "consumer=https://uat.certifinehk.com"    >> "$GITHUB_OUTPUT"
+            echo "auth=https://uat-auth.certifinehk.com"   >> "$GITHUB_OUTPUT"
+            echo "admin=https://uat-admin.certifinehk.com" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/${{ matrix.app }}/Dockerfile
+          push: true
+          platforms: linux/arm64
+          tags: |
+            ghcr.io/certifine/certifine-${{ matrix.app }}:${{ inputs.environment }}
+            ghcr.io/certifine/certifine-${{ matrix.app }}:${{ inputs.environment }}-${{ steps.stamp.outputs.short }}
+          build-args: |
+            GIT_COMMIT=${{ steps.stamp.outputs.commit }}
+            BUILT_AT=${{ steps.stamp.outputs.built }}
+            APP_VERSION=${{ steps.stamp.outputs.version }}
+            NEXT_PUBLIC_API_URL=${{ steps.urls.outputs.api }}
+            NEXT_PUBLIC_CONSUMER_URL=${{ steps.urls.outputs.consumer }}
+            NEXT_PUBLIC_AUTHENTICATOR_URL=${{ steps.urls.outputs.auth }}
+            NEXT_PUBLIC_ADMIN_URL=${{ steps.urls.outputs.admin }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

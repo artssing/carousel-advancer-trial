@@ -1,0 +1,69 @@
+# Build the API image and push it to GHCR.
+#
+# Half of what used to be `build-images.yml`. Split ahead of the repo split
+# (P4 pre-flight ③) rather than during it: after `certifine-api` becomes its
+# own repo this file moves there unchanged, and `certifine-web` gets the other
+# half. Splitting now means the seam is proven while both halves still live
+# where they can be compared.
+#
+# Note what is NOT here and is in the web one: NEXT_PUBLIC_* build args. The
+# API reads its URLs from the environment at run time, so its image is not
+# environment-specific the way a Next build is — but it is still tagged per
+# env, because the two envs deploy independently and a shared tag is how UAT
+# once silently deployed itself to PROD (2026-08-11).
+name: build api image
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Which env to build for (uat or prod)'
+        required: true
+        default: 'uat'
+        type: choice
+        options: [uat, prod]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Resolve build stamps
+        id: stamp
+        run: |
+          # The three values GET /api/version serves, so a deploy can be
+          # verified rather than assumed.
+          echo "commit=$(git rev-parse HEAD)"           >> "$GITHUB_OUTPUT"
+          echo "short=$(git rev-parse --short HEAD)"    >> "$GITHUB_OUTPUT"
+          echo "built=$(date -u +%Y-%m-%dT%H:%M:%SZ)"   >> "$GITHUB_OUTPUT"
+          echo "version=$(tr -d '[:space:]' < VERSION)" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: apps/api/Dockerfile
+          push: true
+          # arm64: every container runs on the founder's Apple Silicon Mac.
+          # A runner defaults to amd64 and the pull fails with
+          # `no matching manifest for linux/arm64/v8`.
+          platforms: linux/arm64
+          tags: |
+            ghcr.io/certifine/certifine-api:${{ inputs.environment }}
+            ghcr.io/certifine/certifine-api:${{ inputs.environment }}-${{ steps.stamp.outputs.short }}
+          build-args: |
+            GIT_COMMIT=${{ steps.stamp.outputs.commit }}
+            BUILT_AT=${{ steps.stamp.outputs.built }}
+            APP_VERSION=${{ steps.stamp.outputs.version }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
