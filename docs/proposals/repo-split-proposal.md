@@ -39,9 +39,9 @@ Founder 拆 repo 嘅真正理由更新咗：**唔係團隊邊界，係佢自己�
 |---|---|---|---|
 | ① | domain 過渡 shim | 清走，三個 app 直接 import `@certifine/domain` | ✅ `b000b0e` |
 | ⑤ | package 改名 | `utils`→`@certifine/web-kit`、`ui`/`config` 同步去 `@certifine/*` | ✅ `b000b0e` |
-| ② | 契約點過 repo | **api repo 發 `@certifine/api-client`**，抄 `publish-domain.yml` | ⬜ |
-| ③ | build workflow | 斬兩份：api repo build 1 個 image，web repo build 3 個。**infra 一個都冇** | ⬜ |
-| ④ | secrets | `.env.prod`/`.env.uat` 搬去 infra，api repo 只留 `.env.example` | ⬜ |
+| ② | 契約點過 repo | **api repo 發 `@certifine/api-client`**，publish 前重新生成、唔一致就拒發 | ✅ `0.1.0` 已發 |
+| ③ | build workflow | 斬兩份：`build-api-image.yml`(1) + `build-web-images.yml`(3)。**infra 一個都冇** | ✅ 四個 image 實測過 |
+| ④ | secrets | deploy env 搬入 `env/`（歸 infra）；`apps/api/.env` 本機 dev 留喺 api | ✅ `9da5980` |
 | ⑥ | VERSION / CHANGELOG | **改咗決定** — 檔案跟 web（admin 係唯一 reader），版本號做 workflow input，infra 出 release 時傳同一個數 | ✅ |
 | ⑦ | docs 分家 | lessons→web · qa/backlog/proposals→infra · founder-rulings 跟 domain 發 · CLAUDE.md 斬三份 | ⬜ |
 | ⑧ | 本機開發流程 | 改前端：infra 起 API（Docker）+ web `npm run dev`。改 API：倒轉。**兩個方向都要寫** | ⬜ |
