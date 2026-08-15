@@ -1,0 +1,65 @@
+# Publish @certifine/domain to GitHub Packages.
+#
+# This exists so publishing needs NO personal access token. A workflow's own
+# GITHUB_TOKEN can be granted `packages: write`, which is exactly the scope
+# `npm publish` needs against npm.pkg.github.com — so the credential is issued
+# per-run by GitHub, scoped to this repository, and expires when the job ends.
+# Nobody has to mint a classic PAT, paste it into a shell, or remember to
+# rotate it.
+#
+# It also puts the release where it belongs. `packages/domain` is the contract
+# the API and the web both compile against; a version of it built on somebody's
+# laptop, from whatever their working tree happened to contain, is not a
+# release. This builds from a tagged commit or nothing.
+#
+# Trigger:
+#   - push a tag  domain-v1.2.3   (the version must match package.json)
+#   - or run it by hand from the Actions tab (workflow_dispatch)
+#
+# See docs/setup/domain-package-release.md
+name: publish @certifine/domain
+
+on:
+  push:
+    tags: ['domain-v*']
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@certifine'
+
+      # The whole workspace, because domain is built by the repo's tsconfig and
+      # `npm ci` in a workspace root is the only install that respects the lock.
+      - run: npm ci --no-audit --no-fund
+
+      - name: Guard — tag must match package.json
+        if: startsWith(github.ref, 'refs/tags/domain-v')
+        run: |
+          TAG="${GITHUB_REF#refs/tags/domain-v}"
+          PKG="$(node -p "require('./packages/domain/package.json').version")"
+          if [ "$TAG" != "$PKG" ]; then
+            echo "tag domain-v$TAG does not match package.json $PKG" >&2
+            exit 1
+          fi
+          echo "publishing @certifine/domain@$PKG"
+
+      # type-check the whole repo, not just the package: domain's job is to be
+      # the thing both sides agree on, so "does it still compile against both
+      # sides" is the only test that means anything here.
+      - run: npm run type-check
+
+      - run: npm publish --workspace=@certifine/domain
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

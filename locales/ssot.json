@@ -12174,5 +12174,19 @@
       "zh": "{name}（鑑定師）：",
       "en": "{name} (authenticator): "
     }
+  },
+  "ui.versionBadge": {
+    "dev": {
+      "zh": "dev（本機）",
+      "en": "dev (local)"
+    },
+    "copyHint": {
+      "zh": "撳一下 copy 完整 commit",
+      "en": "Click to copy the full commit"
+    },
+    "copied": {
+      "zh": "已複製",
+      "en": "Copied"
+    }
   }
 }

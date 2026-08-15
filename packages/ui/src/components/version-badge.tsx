@@ -22,6 +22,7 @@
  * has no single commit. It is deliberately not dressed up as a release.
  */
 import { useEffect, useState } from 'react';
+import { getClientLocale, createT } from '@authentik/utils';
 
 interface VersionInfo {
   app: string;
@@ -68,6 +69,12 @@ export function formatBuiltAt(iso: string | null): string | null {
 export function VersionBadge({ className, showSha = true, label }: VersionBadgeProps) {
   const [info, setInfo] = useState<VersionInfo | null>(null);
   const [copied, setCopied] = useState(false);
+  // Locale read in an effect, not during render: reading the cookie while
+  // rendering gives the server a different answer to the client and React
+  // discards the markup.
+  const [locale, setLocale] = useState<'zh' | 'en'>('zh');
+  useEffect(() => { setLocale(getClientLocale()); }, []);
+  const _t = createT(locale);
 
   useEffect(() => {
     let alive = true;
@@ -88,13 +95,13 @@ export function VersionBadge({ className, showSha = true, label }: VersionBadgeP
   // The label reads as a prefix ("admin v0.1.0"), so it joins with a space;
   // only the stamp's own fields take the · separator.
   const body = isDev
-    ? `${label ? `${label} ` : ''}dev（本機）`
+    ? `${label ? `${label} ` : ''}${_t('ui.versionBadge.dev')}`
     : `${label ? `${label} ` : ''}${[`v${info.version ?? '0.0.0'}`, showSha ? shortSha(info.commit) : null].filter(Boolean).join(' · ')}`;
 
   return (
     <button
       type="button"
-      title={`${info.app} v${info.version ?? '0.0.0'}\n${info.commit}${built ? `\nbuilt ${built}` : ''}\n撳一下 copy 完整 commit`}
+      title={`${info.app} v${info.version ?? '0.0.0'}\n${info.commit}${built ? `\nbuilt ${built}` : ''}\n${_t('ui.versionBadge.copyHint')}`}
       onClick={() => {
         navigator.clipboard?.writeText(info.commit).then(
           () => { setCopied(true); setTimeout(() => setCopied(false), 1500); },
@@ -103,7 +110,7 @@ export function VersionBadge({ className, showSha = true, label }: VersionBadgeP
       }}
       className={`cursor-pointer font-mono tabular-nums transition ${isDev ? 'line-through opacity-60' : ''} ${className ?? ''}`}
     >
-      {copied ? '已複製' : body}
+      {copied ? _t('ui.versionBadge.copied') : body}
     </button>
   );
 }
