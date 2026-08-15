@@ -27,6 +27,62 @@ pipeline、一份 `CLAUDE.md`，同時「邊個 own domain」呢條問題自然�
 
 ---
 
+## P4 Pre-flight checklist（2026-08-15 定，founder 已批「八項一次過做」）
+
+Founder 拆 repo 嘅真正理由更新咗：**唔係團隊邊界，係佢自己睇唔清。**
+「我要係各自 repo 讀返相對應嘅 code，而家一個 directory mix 埋，我根本睇唔到。」
+呢個一個人都成立，所以「等第二個人先拆」嗰個建議作廢。
+
+拆之前八件事。① ② ③ ④ 唔搞掂就唔應該拆；⑤–⑧ 係「拆嗰陣一齊做最平」。
+
+| # | 項目 | 決定 | 狀態 |
+|---|---|---|---|
+| ① | domain 過渡 shim | 清走，三個 app 直接 import `@certifine/domain` | ✅ `b000b0e` |
+| ⑤ | package 改名 | `utils`→`@certifine/web-kit`、`ui`/`config` 同步去 `@certifine/*` | ✅ `b000b0e` |
+| ② | 契約點過 repo | **api repo 發 `@certifine/api-client`**，抄 `publish-domain.yml` | ⬜ |
+| ③ | build workflow | 斬兩份：api repo build 1 個 image，web repo build 3 個。**infra 一個都冇** | ⬜ |
+| ④ | secrets | `.env.prod`/`.env.uat` 搬去 infra，api repo 只留 `.env.example` | ⬜ |
+| ⑥ | VERSION / CHANGELOG | infra 揸一個 release 版本，三個 repo 各出 sha | ⬜ |
+| ⑦ | docs 分家 | lessons→web · qa/backlog/proposals→infra · founder-rulings 跟 domain 發 · CLAUDE.md 斬三份 | ⬜ |
+| ⑧ | 本機開發流程 | 改前端：infra 起 API（Docker）+ web `npm run dev`。改 API：倒轉。**兩個方向都要寫** | ⬜ |
+
+### 每項嘅理由（唔好重新推導）
+
+**② 點解發 package，唔係叫 web 去 fetch `openapi.json`：** fetch 嗰個做法要 web
+知道 api 嘅 release URL、要處理攞唔到、而且**份契約冇版本號** —— 你唔會知手上
+嗰份對應邊個 api 版本。發 package 就自動有版本、有 rollback、有 lockfile 紀錄。
+
+**③ infra 冇 workflow 係特登：** 佢冇 source，build 唔到嘢，所以冇人可以喺
+infra 改到 product code。呢個係邊界最實在嘅體現，唔係疏忽。
+
+**④ 點解 secrets 歸 infra：** run 嗰個先需要。api repo 拆完冇 compose、唔
+deploy，揸住 production secret 冇道理。⚠️ 搬嗰陣**唔好經 git history 搬** ——
+直接 copy 檔案落新 repo。
+
+**⑥ 點解 VERSION 歸 infra：** 佢現時兩個用途（admin fleet-version 頁 + changelog）
+都係 ops 角度。`domain` 同 `api-client` 例外 —— 佢哋係真 library，要自己 semver。
+
+**⑦ 點解 founder-rulings 跟 domain 發：** 佢係唯一三個 repo 都要嘅文件。各 repo
+`CLAUDE.md` 開頭寫一行 `@node_modules/@certifine/domain/CANON.md`，就自動跟版本
+走，唔使 sync script、唔會漂移。
+
+**⑧ 點解唔係「開兩個 terminal 各自 dev」：** 改前端嗰陣根本唔想 API 熱重載，
+而且 API 要 Prisma client、要 DB，每次開都係摩擦。
+
+### 拆之後即刻要清（過渡物，founder 規矩：唔用就 `git rm`）
+
+- `ci/ci-run.sh` 嘅 `dockerbuild` step —— 只可以留 `dockerpull`
+- `docker-compose.deploy.yml` 四個 `image:` 名 + `build:` section → `ghcr.io/certifine/*`
+- `./start.sh` / `./stop.sh` —— 要等 compose 個 image 名轉曬先改得準（founder 2026-08-15：之後再睇）
+
+### 已經滿足嘅硬性前置
+
+- `@certifine/domain@0.1.0` 已發布 → web 拆走之後食得到
+- 四個 image 由 CI build、推 GHCR、部機 pull → infra 冇 source 都 deploy 得到
+- Revert tag：`pre-repo-split-2026-08-14`
+
+---
+
 ## 0. 先講一句唔中聽嘅
 
 「同事會 commit 錯嘢」呢個問題，**唔一定要拆 repo 先解決得到**（CODEOWNERS + branch protection 一日搞掂）。但拆 repo 解決嘅係另外兩件事 —— **獨立 deploy** 同 **團隊邊界** —— 呢兩樣係現有 monorepo 真係做唔到嘅，而你講明「我認為有必要做」。所以以下按「要拆」去寫，同時列清楚代價，唔會扮冇成本。
