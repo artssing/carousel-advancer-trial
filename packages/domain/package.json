@@ -17,7 +17,8 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "CANON.md"
   ],
   "publishConfig": {
     "registry": "https://npm.pkg.github.com",
