@@ -43,8 +43,8 @@ Founder 拆 repo 嘅真正理由更新咗：**唔係團隊邊界，係佢自己�
 | ③ | build workflow | 斬兩份：`build-api-image.yml`(1) + `build-web-images.yml`(3)。**infra 一個都冇** | ✅ 四個 image 實測過 |
 | ④ | secrets | deploy env 搬入 `env/`（歸 infra）；`apps/api/.env` 本機 dev 留喺 api | ✅ `9da5980` |
 | ⑥ | VERSION / CHANGELOG | **改咗決定** — 檔案跟 web（admin 係唯一 reader），版本號做 workflow input，infra 出 release 時傳同一個數 | ✅ |
-| ⑦ | docs 分家 | lessons→web · qa/backlog/proposals→infra · founder-rulings 跟 domain 發 · CLAUDE.md 斬三份 | ⬜ |
-| ⑧ | 本機開發流程 | 改前端：infra 起 API（Docker）+ web `npm run dev`。改 API：倒轉。**兩個方向都要寫** | ⬜ |
+| ⑦ | docs 分家 | `CANON.md` 跟 domain package 發；三份 `CLAUDE.md` 喺 `docs/split/` | ✅ `7430cd5` |
+| ⑧ | 本機開發流程 | `docs/split/local-dev.md` — 兩個方向 + domain link/發版 + port 撞 | ✅ `00d531e` |
 
 ### 每項嘅理由（唔好重新推導）
 
@@ -82,6 +82,28 @@ build context 入面**先 COPY 得入 image（`apps/admin/Dockerfile:39`），�
 - `ci/ci-run.sh` 嘅 `dockerbuild` step —— 只可以留 `dockerpull`
 - `docker-compose.deploy.yml` 四個 `image:` 名 + `build:` section → `ghcr.io/certifine/*`
 - `./start.sh` / `./stop.sh` —— 要等 compose 個 image 名轉曬先改得準（founder 2026-08-15：之後再睇）
+
+### Agent 定義點分（founder 2026-08-15）
+
+| Agent | api | web | infra |
+|---|:--:|:--:|:--:|
+| `project-coordinator` | ✅ | ✅ | ✅ |
+| `code-reviewer` | ✅ | ✅ | ✅ |
+| `qa-tester` | ✅ | ✅ | — |
+
+`project-coordinator` 三邊都要，因為佢係最清楚成個 platform 做咩嗰個。
+呢啲係**刻意複製**，唔算違反「唔准兩份」—— agent 定義冇 runtime 行為，唔會
+令兩個 repo 對同一件事有唔同答案。真正唔准複製嘅係 business rule。
+
+### 三個 repo 嘅 root 內容
+
+見 2026-08-15 session 記錄：api / web / infra 各自嘅 root 檔案清單。要點：
+
+- **`scripts/` 要斬三份**，唔係搬一份（15 個 script 分屬三邊）
+- **`package-lock.json` 唔可以 copy** —— 各自 `npm install` 重新生成。兩個新
+  lock 第一次會記錄 `@certifine/domain` 由 **registry** 嚟而唔係 workspace
+  symlink，**嗰一刻先係拆分真正生效**
+- **infra 冇 `package.json`、冇 workflow** —— 佢 build 唔到嘢，只 pull
 
 ### 已經滿足嘅硬性前置
 
