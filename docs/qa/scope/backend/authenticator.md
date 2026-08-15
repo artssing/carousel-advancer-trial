@@ -4,7 +4,15 @@ feature: authenticator
 owners:
   - apps/api/src/authenticators/**
   - apps/api/src/orders/**
-last_synced_commit: 3b8dfcd
+last_synced_commit: e8b5ce1
+# 2026-08-15 sync（`3b8dfcd..e8b5ce1`）：owners 入面兩個目錄有大改動（32 條 route 加咗
+# DTO，`orders.service.ts` 因為 orders IA 重寫改咗 171 行），但逐個 case 對過 body：
+# AT-04（`QrConfirmDto` = token/photos）、AT-08（`CreateOrderDto` = listingId/authenticatorId/
+# deliveryMethod/paymentMethod/meetupBranchId/meetupFreeText/offerId）全部**冇多送任何
+# DTO 冇宣告嘅欄位**，`forbidNonWhitelisted` 生效後呢幾條 case 唔會受影響，冇改。
+# Shared sweep（`packages/`）：`packages/utils/src/order-status.ts` 拆咗做 SSOT 文案函數、
+# `packages/domain` 新增 —— 兩樣都係文案／business-rule 層，呢個 scope 淨係打
+# API status code／body 唔理文案，同呢個 scope 冇關。
 ---
 
 # Authenticator — Backend

@@ -5,7 +5,16 @@ owners:
   - apps/authenticator/**
   - packages/ui/src/components/otp-input.tsx
   - packages/config/tailwind-preset.ts
-last_synced_commit: 3b8dfcd
+  # ── 2026-08-15 sync（e8b5ce1）補入：AP-02 嘅「consumer 綠留喺 bundle」而家
+  #    由呢幾個 packages/ui 共用 component 帶入嚟，唔再係 apps/authenticator 自己
+  #    hardcode（offer-card.tsx / conversation-pane.tsx 喺 8-11 已經變薄 adapter）
+  - packages/ui/src/components/conversation-pane.tsx
+  - packages/ui/src/components/offer-card.tsx
+  - packages/ui/src/components/confirm-dialog.tsx
+  - packages/ui/src/components/button.tsx
+  - packages/ui/src/components/badge.tsx
+  - packages/ui/src/components/resizable-sidebar.tsx
+last_synced_commit: e8b5ce1
 ---
 
 # Authenticator portal — Frontend
@@ -26,14 +35,27 @@ last_synced_commit: 3b8dfcd
   ```
   - 實測 2026-08-03：`authBrand-*` 係主色，但**同時**有
     `.bg-brand-50 .bg-brand-100 .bg-brand-600 .text-brand-600 .text-brand-700 .text-brand-800`
-  - Source 側（已排除 `.next` / `node_modules`）：`photo-uploader.tsx:143`、`offer-card.tsx:228,251`、
-    `wallet/payout-method-drawer.tsx:158`、`wallet/cashout-wizard.tsx:166,170,182,203,207,240`、
-    `app/messages/page.tsx:502`
-  - Token 定義：`packages/config/tailwind-preset.ts:16` `brand.600 = #008766`（綠）／
-    `:62` `authBrand.500 = #6366f1`（靛藍），註解明講要分開
+  - ⚠️ **2026-08-15 sync：source 側嘅證據轉咗嚟源**（container CSS 冇重新驗過 —— 呢個係 sync，
+    唔係 run，冇打 UAT）。舊引用嘅 `apps/authenticator/components/{offer-card,conversation-pane}.tsx`
+    喺 `b7e6aaa`（ConversationPane 合併）＋ 08-11 OfferCard fork 合併之後已經變成幾十行嘅**薄
+    adapter**，唔再自己帶 `brand-*` class（實測：`grep -n "brand-[0-9]" apps/authenticator/components/{offer-card,conversation-pane,wallet/*}.tsx apps/authenticator/app/messages/page.tsx` **零命中**，
+    2026-08-15）。`brand-*` 而家嘅**唯一**來源係佢哋包住嘅共用 component 本身
+    （`packages/ui/src/components/conversation-pane.tsx:46-54`、`offer-card.tsx`、
+    `confirm-dialog.tsx:130`、`button.tsx:10,15`、`badge.tsx:11`、`resizable-sidebar.tsx:147`）——
+    呢啲檔為咗俾 consumer 側用，literal 帶住 `bg-brand-600` 呢類 class 名，
+    而 Tailwind content-scan 見到個 class 名就會編譯佢，唔理邊個 portal 嘅 adapter
+    喺 runtime 揀咗邊個 theme prop
+  - Token 定義：`packages/config/tailwind-preset.ts` `brand.600 = #008766`（綠，`brand:` block）／
+    `authBrand.500 = #6366f1`（靛藍，`authBrand:` block），註解明講要分開
   - ⚠️ 呢條只講「CSS bundle 入面有／冇呢啲 class 名」。**綠色喺畫面上有幾明顯冇驗過** —— 要 browser
+  - **Expected 冇變**：`authBrand-*` 應該係主色，但因為根源而家喺共用 package（Tailwind
+    content-scan 全 repo），`bg-brand-*` 呢類 class **理論上會繼續出現**喺任何食
+    `packages/ui` 嘅 portal 嘅 CSS bundle——呢個由 08-03 到而家從來冇修過，唔係新退步，
+    下次 run 見到一樣嘅 class 名清單**唔係新 mismatch**，係同一個已知現象換咗個 source of truth
   - 理由：consumer=綠 / authenticator=靛藍 係 portal identity 訊號。共用 component 帶住 consumer 色
-    走入第二個 portal 係一個會不斷復發嘅 pattern（同 admin 個 language switcher 一樣，見 [MP-02] 附註）
+    走入第二個 portal 係一個會不斷復發嘅 pattern（同 admin 個 language switcher 一樣，見 [MP-02] 附註）。
+    2026-08-15 之後呢個 pattern 由「app 層自己抄咗一份」變成「package 層本身就係源頭」，
+    範圍收窄咗但冇消失
 
 - [AP-03] `browser` `unverified` — Dashboard / inbox / scan 入得，鑑定師登入之後見到自己啲 case
   - 未有 Playwright spec。API 側見 [AT-01] + [AU-11] 矩陣
