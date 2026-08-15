@@ -90,6 +90,16 @@ jobs:
           context: .
           file: apps/${{ matrix.app }}/Dockerfile
           push: true
+          # arm64 ONLY, because that is what the deploy box is — every
+          # container, PROD and UAT, runs on the founder's Apple Silicon Mac.
+          # A hosted runner defaults to amd64, and the first pull failed with
+          # `no matching manifest for linux/arm64/v8`.
+          #
+          # Not building both: the second architecture would double metered
+          # runner minutes to produce an image nothing pulls. When a Linux
+          # host appears, make this `linux/amd64,linux/arm64` — one line, and
+          # the sha tags already in the registry stay valid.
+          platforms: linux/arm64
           # Two tags on purpose. The floating one answers "what is this env on
           # now"; the sha one answers "where did that build go", and only the
           # second survives the next build — which is what a rollback needs.
